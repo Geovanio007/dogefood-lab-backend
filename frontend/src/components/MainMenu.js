@@ -1,7 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAccount, useConnect } from 'wagmi';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -9,15 +7,24 @@ import { useGame } from '../contexts/GameContext';
 import { Beaker, Trophy, Settings, Palette } from 'lucide-react';
 
 const MainMenu = () => {
-  const { address, isConnected } = useAccount();
   const { user, isNFTHolder, currentLevel, points, checkNFTOwnership, dispatch } = useGame();
+  const [isConnected, setIsConnected] = useState(false);
+  const [address, setAddress] = useState(null);
 
-  useEffect(() => {
-    if (address && isConnected) {
-      dispatch({ type: 'SET_USER', payload: { address } });
-      checkNFTOwnership(address);
-    }
-  }, [address, isConnected, dispatch, checkNFTOwnership]);
+  const connectWallet = async () => {
+    // Mock wallet connection for prototype
+    const mockAddress = '0x1234567890123456789012345678901234567890';
+    setAddress(mockAddress);
+    setIsConnected(true);
+    dispatch({ type: 'SET_USER', payload: { address: mockAddress } });
+    checkNFTOwnership(mockAddress);
+  };
+
+  const disconnectWallet = () => {
+    setAddress(null);
+    setIsConnected(false);
+    dispatch({ type: 'SET_USER', payload: null });
+  };
 
   return (
     <div className="lab-container min-h-screen p-8">
@@ -55,7 +62,12 @@ const MainMenu = () => {
                 </div>
               </div>
             )}
-            <ConnectButton />
+            <Button 
+              onClick={isConnected ? disconnectWallet : connectWallet}
+              className="doge-button"
+            >
+              {isConnected ? `${address?.slice(0,6)}...${address?.slice(-4)}` : 'Connect Wallet'}
+            </Button>
           </div>
         </div>
 
