@@ -1,53 +1,43 @@
-import { useEffect } from "react";
-import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { WagmiProvider } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { config } from './wagmi';
+import MainMenu from './components/MainMenu';
+import GameLab from './components/GameLab';
+import NFTShowcase from './components/NFTShowcase';
+import Leaderboard from './components/Leaderboard';
+import Settings from './components/Settings';
+import { GameProvider } from './contexts/GameContext';
+import { ToastProvider } from './components/ui/toast';
+import './App.css';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider>
+          <GameProvider>
+            <ToastProvider>
+              <div className="App">
+                <Router>
+                  <Routes>
+                    <Route path="/" element={<MainMenu />} />
+                    <Route path="/lab" element={<GameLab />} />
+                    <Route path="/nfts" element={<NFTShowcase />} />
+                    <Route path="/leaderboard" element={<Leaderboard />} />
+                    <Route path="/settings" element={<Settings />} />
+                  </Routes>
+                </Router>
+              </div>
+            </ToastProvider>
+          </GameProvider>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
 

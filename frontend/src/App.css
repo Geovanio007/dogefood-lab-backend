@@ -1,34 +1,231 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap');
+
+.App {
+  text-align: left;
+  min-height: 100vh;
+  font-family: 'Fredoka', sans-serif;
+  background: linear-gradient(135deg, #FFD700 0%, #FFF8DC 100%);
+  position: relative;
+  overflow-x: hidden;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+.doge-gradient {
+  background: linear-gradient(135deg, #FFD700, #B57B2E);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.lab-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FFD700 0%, #FFF8DC 50%, #F0F8FF 100%);
+  position: relative;
+  overflow: hidden;
 }
 
-.App-link {
-    color: #61dafb;
+.lab-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(181, 123, 46, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(182, 229, 125, 0.1) 0%, transparent 50%);
+  pointer-events: none;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.glass-panel {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.mixing-station {
+  width: 400px;
+  height: 400px;
+  margin: 0 auto;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.mixing-station:hover {
+  transform: scale(1.05);
+}
+
+.ingredient-slot {
+  width: 80px;
+  height: 80px;
+  border: 3px dashed #B57B2E;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.ingredient-slot:hover {
+  border-color: #FFD700;
+  background: rgba(255, 215, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+.ingredient-slot.filled {
+  border: 3px solid #B6E57D;
+  background: rgba(182, 229, 125, 0.3);
+}
+
+.bubble-animation {
+  animation: bubble 2s ease-in-out infinite;
+}
+
+@keyframes bubble {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-10px) scale(1.1); }
+}
+
+.lab-level-indicator {
+  background: linear-gradient(45deg, #FFD700, #B57B2E);
+  border-radius: 25px;
+  padding: 12px 20px;
+  color: white;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.progress-bar {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #B6E57D, #FFD700);
+  border-radius: 10px;
+  transition: width 0.5s ease;
+}
+
+.doge-button {
+  background: linear-gradient(45deg, #FFD700, #B57B2E);
+  border: none;
+  border-radius: 15px;
+  padding: 12px 24px;
+  color: white;
+  font-weight: 600;
+  font-family: 'Fredoka', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.doge-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+}
+
+.doge-button:active {
+  transform: translateY(0px);
+}
+
+.success-button {
+  background: linear-gradient(45deg, #B6E57D, #90EE90);
+  color: #2d5016;
+}
+
+.vip-badge {
+  background: linear-gradient(45deg, #FFD700, #FFA500);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(255, 165, 0, 0.4);
+}
+
+.particle-effect {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #FFD700;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px) opacity(1); }
+  100% { transform: translateY(-100px) opacity(0); }
+}
+
+.level-unlock-animation {
+  animation: levelUnlock 1s ease-out;
+}
+
+@keyframes levelUnlock {
+  0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+  50% { transform: scale(1.2) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.lab-equipment {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.lab-equipment:hover {
+  transform: translateY(-5px);
+  filter: brightness(1.2);
+}
+
+.ingredient-inventory {
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #B57B2E rgba(255, 255, 255, 0.3);
+}
+
+.ingredient-inventory::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ingredient-inventory::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+}
+
+.ingredient-inventory::-webkit-scrollbar-thumb {
+  background: #B57B2E;
+  border-radius: 10px;
+}
+
+.leaderboard-entry {
+  transition: all 0.3s ease;
+  border-left: 4px solid transparent;
+}
+
+.leaderboard-entry:hover {
+  border-left-color: #FFD700;
+  background: rgba(255, 215, 0, 0.1);
+  transform: translateX(5px);
+}
+
+.nft-card {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.nft-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
 }
