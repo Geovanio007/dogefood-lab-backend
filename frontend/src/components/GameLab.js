@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Link } from 'react-router-dom';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Sphere, Box, Cylinder } from '@react-three/drei';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Progress } from './ui/progress';
@@ -10,13 +8,86 @@ import { useGame } from '../contexts/GameContext';
 import { ArrowLeft, Zap, Star, Sparkles } from 'lucide-react';
 import { useToast } from './ui/use-toast';
 
-// 3D Mixing Station Component
-const MixingStation = ({ isActive, ingredients, onMix }) => {
+// WebGL Detection
+const isWebGLAvailable = () => {
+  try {
+    const canvas = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext && 
+      (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+  } catch (e) {
+    return false;
+  }
+};
+
+// Fallback 2D Mixing Station Component
+const FallbackMixingStation = ({ isActive, ingredients, onMix }) => {
+  return (
+    <div className="relative w-full h-80 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-2xl overflow-hidden">
+      {/* Background Lab Scene */}
+      <div className="absolute inset-0">
+        <img 
+          src="https://images.unsplash.com/photo-1579154341184-22069e4614d2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHw0fHxsYWJvcmF0b3J5JTIwZXF1aXBtZW50JTIwY29sb3JmdWx8ZW58MHx8fHwxNzU0OTQ2OTAwfDA&ixlib=rb-4.1.0&q=85"
+          alt="Mixing Station"
+          className="w-full h-full object-cover opacity-50"
+        />
+      </div>
+      
+      {/* Mixing Beaker */}
+      <div className="relative z-10 flex items-center justify-center h-full">
+        <div 
+          onClick={onMix}
+          className={`w-32 h-48 bg-gradient-to-b from-transparent via-yellow-200 to-yellow-400 
+            border-4 border-yellow-600 rounded-full rounded-t-none cursor-pointer 
+            transition-all duration-300 hover:scale-105 ${isActive ? 'animate-pulse' : ''}`}
+        >
+          {/* Bubbles when mixing */}
+          {isActive && ingredients.length > 0 && (
+            <div className="relative w-full h-full overflow-hidden">
+              <div className="absolute top-4 left-4 w-4 h-4 bg-white rounded-full opacity-70 bubble-animation"></div>
+              <div className="absolute top-8 right-6 w-3 h-3 bg-green-300 rounded-full opacity-60 bubble-animation"></div>
+              <div className="absolute top-12 left-8 w-2 h-2 bg-blue-300 rounded-full opacity-50 bubble-animation"></div>
+            </div>
+          )}
+          
+          {/* Mixing indicator */}
+          <div className="flex items-center justify-center h-full">
+            <span className="text-4xl">🧪</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Click to mix indicator */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+        <div className="bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm text-gray-700">
+          Click beaker to mix! 
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 3D Mixing Station Component (only loads if WebGL available)
+const ThreeDMixingStation = ({ isActive, ingredients, onMix }) => {
+  const [Canvas, setCanvas] = useState(null);
+  const [Three, setThree] = useState(null);
+  
+  useEffect(() => {
+    // Dynamically import Three.js components only if WebGL is available
+    if (isWebGLAvailable()) {
+      import('@react-three/fiber').then(({ Canvas: CanvasComponent }) => {
+        setCanvas(() => CanvasComponent);
+      });
+      
+      import('@react-three/drei').then((drei) => {
+        setThree(drei);
+      });
+    }
+  }, []);
+
   const meshRef = useRef();
   
   useEffect(() => {
     if (meshRef.current && isActive) {
-      // Simple rotation animation
       const interval = setInterval(() => {
         if (meshRef.current) {
           meshRef.current.rotation.y += 0.05;
@@ -27,42 +98,55 @@ const MixingStation = ({ isActive, ingredients, onMix }) => {
     }
   }, [isActive]);
 
+  if (!Canvas || !Three) {
+    return <FallbackMixingStation isActive={isActive} ingredients={ingredients} onMix={onMix} />;
+  }
+
+  const { OrbitControls, Sphere, Box, Cylinder } = Three;
+
   return (
-    <group>
-      {/* Main beaker */}
-      <Cylinder
-        ref={meshRef}
-        args={[1, 1.5, 3, 32]}
-        position={[0, 0, 0]}
-        onClick={onMix}
-      >
-        <meshStandardMaterial
-          color={isActive ? "#FFD700" : "#B57B2E"}
-          transparent
-          opacity={0.8}
-        />
-      </Cylinder>
+    <Canvas camera={{ position: [0, 2, 5] }}>
+      <ambientLight intensity={0.6} />
+      <pointLight position={[10, 10, 10]} />
       
-      {/* Bubbles when mixing */}
-      {isActive && ingredients.length > 0 && (
-        <>
-          <Sphere args={[0.1]} position={[-0.3, 0.5, 0]}>
-            <meshStandardMaterial color="#B6E57D" />
-          </Sphere>
-          <Sphere args={[0.15]} position={[0.2, 0.8, 0.2]}>
-            <meshStandardMaterial color="#FFD700" />
-          </Sphere>
-          <Sphere args={[0.1]} position={[0.4, 0.3, -0.2]}>
-            <meshStandardMaterial color="#FFA500" />
-          </Sphere>
-        </>
-      )}
+      <group>
+        {/* Main beaker */}
+        <Cylinder
+          ref={meshRef}
+          args={[1, 1.5, 3, 32]}
+          position={[0, 0, 0]}
+          onClick={onMix}
+        >
+          <meshStandardMaterial
+            color={isActive ? "#FFD700" : "#B57B2E"}
+            transparent
+            opacity={0.8}
+          />
+        </Cylinder>
+        
+        {/* Bubbles when mixing */}
+        {isActive && ingredients.length > 0 && (
+          <>
+            <Sphere args={[0.1]} position={[-0.3, 0.5, 0]}>
+              <meshStandardMaterial color="#B6E57D" />
+            </Sphere>
+            <Sphere args={[0.15]} position={[0.2, 0.8, 0.2]}>
+              <meshStandardMaterial color="#FFD700" />
+            </Sphere>
+            <Sphere args={[0.1]} position={[0.4, 0.3, -0.2]}>
+              <meshStandardMaterial color="#FFA500" />
+            </Sphere>
+          </>
+        )}
+        
+        {/* Base */}
+        <Box args={[3, 0.5, 3]} position={[0, -2, 0]}>
+          <meshStandardMaterial color="#8B4513" />
+        </Box>
+      </group>
       
-      {/* Base */}
-      <Box args={[3, 0.5, 3]} position={[0, -2, 0]}>
-        <meshStandardMaterial color="#8B4513" />
-      </Box>
-    </group>
+      <OrbitControls enableZoom={false} />
+    </Canvas>
   );
 };
 
@@ -82,7 +166,13 @@ const GameLab = () => {
   
   const [selectedIngredients, setSelectedIngredients] = useState([]);
   const [mixingProgress, setMixingProgress] = useState(0);
+  const [webGLSupported, setWebGLSupported] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check WebGL support on component mount
+    setWebGLSupported(isWebGLAvailable());
+  }, []);
 
   // Calculate level progress
   const levelProgress = (experience % 100);
@@ -204,6 +294,23 @@ const GameLab = () => {
         </CardContent>
       </Card>
 
+      {/* WebGL Status */}
+      {!webGLSupported && (
+        <Card className="glass-panel mb-8 border-2 border-orange-400">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <div className="font-semibold text-orange-600">3D Mode Unavailable</div>
+                <div className="text-sm text-gray-600">
+                  Your browser doesn't support WebGL. Using 2D mixing station instead.
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left Sidebar - Ingredients */}
@@ -263,26 +370,37 @@ const GameLab = () => {
           </CardContent>
         </Card>
 
-        {/* Center - 3D Mixing Station */}
+        {/* Center - Mixing Station */}
         <Card className="glass-panel">
           <CardHeader>
             <CardTitle className="text-center flex items-center justify-center gap-2">
               <Zap className="w-5 h-5" />
-              Mixing Station
+              Mixing Station {!webGLSupported && '(2D Mode)'}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-80 mb-6">
-              <Canvas camera={{ position: [0, 2, 5] }}>
-                <ambientLight intensity={0.6} />
-                <pointLight position={[10, 10, 10]} />
-                <MixingStation
+            <div className="mb-6">
+              <Suspense fallback={
+                <FallbackMixingStation
                   isActive={mixing.active}
                   ingredients={selectedIngredients}
                   onMix={handleStartMixing}
                 />
-                <OrbitControls enableZoom={false} />
-              </Canvas>
+              }>
+                {webGLSupported ? (
+                  <ThreeDMixingStation
+                    isActive={mixing.active}
+                    ingredients={selectedIngredients}
+                    onMix={handleStartMixing}
+                  />
+                ) : (
+                  <FallbackMixingStation
+                    isActive={mixing.active}
+                    ingredients={selectedIngredients}
+                    onMix={handleStartMixing}
+                  />
+                )}
+              </Suspense>
             </div>
             
             {mixing.active ? (
