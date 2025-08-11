@@ -10,7 +10,7 @@ import NFTShowcase from './components/NFTShowcase';
 import Leaderboard from './components/Leaderboard';
 import Settings from './components/Settings';
 import { GameProvider } from './contexts/GameContext';
-import { ToastProvider } from './components/ui/toast';
+import { Toaster } from 'sonner';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -21,7 +21,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
           <GameProvider>
-            <ToastProvider>
+            <Toaster position="top-right" richColors />
               <div className="App">
                 <Router>
                   <Routes>
