@@ -1,10 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { WagmiProvider } from 'wagmi';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { Toaster } from 'sonner';
-import { config } from './wagmi';
 import MainMenu from './components/MainMenu';
 import GameLab from './components/GameLab';
 import NFTShowcase from './components/NFTShowcase';
@@ -13,30 +9,22 @@ import Settings from './components/Settings';
 import { GameProvider } from './contexts/GameContext';
 import './App.css';
 
-const queryClient = new QueryClient();
-
 function App() {
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
-          <GameProvider>
-            <Toaster position="top-right" richColors />
-            <div className="App">
-              <Router>
-                <Routes>
-                  <Route path="/" element={<MainMenu />} />
-                  <Route path="/lab" element={<GameLab />} />
-                  <Route path="/nfts" element={<NFTShowcase />} />
-                  <Route path="/leaderboard" element={<Leaderboard />} />
-                  <Route path="/settings" element={<Settings />} />
-                </Routes>
-              </Router>
-            </div>
-          </GameProvider>
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <GameProvider>
+      <Toaster position="top-right" richColors />
+      <div className="App">
+        <Router>
+          <Routes>
+            <Route path="/" element={<MainMenu />} />
+            <Route path="/lab" element={<GameLab />} />
+            <Route path="/nfts" element={<NFTShowcase />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </Router>
+      </div>
+    </GameProvider>
   );
 }
 
