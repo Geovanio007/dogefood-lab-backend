@@ -10,23 +10,39 @@ import { Beaker, Trophy, Settings, Palette } from 'lucide-react';
 
 const MainMenu = () => {
   const { user, isNFTHolder, currentLevel, points, checkNFTOwnership, dispatch } = useGame();
-  const [isConnected, setIsConnected] = useState(false);
-  const [address, setAddress] = useState(null);
+  const { address, isConnected, isCorrectNetwork, signAuthMessage } = useWeb3();
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  const connectWallet = async () => {
-    // Mock wallet connection for prototype
-    const mockAddress = '0x1234567890123456789012345678901234567890';
-    setAddress(mockAddress);
-    setIsConnected(true);
-    dispatch({ type: 'SET_USER', payload: { address: mockAddress } });
-    checkNFTOwnership(mockAddress);
-  };
+  // Auto-authenticate when wallet connects to correct network
+  useEffect(() => {
+    const authenticateUser = async () => {
+      if (isConnected && isCorrectNetwork && address && !user && !isAuthenticating) {
+        setIsAuthenticating(true);
+        try {
+          // Set user in game context
+          dispatch({ type: 'SET_USER', payload: { address: address.toLowerCase() } });
+          
+          // Check NFT ownership (this would normally query the blockchain)
+          await checkNFTOwnership(address);
+          
+          console.log('User authenticated with DogeOS wallet:', address);
+        } catch (error) {
+          console.error('Authentication failed:', error);
+        } finally {
+          setIsAuthenticating(false);
+        }
+      }
+    };
 
-  const disconnectWallet = () => {
-    setAddress(null);
-    setIsConnected(false);
-    dispatch({ type: 'SET_USER', payload: null });
-  };
+    authenticateUser();
+  }, [isConnected, isCorrectNetwork, address, user, dispatch, checkNFTOwnership, isAuthenticating]);
+
+  // Clear user when wallet disconnects
+  useEffect(() => {
+    if (!isConnected && user) {
+      dispatch({ type: 'SET_USER', payload: null });
+    }
+  }, [isConnected, user, dispatch]);
 
   return (
     <div className="lab-container min-h-screen p-8">
