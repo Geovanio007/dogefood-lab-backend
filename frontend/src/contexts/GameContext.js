@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import axios from 'axios';
-import { gameConfig, calculateDifficulty, calculateXP } from '../config/gameConfig';
+import { gameConfig, calculateDifficulty, calculateXP, getUnlockedIngredients, getIngredientsUnlockedAtLevel } from '../config/gameConfig';
 
 const GameContext = createContext();
 
@@ -15,13 +15,8 @@ const initialState = {
   xpProgress: 0, // XP progress within current level (0-100)
   points: 0,
   totalTreatsCreated: 0,
-  ingredients: [
-    { id: '1', name: 'Golden Kibble', type: 'base', rarity: 'common', unlocked: true, image: '🥇' },
-    { id: '2', name: 'Doge Treats', type: 'flavor', rarity: 'common', unlocked: true, image: '🐕' },
-    { id: '3', name: 'Moon Dust', type: 'special', rarity: 'rare', unlocked: false, image: '🌙' },
-    { id: '4', name: 'Rocket Fuel', type: 'special', rarity: 'epic', unlocked: false, image: '🚀' },
-    { id: '5', name: 'Diamond Paws', type: 'legendary', rarity: 'legendary', unlocked: false, image: '💎' },
-  ],
+  mixesThisLevel: 0, // Track completed mixes per level for sack
+  ingredients: getUnlockedIngredients(1), // Start with level 1 ingredients
   createdTreats: [],
   ingredientSack: [], // Visual ingredient sack for completed combinations
   labEquipment: {
@@ -41,7 +36,8 @@ const initialState = {
   levelUp: {
     justLeveledUp: false,
     newLevel: 1,
-    unlockedFeatures: []
+    unlockedFeatures: [],
+    newIngredients: []
   }
 };
 
@@ -64,17 +60,19 @@ function gameReducer(state, action) {
         const newLevel = state.currentLevel + 1;
         const remainingXp = newXpProgress - xpCapPerLevel;
         
+        // Get newly unlocked ingredients
+        const newIngredients = getIngredientsUnlockedAtLevel(newLevel);
+        const allUnlockedIngredients = getUnlockedIngredients(newLevel);
+        
         // Unlock new features based on level
         const unlockedFeatures = [];
-        const newIngredients = state.ingredients.map(ingredient => {
-          if ((ingredient.type === 'special' && newLevel >= gameConfig.ingredients.unlockLevels.special && !ingredient.unlocked) ||
-              (ingredient.type === 'legendary' && newLevel >= gameConfig.ingredients.unlockLevels.legendary && !ingredient.unlocked)) {
-            unlockedFeatures.push(`${ingredient.name} ingredient`);
-            return { ...ingredient, unlocked: true };
-          }
-          return ingredient;
+        
+        // Add unlocked ingredients to features list
+        newIngredients.forEach(ingredient => {
+          unlockedFeatures.push(`${ingredient.name} ingredient`);
         });
         
+        // Check for equipment unlocks
         const newLabEquipment = {
           ...state.labEquipment,
           oven: { ...state.labEquipment.oven, unlocked: newLevel >= 3 },
@@ -93,12 +91,15 @@ function gameReducer(state, action) {
           experience: newTotalXp,
           currentLevel: newLevel,
           xpProgress: remainingXp,
-          ingredients: newIngredients,
+          mixesThisLevel: 0, // Reset sack counter for new level
+          ingredientSack: [], // Clear sack for new level
+          ingredients: allUnlockedIngredients,
           labEquipment: newLabEquipment,
           levelUp: {
             justLeveledUp: true,
             newLevel: newLevel,
-            unlockedFeatures: unlockedFeatures
+            unlockedFeatures: unlockedFeatures,
+            newIngredients: newIngredients
           }
         };
       }
@@ -115,7 +116,8 @@ function gameReducer(state, action) {
         levelUp: {
           justLeveledUp: false,
           newLevel: state.currentLevel,
-          unlockedFeatures: []
+          unlockedFeatures: [],
+          newIngredients: []
         }
       };
     
@@ -136,28 +138,22 @@ function gameReducer(state, action) {
       
       const maxSackSize = gameConfig.sack.maxVisibleIngredients;
       const updatedSack = [...state.ingredientSack, newSackItem].slice(-maxSackSize);
+      const newMixesThisLevel = state.mixesThisLevel + 1;
       
       return {
         ...state,
-        ingredientSack: updatedSack
+        ingredientSack: updatedSack,
+        mixesThisLevel: newMixesThisLevel
       };
     
     case 'COMPLETE_RECIPE':
       // Award bonus XP for recipe completion
       const recipeBonus = gameConfig.sack.bonusXpPerCompletion;
-      const currentXp = state.xpProgress + recipeBonus;
-      const xpCap = gameConfig.xp.xpCapPerLevel;
-      
-      if (currentXp >= xpCap) {
-        // Handle level up with recipe completion
-        return gameReducer(state, { type: 'GAIN_XP', payload: recipeBonus });
-      }
       
       return {
         ...state,
-        experience: state.experience + recipeBonus,
-        xpProgress: currentXp,
-        ingredientSack: [] // Clear sack after recipe completion
+        ingredientSack: [], // Clear sack after recipe completion
+        mixesThisLevel: 0   // Reset mixes counter
       };
     
     case 'START_MIXING':
@@ -339,8 +335,14 @@ export function GameProvider({ children }) {
       addPoints(pointsGained);
       
       // Check if recipe is completed (enough ingredients in sack)
-      if (state.ingredientSack.length >= gameConfig.sack.completionThreshold) {
+      if (state.mixesThisLevel + 1 >= gameConfig.sack.completionThreshold) {
         setTimeout(() => {
+          // Award bonus XP first
+          const bonusXp = gameConfig.sack.bonusXpPerCompletion;
+          dispatch({ type: 'GAIN_XP', payload: bonusXp });
+          updatePlayerProgress(bonusXp, 0);
+          
+          // Then complete recipe (clears sack)
           dispatch({ type: 'COMPLETE_RECIPE' });
         }, 1500);
       }
