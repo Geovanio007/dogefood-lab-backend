@@ -434,10 +434,26 @@ const GameLab = () => {
           <CardHeader>
             <CardTitle className="text-center flex items-center justify-center gap-2">
               <Zap className="w-5 h-5" />
-              Mixing Station {!webGLSupported && '(2D Mode)'}
+              Your Mixing Station {!webGLSupported && '(2D Mode)'}
             </CardTitle>
+            <div className="text-center text-sm text-gray-600">
+              You are the master creator! 🎯
+            </div>
           </CardHeader>
           <CardContent>
+            {/* Character Avatar Header */}
+            <div className="flex items-center justify-center mb-4">
+              <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-100 to-orange-100 px-4 py-2 rounded-full border-2 border-yellow-300">
+                <img 
+                  src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                  alt="Your Avatar"
+                  className="w-8 h-8 object-contain"
+                />
+                <span className="font-bold text-gray-800">Creator Mode Active</span>
+                <span className="text-xl">🔬</span>
+              </div>
+            </div>
+            
             <div className="mb-6">
               <Suspense fallback={
                 <FallbackMixingStation
@@ -447,11 +463,25 @@ const GameLab = () => {
                 />
               }>
                 {webGLSupported ? (
-                  <ThreeDMixingStation
-                    isActive={mixing.active}
-                    ingredients={selectedIngredients}
-                    onMix={handleStartMixing}
-                  />
+                  <div className="relative">
+                    {/* Character overlay for 3D mode */}
+                    <div className="absolute top-4 right-4 z-50">
+                      <img 
+                        src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                        alt="You in 3D Lab"
+                        className={`w-16 h-16 object-contain ${isActive ? 'animate-bounce' : 'hover:scale-110'} transition-all`}
+                      />
+                    </div>
+                    <ThreeDMixingStation
+                      isActive={mixing.active}
+                      ingredients={selectedIngredients}
+                      onMix={handleStartMixing}
+                    />
+                    {/* Personal lab indicator for 3D */}
+                    <div className="absolute bottom-4 left-4 bg-gradient-to-r from-yellow-400 to-orange-400 px-2 py-1 rounded text-white text-xs font-bold">
+                      Your 3D Lab 🚀
+                    </div>
+                  </div>
                 ) : (
                   <FallbackMixingStation
                     isActive={mixing.active}
@@ -465,26 +495,49 @@ const GameLab = () => {
             {mixing.active ? (
               <div className="text-center">
                 <div className="mb-4">
-                  <div className="text-lg font-bold text-yellow-600 mb-2">
-                    Mixing in Progress... 🧪
+                  <div className="flex items-center justify-center gap-2 text-lg font-bold text-yellow-600 mb-2">
+                    <img 
+                      src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                      alt="You"
+                      className="w-6 h-6 object-contain animate-spin"
+                    />
+                    You're creating magic... 🧪
                   </div>
                   <Progress value={mixingProgress} className="h-3" />
                 </div>
                 <div className="text-sm text-gray-600">
-                  Creating something magical... ✨
+                  Your legendary creation is coming together! ✨
                 </div>
               </div>
             ) : (
               <div className="text-center">
                 <Button
                   onClick={handleStartMixing}
-                  className="doge-button w-full"
+                  className="doge-button w-full text-lg py-3"
                   disabled={selectedIngredients.length === 0}
                 >
-                  {selectedIngredients.length === 0 ? 'Select Ingredients First' : `Mix ${selectedIngredients.length} Ingredients`}
+                  {selectedIngredients.length === 0 ? (
+                    <>
+                      <img 
+                        src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                        alt="You"
+                        className="w-5 h-5 object-contain mr-2"
+                      />
+                      Select Your Ingredients First
+                    </>
+                  ) : (
+                    <>
+                      <img 
+                        src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                        alt="You"
+                        className="w-5 h-5 object-contain mr-2"
+                      />
+                      Create with {selectedIngredients.length} Ingredients!
+                    </>
+                  )}
                 </Button>
                 <div className="text-sm text-gray-500 mt-2">
-                  Click the mixing station or button to start!
+                  You are the master creator - click to begin your masterpiece! 🎨
                 </div>
               </div>
             )}
