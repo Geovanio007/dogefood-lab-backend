@@ -139,9 +139,9 @@ const MainMenu = () => {
         <div className="text-center mb-8">
           <div className="inline-block">
             <img 
-              src="https://images.unsplash.com/photo-1456081445129-830eb8d4bfc6?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwxfHxzaGliYSUyMGludSUyMGN1dGV8ZW58MHx8fHwxNzU0OTQ2OTI4fDA&ixlib=rb-4.1.0&q=85"
+              src="https://i.ibb.co/hJQcdpfM/1000025492-removebg-preview.png"
               alt="Doge Scientist"
-              className="w-32 h-32 rounded-full border-4 border-yellow-400 shadow-lg hover:scale-110 transition-transform duration-300"
+              className="w-40 h-40 rounded-full border-6 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300 bg-white/20 backdrop-blur-sm"
             />
           </div>
           <h3 className="text-2xl font-bold text-gray-800 mt-4">
