@@ -7,10 +7,10 @@ export const CONTRACT_ADDRESSES = {
 
 // Network Information
 export const DOGEOS_DEVNET = {
-  chainId: 221122420,
+  chainId: parseInt(import.meta.env.VITE_DOGEOS_CHAIN_ID) || 221122420,
   name: 'DogeOS Devnet',
-  rpcUrl: 'https://rpc.devnet.doge.xyz',
-  blockExplorer: 'https://blockscout.devnet.doge.xyz',
+  rpcUrl: import.meta.env.VITE_DOGEOS_RPC_URL || 'https://rpc.devnet.doge.xyz',
+  blockExplorer: import.meta.env.VITE_DOGEOS_EXPLORER || 'https://blockscout.devnet.doge.xyz',
   symbol: 'DOGE',
 };
 
