@@ -152,6 +152,20 @@ const MainMenu = () => {
           </h3>
         </div>
 
+        {/* Powered By Banner Section */}
+        <div className="text-center mb-12">
+          <h4 className="text-lg font-semibold text-gray-700 mb-4">
+            Powered by
+          </h4>
+          <div className="max-w-4xl mx-auto">
+            <img 
+              src="https://i.ibb.co/cX3VRx5q/20250812-154617.jpg"
+              alt="Powered by Banner"
+              className="w-full h-auto rounded-2xl shadow-xl border-4 border-yellow-300 hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        </div>
+
         {/* Benefits Section */}
         {!isConnected && (
           <Card className="glass-panel">
