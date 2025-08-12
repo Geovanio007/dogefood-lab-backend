@@ -154,14 +154,15 @@ const MainMenu = () => {
 
         {/* Powered By Banner Section */}
         <div className="text-center mb-12">
-          <h4 className="text-lg font-semibold text-gray-700 mb-4">
+          <h4 className="text-lg font-semibold text-gray-700 mb-6">
             Powered by
           </h4>
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-2xl mx-auto">
             <img 
               src="https://i.ibb.co/cX3VRx5q/20250812-154617.jpg"
               alt="Powered by Banner"
-              className="w-full h-auto rounded-2xl shadow-xl border-4 border-yellow-300 hover:scale-105 transition-transform duration-300"
+              className="w-full max-w-lg mx-auto h-auto rounded-xl shadow-lg border-2 border-yellow-300 hover:scale-105 transition-transform duration-300 object-contain bg-white/10 backdrop-blur-sm"
+              style={{ maxHeight: '200px' }}
             />
           </div>
         </div>
