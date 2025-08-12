@@ -219,6 +219,39 @@ function gameReducer(state, action) {
         mixing: { active: false, selectedIngredients: [], progress: 0, result: null, timeLimit: null, timeRemaining: null }
       };
     
+    case 'SET_WEB3_PROFILE':
+      return {
+        ...state,
+        web3Profile: action.payload,
+        labBalance: action.payload.labBalance || '0',
+        nftBalance: action.payload.nftBalance || 0,
+        isNFTHolder: action.payload.isNftHolder || false,
+        currentSeason: action.payload.currentSeason || 0,
+      };
+
+    case 'CLEAR_WEB3_PROFILE':
+      return {
+        ...state,
+        web3Profile: null,
+        labBalance: '0',
+        nftBalance: 0,
+        isNFTHolder: false,
+        currentSeason: 0,
+      };
+
+    case 'UPDATE_LAB_BALANCE':
+      return {
+        ...state,
+        labBalance: action.payload,
+      };
+
+    case 'UPDATE_NFT_BALANCE':
+      return {
+        ...state,
+        nftBalance: action.payload,
+        isNFTHolder: action.payload > 0,
+      };
+      
     default:
       return state;
   }
