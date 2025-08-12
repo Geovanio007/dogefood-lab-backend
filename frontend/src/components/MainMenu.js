@@ -210,6 +210,29 @@ const MainMenu = () => {
           </Card>
         )}
 
+        {/* Network Connection Info for Connected Users */}
+        {isConnected && !isCorrectNetwork && (
+          <Card className="glass-panel border-orange-400 bg-orange-50">
+            <CardHeader>
+              <CardTitle className="text-center text-orange-800 text-xl">
+                ⚠️ Please Switch to DogeOS Devnet
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-orange-700 mb-4">
+                To play DogeFood Lab, you need to connect to the DogeOS Devnet.
+              </p>
+              <div className="bg-white p-3 rounded-lg text-sm text-left">
+                <strong>Network Details:</strong><br/>
+                • Network Name: DogeOS Devnet<br/>
+                • Chain ID: 221122420<br/>
+                • RPC URL: https://rpc.devnet.doge.xyz<br/>
+                • Explorer: https://blockscout.devnet.doge.xyz
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Loading Web3 Data */}
         {isConnected && isCorrectNetwork && web3Loading && (
           <Card className="glass-panel border-blue-400">
