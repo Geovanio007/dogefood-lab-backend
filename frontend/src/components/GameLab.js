@@ -476,58 +476,72 @@ const GameLab = () => {
         <Card className="glass-panel">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5" />
+              <ChefHat className="w-5 h-5" />
               Ingredient Shelf
               <Badge className="text-xs bg-blue-100 text-blue-800 ml-2">
                 Need 2+ for XP
               </Badge>
             </CardTitle>
+            <div className="text-sm text-gray-600">
+              Level {currentLevel} • {ingredients.length}/25 ingredients unlocked
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {ingredients.map((ingredient) => (
-                <div
-                  key={ingredient.id}
-                  onClick={() => ingredient.unlocked && handleIngredientSelect(ingredient.id)}
-                  className={`
-                    ingredient-slot p-3 rounded-lg border-2 cursor-pointer transition-all
-                    ${!ingredient.unlocked ? 'opacity-50 cursor-not-allowed' : ''}
-                    ${selectedIngredients.includes(ingredient.id) ? 'border-yellow-400 bg-yellow-100' : 'border-gray-300'}
-                    ${ingredient.unlocked && !mixing.active ? 'hover:border-yellow-400 hover:bg-yellow-50' : ''}
-                  `}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{getIngredientEmoji(ingredient.type)}</span>
-                    <div className="flex-1">
-                      <div className="font-medium">{ingredient.name}</div>
-                      <div className="text-xs text-gray-500 capitalize flex items-center gap-2">
-                        {ingredient.rarity} • {ingredient.type}
-                        {ingredient.rarity !== 'common' && (
-                          <Badge className="text-xs bg-yellow-100 text-yellow-800">
-                            +{gameConfig.ingredients.rarityMultiplier[ingredient.rarity]}x XP
+              {ingredients.map((ingredient) => {
+                const tierInfo = getTierInfo(ingredient.tier);
+                
+                return (
+                  <div
+                    key={ingredient.id}
+                    onClick={() => handleIngredientSelect(ingredient.id)}
+                    className={`
+                      ingredient-slot p-3 rounded-lg border-2 cursor-pointer transition-all
+                      ${selectedIngredients.includes(ingredient.id) ? 'border-yellow-400 bg-yellow-100 scale-105' : 'border-gray-300'}
+                      ${!mixing.active ? 'hover:border-yellow-400 hover:bg-yellow-50 hover:scale-102' : ''}
+                    `}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{ingredient.image}</span>
+                      <div className="flex-1">
+                        <div className="font-medium">{ingredient.name}</div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <Badge className={`text-xs ${tierInfo.color} border`}>
+                            Tier {ingredient.tier} • {tierInfo.name}
                           </Badge>
+                          <Badge className="text-xs bg-gray-100 text-gray-600 capitalize">
+                            {ingredient.rarity}
+                          </Badge>
+                        </div>
+                        {ingredient.rarity !== 'common' && (
+                          <div className="text-xs text-green-600 mt-1">
+                            +{gameConfig.ingredients.rarityMultiplier[ingredient.rarity]}x XP multiplier
+                          </div>
                         )}
                       </div>
+                      
+                      {/* Unlock level indicator */}
+                      <div className="text-xs text-right">
+                        <div className="text-gray-500">Unlocked</div>
+                        <div className="font-bold text-green-600">Level {ingredient.unlockLevel}</div>
+                      </div>
                     </div>
-                    {!ingredient.unlocked && (
-                      <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
-                        Level {ingredient.type === 'special' ? gameConfig.ingredients.unlockLevels.special : gameConfig.ingredients.unlockLevels.legendary}+ Required
-                      </span>
-                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
             <div className="mt-6 p-3 bg-blue-50 rounded-lg">
               <div className="text-sm font-medium mb-2">Selected Ingredients:</div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 min-h-[24px]">
                 {selectedIngredients.length > 0 ? (
                   selectedIngredients.map((id) => {
                     const ingredient = ingredients.find(ing => ing.id === id);
+                    const tierInfo = ingredient ? getTierInfo(ingredient.tier) : null;
+                    
                     return (
-                      <Badge key={id} variant="secondary" className="text-xs">
-                        {ingredient?.name}
+                      <Badge key={id} className={`text-xs ${tierInfo?.color || 'bg-gray-100 text-gray-800'} border`}>
+                        {ingredient?.image} {ingredient?.name}
                       </Badge>
                     );
                   })
@@ -536,11 +550,26 @@ const GameLab = () => {
                 )}
               </div>
               {selectedIngredients.length >= 2 && (
-                <div className="text-xs text-green-600 mt-2 font-medium">
-                  ✅ Ready for XP! (+{gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient} base XP)
+                <div className="text-xs text-green-600 mt-2 font-medium flex items-center gap-1">
+                  <Star className="w-3 h-3" />
+                  Ready for XP! (+{gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient} base XP × {currentDifficulty}x difficulty)
                 </div>
               )}
             </div>
+            
+            {/* Progress to next ingredient unlock */}
+            {currentLevel < 25 && (
+              <div className="mt-4 p-3 bg-purple-50 rounded-lg">
+                <div className="text-sm font-medium text-purple-800 mb-2">Next Unlock:</div>
+                <div className="text-xs text-purple-600">
+                  Level up to unlock more amazing ingredients!
+                  <br />
+                  <span className="font-medium">
+                    {Math.max(0, gameConfig.xp.xpCapPerLevel - xpProgress)} XP to Level {currentLevel + 1}
+                  </span>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
