@@ -6,7 +6,8 @@ import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
 import { XPProgressBar, LevelUpNotification, IngredientSack } from './game/ProgressSystem';
-import { ArrowLeft, Zap, Star, Sparkles, Clock, Target } from 'lucide-react';
+import { getTierInfo } from '../config/gameConfig';
+import { ArrowLeft, Zap, Star, Sparkles, Clock, Target, Crown, ChefHat } from 'lucide-react';
 import { useToast } from './ui/use-toast';
 
 // WebGL Detection
