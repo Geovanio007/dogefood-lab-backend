@@ -75,25 +75,7 @@ const MainMenu = () => {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            {isConnected && (
-              <div className="flex items-center gap-2">
-                {isNFTHolder && (
-                  <Badge className="vip-badge">
-                    VIP Scientist 👨‍🔬
-                  </Badge>
-                )}
-                <div className="glass-panel p-3">
-                  <div className="text-sm text-gray-600">Level {currentLevel}</div>
-                  <div className="font-bold text-lg">{points} Points</div>
-                </div>
-              </div>
-            )}
-            <Button 
-              onClick={isConnected ? disconnectWallet : connectWallet}
-              className="doge-button"
-            >
-              {isConnected ? `${address?.slice(0,6)}...${address?.slice(-4)}` : 'Connect Wallet'}
-            </Button>
+            <WalletConnection />
           </div>
         </div>
 
