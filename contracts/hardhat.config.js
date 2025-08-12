@@ -20,7 +20,7 @@ module.exports = {
     dogeosDevnet: {
       url: DOGEOS_DEVNET_RPC,
       accounts: [PRIVATE_KEY],
-      chainId: 568,
+      chainId: 221122420,
       gasPrice: 20000000000,
       gas: 6000000,
       timeout: 60000,
