@@ -320,8 +320,15 @@ const GameLab = () => {
               Back to Menu
             </Button>
           </Link>
-          <div className="lab-level-indicator">
-            Level {currentLevel} Lab
+          <div className="flex items-center gap-3">
+            <img 
+              src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+              alt="Your Avatar"
+              className="w-10 h-10 object-contain"
+            />
+            <div className="lab-level-indicator">
+              Your Level {currentLevel} Lab
+            </div>
           </div>
           {isNFTHolder && (
             <Badge className="vip-badge">VIP Scientist</Badge>
@@ -330,11 +337,11 @@ const GameLab = () => {
         
         <div className="flex items-center gap-4">
           <div className="glass-panel p-3">
-            <div className="text-sm text-gray-600">Points</div>
+            <div className="text-sm text-gray-600">Your Points</div>
             <div className="font-bold text-xl text-yellow-600">{points}</div>
           </div>
           <div className="glass-panel p-3">
-            <div className="text-sm text-gray-600">Treats Created</div>
+            <div className="text-sm text-gray-600">Your Creations</div>
             <div className="font-bold text-xl text-purple-600">{createdTreats.length}</div>
           </div>
         </div>
