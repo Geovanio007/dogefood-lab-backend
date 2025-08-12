@@ -3,7 +3,7 @@ import { defineChain } from 'viem';
 
 // Define DogeOS Devnet chain
 export const dogeOSDevnet = defineChain({
-  id: 568,
+  id: 221122420,
   name: 'DogeOS Devnet',
   network: 'dogeos-devnet',
   nativeCurrency: {
@@ -12,8 +12,8 @@ export const dogeOSDevnet = defineChain({
     symbol: 'DOGE',
   },
   rpcUrls: {
-    public: { http: ['https://rpc-devnet.dogechain.dog'] },
-    default: { http: ['https://rpc-devnet.dogechain.dog'] },
+    public: { http: ['https://rpc.devnet.doge.xyz'] },
+    default: { http: ['https://rpc.devnet.doge.xyz'] },
   },
   blockExplorers: {
     default: { name: 'DogeOS Explorer', url: 'https://blockscout.devnet.doge.xyz' },
