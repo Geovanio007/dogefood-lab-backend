@@ -1,8 +1,8 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { defineChain } from 'viem';
+import { mainnet } from 'wagmi/chains';
 
-// Define DogeOS Devnet chain
-export const dogeOSDevnet = defineChain({
+// Define DogeOS Devnet chain in simple format
+export const dogeOSDevnet = {
   id: 221122420,
   name: 'DogeOS Devnet',
   network: 'dogeos-devnet',
@@ -19,11 +19,11 @@ export const dogeOSDevnet = defineChain({
     default: { name: 'DogeOS Explorer', url: 'https://blockscout.devnet.doge.xyz' },
   },
   testnet: true,
-});
+};
 
 export const config = getDefaultConfig({
   appName: 'DogeFood Lab Beta',
   projectId: process.env.REACT_APP_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID_HERE',
-  chains: [dogeOSDevnet],
-  ssr: false, // Since this is Create React App, not Next.js
+  chains: [mainnet, dogeOSDevnet], // Include mainnet to avoid errors
+  ssr: false,
 });
