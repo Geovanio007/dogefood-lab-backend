@@ -85,9 +85,33 @@ export const DOGEFOOD_NFT_ABI = [
 ];
 
 export const REWARD_DISTRIBUTOR_ABI = [
-  'function currentSeason() view returns (uint256)',
-  'function hasClaimedSeason(uint256 seasonId, address user) view returns (bool)',
-  'function getClaimedAmount(uint256 seasonId, address user) view returns (uint256)',
+  {
+    "inputs": [],
+    "name": "currentSeason",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "uint256", "name": "seasonId", "type": "uint256"},
+      {"internalType": "address", "name": "user", "type": "address"}
+    ],
+    "name": "hasClaimedSeason",
+    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "uint256", "name": "seasonId", "type": "uint256"},
+      {"internalType": "address", "name": "user", "type": "address"}
+    ],
+    "name": "getClaimedAmount",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  }
 ];
 
 // Token Information
