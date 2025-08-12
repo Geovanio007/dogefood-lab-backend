@@ -469,7 +469,7 @@ const GameLab = () => {
                       <img 
                         src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
                         alt="You in 3D Lab"
-                        className={`w-16 h-16 object-contain ${isActive ? 'animate-bounce' : 'hover:scale-110'} transition-all`}
+                        className={`w-16 h-16 object-contain ${mixing.active ? 'animate-bounce' : 'hover:scale-110'} transition-all`}
                       />
                     </div>
                     <ThreeDMixingStation
