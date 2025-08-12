@@ -22,7 +22,9 @@ module.exports = {
       accounts: [PRIVATE_KEY],
       chainId: 568,
       gasPrice: 20000000000,
-      gas: 6000000
+      gas: 6000000,
+      timeout: 60000,
+      httpHeaders: {}
     }
   },
   namedAccounts: {
