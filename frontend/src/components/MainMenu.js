@@ -4,6 +4,8 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
+import { useWeb3 } from '../hooks/useWeb3';
+import WalletConnection from './WalletConnection';
 import { Beaker, Trophy, Settings, Palette } from 'lucide-react';
 
 const MainMenu = () => {
