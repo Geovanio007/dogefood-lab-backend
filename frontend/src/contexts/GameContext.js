@@ -4,7 +4,7 @@ import { gameConfig, calculateDifficulty, calculateXP, getUnlockedIngredients, g
 
 const GameContext = createContext();
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const initialState = {
