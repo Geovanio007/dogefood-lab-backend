@@ -290,10 +290,17 @@ const GameLab = () => {
   const [timeRemaining, setTimeRemaining] = useState(null);
   const { toast } = useToast();
 
+  // Reset mixing state when component receives a completed mixing result
   useEffect(() => {
-    // Check WebGL support on component mount
-    setWebGLSupported(isWebGLAvailable());
-  }, []);
+    if (mixing.result && !mixing.active) {
+      // Clear the mixing result after showing completion
+      const timer = setTimeout(() => {
+        dispatch({ type: 'RESET_MIXING' });
+      }, 3000); // Clear after 3 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [mixing.result, mixing.active, dispatch]);
 
   // Handle time limit countdown
   useEffect(() => {
