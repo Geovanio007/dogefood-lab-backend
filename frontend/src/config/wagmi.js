@@ -1,58 +1,35 @@
-import '@rainbow-me/rainbowkit/styles.css';
-import {
-  getDefaultWallets,
-  RainbowKitProvider
-} from '@rainbow-me/rainbowkit';
-import { configureChains, createClient, WagmiConfig, mainnet, goerli } from 'wagmi';
-import { publicProvider } from 'wagmi/providers/public';
+import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { defineChain } from 'viem';
 
 // Define DogeOS Devnet chain
-const dogeOSDevnet = {
+export const dogeOSDevnet = defineChain({
   id: 221122420,
   name: 'DogeOS Devnet',
-  network: 'dogeos-devnet',
   nativeCurrency: {
     decimals: 18,
     name: 'Dogecoin',
     symbol: 'DOGE',
   },
   rpcUrls: {
-    public: 'https://rpc.devnet.doge.xyz',
-    default: 'https://rpc.devnet.doge.xyz',
+    default: {
+      http: ['https://rpc.devnet.doge.xyz'],
+    },
+    public: {
+      http: ['https://rpc.devnet.doge.xyz'],
+    },
   },
   blockExplorers: {
-    default: { name: 'DogeOS Explorer', url: 'https://blockscout.devnet.doge.xyz' },
+    default: {
+      name: 'DogeOS Explorer',
+      url: 'https://blockscout.devnet.doge.xyz',
+    },
   },
   testnet: true,
-};
+});
 
-// Configure chains
-const { chains, provider } = configureChains(
-  [mainnet, dogeOSDevnet], // Include mainnet to avoid connection issues
-  [publicProvider()]
-);
-
-// Wallet connectors
-const { connectors } = getDefaultWallets({
+export const wagmiConfig = getDefaultConfig({
   appName: 'DogeFood Lab Beta',
-  chains
+  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID_HERE',
+  chains: [dogeOSDevnet],
+  ssr: false,
 });
-
-// Wagmi client
-const wagmiClient = createClient({
-  autoConnect: true,
-  connectors,
-  provider
-});
-
-export function Web3Provider({ children }) {
-  return (
-    <WagmiConfig client={wagmiClient}>
-      <RainbowKitProvider chains={chains}>
-        {children}
-      </RainbowKitProvider>
-    </WagmiConfig>
-  );
-}
-
-export { dogeOSDevnet, wagmiClient, chains };
