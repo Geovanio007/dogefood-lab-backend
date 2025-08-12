@@ -28,7 +28,16 @@ const FallbackMixingStation = ({ isActive, ingredients, onMix }) => {
         <img 
           src="https://images.unsplash.com/photo-1579154341184-22069e4614d2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHw0fHxsYWJvcmF0b3J5JTIwZXF1aXBtZW50JTIwY29sb3JmdWx8ZW58MHx8fHwxNzU0OTQ2OTAwfDA&ixlib=rb-4.1.0&q=85"
           alt="Mixing Station"
-          className="w-full h-full object-cover opacity-50"
+          className="w-full h-full object-cover opacity-30"
+        />
+      </div>
+      
+      {/* Creator Character */}
+      <div className="absolute top-4 right-4 z-20">
+        <img 
+          src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+          alt="DogeFood Creator"
+          className="w-24 h-24 object-contain animate-bounce"
         />
       </div>
       
