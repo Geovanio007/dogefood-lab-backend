@@ -1,22 +1,22 @@
 import { useState, useEffect } from 'react';
-import { useAccount, useNetwork, useSwitchNetwork, useSignMessage } from 'wagmi';
+import { useAccount, useSignMessage, useChainId, useSwitchChain } from 'wagmi';
 import { dogeOSDevnet } from '../config/wagmi';
 
 export const useWeb3 = () => {
   const { address, isConnected, isConnecting } = useAccount();
-  const { chain } = useNetwork();
-  const { switchNetwork } = useSwitchNetwork();
   const { signMessageAsync } = useSignMessage();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
   const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
 
   useEffect(() => {
-    setIsCorrectNetwork(chain?.id === dogeOSDevnet.id);
-  }, [chain]);
+    setIsCorrectNetwork(chainId === dogeOSDevnet.id);
+  }, [chainId]);
 
   const switchToDogeOS = async () => {
     try {
-      if (switchNetwork) {
-        switchNetwork(dogeOSDevnet.id);
+      if (switchChain) {
+        await switchChain({ chainId: dogeOSDevnet.id });
       }
     } catch (error) {
       console.error('Failed to switch to DogeOS network:', error);
@@ -50,7 +50,7 @@ This signature is only used for authentication and costs no gas.`;
     isConnected,
     isConnecting,
     isCorrectNetwork,
-    chainId: chain?.id,
+    chainId,
     signAuthMessage,
     switchToDogeOS,
     dogeOSDevnet,
