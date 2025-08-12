@@ -2,10 +2,9 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract DogeFood is ERC721, ERC721URIStorage, Ownable {
+contract DogeFood is ERC721, Ownable {
     uint256 private _tokenIdCounter;
     uint256 public constant MAX_SUPPLY = 420;
     string public baseTokenURI;
@@ -50,17 +49,5 @@ contract DogeFood is ERC721, ERC721URIStorage, Ownable {
     
     function _baseURI() internal view override returns (string memory) {
         return baseTokenURI;
-    }
-    
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-        return super.tokenURI(tokenId);
-    }
-    
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage) returns (bool) {
-        return super.supportsInterface(interfaceId);
-    }
-    
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-        super._burn(tokenId);
     }
 }
