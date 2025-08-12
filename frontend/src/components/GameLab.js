@@ -35,47 +35,76 @@ const FallbackMixingStation = ({ isActive, ingredients, onMix }) => {
       {/* Main Character - YOU as the Creator */}
       <div className="absolute inset-0 flex items-center justify-center z-10">
         <div className="relative">
-          {/* Character Image - Main Focus */}
+          {/* Character Image - MAXIMUM PROMINENCE */}
           <img 
             src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
-            alt="You - The DogeFood Creator"
-            className={`w-48 h-48 object-contain transition-all duration-300 ${
-              isActive ? 'animate-bounce scale-110' : 'hover:scale-105'
+            alt="You - The Ultimate DogeFood Creator"
+            className={`w-60 h-60 object-contain transition-all duration-500 drop-shadow-2xl ${
+              isActive ? 'animate-bounce scale-125 brightness-110' : 'hover:scale-110 hover:brightness-105'
             }`}
+            style={{
+              filter: 'drop-shadow(0 10px 20px rgba(255, 215, 0, 0.3))'
+            }}
           />
           
-          {/* Mixing Beaker in Character's Hands */}
+          {/* Character Glow Effect */}
+          <div className={`absolute inset-0 rounded-full bg-gradient-to-r from-yellow-400/20 to-orange-400/20 blur-xl transition-all duration-500 ${
+            isActive ? 'scale-150 opacity-100' : 'scale-100 opacity-60'
+          }`} />
+          
+          {/* Master Creator Badge */}
+          <div className="absolute -top-16 left-1/2 transform -translate-x-1/2">
+            <div className="bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500 px-6 py-3 rounded-full shadow-2xl border-3 border-white">
+              <div className="text-lg font-bold text-white text-center flex items-center gap-2">
+                <span className="text-2xl">👑</span>
+                <span>MASTER CREATOR</span>
+                <span className="text-2xl">👑</span>
+              </div>
+            </div>
+            {/* Badge pointer */}
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-yellow-400"></div>
+          </div>
+          
+          {/* Mixing Beaker in Character's Control */}
           <div 
             onClick={onMix}
-            className={`absolute -bottom-8 left-1/2 transform -translate-x-1/2 
-              w-20 h-24 bg-gradient-to-b from-transparent via-yellow-300 to-yellow-500 
-              border-3 border-yellow-700 rounded-full rounded-t-none cursor-pointer 
-              transition-all duration-300 hover:scale-110 ${isActive ? 'animate-pulse' : ''}`}
+            className={`absolute -bottom-12 left-1/2 transform -translate-x-1/2 
+              w-24 h-32 bg-gradient-to-b from-transparent via-yellow-300 to-yellow-600 
+              border-4 border-yellow-800 rounded-full rounded-t-none cursor-pointer 
+              transition-all duration-300 hover:scale-110 shadow-xl ${isActive ? 'animate-pulse scale-110' : ''}`}
+            style={{
+              boxShadow: '0 10px 30px rgba(255, 215, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3)'
+            }}
           >
             {/* Bubbles when mixing */}
             {isActive && ingredients.length > 0 && (
               <div className="relative w-full h-full overflow-hidden">
-                <div className="absolute top-2 left-2 w-2 h-2 bg-white rounded-full opacity-80 bubble-animation"></div>
-                <div className="absolute top-4 right-3 w-1.5 h-1.5 bg-green-300 rounded-full opacity-70 bubble-animation"></div>
-                <div className="absolute top-6 left-4 w-1 h-1 bg-blue-300 rounded-full opacity-60 bubble-animation"></div>
+                <div className="absolute top-3 left-3 w-3 h-3 bg-white rounded-full opacity-90 bubble-animation"></div>
+                <div className="absolute top-6 right-4 w-2.5 h-2.5 bg-green-300 rounded-full opacity-80 bubble-animation" style={{animationDelay: '0.3s'}}></div>
+                <div className="absolute top-9 left-5 w-2 h-2 bg-blue-300 rounded-full opacity-70 bubble-animation" style={{animationDelay: '0.6s'}}></div>
+                <div className="absolute top-5 right-2 w-1.5 h-1.5 bg-pink-300 rounded-full opacity-60 bubble-animation" style={{animationDelay: '0.9s'}}></div>
               </div>
             )}
             
             {/* Mixing indicator */}
             <div className="flex items-center justify-center h-full">
-              <span className="text-xl">🧪</span>
+              <span className="text-2xl drop-shadow-lg">🧪</span>
             </div>
           </div>
           
-          {/* Character Speech Bubble */}
-          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2">
-            <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border-2 border-yellow-300">
-              <div className="text-sm font-medium text-gray-800">
-                {isActive ? "Creating magic! ✨" : "Ready to mix! 🚀"}
+          {/* Dynamic Character Speech Bubble */}
+          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
+            <div className={`bg-white/95 backdrop-blur-sm px-6 py-3 rounded-2xl shadow-2xl border-3 transition-all duration-300 ${
+              isActive ? 'border-green-400 bg-green-50/95' : 'border-yellow-400 bg-yellow-50/95'
+            }`}>
+              <div className="text-base font-bold text-gray-800 text-center">
+                {isActive ? "🔥 CREATING LEGENDARY TREATS! 🔥" : "💪 READY TO CREATE MAGIC! 🌟"}
               </div>
             </div>
             {/* Speech bubble pointer */}
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white/90"></div>
+            <div className={`absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent transition-colors ${
+              isActive ? 'border-t-green-50/95' : 'border-t-yellow-50/95'
+            }`}></div>
           </div>
         </div>
       </div>
