@@ -290,6 +290,11 @@ const GameLab = () => {
   const [timeRemaining, setTimeRemaining] = useState(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    // Check WebGL support on component mount
+    setWebGLSupported(isWebGLAvailable());
+  }, []);
+
   // Reset mixing state when component receives a completed mixing result
   useEffect(() => {
     if (mixing.result && !mixing.active) {
