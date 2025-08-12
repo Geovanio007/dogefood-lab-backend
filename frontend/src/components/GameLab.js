@@ -366,18 +366,22 @@ const GameLab = () => {
           clearInterval(interval);
           setTimeout(() => {
             completeMixing();
-            setSelectedIngredients([]);
-            setMixingProgress(0);
             
-            // Calculate XP for user feedback
-            const xpGained = gameConfig.xp.baseXpPerCombo + 
-                           Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient;
-            
-            toast({
-              title: "Mixing Complete! 🎉",
-              description: `Your new Dogetreat has been created! +${Math.floor(xpGained * currentDifficulty)} XP`,
-              className: "bg-green-100 border-green-400"
-            });
+            // Reset selected ingredients AFTER mixing completes
+            setTimeout(() => {
+              setSelectedIngredients([]);
+              setMixingProgress(0);
+              
+              // Calculate XP for user feedback
+              const xpGained = gameConfig.xp.baseXpPerCombo + 
+                             Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient;
+              
+              toast({
+                title: "Mixing Complete! 🎉",
+                description: `Your new Dogetreat has been created! +${Math.floor(xpGained * currentDifficulty)} XP`,
+                className: "bg-green-100 border-green-400"
+              });
+            }, 100);
           }, 500);
         }
         return newProgress;
