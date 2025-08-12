@@ -86,6 +86,9 @@ function gameReducer(state, action) {
           unlockedFeatures.push('Special Processor');
         }
         
+        console.log(`🎉 LEVEL UP! Level ${newLevel} - New ingredients:`, newIngredients.map(i => i.name));
+        console.log(`📋 All unlocked ingredients:`, allUnlockedIngredients.map(i => i.name));
+        
         return {
           ...state,
           experience: newTotalXp,
