@@ -8,8 +8,17 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const initialState = {
+  // User & Profile
   user: null,
   isNFTHolder: false,
+  
+  // Web3 Integration
+  web3Profile: null,
+  labBalance: '0',
+  nftBalance: 0,
+  currentSeason: 0,
+  
+  // Game State
   currentLevel: 1,
   experience: 0,
   xpProgress: 0, // XP progress within current level (0-100)
