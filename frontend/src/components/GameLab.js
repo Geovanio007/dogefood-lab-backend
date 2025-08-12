@@ -601,24 +601,45 @@ const GameLab = () => {
         </Card>
       </div>
 
-      {/* Tips Section */}
+      {/* Tips Section - Personalized */}
       <Card className="glass-panel mt-8">
+        <CardHeader>
+          <div className="flex items-center justify-center gap-3">
+            <img 
+              src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+              alt="Your Avatar"
+              className="w-12 h-12 object-contain"
+            />
+            <h3 className="text-xl font-bold doge-gradient">Your Creator Tips</h3>
+          </div>
+        </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             <div>
               <div className="text-2xl mb-2">🥇</div>
-              <h4 className="font-bold mb-1">Mix Quality Ingredients</h4>
-              <p className="text-sm text-gray-600">Combine rare ingredients for legendary treats!</p>
+              <h4 className="font-bold mb-1">Master Your Craft</h4>
+              <p className="text-sm text-gray-600">You can combine rare ingredients for legendary treats!</p>
             </div>
             <div>
               <div className="text-2xl mb-2">⭐</div>
-              <h4 className="font-bold mb-1">Level Up Fast</h4>
-              <p className="text-sm text-gray-600">Higher levels unlock special ingredients.</p>
+              <h4 className="font-bold mb-1">Level Up Your Lab</h4>
+              <p className="text-sm text-gray-600">Higher levels unlock special ingredients for your creations.</p>
             </div>
             <div>
               <div className="text-2xl mb-2">🏆</div>
-              <h4 className="font-bold mb-1">Earn Points</h4>
-              <p className="text-sm text-gray-600">NFT holders earn points for the leaderboard!</p>
+              <h4 className="font-bold mb-1">Earn Your Glory</h4>
+              <p className="text-sm text-gray-600">As an NFT holder, your points count toward the leaderboard!</p>
+            </div>
+          </div>
+          <div className="text-center mt-6">
+            <div className="bg-gradient-to-r from-yellow-100 to-orange-100 px-4 py-2 rounded-full inline-flex items-center gap-2">
+              <img 
+                src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                alt="Your Avatar"
+                className="w-6 h-6 object-contain"
+              />
+              <span className="font-medium text-gray-800">You are the ultimate DogeFood creator!</span>
+              <span className="text-lg">🌟</span>
             </div>
           </div>
         </CardContent>
