@@ -180,7 +180,7 @@ export const LevelUpNotification = () => {
 
 // Ingredient Sack Component
 export const IngredientSack = () => {
-  const { ingredientSack, gameConfig, ingredients } = useGame();
+  const { ingredientSack, mixesThisLevel, gameConfig, ingredients } = useGame();
   const [droppingItem, setDroppingItem] = useState(null);
 
   useEffect(() => {
@@ -197,9 +197,9 @@ export const IngredientSack = () => {
     }
   }, [ingredientSack.length, gameConfig.animations.sackDropDuration]);
 
-  const completionPercentage = (ingredientSack.length / gameConfig.sack.completionThreshold) * 100;
+  const completionPercentage = (mixesThisLevel / gameConfig.sack.completionThreshold) * 100;
   const isNearCompletion = completionPercentage >= 80;
-  const isComplete = ingredientSack.length >= gameConfig.sack.completionThreshold;
+  const isComplete = mixesThisLevel >= gameConfig.sack.completionThreshold;
 
   return (
     <Card className="glass-panel">
@@ -211,7 +211,7 @@ export const IngredientSack = () => {
             <div>
               <div className="font-bold text-gray-800">Ingredient Sack</div>
               <div className="text-sm text-gray-600">
-                {ingredientSack.length} / {gameConfig.sack.completionThreshold} ingredients
+                {mixesThisLevel} / {gameConfig.sack.completionThreshold} mixes completed
               </div>
             </div>
           </div>
@@ -235,54 +235,88 @@ export const IngredientSack = () => {
         <div className="mb-4">
           <Progress 
             value={completionPercentage} 
-            className={`h-2 ${isComplete ? 'animate-pulse' : ''}`}
+            className={`h-3 ${isComplete ? 'animate-pulse' : ''}`}
           />
-          <div className="text-xs text-gray-500 mt-1">
-            {Math.floor(completionPercentage)}% complete
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>{Math.floor(completionPercentage)}% complete</span>
+            <span>{Math.max(0, gameConfig.sack.completionThreshold - mixesThisLevel)} more to bonus</span>
           </div>
         </div>
         
         {/* Sack Contents */}
         <div className="relative bg-gradient-to-b from-amber-100 to-amber-200 rounded-xl p-4 min-h-[120px] border-2 border-amber-300">
           {/* Empty State */}
-          {ingredientSack.length === 0 && (
+          {mixesThisLevel === 0 && (
             <div className="text-center text-gray-500 py-8">
               <div className="text-4xl mb-2">📥</div>
               <div className="text-sm">
                 Mix ingredients to fill your sack!
               </div>
+              <div className="text-xs text-gray-400 mt-1">
+                Complete {gameConfig.sack.completionThreshold} mixes for bonus XP
+              </div>
             </div>
           )}
           
-          {/* Ingredient Items */}
-          <div className="grid grid-cols-4 gap-2">
-            {ingredientSack.map((item, index) => {
-              const isDroppingItem = droppingItem && item.id === droppingItem.id;
-              
-              return (
-                <div
-                  key={item.id}
-                  className={`
-                    bg-white/80 rounded-lg p-2 text-center border-2 border-amber-300 transition-all duration-300
-                    ${isDroppingItem ? 'animate-bounce scale-110' : 'hover:scale-105'}
-                  `}
-                >
-                  <div className="text-lg mb-1">{item.rarity === 'Legendary' ? '🌟' : item.rarity === 'Epic' ? '⭐' : item.rarity === 'Rare' ? '✨' : '🍪'}</div>
-                  <div className="text-xs text-gray-600 leading-tight">
-                    {item.ingredients.length} ingredients
+          {/* Mix Counter Visualization */}
+          {mixesThisLevel > 0 && (
+            <div className="grid grid-cols-5 gap-2">
+              {Array.from({ length: gameConfig.sack.completionThreshold }, (_, index) => {
+                const isFilled = index < mixesThisLevel;
+                const isLatest = index === mixesThisLevel - 1;
+                const isDroppingItem = droppingItem && isLatest;
+                
+                return (
+                  <div
+                    key={index}
+                    className={`
+                      aspect-square rounded-lg border-2 flex items-center justify-center text-lg font-bold transition-all duration-300
+                      ${isFilled 
+                        ? 'bg-green-100 border-green-400 text-green-700' 
+                        : 'bg-gray-100 border-gray-300 text-gray-400'
+                      }
+                      ${isDroppingItem ? 'animate-bounce scale-110' : ''}
+                    `}
+                  >
+                    {isFilled ? '✓' : (index + 1)}
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+          
+          {/* Recent Treats Preview */}
+          {ingredientSack.length > 0 && (
+            <div className="mt-4 border-t border-amber-400 pt-4">
+              <div className="text-xs font-medium text-amber-800 mb-2">Recent Treats:</div>
+              <div className="flex gap-2 overflow-x-auto">
+                {ingredientSack.slice(-5).map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="flex-shrink-0 bg-white/80 rounded-lg p-2 text-center border border-amber-300 min-w-[60px]"
+                  >
+                    <div className="text-base mb-1">
+                      {item.rarity === 'Legendary' ? '🌟' : 
+                       item.rarity === 'Epic' ? '⭐' : 
+                       item.rarity === 'Rare' ? '✨' : '🍪'}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      {item.ingredients.length}x
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           
           {/* Completion Animation */}
           {isComplete && (
-            <div className="absolute inset-0 flex items-center justify-center bg-green-100/90 rounded-xl">
+            <div className="absolute inset-0 flex items-center justify-center bg-green-100/90 rounded-xl animate-in fade-in duration-500">
               <div className="text-center animate-bounce">
                 <div className="text-4xl mb-2">🎉</div>
                 <div className="font-bold text-green-800">Recipe Complete!</div>
                 <div className="text-sm text-green-600">+{gameConfig.sack.bonusXpPerCompletion} Bonus XP</div>
+                <div className="text-xs text-green-500 mt-1">Sack will reset after bonus</div>
               </div>
             </div>
           )}
@@ -290,7 +324,7 @@ export const IngredientSack = () => {
         
         {/* Sack Tips */}
         <div className="text-xs text-gray-500 mt-3 text-center">
-          💡 Complete {gameConfig.sack.completionThreshold} mixes to unlock bonus XP!
+          💡 Complete {gameConfig.sack.completionThreshold} successful mixes to unlock +{gameConfig.sack.bonusXpPerCompletion} bonus XP!
         </div>
       </CardContent>
     </Card>
