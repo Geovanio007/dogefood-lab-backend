@@ -5,37 +5,31 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
 import { useWeb3 } from '../hooks/useWeb3';
+import { useWeb3Game } from '../hooks/useWeb3Game';
 import WalletConnection from './WalletConnection';
-import { Beaker, Trophy, Settings, Palette } from 'lucide-react';
+import { Beaker, Trophy, Settings, Palette, ExternalLink } from 'lucide-react';
 
 const MainMenu = () => {
-  const { user, isNFTHolder, currentLevel, points, checkNFTOwnership, dispatch } = useGame();
-  const { address, isConnected, isCorrectNetwork, signAuthMessage } = useWeb3();
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const { user, isNFTHolder, currentLevel, points, createdTreats, dispatch } = useGame();
+  const { address, isConnected, isCorrectNetwork } = useWeb3();
+  const { web3Profile, loading: web3Loading, getContractInfo } = useWeb3Game();
+  const [contractInfo, setContractInfo] = useState(null);
 
-  // Auto-authenticate when wallet connects to correct network
+  // Fetch contract information on mount
   useEffect(() => {
-    const authenticateUser = async () => {
-      if (isConnected && isCorrectNetwork && address && !user && !isAuthenticating) {
-        setIsAuthenticating(true);
-        try {
-          // Set user in game context
-          dispatch({ type: 'SET_USER', payload: { address: address.toLowerCase() } });
-          
-          // Check NFT ownership (this would normally query the blockchain)
-          await checkNFTOwnership(address);
-          
-          console.log('User authenticated with DogeOS wallet:', address);
-        } catch (error) {
-          console.error('Authentication failed:', error);
-        } finally {
-          setIsAuthenticating(false);
-        }
-      }
+    const fetchContractInfo = async () => {
+      const info = await getContractInfo();
+      setContractInfo(info);
     };
+    fetchContractInfo();
+  }, [getContractInfo]);
 
-    authenticateUser();
-  }, [isConnected, isCorrectNetwork, address, user, dispatch, checkNFTOwnership, isAuthenticating]);
+  // Auto-set user when wallet connects and is on correct network
+  useEffect(() => {
+    if (isConnected && isCorrectNetwork && address && !user) {
+      dispatch({ type: 'SET_USER', payload: { address: address.toLowerCase() } });
+    }
+  }, [isConnected, isCorrectNetwork, address, user, dispatch]);
 
   // Clear user when wallet disconnects
   useEffect(() => {
