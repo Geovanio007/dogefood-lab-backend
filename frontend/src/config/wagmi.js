@@ -3,7 +3,7 @@ import {
   getDefaultWallets,
   RainbowKitProvider
 } from '@rainbow-me/rainbowkit';
-import { chain, configureChains, createClient, WagmiConfig } from 'wagmi';
+import { configureChains, createClient, WagmiConfig, mainnet, goerli } from 'wagmi';
 import { publicProvider } from 'wagmi/providers/public';
 
 // Define DogeOS Devnet chain
@@ -28,7 +28,7 @@ const dogeOSDevnet = {
 
 // Configure chains
 const { chains, provider } = configureChains(
-  [chain.mainnet, dogeOSDevnet], // Include mainnet to avoid connection issues
+  [mainnet, dogeOSDevnet], // Include mainnet to avoid connection issues
   [publicProvider()]
 );
 
