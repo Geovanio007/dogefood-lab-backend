@@ -7,24 +7,27 @@ import NFTShowcase from './components/NFTShowcase';
 import Leaderboard from './components/Leaderboard';
 import Settings from './components/Settings';
 import { GameProvider } from './contexts/GameContext';
+import { Web3Provider } from './components/Web3Provider';
 import './App.css';
 
 function App() {
   return (
-    <GameProvider>
-      <Toaster position="top-right" richColors />
-      <div className="App">
-        <Router>
-          <Routes>
-            <Route path="/" element={<MainMenu />} />
-            <Route path="/lab" element={<GameLab />} />
-            <Route path="/nfts" element={<NFTShowcase />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
-        </Router>
-      </div>
-    </GameProvider>
+    <Web3Provider>
+      <GameProvider>
+        <Toaster position="top-right" richColors />
+        <div className="App">
+          <Router>
+            <Routes>
+              <Route path="/" element={<MainMenu />} />
+              <Route path="/lab" element={<GameLab />} />
+              <Route path="/nfts" element={<NFTShowcase />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/settings" element={<Settings />} />
+            </Routes>
+          </Router>
+        </div>
+      </GameProvider>
+    </Web3Provider>
   );
 }
 
