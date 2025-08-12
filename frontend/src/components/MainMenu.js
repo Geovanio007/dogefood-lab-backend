@@ -137,6 +137,89 @@ const MainMenu = () => {
           </Card>
         </div>
 
+        {/* Web3 Status Dashboard (for connected users) */}
+        {isConnected && isCorrectNetwork && web3Profile && (
+          <Card className="glass-panel border-green-400">
+            <CardHeader>
+              <CardTitle className="text-center text-green-800 flex items-center justify-center gap-2">
+                🔗 Web3 Profile Connected
+                <Badge className="bg-green-600 text-white">Live on DogeOS</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-green-50 rounded-xl">
+                  <h4 className="font-bold text-green-800 mb-2">💰 LAB Balance</h4>
+                  <p className="text-2xl font-bold text-green-700">
+                    {parseFloat(web3Profile.labBalance).toLocaleString()} LAB
+                  </p>
+                  {contractInfo?.labToken && (
+                    <a 
+                      href={`https://blockscout.devnet.doge.xyz/address/${contractInfo.labToken.address}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-green-600 hover:underline flex items-center justify-center gap-1 mt-1"
+                    >
+                      View Contract <ExternalLink size={10} />
+                    </a>
+                  )}
+                </div>
+                
+                <div className="text-center p-4 bg-purple-50 rounded-xl">
+                  <h4 className="font-bold text-purple-800 mb-2">🎨 DogeFood NFTs</h4>
+                  <p className="text-2xl font-bold text-purple-700">
+                    {web3Profile.nftBalance} / 420
+                  </p>
+                  <p className="text-sm text-purple-600">
+                    {web3Profile.isNftHolder ? '✅ VIP Scientist' : '❌ Not a holder'}
+                  </p>
+                  {contractInfo?.nftCollection && (
+                    <a 
+                      href={`https://blockscout.devnet.doge.xyz/address/${contractInfo.nftCollection.address}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-purple-600 hover:underline flex items-center justify-center gap-1 mt-1"
+                    >
+                      View NFT Contract <ExternalLink size={10} />
+                    </a>
+                  )}
+                </div>
+                
+                <div className="text-center p-4 bg-blue-50 rounded-xl">
+                  <h4 className="font-bold text-blue-800 mb-2">🏆 Season Status</h4>
+                  <p className="text-2xl font-bold text-blue-700">
+                    Season {web3Profile.currentSeason || 'TBD'}
+                  </p>
+                  <p className="text-sm text-blue-600">
+                    {web3Profile.isNftHolder ? 'Eligible for rewards' : 'NFT required'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg text-center">
+                <a 
+                  href={web3Profile.explorerUrl}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-600 hover:text-gray-800 flex items-center justify-center gap-1"
+                >
+                  View wallet on DogeOS Explorer <ExternalLink size={12} />
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Loading Web3 Data */}
+        {isConnected && isCorrectNetwork && web3Loading && (
+          <Card className="glass-panel border-blue-400">
+            <CardContent className="text-center py-8">
+              <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-blue-700">Loading Web3 profile from DogeOS blockchain...</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Doge Scientist Avatar */}
         <div className="text-center mb-8">
           <div className="inline-block">
