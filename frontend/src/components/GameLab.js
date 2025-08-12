@@ -22,53 +22,103 @@ const isWebGLAvailable = () => {
 // Fallback 2D Mixing Station Component
 const FallbackMixingStation = ({ isActive, ingredients, onMix }) => {
   return (
-    <div className="relative w-full h-80 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-2xl overflow-hidden">
+    <div className="relative w-full h-80 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl overflow-hidden border-4 border-yellow-300">
       {/* Background Lab Scene */}
       <div className="absolute inset-0">
         <img 
           src="https://images.unsplash.com/photo-1579154341184-22069e4614d2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHw0fHxsYWJvcmF0b3J5JTIwZXF1aXBtZW50JTIwY29sb3JmdWx8ZW58MHx8fHwxNzU0OTQ2OTAwfDA&ixlib=rb-4.1.0&q=85"
           alt="Mixing Station"
-          className="w-full h-full object-cover opacity-30"
+          className="w-full h-full object-cover opacity-20"
         />
       </div>
       
-      {/* Creator Character */}
-      <div className="absolute top-4 right-4 z-20">
-        <img 
-          src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
-          alt="DogeFood Creator"
-          className="w-24 h-24 object-contain animate-bounce"
-        />
-      </div>
-      
-      {/* Mixing Beaker */}
-      <div className="relative z-10 flex items-center justify-center h-full">
-        <div 
-          onClick={onMix}
-          className={`w-32 h-48 bg-gradient-to-b from-transparent via-yellow-200 to-yellow-400 
-            border-4 border-yellow-600 rounded-full rounded-t-none cursor-pointer 
-            transition-all duration-300 hover:scale-105 ${isActive ? 'animate-pulse' : ''}`}
-        >
-          {/* Bubbles when mixing */}
-          {isActive && ingredients.length > 0 && (
-            <div className="relative w-full h-full overflow-hidden">
-              <div className="absolute top-4 left-4 w-4 h-4 bg-white rounded-full opacity-70 bubble-animation"></div>
-              <div className="absolute top-8 right-6 w-3 h-3 bg-green-300 rounded-full opacity-60 bubble-animation"></div>
-              <div className="absolute top-12 left-8 w-2 h-2 bg-blue-300 rounded-full opacity-50 bubble-animation"></div>
-            </div>
-          )}
+      {/* Main Character - YOU as the Creator */}
+      <div className="absolute inset-0 flex items-center justify-center z-10">
+        <div className="relative">
+          {/* Character Image - Main Focus */}
+          <img 
+            src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+            alt="You - The DogeFood Creator"
+            className={`w-48 h-48 object-contain transition-all duration-300 ${
+              isActive ? 'animate-bounce scale-110' : 'hover:scale-105'
+            }`}
+          />
           
-          {/* Mixing indicator */}
-          <div className="flex items-center justify-center h-full">
-            <span className="text-4xl">🧪</span>
+          {/* Mixing Beaker in Character's Hands */}
+          <div 
+            onClick={onMix}
+            className={`absolute -bottom-8 left-1/2 transform -translate-x-1/2 
+              w-20 h-24 bg-gradient-to-b from-transparent via-yellow-300 to-yellow-500 
+              border-3 border-yellow-700 rounded-full rounded-t-none cursor-pointer 
+              transition-all duration-300 hover:scale-110 ${isActive ? 'animate-pulse' : ''}`}
+          >
+            {/* Bubbles when mixing */}
+            {isActive && ingredients.length > 0 && (
+              <div className="relative w-full h-full overflow-hidden">
+                <div className="absolute top-2 left-2 w-2 h-2 bg-white rounded-full opacity-80 bubble-animation"></div>
+                <div className="absolute top-4 right-3 w-1.5 h-1.5 bg-green-300 rounded-full opacity-70 bubble-animation"></div>
+                <div className="absolute top-6 left-4 w-1 h-1 bg-blue-300 rounded-full opacity-60 bubble-animation"></div>
+              </div>
+            )}
+            
+            {/* Mixing indicator */}
+            <div className="flex items-center justify-center h-full">
+              <span className="text-xl">🧪</span>
+            </div>
+          </div>
+          
+          {/* Character Speech Bubble */}
+          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2">
+            <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border-2 border-yellow-300">
+              <div className="text-sm font-medium text-gray-800">
+                {isActive ? "Creating magic! ✨" : "Ready to mix! 🚀"}
+              </div>
+            </div>
+            {/* Speech bubble pointer */}
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white/90"></div>
           </div>
         </div>
       </div>
       
-      {/* Click to mix indicator */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-        <div className="bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm text-gray-700">
-          Click beaker to mix! 
+      {/* Ingredient Visual Effects Around Character */}
+      {ingredients.length > 0 && (
+        <div className="absolute inset-0 pointer-events-none z-5">
+          {ingredients.map((_, index) => (
+            <div
+              key={index}
+              className="absolute w-8 h-8 bg-yellow-400 rounded-full opacity-60 animate-ping"
+              style={{
+                left: `${20 + index * 25}%`,
+                top: `${30 + index * 15}%`,
+                animationDelay: `${index * 0.5}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+      
+      {/* Your Lab - Personal Touch */}
+      <div className="absolute top-4 left-4 z-20">
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-400 px-3 py-1 rounded-full text-white font-bold text-sm shadow-lg">
+          Your Lab 🏆
+        </div>
+      </div>
+      
+      {/* Active Status Indicator */}
+      <div className="absolute top-4 right-4 z-20">
+        <div className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg transition-all ${
+          isActive 
+            ? 'bg-green-400 text-white animate-pulse' 
+            : 'bg-blue-400 text-white hover:bg-blue-500'
+        }`}>
+          {isActive ? 'Mixing... 🔥' : 'Ready! 💪'}
+        </div>
+      </div>
+      
+      {/* Click instruction - more prominent */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full text-white font-medium text-sm shadow-xl">
+          Click your character to mix! 👆
         </div>
       </div>
     </div>
