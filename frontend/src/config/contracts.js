@@ -16,10 +16,34 @@ export const DOGEOS_DEVNET = {
 
 // Contract ABIs (simplified for essential functions)
 export const LAB_TOKEN_ABI = [
-  'function balanceOf(address owner) view returns (uint256)',
-  'function symbol() view returns (string)',
-  'function decimals() view returns (uint8)',
-  'function totalSupply() view returns (uint256)',
+  {
+    "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
+    "name": "balanceOf",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  }
 ];
 
 export const DOGEFOOD_NFT_ABI = [
