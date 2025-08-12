@@ -10,10 +10,20 @@
 }
 
 .doge-gradient {
-  background: linear-gradient(135deg, #FFD700, #B57B2E);
+  background: linear-gradient(135deg, #4A5568, #FFD700, #B57B2E);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.doge-title-enhanced {
+  background: linear-gradient(135deg, #2D3748 0%, #4A5568 20%, #FFD700 50%, #B57B2E 80%, #D69E2E 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.4));
+  font-weight: 800;
 }
 
 .lab-container {
