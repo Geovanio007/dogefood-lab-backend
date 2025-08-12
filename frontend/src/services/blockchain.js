@@ -1,4 +1,4 @@
-import { createPublicClient, http, formatUnits } from 'viem';
+import { ethers } from 'ethers';
 import { dogeOSDevnet } from '../config/wagmi';
 import { 
   CONTRACT_ADDRESSES, 
@@ -7,29 +7,22 @@ import {
   REWARD_DISTRIBUTOR_ABI 
 } from '../config/contracts';
 
-// Create public client for reading blockchain data
-const publicClient = createPublicClient({
-  chain: dogeOSDevnet,
-  transport: http()
-});
+// Create provider for reading blockchain data
+const provider = new ethers.providers.JsonRpcProvider(dogeOSDevnet.rpcUrls.default);
 
 export class BlockchainService {
   constructor() {
-    this.client = publicClient;
+    this.provider = provider;
   }
 
   // LAB Token Functions
   async getLabBalance(address) {
     try {
-      const balance = await this.client.readContract({
-        address: CONTRACT_ADDRESSES.LAB_TOKEN,
-        abi: LAB_TOKEN_ABI,
-        functionName: 'balanceOf',
-        args: [address]
-      });
+      const contract = new ethers.Contract(CONTRACT_ADDRESSES.LAB_TOKEN, LAB_TOKEN_ABI, this.provider);
+      const balance = await contract.balanceOf(address);
       
       // Convert from wei to LAB tokens (18 decimals)
-      return formatUnits(balance, 18);
+      return ethers.utils.formatEther(balance);
     } catch (error) {
       console.error('Error getting LAB balance:', error);
       return '0';
@@ -38,28 +31,18 @@ export class BlockchainService {
 
   async getLabTokenInfo() {
     try {
+      const contract = new ethers.Contract(CONTRACT_ADDRESSES.LAB_TOKEN, LAB_TOKEN_ABI, this.provider);
+      
       const [symbol, decimals, totalSupply] = await Promise.all([
-        this.client.readContract({
-          address: CONTRACT_ADDRESSES.LAB_TOKEN,
-          abi: LAB_TOKEN_ABI,
-          functionName: 'symbol'
-        }),
-        this.client.readContract({
-          address: CONTRACT_ADDRESSES.LAB_TOKEN,
-          abi: LAB_TOKEN_ABI,
-          functionName: 'decimals'
-        }),
-        this.client.readContract({
-          address: CONTRACT_ADDRESSES.LAB_TOKEN,
-          abi: LAB_TOKEN_ABI,
-          functionName: 'totalSupply'
-        })
+        contract.symbol(),
+        contract.decimals(),
+        contract.totalSupply()
       ]);
 
       return {
         symbol,
         decimals,
-        totalSupply: formatUnits(totalSupply, decimals),
+        totalSupply: ethers.utils.formatUnits(totalSupply, decimals),
         address: CONTRACT_ADDRESSES.LAB_TOKEN
       };
     } catch (error) {
@@ -71,14 +54,10 @@ export class BlockchainService {
   // DogeFood NFT Functions
   async getNftBalance(address) {
     try {
-      const balance = await this.client.readContract({
-        address: CONTRACT_ADDRESSES.DOGEFOOD_NFT,
-        abi: DOGEFOOD_NFT_ABI,
-        functionName: 'balanceOf',
-        args: [address]
-      });
+      const contract = new ethers.Contract(CONTRACT_ADDRESSES.DOGEFOOD_NFT, DOGEFOOD_NFT_ABI, this.provider);
+      const balance = await contract.balanceOf(address);
       
-      return Number(balance);
+      return balance.toNumber();
     } catch (error) {
       console.error('Error getting NFT balance:', error);
       return 0;
@@ -87,13 +66,10 @@ export class BlockchainService {
 
   async getNftTotalSupply() {
     try {
-      const totalSupply = await this.client.readContract({
-        address: CONTRACT_ADDRESSES.DOGEFOOD_NFT,
-        abi: DOGEFOOD_NFT_ABI,
-        functionName: 'totalSupply'
-      });
+      const contract = new ethers.Contract(CONTRACT_ADDRESSES.DOGEFOOD_NFT, DOGEFOOD_NFT_ABI, this.provider);
+      const totalSupply = await contract.totalSupply();
       
-      return Number(totalSupply);
+      return totalSupply.toNumber();
     } catch (error) {
       console.error('Error getting NFT total supply:', error);
       return 0;
@@ -102,28 +78,18 @@ export class BlockchainService {
 
   async getNftCollectionInfo() {
     try {
+      const contract = new ethers.Contract(CONTRACT_ADDRESSES.DOGEFOOD_NFT, DOGEFOOD_NFT_ABI, this.provider);
+      
       const [name, symbol, totalSupply] = await Promise.all([
-        this.client.readContract({
-          address: CONTRACT_ADDRESSES.DOGEFOOD_NFT,
-          abi: DOGEFOOD_NFT_ABI,
-          functionName: 'name'
-        }),
-        this.client.readContract({
-          address: CONTRACT_ADDRESSES.DOGEFOOD_NFT,
-          abi: DOGEFOOD_NFT_ABI,
-          functionName: 'symbol'
-        }),
-        this.client.readContract({
-          address: CONTRACT_ADDRESSES.DOGEFOOD_NFT,
-          abi: DOGEFOOD_NFT_ABI,
-          functionName: 'totalSupply'
-        })
+        contract.name(),
+        contract.symbol(),
+        contract.totalSupply()
       ]);
 
       return {
         name,
         symbol,
-        totalSupply: Number(totalSupply),
+        totalSupply: totalSupply.toNumber(),
         maxSupply: 420,
         address: CONTRACT_ADDRESSES.DOGEFOOD_NFT
       };
@@ -142,13 +108,10 @@ export class BlockchainService {
   // Reward Distributor Functions
   async getCurrentSeason() {
     try {
-      const currentSeason = await this.client.readContract({
-        address: CONTRACT_ADDRESSES.REWARD_DISTRIBUTOR,
-        abi: REWARD_DISTRIBUTOR_ABI,
-        functionName: 'currentSeason'
-      });
+      const contract = new ethers.Contract(CONTRACT_ADDRESSES.REWARD_DISTRIBUTOR, REWARD_DISTRIBUTOR_ABI, this.provider);
+      const currentSeason = await contract.currentSeason();
       
-      return Number(currentSeason);
+      return currentSeason.toNumber();
     } catch (error) {
       console.error('Error getting current season:', error);
       return 0;
@@ -157,12 +120,8 @@ export class BlockchainService {
 
   async hasClaimedReward(seasonId, address) {
     try {
-      const hasClaimed = await this.client.readContract({
-        address: CONTRACT_ADDRESSES.REWARD_DISTRIBUTOR,
-        abi: REWARD_DISTRIBUTOR_ABI,
-        functionName: 'hasClaimedSeason',
-        args: [seasonId, address]
-      });
+      const contract = new ethers.Contract(CONTRACT_ADDRESSES.REWARD_DISTRIBUTOR, REWARD_DISTRIBUTOR_ABI, this.provider);
+      const hasClaimed = await contract.hasClaimedSeason(seasonId, address);
       
       return hasClaimed;
     } catch (error) {
