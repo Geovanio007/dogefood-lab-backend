@@ -301,7 +301,7 @@ export const IngredientSack = () => {
                        item.rarity === 'Rare' ? '✨' : '🍪'}
                     </div>
                     <div className="text-xs text-gray-600">
-                      {item.ingredients.length}x
+                      {item.ingredients?.length || 0} ingredients
                     </div>
                   </div>
                 ))}
