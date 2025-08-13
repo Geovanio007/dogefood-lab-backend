@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
+import { useWeb3Game } from '../hooks/useWeb3Game';
 import { XPProgressBar, LevelUpNotification, IngredientSack } from './game/ProgressSystem';
 import { getTierInfo } from '../config/gameConfig';
 import { ArrowLeft, Zap, Star, Sparkles, Clock, Target, Crown, ChefHat } from 'lucide-react';
