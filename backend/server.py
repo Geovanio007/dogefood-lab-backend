@@ -160,6 +160,57 @@ async def get_all_treats(limit: int = 50):
     treats = await db.treats.find().sort("created_at", -1).limit(limit).to_list(limit)
     return [DogeTreat(**treat) for treat in treats]
 
+# Enhanced: Timer system routes
+@api_router.post("/treats/{treat_id}/check-timer")
+async def check_treat_timer(treat_id: str):
+    """Check if a treat's timer has completed and update status if ready"""
+    treat = await db.treats.find_one({"id": treat_id})
+    if not treat:
+        raise HTTPException(status_code=404, detail="Treat not found")
+    
+    # Check if treat is brewing and timer has completed
+    if treat.get("brewing_status") == "brewing" and treat.get("ready_at"):
+        ready_at = treat["ready_at"]
+        if datetime.utcnow() >= ready_at:
+            # Update treat status to ready
+            await db.treats.update_one(
+                {"id": treat_id},
+                {"$set": {"brewing_status": "ready"}}
+            )
+            return {"status": "ready", "message": "Treat is ready!"}
+        else:
+            # Calculate remaining time
+            remaining_seconds = int((ready_at - datetime.utcnow()).total_seconds())
+            return {
+                "status": "brewing",
+                "remaining_seconds": remaining_seconds,
+                "message": f"Treat will be ready in {remaining_seconds} seconds"
+            }
+    
+    return {"status": treat.get("brewing_status", "ready"), "message": "Treat status checked"}
+
+@api_router.get("/treats/{address}/brewing")
+async def get_brewing_treats(address: str):
+    """Get all treats currently brewing for a player"""
+    brewing_treats = await db.treats.find({
+        "creator_address": address,
+        "brewing_status": "brewing"
+    }).to_list(100)
+    
+    # Update status for any completed treats
+    updated_treats = []
+    for treat in brewing_treats:
+        if treat.get("ready_at") and datetime.utcnow() >= treat["ready_at"]:
+            # Auto-update to ready
+            await db.treats.update_one(
+                {"id": treat["id"]},
+                {"$set": {"brewing_status": "ready"}}
+            )
+            treat["brewing_status"] = "ready"
+        updated_treats.append(DogeTreat(**treat))
+    
+    return updated_treats
+
 # Leaderboard Routes
 @api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
 async def get_leaderboard(limit: int = 50):
