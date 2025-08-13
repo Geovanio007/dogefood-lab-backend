@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
+import { useAccount } from 'wagmi';
 import axios from 'axios';
-import { gameConfig, calculateDifficulty, calculateXP, getUnlockedIngredients, getIngredientsUnlockedAtLevel } from '../config/gameConfig';
+import { 
+  gameConfig, 
+  getRandomLevel1Ingredients, 
+  mainIngredientsDatabase,
+  createTreatName,
+  calculateTreatXP,
+  formatTimeRemaining,
+  isTimerComplete
+} from '../config/gameConfig';
 
 const GameContext = createContext();
 
@@ -8,46 +17,44 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const initialState = {
-  // User & Profile
-  user: null,
+  // Enhanced User & Profile
+  player: null,
+  walletAddress: null,
+  nickname: null,
+  isRegistered: false,
   isNFTHolder: false,
   
-  // Web3 Integration
-  web3Profile: null,
-  labBalance: '0',
-  nftBalance: 0,
-  currentSeason: 0,
-  
-  // Game State
+  // Enhanced Game State
   currentLevel: 1,
   experience: 0,
-  xpProgress: 0, // XP progress within current level (0-100)
   points: 0,
-  totalTreatsCreated: 0,
-  mixesThisLevel: 0, // Track completed mixes per level for sack
-  ingredients: getUnlockedIngredients(1), // Start with level 1 ingredients
+  
+  // Enhanced Ingredient System
+  availableIngredients: getRandomLevel1Ingredients(6), // Level 1 ingredients
+  mainIngredients: mainIngredientsDatabase,
+  selectedIngredients: [],
+  selectedMainIngredient: null,
+  
+  // Enhanced Treat System
   createdTreats: [],
-  ingredientSack: [], // Visual ingredient sack for completed combinations
-  labEquipment: {
-    mixingStation: { level: 1, efficiency: 1.0 },
-    freezer: { level: 1, unlocked: true },
-    oven: { level: 1, unlocked: false },
-    specialProcessor: { level: 0, unlocked: false }
-  },
-  mixing: {
-    active: false,
-    selectedIngredients: [],
-    progress: 0,
-    result: null,
-    timeLimit: null,
-    timeRemaining: null
-  },
-  levelUp: {
-    justLeveledUp: false,
-    newLevel: 1,
-    unlockedFeatures: [],
-    newIngredients: []
-  }
+  brewingTreats: [], // Treats currently brewing with timers
+  readyTreats: [], // Treats ready to collect
+  totalTreatsCreated: 0,
+  
+  // Timer System
+  activeTimers: [], // Array of active treat timers
+  
+  // UI State
+  showRegistration: false,
+  isLoading: false,
+  mixingInProgress: false,
+  
+  // Leaderboard
+  leaderboard: [],
+  
+  // Notifications
+  notifications: []
+};
 };
 
 function gameReducer(state, action) {
