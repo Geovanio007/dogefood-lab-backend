@@ -267,16 +267,19 @@ const Leaderboard = () => {
                         </td>
                         
                         <td className="py-4 px-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-lg">
                               👨‍🔬
                             </div>
                             <div>
-                              <div className="font-mono text-sm">
+                              <div className="font-bold text-gray-800 playful-text">
+                                {player.nickname || `Scientist ${rank}`}
+                              </div>
+                              <div className="font-mono text-xs text-gray-500">
                                 {formatAddress(player.address)}
                               </div>
                               {isCurrentUser && (
-                                <Badge className="bg-blue-500 text-white text-xs">You</Badge>
+                                <Badge className="bg-blue-500 text-white text-xs mt-1">You</Badge>
                               )}
                             </div>
                           </div>
