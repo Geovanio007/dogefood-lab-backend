@@ -3,8 +3,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { GameProvider } from './contexts/GameContext';
 import { Web3Provider } from './components/Web3Provider';
 import LoadingScreen from './components/LoadingScreen';
+import NotificationSystem from './components/NotificationSystem';
 import MainMenu from './components/MainMenu';
-import GameLab from './components/GameLab';
+import EnhancedGameLab from './components/EnhancedGameLab';
 import MyTreats from './components/MyTreats';
 import Leaderboard from './components/Leaderboard';
 import './App.css';
@@ -36,12 +37,13 @@ function App() {
           <Router>
             <Routes>
               <Route path="/" element={<MainMenu />} />
-              <Route path="/lab" element={<GameLab />} />
+              <Route path="/lab" element={<EnhancedGameLab />} />
               <Route path="/nfts" element={<MyTreats />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </Router>
+          <NotificationSystem />
         </div>
       </GameProvider>
     </Web3Provider>
