@@ -34,6 +34,23 @@ export const gameConfig = {
     treatDropDuration: 1200,     // Duration of treat creation animation (ms)
     timerTickDuration: 1000,     // Timer update frequency (ms)
   },
+  
+  // Ingredient System with Tiers  
+  ingredients: {
+    rarityMultiplier: {
+      common: 1.0,
+      rare: 1.5,
+      epic: 2.0,
+      legendary: 3.0
+    }
+  },
+  
+  // Sack System
+  sack: {
+    maxVisibleIngredients: 8,   // Maximum ingredients shown in sack
+    completionThreshold: 5,     // Ingredients needed for recipe completion
+    bonusXpPerCompletion: 25,   // Bonus XP for completing a recipe
+  }
 };
 
 // Enhanced Level 1 ingredient system with small components
