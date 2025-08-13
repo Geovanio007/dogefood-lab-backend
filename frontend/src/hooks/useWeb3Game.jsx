@@ -117,6 +117,7 @@ export const useWeb3Game = () => {
     error,
     fetchWeb3Profile,
     getContractInfo,
+    mintTreatNFT,
     // Blockchain service methods
     getLabBalance: blockchainService.getLabBalance,
     getNftBalance: blockchainService.getNftBalance,
