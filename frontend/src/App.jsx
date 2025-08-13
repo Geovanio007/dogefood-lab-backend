@@ -8,10 +8,8 @@ const GameLab = () => {
     currentLevel, 
     experience, 
     points, 
-    availableIngredients, 
+    ingredients, // Fixed: use 'ingredients' instead of 'availableIngredients'
     createTreat, 
-    progressPercentage,
-    expToNextLevel,
     createdTreats,
     isNFTHolder
   } = useGame();
@@ -40,6 +38,9 @@ const GameLab = () => {
     }, 2000);
   };
 
+  // Safety check for ingredients
+  const availableIngredients = ingredients || [];
+
   return (
     <div className="min-h-screen p-4">
       <div className="max-w-6xl mx-auto">
@@ -54,7 +55,7 @@ const GameLab = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Ingredients */}
           <div className="bg-white/20 backdrop-blur-md border border-white/30 rounded-xl p-6">
-            <h2 className="text-2xl font-bold text-white mb-4">Available Ingredients</h2>
+            <h2 className="text-2xl font-bold text-white mb-4">Available Ingredients ({availableIngredients.length})</h2>
             <div className="grid grid-cols-2 gap-3">
               {availableIngredients.map((ingredient) => (
                 <div
@@ -66,9 +67,9 @@ const GameLab = () => {
                       : 'border-white/30 bg-white/10 hover:bg-white/20'
                   }`}
                 >
-                  <div className="text-2xl mb-1">{ingredient.emoji}</div>
+                  <div className="text-2xl mb-1">{ingredient.emoji || '🟡'}</div>
                   <div className="text-sm font-medium text-white">{ingredient.name}</div>
-                  <div className="text-xs text-gray-400 capitalize">{ingredient.tier}</div>
+                  <div className="text-xs text-gray-400 capitalize">{ingredient.tier || 'common'}</div>
                 </div>
               ))}
             </div>
@@ -84,12 +85,20 @@ const GameLab = () => {
               {selectedIngredients.length > 0 ? (
                 <div className="grid grid-cols-2 gap-1">
                   {selectedIngredients.slice(0, 4).map((ingredient, index) => (
-                    <div key={index} className="text-2xl">{ingredient.emoji}</div>
+                    <div key={index} className="text-2xl">{ingredient.emoji || '🟡'}</div>
                   ))}
                 </div>
               ) : (
                 <div className="text-4xl text-gray-600">🥣</div>
               )}
+            </div>
+
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-white mb-2">Selected ({selectedIngredients.length}/5)</h3>
+              <div className="text-sm text-gray-300">
+                {selectedIngredients.length === 0 ? 'Click ingredients to add them!' : 
+                 selectedIngredients.map(ing => ing.name).join(', ')}
+              </div>
             </div>
 
             <button
@@ -108,18 +117,22 @@ const GameLab = () => {
 
         {/* Stats */}
         <div className="mt-6 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl p-6">
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-4 gap-4 text-center">
             <div>
               <div className="text-2xl font-bold text-white">{points}</div>
               <div className="text-sm text-gray-300">Points</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-white">Level {currentLevel}</div>
-              <div className="text-sm text-gray-300">{experience}/{expToNextLevel} XP</div>
+              <div className="text-sm text-gray-300">Current Level</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-white">{createdTreats.length}</div>
               <div className="text-sm text-gray-300">Treats Created</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-white">{availableIngredients.length}</div>
+              <div className="text-sm text-gray-300">Ingredients Unlocked</div>
             </div>
           </div>
         </div>
