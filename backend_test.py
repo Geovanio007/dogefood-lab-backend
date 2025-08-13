@@ -119,6 +119,18 @@ class DogeLabAPITester:
         
         return success, response
 
+    def test_check_timer_endpoint(self):
+        """Test the check timer endpoint for treats"""
+        if not self.test_treat_id:
+            print("   ⚠️  No treat ID available for timer testing")
+            return False, {}
+        
+        return self.run_test("Check Treat Timer", "POST", f"treats/{self.test_treat_id}/check-timer", 200)
+
+    def test_brewing_treats_endpoint(self):
+        """Test getting brewing treats for a player"""
+        return self.run_test("Get Brewing Treats", "GET", f"treats/{self.test_player_address}/brewing", 200)
+
     def test_leaderboard_with_nicknames(self):
         """Test leaderboard returns nicknames"""
         success, response = self.run_test("Get Leaderboard with Nicknames", "GET", "leaderboard", 200, params={"limit": 10})
