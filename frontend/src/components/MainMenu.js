@@ -47,7 +47,7 @@ const MainMenu = () => {
           <div>
             <div className="flex items-center gap-4 mb-4">
               <h1 className="text-7xl playful-title bubble-text">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-yellow-300 to-orange-400 drop-shadow-2xl">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-800 via-yellow-600 to-orange-700 drop-shadow-2xl font-black">
                   DogeFood Lab
                 </span>
                 <span className="ml-3 text-6xl drop-shadow-xl">🧪</span>
