@@ -57,87 +57,139 @@ const initialState = {
 };
 };
 
+// Enhanced Game Reducer
 function gameReducer(state, action) {
   switch (action.type) {
-    case 'SET_USER':
-      return { ...state, user: action.payload };
+    case 'SET_PLAYER':
+      return { 
+        ...state, 
+        player: action.payload,
+        walletAddress: action.payload?.address,
+        nickname: action.payload?.nickname,
+        isRegistered: true,
+        isNFTHolder: action.payload?.is_nft_holder || false,
+        currentLevel: action.payload?.level || 1,
+        experience: action.payload?.experience || 0,
+        points: action.payload?.points || 0
+      };
     
-    case 'SET_NFT_HOLDER':
-      return { ...state, isNFTHolder: action.payload };
+    case 'SET_WALLET_ADDRESS':
+      return { ...state, walletAddress: action.payload };
+    
+    case 'SET_REGISTRATION_STATUS':
+      return { ...state, isRegistered: action.payload };
+    
+    case 'SHOW_REGISTRATION':
+      return { ...state, showRegistration: action.payload };
+    
+    case 'SELECT_INGREDIENT':
+      const ingredient = action.payload;
+      const isAlreadySelected = state.selectedIngredients.some(ing => ing.id === ingredient.id);
+      
+      if (isAlreadySelected) {
+        return {
+          ...state,
+          selectedIngredients: state.selectedIngredients.filter(ing => ing.id !== ingredient.id)
+        };
+      } else if (state.selectedIngredients.length < 3) { // Max 3 ingredients
+        return {
+          ...state,
+          selectedIngredients: [...state.selectedIngredients, ingredient]
+        };
+      }
+      return state;
+    
+    case 'SELECT_MAIN_INGREDIENT':
+      return { ...state, selectedMainIngredient: action.payload };
+    
+    case 'CLEAR_SELECTION':
+      return { 
+        ...state, 
+        selectedIngredients: [], 
+        selectedMainIngredient: null 
+      };
+    
+    case 'SET_MIXING_PROGRESS':
+      return { ...state, mixingInProgress: action.payload };
+    
+    case 'ADD_TREAT':
+      const newTreat = action.payload;
+      return {
+        ...state,
+        createdTreats: [...state.createdTreats, newTreat],
+        totalTreatsCreated: state.totalTreatsCreated + 1,
+        brewingTreats: newTreat.brewing_status === 'brewing' 
+          ? [...state.brewingTreats, newTreat] 
+          : state.brewingTreats
+      };
+    
+    case 'UPDATE_BREWING_TREATS':
+      return { ...state, brewingTreats: action.payload };
+    
+    case 'UPDATE_READY_TREATS':
+      return { ...state, readyTreats: action.payload };
+    
+    case 'ADD_TIMER':
+      return { 
+        ...state, 
+        activeTimers: [...state.activeTimers, action.payload] 
+      };
+    
+    case 'REMOVE_TIMER':
+      return {
+        ...state,
+        activeTimers: state.activeTimers.filter(timer => timer.treatId !== action.payload)
+      };
+    
+    case 'SET_TREATS':
+      return { ...state, createdTreats: action.payload };
+    
+    case 'SET_LEADERBOARD':
+      return { ...state, leaderboard: action.payload };
+    
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+    
+    case 'ADD_NOTIFICATION':
+      return {
+        ...state,
+        notifications: [...state.notifications, {
+          id: Date.now(),
+          ...action.payload
+        }]
+      };
+    
+    case 'REMOVE_NOTIFICATION':
+      return {
+        ...state,
+        notifications: state.notifications.filter(notif => notif.id !== action.payload)
+      };
+    
+    case 'SHUFFLE_INGREDIENTS':
+      // Refresh the available ingredients to keep gameplay fresh
+      return {
+        ...state,
+        availableIngredients: getRandomLevel1Ingredients(6)
+      };
     
     case 'GAIN_XP':
       const xpGained = action.payload;
       const newTotalXp = state.experience + xpGained;
-      const newXpProgress = state.xpProgress + xpGained;
       const xpCapPerLevel = gameConfig.xp.xpCapPerLevel;
       
       // Check for level up
-      if (newXpProgress >= xpCapPerLevel) {
+      if (newTotalXp >= xpCapPerLevel) {
         const newLevel = state.currentLevel + 1;
-        const remainingXp = newXpProgress - xpCapPerLevel;
-        
-        // Get newly unlocked ingredients
-        const newIngredients = getIngredientsUnlockedAtLevel(newLevel);
-        const allUnlockedIngredients = getUnlockedIngredients(newLevel);
-        
-        // Unlock new features based on level
-        const unlockedFeatures = [];
-        
-        // Add unlocked ingredients to features list
-        newIngredients.forEach(ingredient => {
-          unlockedFeatures.push(`${ingredient.name} ingredient`);
-        });
-        
-        // Check for equipment unlocks
-        const newLabEquipment = {
-          ...state.labEquipment,
-          oven: { ...state.labEquipment.oven, unlocked: newLevel >= 3 },
-          specialProcessor: { ...state.labEquipment.specialProcessor, unlocked: newLevel >= 4 }
-        };
-        
-        if (newLevel >= 3 && !state.labEquipment.oven.unlocked) {
-          unlockedFeatures.push('Advanced Oven');
-        }
-        if (newLevel >= 4 && !state.labEquipment.specialProcessor.unlocked) {
-          unlockedFeatures.push('Special Processor');
-        }
-        
-        console.log(`🎉 LEVEL UP! Level ${newLevel} - New ingredients:`, newIngredients.map(i => i.name));
-        console.log(`📋 All unlocked ingredients:`, allUnlockedIngredients.map(i => i.name));
-        
         return {
           ...state,
           experience: newTotalXp,
-          currentLevel: newLevel,
-          xpProgress: remainingXp,
-          mixesThisLevel: 0, // Reset sack counter for new level
-          ingredientSack: [], // Clear sack for new level
-          ingredients: allUnlockedIngredients,
-          labEquipment: newLabEquipment,
-          levelUp: {
-            justLeveledUp: true,
-            newLevel: newLevel,
-            unlockedFeatures: unlockedFeatures,
-            newIngredients: newIngredients
-          }
+          currentLevel: newLevel
         };
       }
       
       return {
         ...state,
-        experience: newTotalXp,
-        xpProgress: newXpProgress
-      };
-    
-    case 'ACKNOWLEDGE_LEVEL_UP':
-      return {
-        ...state,
-        levelUp: {
-          justLeveledUp: false,
-          newLevel: state.currentLevel,
-          unlockedFeatures: [],
-          newIngredients: []
-        }
+        experience: newTotalXp
       };
     
     case 'ADD_POINTS':
@@ -146,8 +198,10 @@ function gameReducer(state, action) {
         points: state.isNFTHolder ? state.points + action.payload : state.points 
       };
     
-    case 'ADD_TO_SACK':
-      const newSackItem = {
+    default:
+      return state;
+  }
+}
         id: Date.now().toString(),
         ingredients: action.payload.ingredients,
         treatName: action.payload.treatName,
