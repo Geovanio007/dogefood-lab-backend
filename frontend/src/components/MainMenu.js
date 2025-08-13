@@ -245,26 +245,26 @@ const MainMenu = () => {
 
         {/* Benefits Section */}
         {!isConnected && (
-          <Card className="glass-panel">
+          <Card className="game-card">
             <CardHeader>
-              <CardTitle className="text-center doge-gradient text-2xl">
+              <CardTitle className="text-center playful-title bubble-text text-white text-3xl">
                 Connect Your Wallet to Get Started! 🔗
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="text-center p-4 bg-white/20 rounded-xl">
-                  <h4 className="font-bold text-lg mb-2">For Everyone 🎮</h4>
-                  <ul className="text-sm space-y-1">
+                <div className="text-center p-6 bg-gradient-to-br from-green-400/30 to-emerald-500/20 rounded-3xl border-2 border-green-300/50">
+                  <h4 className="font-bold text-2xl mb-3 playful-title text-white bubble-text">For Everyone 🎮</h4>
+                  <ul className="text-white/90 space-y-2 playful-text text-lg">
                     <li>• Play for fun & advance levels</li>
                     <li>• Mix unlimited Dogetreats</li>
                     <li>• Unlock new ingredients</li>
                     <li>• Enjoy the full experience!</li>
                   </ul>
                 </div>
-                <div className="text-center p-4 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl">
-                  <h4 className="font-bold text-lg mb-2">For NFT Holders ⭐</h4>
-                  <ul className="text-sm space-y-1">
+                <div className="text-center p-6 bg-gradient-to-br from-yellow-400/30 to-orange-500/20 rounded-3xl border-2 border-yellow-300/50">
+                  <h4 className="font-bold text-2xl mb-3 playful-title text-white bubble-text">For NFT Holders ⭐</h4>
+                  <ul className="text-white/90 space-y-2 playful-text text-lg">
                     <li>• Head start with bonus resources</li>
                     <li>• Earn points for leaderboard</li>
                     <li>• Eligible for $LAB airdrops</li>
