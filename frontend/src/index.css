@@ -41,7 +41,9 @@ body {
   .playful-title {
     font-family: 'Comic Sans MS', 'Marker Felt', cursive;
     font-weight: bold;
-    text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+    text-shadow: 4px 4px 8px rgba(0,0,0,0.4), 
+                 2px 2px 4px rgba(139, 69, 19, 0.3),
+                 0 0 20px rgba(255, 193, 7, 0.2);
     letter-spacing: 1px;
   }
   
