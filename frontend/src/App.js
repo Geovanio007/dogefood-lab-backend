@@ -4,7 +4,7 @@ import { GameProvider } from './contexts/GameContext';
 import { Web3Provider } from './components/Web3Provider';
 import LoadingScreen from './components/LoadingScreen';
 import MainMenu from './components/MainMenu';
-import GameLab from './components/GameLab';
+import EnhancedGameLab from './components/EnhancedGameLab';
 import MyTreats from './components/MyTreats';
 import Leaderboard from './components/Leaderboard';
 import './App.css';
