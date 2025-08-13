@@ -184,17 +184,17 @@ frontend:
           agent: "main"
           comment: "Fixed by changing 'availableIngredients' to 'ingredients' to match GameContext property. Now displays ingredients correctly and mixing station works"
 
-  - task: "Game Context & State Management"
+  - task: "Web3 Integration - NFT Minting"
     implemented: true
-    working: true
-    file: "/app/frontend/src/contexts/GameContext.js"
+    working: false
+    file: "/app/frontend/src/contexts/GameContext.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
-        - working: true
+        - working: false
           agent: "main"
-          comment: "Complex game state management with XP, levels, ingredients, mixing system, NFT holder status"
+          comment: "Added Web3 NFT minting integration to completeMixing function. Updated DogeFood contract with mintTreat function, updated ABIs, and integrated minting into treat creation flow. Needs testing to verify functionality."
 
   - task: "Game Configuration System"
     implemented: true
