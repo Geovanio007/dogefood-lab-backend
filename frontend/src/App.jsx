@@ -15,16 +15,22 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <GameProvider>
-      <div className="App min-h-screen">
-        <Router>
-          <Routes>
-            <Route path="/" element={<MainMenu />} />
-            <Route path="/lab" element={<GameLab />} />
-          </Routes>
-        </Router>
-      </div>
-    </GameProvider>
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider>
+          <GameProvider>
+            <div className="App min-h-screen">
+              <Router>
+                <Routes>
+                  <Route path="/" element={<MainMenu />} />
+                  <Route path="/lab" element={<GameLab />} />
+                </Routes>
+              </Router>
+            </div>
+          </GameProvider>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
 
