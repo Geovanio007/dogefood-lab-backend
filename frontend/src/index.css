@@ -187,6 +187,429 @@ body {
   .bubble-text {
     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
   }
+
+  /* Loading Screen Styles */
+  .loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #1d4ed8 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    overflow: hidden;
+  }
+
+  .loading-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: floatUp 6s infinite ease-in-out;
+  }
+
+  .bubble-1 {
+    width: 80px;
+    height: 80px;
+    left: 10%;
+    animation-delay: 0s;
+  }
+
+  .bubble-2 {
+    width: 60px;
+    height: 60px;
+    left: 20%;
+    animation-delay: 2s;
+  }
+
+  .bubble-3 {
+    width: 40px;
+    height: 40px;
+    left: 70%;
+    animation-delay: 1s;
+  }
+
+  .bubble-4 {
+    width: 100px;
+    height: 100px;
+    left: 80%;
+    animation-delay: 3s;
+  }
+
+  .bubble-5 {
+    width: 50px;
+    height: 50px;
+    left: 50%;
+    animation-delay: 4s;
+  }
+
+  .loading-content {
+    text-align: center;
+    position: relative;
+    z-index: 10;
+  }
+
+  .loading-logo {
+    margin-bottom: 3rem;
+  }
+
+  .loading-title {
+    font-family: 'Comic Sans MS', cursive;
+    font-size: 4rem;
+    font-weight: bold;
+    text-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+    margin-bottom: 1rem;
+  }
+
+  .loading-emoji {
+    font-size: 4rem;
+    margin-left: 1rem;
+    animation: bounce 2s infinite;
+  }
+
+  .loading-subtitle {
+    font-family: 'Comic Sans MS', cursive;
+    font-size: 1.5rem;
+    color: #93c5fd;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  }
+
+  .thermometer-container {
+    margin: 3rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .thermometer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .thermometer-tube {
+    width: 60px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 4px solid #e5e7eb;
+    border-radius: 30px 30px 0 0;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+  }
+
+  .thermometer-scale {
+    position: absolute;
+    left: -60px;
+    top: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px 0;
+  }
+
+  .scale-line {
+    color: #93c5fd;
+    font-size: 0.875rem;
+    font-weight: bold;
+    position: relative;
+  }
+
+  .scale-line::after {
+    content: '';
+    position: absolute;
+    left: 40px;
+    top: 50%;
+    width: 15px;
+    height: 2px;
+    background: #93c5fd;
+    transform: translateY(-50%);
+  }
+
+  .liquid-container {
+    position: absolute;
+    bottom: 0;
+    left: 4px;
+    right: 4px;
+    top: 4px;
+    border-radius: 26px 26px 0 0;
+    overflow: hidden;
+  }
+
+  .liquid-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(180deg, #10b981 0%, #059669 50%, #047857 100%);
+    transition: height 0.3s ease-out;
+    border-radius: 0 0 26px 26px;
+  }
+
+  .liquid-surface {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    animation: wave 2s ease-in-out infinite;
+  }
+
+  .bubble-inside {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    animation: bubbleRise 3s infinite ease-in-out;
+  }
+
+  .bubble-inside-1 {
+    width: 8px;
+    height: 8px;
+    left: 20%;
+    animation-delay: 0s;
+  }
+
+  .bubble-inside-2 {
+    width: 6px;
+    height: 6px;
+    left: 60%;
+    animation-delay: 1s;
+  }
+
+  .bubble-inside-3 {
+    width: 10px;
+    height: 10px;
+    left: 80%;
+    animation-delay: 2s;
+  }
+
+  .thermometer-bulb {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 50%;
+    border: 4px solid #e5e7eb;
+    position: relative;
+    margin-top: -4px;
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+  }
+
+  .bulb-inner {
+    width: 60%;
+    height: 60%;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: pulse 2s infinite;
+  }
+
+  .bulb-shine {
+    width: 30%;
+    height: 30%;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    position: absolute;
+    top: 25%;
+    left: 25%;
+  }
+
+  .thermometer-label {
+    margin-top: 1rem;
+    color: #93c5fd;
+    font-family: 'Comic Sans MS', cursive;
+    font-weight: bold;
+    font-size: 1.125rem;
+  }
+
+  .progress-text {
+    margin-top: 2rem;
+  }
+
+  .progress-percentage {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #fbbf24;
+    font-family: 'Comic Sans MS', cursive;
+    text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+    margin-bottom: 1rem;
+  }
+
+  .progress-bar-container {
+    margin: 1rem 0;
+  }
+
+  .progress-bar-bg {
+    width: 400px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid #e5e7eb;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease-out;
+    position: relative;
+  }
+
+  .progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    animation: shimmer 2s infinite;
+  }
+
+  .loading-message {
+    color: #93c5fd;
+    font-family: 'Comic Sans MS', cursive;
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-top: 1rem;
+    animation: fadeInOut 2s infinite;
+  }
+
+  .completion-animation {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    animation: completionPop 0.8s ease-out;
+  }
+
+  .success-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: rotate 2s infinite linear;
+  }
+
+  .success-text {
+    color: #fbbf24;
+    font-family: 'Comic Sans MS', cursive;
+    font-size: 2rem;
+    font-weight: bold;
+    text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+  }
+
+  /* Loading Screen Animations */
+  @keyframes floatUp {
+    0% {
+      transform: translateY(100vh) scale(0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-100vh) scale(1);
+      opacity: 0;
+    }
+  }
+
+  @keyframes wave {
+    0%, 100% {
+      transform: scaleX(1);
+    }
+    50% {
+      transform: scaleX(1.1);
+    }
+  }
+
+  @keyframes bubbleRise {
+    0% {
+      transform: translateY(0) scale(0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-300px) scale(1);
+      opacity: 0;
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0.7;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes fadeInOut {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  @keyframes completionPop {
+    0% {
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.2);
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
 }
 
 @keyframes float {
