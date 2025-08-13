@@ -291,6 +291,8 @@ def main():
         ("Create Enhanced Treat", tester.test_create_enhanced_treat),
         ("Get Player Treats", tester.test_get_player_treats),
         ("Timer System Support", tester.test_timer_system_support),
+        ("Check Timer Endpoint", tester.test_check_timer_endpoint),
+        ("Brewing Treats Endpoint", tester.test_brewing_treats_endpoint),
         ("Get All Treats", tester.test_get_all_treats),
         ("Leaderboard with Nicknames", tester.test_leaderboard_with_nicknames),
         ("Get Game Stats", tester.test_get_game_stats),
