@@ -176,6 +176,9 @@ backend:
         - working: true
           agent: "testing"
           comment: "Leaderboard system working correctly with proper ranking by points. Returns address, points, level, is_nft_holder, rank. Missing feature: nickname display in leaderboard as requested in review. Current implementation shows wallet addresses only."
+        - working: true
+          agent: "testing"
+          comment: "✅ ENHANCED LEADERBOARD WITH NICKNAMES WORKING! Tested GET /api/leaderboard - now includes nickname field in response. Leaderboard entries properly display nickname field (null for players without nicknames). Enhanced leaderboard functionality fully implemented and functional."
 
   - task: "Enhanced Player Registration with Nicknames"
     implemented: true
