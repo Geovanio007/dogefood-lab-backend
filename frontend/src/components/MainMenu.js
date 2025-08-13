@@ -68,12 +68,75 @@ const MainMenu = () => {
                 </div>
               </div>
             )}
-            <Button
-              onClick={isConnected ? disconnectWallet : connectWallet}
-              className="doge-button"
-            >
-              {isConnected ? `${address?.slice(0,6)}...${address?.slice(-4)}` : 'Connect Wallet'}
-            </Button>
+            <div className="wallet-connection-wrapper">
+              <ConnectButton.Custom>
+                {({
+                  account,
+                  chain,
+                  openAccountModal,
+                  openChainModal,
+                  openConnectModal,
+                  authenticationStatus,
+                  mounted,
+                }) => {
+                  const ready = mounted && authenticationStatus !== 'loading';
+                  const connected =
+                    ready &&
+                    account &&
+                    chain &&
+                    (!authenticationStatus ||
+                      authenticationStatus === 'authenticated');
+
+                  return (
+                    <div
+                      {...(!ready && {
+                        'aria-hidden': true,
+                        'style': {
+                          opacity: 0,
+                          pointerEvents: 'none',
+                          userSelect: 'none',
+                        },
+                      })}
+                    >
+                      {(() => {
+                        if (!connected) {
+                          return (
+                            <Button
+                              onClick={openConnectModal}
+                              className="doge-button"
+                            >
+                              Connect Wallet
+                            </Button>
+                          );
+                        }
+
+                        if (chain.unsupported) {
+                          return (
+                            <Button
+                              onClick={openChainModal}
+                              className="bg-red-500 text-white px-4 py-2 rounded-lg"
+                            >
+                              Wrong network
+                            </Button>
+                          );
+                        }
+
+                        return (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              onClick={openAccountModal}
+                              className="doge-button"
+                            >
+                              {`${account.address.slice(0,6)}...${account.address.slice(-4)}`}
+                            </Button>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  );
+                }}
+              </ConnectButton.Custom>
+            </div>
           </div>
         </div>
 
