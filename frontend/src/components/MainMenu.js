@@ -278,7 +278,7 @@ const MainMenu = () => {
 
         {/* Footer */}
         <div className="text-center mt-16">
-          <p className="text-white text-sm">
+          <p className="text-yellow-500 text-sm playful-text bubble-text">
             Built with ❤️ for the Dogecoin community • Much wow, such science! 🌙
           </p>
         </div>
