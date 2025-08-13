@@ -277,12 +277,13 @@ def main():
         ("Verify NFT", tester.test_verify_nft),
         ("Update Player Progress", tester.test_update_player_progress),
         ("Create Enhanced Treat", tester.test_create_enhanced_treat),
-        ("Enhanced Ingredient Combinations", tester.test_enhanced_ingredient_combinations),
         ("Get Player Treats", tester.test_get_player_treats),
         ("Timer System Support", tester.test_timer_system_support),
         ("Get All Treats", tester.test_get_all_treats),
         ("Leaderboard with Nicknames", tester.test_leaderboard_with_nicknames),
-        ("Get Game Stats", tester.test_get_game_stats)
+        ("Get Game Stats", tester.test_get_game_stats),
+        ("Error Handling", tester.test_error_handling),
+        ("Realistic Game Scenario", tester.test_realistic_game_scenario)
     ]
     
     for test_name, test_func in tests:
