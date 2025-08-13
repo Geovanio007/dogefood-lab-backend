@@ -46,17 +46,17 @@ const MainMenu = () => {
         <div className="flex justify-between items-center mb-12">
           <div>
             <div className="flex items-center gap-4 mb-4">
-              <h1 className="text-6xl font-bold">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-800 via-yellow-600 to-orange-600 drop-shadow-lg">
+              <h1 className="text-7xl playful-title bubble-text">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-yellow-300 to-orange-400 drop-shadow-2xl">
                   DogeFood Lab
                 </span>
-                <span className="ml-3 text-5xl">🧪</span>
+                <span className="ml-3 text-6xl drop-shadow-xl">🧪</span>
               </h1>
-              <Badge className="bg-blue-500 text-white text-sm px-3 py-1">
+              <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-lg px-4 py-2 playful-text shadow-xl">
                 BETA
               </Badge>
             </div>
-            <p className="text-xl text-white font-semibold drop-shadow-md">
+            <p className="text-2xl text-white font-bold playful-text bubble-text drop-shadow-lg">
               Mix, Test & Upgrade Your Way to the Top! 🚀
             </p>
           </div>
