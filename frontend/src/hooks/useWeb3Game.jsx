@@ -81,6 +81,36 @@ export const useWeb3Game = () => {
     }
   }, []);
 
+  // NFT Minting for treat creation
+  const mintTreatNFT = useCallback(async () => {
+    if (!walletClient || !address || !isConnected) {
+      throw new Error('Wallet not connected or client not available');
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('🎨 Starting NFT mint for treat creation...');
+      const result = await blockchainService.mintTreatNFT(walletClient, address);
+      
+      if (result.success) {
+        // Refresh user's Web3 profile to reflect new NFT balance
+        await fetchWeb3Profile();
+        console.log('✅ Treat NFT minted successfully!', result);
+        return result;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      console.error('❌ NFT minting failed:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [walletClient, address, isConnected, fetchWeb3Profile]);
+
   return {
     web3Profile,
     loading,
