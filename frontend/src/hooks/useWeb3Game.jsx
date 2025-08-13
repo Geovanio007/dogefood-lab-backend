@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useWalletClient } from 'wagmi';
 import { blockchainService } from '../services/blockchain';
 import { useGame } from '../contexts/GameContext';
 
