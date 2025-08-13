@@ -151,21 +151,66 @@ class DogeLabAPITester:
         
         return all_success, {}
 
-    def test_enhanced_ingredient_combinations(self):
-        """Test treats with complex ingredient combinations"""
-        complex_treat_data = {
-            "name": "Master Chef's Special",
-            "creator_address": self.test_player_address,
-            "ingredients": [
-                "truffle_oil", "wagyu_beef", "gold_flakes", 
-                "aged_parmesan", "black_pepper", "sea_salt"
-            ],
-            "rarity": "mythical",
-            "flavor": "umami",
-            "image": "master-chef-special-url"
-        }
+    def test_error_handling(self):
+        """Test error handling for various scenarios"""
+        print("\n🔍 Testing Error Handling Scenarios...")
         
-        return self.run_test("Create Complex Ingredient Treat", "POST", "treats", 200, data=complex_treat_data)
+        # Test getting non-existent player
+        success, _ = self.run_test("Get Non-existent Player", "GET", "player/0xnonexistent", 404)
+        
+        # Test creating treat with missing fields
+        invalid_treat = {"name": "Incomplete Treat"}
+        success2, _ = self.run_test("Create Invalid Treat", "POST", "treats", 422, data=invalid_treat)
+        
+        # Test updating progress for non-existent player
+        invalid_progress = {
+            "address": "0xnonexistent",
+            "experience": 100,
+            "points": 50,
+            "level": 2
+        }
+        success3, _ = self.run_test("Update Non-existent Player Progress", "POST", "player/progress", 404, data=invalid_progress)
+        
+        return success and success2 and success3, {}
+
+    def test_realistic_game_scenario(self):
+        """Test a realistic game scenario with multiple players and treats"""
+        print("\n🎮 Testing Realistic Game Scenario...")
+        
+        # Create multiple players with different wallet addresses
+        players = [
+            {"address": "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54", "is_nft_holder": True},
+            {"address": "0x8ba1f109551bD432803012645Hac136c0c6160", "is_nft_holder": False},
+            {"address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", "is_nft_holder": True}
+        ]
+        
+        # Create treats with different rarities and ingredients
+        treats = [
+            {
+                "name": "Legendary Wagyu Treat",
+                "creator_address": "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54",
+                "ingredients": ["wagyu_beef", "truffle_oil", "gold_flakes"],
+                "rarity": "legendary",
+                "flavor": "umami",
+                "image": "legendary-treat.jpg"
+            },
+            {
+                "name": "Common Bacon Snack",
+                "creator_address": "0x8ba1f109551bD432803012645Hac136c0c6160",
+                "ingredients": ["bacon", "cheese"],
+                "rarity": "common",
+                "flavor": "savory",
+                "image": "common-treat.jpg"
+            }
+        ]
+        
+        all_success = True
+        for treat in treats:
+            success, _ = self.run_test(f"Create {treat['rarity']} Treat", "POST", "treats", 200, data=treat)
+            if not success:
+                all_success = False
+        
+        return all_success, {}
 
     def test_get_player(self):
         """Test getting player by address"""
