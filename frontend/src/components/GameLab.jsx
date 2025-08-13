@@ -285,6 +285,8 @@ const GameLab = () => {
     gameConfig
   } = useGame();
   
+  const web3Game = useWeb3Game();
+  
   const [selectedIngredients, setSelectedIngredients] = useState([]);
   const [mixingProgress, setMixingProgress] = useState(0);
   const [webGLSupported, setWebGLSupported] = useState(true);
