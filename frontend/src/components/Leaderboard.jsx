@@ -45,14 +45,12 @@ const Leaderboard = () => {
     
     setSeasonInfo(prev => ({ 
       ...prev, 
+    
+    setSeasonInfo(prev => ({ 
+      ...prev, 
       participants: leaderboard.length 
     }));
-  }, [address, leaderboard]); 
-      }));
-      
-    } catch (err) {
-      console.error('Error fetching leaderboard:', err);
-      setError('Failed to load leaderboard data');
+  }, [address, leaderboard]);
     } finally {
       setLoading(false);
     }
