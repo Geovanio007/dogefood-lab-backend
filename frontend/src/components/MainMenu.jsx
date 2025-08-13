@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
+import { useGame } from '../contexts/GameContext';
+import { Beaker, Trophy, Settings, Palette } from 'lucide-react';
 
 const MainMenu = () => {
+  const { user, isNFTHolder, currentLevel, points, checkNFTOwnership, dispatch } = useGame();
   const [isConnected, setIsConnected] = useState(false);
   const [address, setAddress] = useState(null);
 
@@ -10,11 +16,14 @@ const MainMenu = () => {
     const mockAddress = '0x1234567890123456789012345678901234567890';
     setAddress(mockAddress);
     setIsConnected(true);
+    dispatch({ type: 'SET_USER', payload: { address: mockAddress } });
+    checkNFTOwnership(mockAddress);
   };
 
   const disconnectWallet = () => {
     setAddress(null);
     setIsConnected(false);
+    dispatch({ type: 'SET_USER', payload: null });
   };
 
   return (
@@ -34,14 +43,14 @@ const MainMenu = () => {
           <div>
             <div className="flex items-center gap-4 mb-4">
               <h1 className="text-6xl font-bold">
-                <span className="doge-gradient">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-800 via-yellow-600 to-orange-600 drop-shadow-lg">
                   DogeFood Lab
                 </span>
                 <span className="ml-3 text-5xl">🧪</span>
               </h1>
-              <div className="bg-blue-500 text-white text-sm px-3 py-1 rounded-full font-bold">
+              <Badge className="bg-blue-500 text-white text-sm px-3 py-1">
                 BETA
-              </div>
+              </Badge>
             </div>
             <p className="text-xl text-gray-800 font-semibold drop-shadow-md">
               Mix, Test & Upgrade Your Way to the Top! 🚀
@@ -51,76 +60,87 @@ const MainMenu = () => {
           <div className="flex items-center gap-4">
             {isConnected && (
               <div className="flex items-center gap-2">
+                {isNFTHolder && (
+                  <Badge className="vip-badge">
+                    VIP Scientist 👨‍🔬
+                  </Badge>
+                )}
                 <div className="glass-panel p-3">
-                  <div className="text-sm text-gray-600">Level 1</div>
-                  <div className="font-bold text-lg">0 Points</div>
+                  <div className="text-sm text-gray-600">Level {currentLevel}</div>
+                  <div className="font-bold text-lg">{points} Points</div>
                 </div>
               </div>
             )}
-            <button
+            <Button
               onClick={isConnected ? disconnectWallet : connectWallet}
               className="doge-button"
             >
               {isConnected ? `${address?.slice(0,6)}...${address?.slice(-4)}` : 'Connect Wallet'}
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Main Menu Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {/* Enter Lab */}
-          <div className="glass-panel hover:scale-105 transition-all duration-300 cursor-pointer">
+          <Card className="glass-panel hover:scale-105 transition-all duration-300 cursor-pointer">
             <Link to="/lab">
-              <div className="text-center p-6">
+              <CardHeader className="text-center">
                 <div className="mx-auto w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-4xl">🧪</span>
+                  <Beaker size={40} className="text-white" />
                 </div>
-                <h3 className="text-2xl doge-gradient font-bold mb-4">Enter Lab</h3>
+                <CardTitle className="text-2xl doge-gradient">Enter Lab</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
                 <p className="text-gray-600 mb-4">
                   Start mixing magical Dogetreats and unlock new recipes!
                 </p>
-                <button className="doge-button w-full">
+                <Button className="doge-button w-full">
                   Start Mixing 🧪
-                </button>
-              </div>
+                </Button>
+              </CardContent>
             </Link>
-          </div>
+          </Card>
 
           {/* My NFTs */}
-          <div className="glass-panel hover:scale-105 transition-all duration-300 cursor-pointer">
+          <Card className="glass-panel hover:scale-105 transition-all duration-300 cursor-pointer">
             <Link to="/nfts">
-              <div className="text-center p-6">
+              <CardHeader className="text-center">
                 <div className="mx-auto w-20 h-20 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-4xl">🎨</span>
+                  <Palette size={40} className="text-white" />
                 </div>
-                <h3 className="text-2xl doge-gradient font-bold mb-4">My Treats</h3>
+                <CardTitle className="text-2xl doge-gradient">My Treats</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
                 <p className="text-gray-600 mb-4">
                   View your created Dogetreats and rare collections!
                 </p>
-                <button className="doge-button w-full">
+                <Button className="doge-button w-full">
                   View Collection 🎨
-                </button>
-              </div>
+                </Button>
+              </CardContent>
             </Link>
-          </div>
+          </Card>
 
           {/* Leaderboard */}
-          <div className="glass-panel hover:scale-105 transition-all duration-300 cursor-pointer">
+          <Card className="glass-panel hover:scale-105 transition-all duration-300 cursor-pointer">
             <Link to="/leaderboard">
-              <div className="text-center p-6">
+              <CardHeader className="text-center">
                 <div className="mx-auto w-20 h-20 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-4xl">🏆</span>
+                  <Trophy size={40} className="text-white" />
                 </div>
-                <h3 className="text-2xl doge-gradient font-bold mb-4">Leaderboard</h3>
+                <CardTitle className="text-2xl doge-gradient">Leaderboard</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
                 <p className="text-gray-600 mb-4">
                   Compete with other VIP Scientists for $LAB rewards!
                 </p>
-                <button className="doge-button w-full">
+                <Button className="doge-button w-full">
                   View Rankings 🏆
-                </button>
-              </div>
+                </Button>
+              </CardContent>
             </Link>
-          </div>
+          </Card>
         </div>
 
         {/* Doge Scientist Avatar */}
@@ -129,7 +149,7 @@ const MainMenu = () => {
             <img
               src="https://i.ibb.co/hJQcdpfM/1000025492-removebg-preview.png"
               alt="Doge Scientist"
-              className="w-40 h-40 rounded-full border-4 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300 bg-white/20 backdrop-blur-sm"
+              className="w-40 h-40 rounded-full border-6 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300 bg-white/20 backdrop-blur-sm"
             />
           </div>
           <h3 className="text-2xl font-bold text-gray-800 mt-4">
@@ -149,7 +169,8 @@ const MainMenu = () => {
               className="w-full h-auto rounded-xl shadow-lg border-2 border-yellow-400 hover:scale-105 transition-transform duration-300 bg-white/10 backdrop-blur-sm"
               style={{
                 maxWidth: '600px',
-                margin: '0 auto'
+                margin: '0 auto',
+                aspectRatio: 'auto'
               }}
             />
           </div>
@@ -157,11 +178,13 @@ const MainMenu = () => {
 
         {/* Benefits Section */}
         {!isConnected && (
-          <div className="glass-panel">
-            <div className="p-6">
-              <h3 className="text-center doge-gradient text-2xl font-bold mb-6">
+          <Card className="glass-panel">
+            <CardHeader>
+              <CardTitle className="text-center doge-gradient text-2xl">
                 Connect Your Wallet to Get Started! 🔗
-              </h3>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="text-center p-4 bg-white/20 rounded-xl">
                   <h4 className="font-bold text-lg mb-2">For Everyone 🎮</h4>
@@ -182,8 +205,8 @@ const MainMenu = () => {
                   </ul>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Footer */}
