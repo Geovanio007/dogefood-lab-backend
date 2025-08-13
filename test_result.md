@@ -157,7 +157,7 @@ frontend:
   - task: "Main Menu Interface"
     implemented: true
     working: true
-    file: "/app/frontend/src/components/MainMenu.js"
+    file: "/app/frontend/src/components/MainMenu.jsx"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -167,7 +167,22 @@ frontend:
           comment: "Was failing due to missing @rainbow-me/rainbowkit dependencies"
         - working: true
           agent: "main"
-          comment: "Fixed by installing missing RainbowKit dependencies. Beautiful UI with golden gradient, glass panels, and three main menu cards working"
+          comment: "Fixed by installing missing RainbowKit dependencies. Beautiful UI with golden gradient, glass panels, and three main menu cards working. Shows BETA badge and deployed smart contract addresses"
+
+  - task: "GameLab Component"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/GameLab.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: false
+          agent: "main"
+          comment: "Was failing with 'Cannot read properties of undefined (reading 'map')' error when accessing availableIngredients"
+        - working: true
+          agent: "main"
+          comment: "Fixed by changing 'availableIngredients' to 'ingredients' to match GameContext property. Now displays ingredients correctly and mixing station works"
 
   - task: "Game Context & State Management"
     implemented: true
