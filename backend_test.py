@@ -8,8 +8,11 @@ class DogeLabAPITester:
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
-        self.test_player_address = "0x1234567890123456789012345678901234567890"
+        # Using realistic wallet address as requested
+        self.test_player_address = "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54"
+        self.test_player_address_2 = "0x8ba1f109551bD432803012645Hac136c0c6160"
         self.test_treat_id = None
+        self.missing_features = []
 
     def run_test(self, name, method, endpoint, expected_status, data=None, params=None):
         """Run a single API test"""
