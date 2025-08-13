@@ -36,7 +36,7 @@ function App() {
           <Router>
             <Routes>
               <Route path="/" element={<MainMenu />} />
-              <Route path="/lab" element={<GameLab />} />
+              <Route path="/lab" element={<EnhancedGameLab />} />
               <Route path="/nfts" element={<MyTreats />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/settings" element={<Settings />} />
