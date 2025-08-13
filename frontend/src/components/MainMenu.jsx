@@ -4,47 +4,35 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
-import { useWeb3 } from '../hooks/useWeb3';
-import { useWeb3Game } from '../hooks/useWeb3Game';
-import WalletConnection from './WalletConnection';
-import { Beaker, Trophy, Settings, Palette, ExternalLink } from 'lucide-react';
+import { Beaker, Trophy, Settings, Palette } from 'lucide-react';
 
 const MainMenu = () => {
-  const { user, isNFTHolder, currentLevel, points, createdTreats, dispatch } = useGame();
-  const { address, isConnected, isCorrectNetwork } = useWeb3();
-  const { web3Profile, loading: web3Loading, getContractInfo } = useWeb3Game();
-  const [contractInfo, setContractInfo] = useState(null);
+  const { user, isNFTHolder, currentLevel, points, checkNFTOwnership, dispatch } = useGame();
+  const [isConnected, setIsConnected] = useState(false);
+  const [address, setAddress] = useState(null);
 
-  // Fetch contract information on mount
-  useEffect(() => {
-    const fetchContractInfo = async () => {
-      const info = await getContractInfo();
-      setContractInfo(info);
-    };
-    fetchContractInfo();
-  }, [getContractInfo]);
+  const connectWallet = async () => {
+    // Mock wallet connection for prototype
+    const mockAddress = '0x1234567890123456789012345678901234567890';
+    setAddress(mockAddress);
+    setIsConnected(true);
+    dispatch({ type: 'SET_USER', payload: { address: mockAddress } });
+    checkNFTOwnership(mockAddress);
+  };
 
-  // Auto-set user when wallet connects and is on correct network
-  useEffect(() => {
-    if (isConnected && isCorrectNetwork && address && !user) {
-      dispatch({ type: 'SET_USER', payload: { address: address.toLowerCase() } });
-    }
-  }, [isConnected, isCorrectNetwork, address, user, dispatch]);
-
-  // Clear user when wallet disconnects
-  useEffect(() => {
-    if (!isConnected && user) {
-      dispatch({ type: 'SET_USER', payload: null });
-    }
-  }, [isConnected, user, dispatch]);
+  const disconnectWallet = () => {
+    setAddress(null);
+    setIsConnected(false);
+    dispatch({ type: 'SET_USER', payload: null });
+  };
 
   return (
     <div className="lab-container min-h-screen p-8">
       {/* Background Lab Scene */}
       <div className="absolute inset-0 opacity-10">
-        <img 
+        <img
           src="https://images.unsplash.com/photo-1578272018819-412aef6cb45d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwZXF1aXBtZW50JTIwY29sb3JmdWx8ZW58MHx8fHwxNzU0OTQ2OTAwfDA&ixlib=rb-4.1.0&q=85"
-          alt="Lab Background" 
+          alt="Lab Background"
           className="w-full h-full object-cover"
         />
       </div>
@@ -68,14 +56,32 @@ const MainMenu = () => {
               Mix, Test & Upgrade Your Way to the Top! 🚀
             </p>
           </div>
+
           <div className="flex items-center gap-4">
-            <WalletConnection />
+            {isConnected && (
+              <div className="flex items-center gap-2">
+                {isNFTHolder && (
+                  <Badge className="vip-badge">
+                    VIP Scientist 👨‍🔬
+                  </Badge>
+                )}
+                <div className="glass-panel p-3">
+                  <div className="text-sm text-gray-600">Level {currentLevel}</div>
+                  <div className="font-bold text-lg">{points} Points</div>
+                </div>
+              </div>
+            )}
+            <Button
+              onClick={isConnected ? disconnectWallet : connectWallet}
+              className="doge-button"
+            >
+              {isConnected ? `${address?.slice(0,6)}...${address?.slice(-4)}` : 'Connect Wallet'}
+            </Button>
           </div>
         </div>
 
         {/* Main Menu Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          
           {/* Enter Lab */}
           <Card className="glass-panel hover:scale-105 transition-all duration-300 cursor-pointer">
             <Link to="/lab">
@@ -137,116 +143,10 @@ const MainMenu = () => {
           </Card>
         </div>
 
-        {/* Web3 Status Dashboard (for connected users) */}
-        {isConnected && isCorrectNetwork && web3Profile && (
-          <Card className="glass-panel border-green-400">
-            <CardHeader>
-              <CardTitle className="text-center text-green-800 flex items-center justify-center gap-2">
-                🔗 Web3 Profile Connected
-                <Badge className="bg-green-600 text-white">Live on DogeOS</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-green-50 rounded-xl">
-                  <h4 className="font-bold text-green-800 mb-2">💰 LAB Balance</h4>
-                  <p className="text-2xl font-bold text-green-700">
-                    {parseFloat(web3Profile.labBalance).toLocaleString()} LAB
-                  </p>
-                  {contractInfo?.labToken && (
-                    <a 
-                      href={`https://blockscout.devnet.doge.xyz/address/${contractInfo.labToken.address}`}
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs text-green-600 hover:underline flex items-center justify-center gap-1 mt-1"
-                    >
-                      View Contract <ExternalLink size={10} />
-                    </a>
-                  )}
-                </div>
-                
-                <div className="text-center p-4 bg-purple-50 rounded-xl">
-                  <h4 className="font-bold text-purple-800 mb-2">🎨 DogeFood NFTs</h4>
-                  <p className="text-2xl font-bold text-purple-700">
-                    {web3Profile.nftBalance} / 420
-                  </p>
-                  <p className="text-sm text-purple-600">
-                    {web3Profile.isNftHolder ? '✅ VIP Scientist' : '❌ Not a holder'}
-                  </p>
-                  {contractInfo?.nftCollection && (
-                    <a 
-                      href={`https://blockscout.devnet.doge.xyz/address/${contractInfo.nftCollection.address}`}
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs text-purple-600 hover:underline flex items-center justify-center gap-1 mt-1"
-                    >
-                      View NFT Contract <ExternalLink size={10} />
-                    </a>
-                  )}
-                </div>
-                
-                <div className="text-center p-4 bg-blue-50 rounded-xl">
-                  <h4 className="font-bold text-blue-800 mb-2">🏆 Season Status</h4>
-                  <p className="text-2xl font-bold text-blue-700">
-                    Season {web3Profile.currentSeason || 'TBD'}
-                  </p>
-                  <p className="text-sm text-blue-600">
-                    {web3Profile.isNftHolder ? 'Eligible for rewards' : 'NFT required'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg text-center">
-                <a 
-                  href={web3Profile.explorerUrl}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-gray-600 hover:text-gray-800 flex items-center justify-center gap-1"
-                >
-                  View wallet on DogeOS Explorer <ExternalLink size={12} />
-                </a>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Network Connection Info for Connected Users */}
-        {isConnected && !isCorrectNetwork && (
-          <Card className="glass-panel border-orange-400 bg-orange-50">
-            <CardHeader>
-              <CardTitle className="text-center text-orange-800 text-xl">
-                ⚠️ Please Switch to DogeOS Devnet
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-orange-700 mb-4">
-                To play DogeFood Lab, you need to connect to the DogeOS Devnet.
-              </p>
-              <div className="bg-white p-3 rounded-lg text-sm text-left">
-                <strong>Network Details:</strong><br/>
-                • Network Name: DogeOS Devnet<br/>
-                • Chain ID: 221122420<br/>
-                • RPC URL: https://rpc.devnet.doge.xyz<br/>
-                • Explorer: https://blockscout.devnet.doge.xyz
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Loading Web3 Data */}
-        {isConnected && isCorrectNetwork && web3Loading && (
-          <Card className="glass-panel border-blue-400">
-            <CardContent className="text-center py-8">
-              <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-blue-700">Loading Web3 profile from DogeOS blockchain...</p>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Doge Scientist Avatar */}
         <div className="text-center mb-8">
           <div className="inline-block">
-            <img 
+            <img
               src="https://i.ibb.co/hJQcdpfM/1000025492-removebg-preview.png"
               alt="Doge Scientist"
               className="w-40 h-40 rounded-full border-6 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300 bg-white/20 backdrop-blur-sm"
@@ -263,12 +163,12 @@ const MainMenu = () => {
             Powered by
           </h4>
           <div className="max-w-3xl mx-auto px-4">
-            <img 
+            <img
               src="https://customer-assets.emergentagent.com/job_dogefoodlab/artifacts/ckey490s_20250812_154617.jpg"
               alt="Powered by DOGEOS"
               className="w-full h-auto rounded-xl shadow-lg border-2 border-yellow-400 hover:scale-105 transition-transform duration-300 bg-white/10 backdrop-blur-sm"
-              style={{ 
-                maxWidth: '600px', 
+              style={{
+                maxWidth: '600px',
                 margin: '0 auto',
                 aspectRatio: 'auto'
               }}
