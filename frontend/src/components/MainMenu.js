@@ -159,7 +159,7 @@ const MainMenu = () => {
 
         {/* Powered By Banner Section */}
         <div className="text-center mb-12">
-          <h4 className="text-lg font-semibold text-gray-700 mb-6">
+          <h4 className="text-lg font-semibold mb-6" style={{color: '#FFD700'}}>
             Powered by
           </h4>
           <div className="max-w-3xl mx-auto px-4">
