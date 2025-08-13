@@ -217,22 +217,26 @@ class DogeLabAPITester:
         return self.run_test("Get Game Stats", "GET", "stats", 200)
 
 def main():
-    print("🐕 Starting DogeFood Lab API Tests 🧪")
-    print("=" * 50)
+    print("🐕 Starting Enhanced DogeFood Lab API Tests 🧪")
+    print("Testing enhanced treat creation system with wallet registration")
+    print("=" * 60)
     
     tester = DogeLabAPITester()
     
-    # Test sequence
+    # Enhanced test sequence based on review request
     tests = [
         ("Health Check", tester.test_health_check),
-        ("Create Player", tester.test_create_player),
+        ("Multiple Wallet Addresses", tester.test_multiple_wallet_addresses),
+        ("Create Player with Nickname", tester.test_create_player_with_nickname),
         ("Get Player", tester.test_get_player),
         ("Verify NFT", tester.test_verify_nft),
         ("Update Player Progress", tester.test_update_player_progress),
-        ("Create Treat", tester.test_create_treat),
+        ("Create Enhanced Treat", tester.test_create_enhanced_treat),
+        ("Enhanced Ingredient Combinations", tester.test_enhanced_ingredient_combinations),
         ("Get Player Treats", tester.test_get_player_treats),
+        ("Timer System Support", tester.test_timer_system_support),
         ("Get All Treats", tester.test_get_all_treats),
-        ("Get Leaderboard", tester.test_get_leaderboard),
+        ("Leaderboard with Nicknames", tester.test_leaderboard_with_nicknames),
         ("Get Game Stats", tester.test_get_game_stats)
     ]
     
@@ -243,11 +247,20 @@ def main():
             print(f"❌ {test_name} failed with exception: {str(e)}")
     
     # Print final results
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 60)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
+    # Report missing enhanced features
+    if tester.missing_features:
+        print("\n🔍 Enhanced Features Analysis:")
+        print("Missing features for full enhanced treat creation system:")
+        for feature in set(tester.missing_features):
+            print(f"   ❌ {feature}")
+    
     if tester.tests_passed == tester.tests_run:
-        print("🎉 All tests passed! Backend API is working correctly.")
+        print("🎉 All current API tests passed! Backend is stable.")
+        if tester.missing_features:
+            print("⚠️  However, some enhanced features are not yet implemented.")
         return 0
     else:
         print(f"⚠️  {tester.tests_run - tester.tests_passed} tests failed.")
