@@ -150,19 +150,19 @@ const MainMenu = () => {
         {/* Main Menu Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {/* Enter Lab */}
-          <Card className="glass-panel hover:scale-105 transition-all duration-300 cursor-pointer">
+          <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
             <Link to="/lab">
               <CardHeader className="text-center">
-                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-4">
-                  <Beaker size={40} className="text-white" />
+                <div className="mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-4 shadow-xl">
+                  <Beaker size={48} className="text-white drop-shadow-lg" />
                 </div>
-                <CardTitle className="text-2xl doge-gradient">Enter Lab</CardTitle>
+                <CardTitle className="text-3xl playful-title bubble-text text-white">🧪 Enter Lab</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
-                <p className="text-gray-600 mb-4">
+                <p className="text-white/90 mb-6 playful-text text-lg bubble-text">
                   Start mixing magical Dogetreats and unlock new recipes!
                 </p>
-                <Button className="doge-button w-full">
+                <Button className="doge-button w-full text-lg">
                   Start Mixing 🧪
                 </Button>
               </CardContent>
@@ -170,19 +170,19 @@ const MainMenu = () => {
           </Card>
 
           {/* My NFTs */}
-          <Card className="glass-panel hover:scale-105 transition-all duration-300 cursor-pointer">
+          <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
             <Link to="/nfts">
               <CardHeader className="text-center">
-                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center mb-4">
-                  <Palette size={40} className="text-white" />
+                <div className="mx-auto w-24 h-24 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center mb-4 shadow-xl">
+                  <Palette size={48} className="text-white drop-shadow-lg" />
                 </div>
-                <CardTitle className="text-2xl doge-gradient">My Treats</CardTitle>
+                <CardTitle className="text-3xl playful-title bubble-text text-white">🎨 My Treats</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
-                <p className="text-gray-600 mb-4">
+                <p className="text-white/90 mb-6 playful-text text-lg bubble-text">
                   View your created Dogetreats and rare collections!
                 </p>
-                <Button className="doge-button w-full">
+                <Button className="doge-button w-full text-lg">
                   View Collection 🎨
                 </Button>
               </CardContent>
@@ -190,19 +190,19 @@ const MainMenu = () => {
           </Card>
 
           {/* Leaderboard */}
-          <Card className="glass-panel hover:scale-105 transition-all duration-300 cursor-pointer">
+          <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
             <Link to="/leaderboard">
               <CardHeader className="text-center">
-                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mb-4">
-                  <Trophy size={40} className="text-white" />
+                <div className="mx-auto w-24 h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mb-4 shadow-xl">
+                  <Trophy size={48} className="text-white drop-shadow-lg" />
                 </div>
-                <CardTitle className="text-2xl doge-gradient">Leaderboard</CardTitle>
+                <CardTitle className="text-3xl playful-title bubble-text text-white">🏆 Leaderboard</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
-                <p className="text-gray-600 mb-4">
+                <p className="text-white/90 mb-6 playful-text text-lg bubble-text">
                   Compete with other VIP Scientists for $LAB rewards!
                 </p>
-                <Button className="doge-button w-full">
+                <Button className="doge-button w-full text-lg">
                   View Rankings 🏆
                 </Button>
               </CardContent>
