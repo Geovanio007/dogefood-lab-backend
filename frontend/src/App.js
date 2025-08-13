@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { GameProvider } from './contexts/GameContext';
 import { Web3Provider } from './components/Web3Provider';
+import LoadingScreen from './components/LoadingScreen';
 import MainMenu from './components/MainMenu';
 import GameLab from './components/GameLab';
 import MyTreats from './components/MyTreats';
@@ -18,6 +19,16 @@ const Settings = () => (
 );
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleLoadingComplete = () => {
+    setIsLoading(false);
+  };
+
+  if (isLoading) {
+    return <LoadingScreen onLoadingComplete={handleLoadingComplete} />;
+  }
+
   return (
     <Web3Provider>
       <GameProvider>
