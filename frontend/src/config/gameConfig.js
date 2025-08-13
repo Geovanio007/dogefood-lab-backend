@@ -246,3 +246,27 @@ export const getUnlockedIngredients = (currentLevel) => {
 export const getIngredientsUnlockedAtLevel = (level) => {
   return ingredientDatabase.filter(ingredient => ingredient.unlockLevel === level);
 };
+
+// Get tier information
+export const getTierInfo = (tier) => {
+  const tierNames = {
+    1: 'Starter',
+    2: 'Intermediate', 
+    3: 'Advanced',
+    4: 'Expert',
+    5: 'Legendary'
+  };
+  
+  const tierColors = {
+    1: 'bg-green-100 text-green-800 border-green-300',
+    2: 'bg-blue-100 text-blue-800 border-blue-300',
+    3: 'bg-purple-100 text-purple-800 border-purple-300',
+    4: 'bg-orange-100 text-orange-800 border-orange-300',
+    5: 'bg-yellow-100 text-yellow-800 border-yellow-300'
+  };
+  
+  return {
+    name: tierNames[tier] || 'Unknown',
+    color: tierColors[tier] || 'bg-gray-100 text-gray-800 border-gray-300'
+  };
+};
