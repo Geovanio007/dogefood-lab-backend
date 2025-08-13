@@ -128,7 +128,16 @@ async def update_player_progress(progress: PlayerProgress):
 # Treat Management Routes
 @api_router.post("/treats", response_model=DogeTreat)
 async def create_treat(treat_data: TreatCreate):
-    treat = DogeTreat(**treat_data.dict())
+    # Enhanced: Calculate ready_at time if timer is specified
+    ready_at = None
+    if treat_data.timer_duration and treat_data.brewing_status == "brewing":
+        from datetime import timedelta
+        ready_at = datetime.utcnow() + timedelta(seconds=treat_data.timer_duration)
+    
+    treat = DogeTreat(
+        **treat_data.dict(),
+        ready_at=ready_at
+    )
     
     # Add treat to database
     await db.treats.insert_one(treat.dict())
