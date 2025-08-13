@@ -1,16 +1,16 @@
 // Smart Contract Addresses on DogeOS Devnet
 export const CONTRACT_ADDRESSES = {
-  LAB_TOKEN: import.meta.env.VITE_LAB_TOKEN_ADDRESS || '0xc238Ef1C4d4d9109e4d8D0D6BB1eA55bA58861d1',
-  DOGEFOOD_NFT: import.meta.env.VITE_DOGEFOOD_NFT_ADDRESS || '0xC8AB737B8baef6f8a33b2720fD20F27F4A54E2C0',
-  REWARD_DISTRIBUTOR: import.meta.env.VITE_REWARD_DISTRIBUTOR_ADDRESS || '0x37F20600fd6eF1416ccb1DD20043CCfb4d72ba30',
+  LAB_TOKEN: process.env.REACT_APP_LAB_TOKEN_ADDRESS || '0xc238Ef1C4d4d9109e4d8D0D6BB1eA55bA58861d1',
+  DOGEFOOD_NFT: process.env.REACT_APP_DOGEFOOD_NFT_ADDRESS || '0xC8AB737B8baef6f8a33b2720fD20F27F4A54E2C0',
+  REWARD_DISTRIBUTOR: process.env.REACT_APP_REWARD_DISTRIBUTOR_ADDRESS || '0x37F20600fd6eF1416ccb1DD20043CCfb4d72ba30',
 };
 
 // Network Information
 export const DOGEOS_DEVNET = {
-  chainId: parseInt(import.meta.env.VITE_DOGEOS_CHAIN_ID) || 221122420,
+  chainId: parseInt(process.env.REACT_APP_DOGEOS_CHAIN_ID) || 221122420,
   name: 'DogeOS Devnet',
-  rpcUrl: import.meta.env.VITE_DOGEOS_RPC_URL || 'https://rpc.devnet.doge.xyz',
-  blockExplorer: import.meta.env.VITE_DOGEOS_EXPLORER || 'https://blockscout.devnet.doge.xyz',
+  rpcUrl: process.env.REACT_APP_DOGEOS_RPC_URL || 'https://rpc.devnet.doge.xyz',
+  blockExplorer: process.env.REACT_APP_DOGEOS_EXPLORER || 'https://blockscout.devnet.doge.xyz',
   symbol: 'DOGE',
 };
 
