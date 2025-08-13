@@ -1,0 +1,261 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
+import { useGame } from '../contexts/GameContext';
+import { useWeb3Game } from '../hooks/useWeb3Game';
+import { useWeb3 } from '../hooks/useWeb3';
+import { ArrowLeft, Star, Sparkles, ExternalLink, Calendar, Crown } from 'lucide-react';
+
+const MyTreats = () => {
+  const { createdTreats, totalTreatsCreated, points, isNFTHolder } = useGame();
+  const { web3Profile, loading: web3Loading } = useWeb3Game();
+  const { address, isConnected } = useWeb3();
+  
+  const [selectedRarity, setSelectedRarity] = useState('All');
+  const [sortBy, setSortBy] = useState('newest');
+
+  // Filter and sort treats
+  const filteredTreats = createdTreats
+    .filter(treat => selectedRarity === 'All' || treat.rarity === selectedRarity)
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        case 'oldest':
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        case 'rarity':
+          const rarityOrder = { 'Legendary': 4, 'Epic': 3, 'Rare': 2, 'Common': 1 };
+          return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+        default:
+          return 0;
+      }
+    });
+
+  const getRarityColor = (rarity) => {
+    switch (rarity) {
+      case 'Legendary': return 'bg-gradient-to-r from-purple-500 to-pink-500';
+      case 'Epic': return 'bg-gradient-to-r from-pink-500 to-red-500';
+      case 'Rare': return 'bg-gradient-to-r from-blue-500 to-indigo-500';
+      default: return 'bg-gradient-to-r from-green-500 to-emerald-500';
+    }
+  };
+
+  const getRarityIcon = (rarity) => {
+    switch (rarity) {
+      case 'Legendary': return '💎';
+      case 'Epic': return '⭐';
+      case 'Rare': return '✨';
+      default: return '🍪';
+    }
+  };
+
+  const rarities = ['All', 'Legendary', 'Epic', 'Rare', 'Common'];
+
+  return (
+    <div className="min-h-screen p-6">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center gap-4">
+          <Link to="/">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Menu
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-4xl font-bold doge-gradient mb-2">🎨 My Treats</h1>
+            <p className="text-gray-600">Your collection of magical Dogetreats</p>
+          </div>
+        </div>
+        
+        {isNFTHolder && (
+          <Badge className="vip-badge">
+            <Crown className="w-4 h-4 mr-1" />
+            VIP Scientist
+          </Badge>
+        )}
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <Card className="glass-panel">
+          <CardContent className="text-center p-6">
+            <div className="text-3xl font-bold doge-gradient">{totalTreatsCreated}</div>
+            <div className="text-sm text-gray-600">Total Treats Created</div>
+          </CardContent>
+        </Card>
+        
+        <Card className="glass-panel">
+          <CardContent className="text-center p-6">
+            <div className="text-3xl font-bold text-purple-600">{web3Profile?.nftBalance || 0}</div>
+            <div className="text-sm text-gray-600">DogeFood NFTs</div>
+          </CardContent>
+        </Card>
+        
+        <Card className="glass-panel">
+          <CardContent className="text-center p-6">
+            <div className="text-3xl font-bold text-green-600">{points}</div>
+            <div className="text-sm text-gray-600">Total Points</div>
+          </CardContent>
+        </Card>
+        
+        <Card className="glass-panel">
+          <CardContent className="text-center p-6">
+            <div className="text-3xl font-bold text-yellow-600">
+              {web3Profile?.labBalance ? parseFloat(web3Profile.labBalance).toFixed(2) : '0.00'}
+            </div>
+            <div className="text-sm text-gray-600">$LAB Tokens</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Web3 Status */}
+      {isConnected && web3Profile && (
+        <Card className="glass-panel mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              🔗 Web3 Profile
+              <Badge className="bg-green-500 text-white">Connected</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Wallet Address:</p>
+                <p className="font-mono text-sm break-all">{address}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">NFT Holder Status:</p>
+                <Badge className={web3Profile.isNftHolder ? "bg-purple-500 text-white" : "bg-gray-500 text-white"}>
+                  {web3Profile.isNftHolder ? "VIP Scientist 👨‍🔬" : "Regular User"}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filter Controls */}
+      <div className="flex flex-wrap gap-4 mb-8">
+        <div className="flex gap-2">
+          <span className="text-sm font-semibold text-gray-600 my-auto">Filter by Rarity:</span>
+          {rarities.map(rarity => (
+            <Button
+              key={rarity}
+              variant={selectedRarity === rarity ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedRarity(rarity)}
+            >
+              {rarity}
+            </Button>
+          ))}
+        </div>
+        
+        <div className="flex gap-2">
+          <span className="text-sm font-semibold text-gray-600 my-auto">Sort by:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-3 py-1 rounded border bg-white"
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="rarity">Rarity</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Treats Collection */}
+      {filteredTreats.length === 0 ? (
+        <Card className="glass-panel">
+          <CardContent className="text-center p-12">
+            <div className="text-6xl mb-4">🥺</div>
+            <h3 className="text-2xl font-bold text-gray-600 mb-2">
+              {createdTreats.length === 0 ? "No treats yet!" : "No treats match your filter"}
+            </h3>
+            <p className="text-gray-500 mb-6">
+              {createdTreats.length === 0 
+                ? "Head to the Lab and start creating some magical Dogetreats!" 
+                : "Try adjusting your filters to see more treats."}
+            </p>
+            {createdTreats.length === 0 && (
+              <Link to="/lab">
+                <Button className="doge-button">
+                  Start Creating Treats 🧪
+                </Button>
+              </Link>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTreats.map((treat, index) => (
+            <Card key={treat.id || index} className="glass-panel hover:scale-105 transition-all duration-300">
+              <CardHeader>
+                <div className="flex justify-between items-start mb-2">
+                  <div className="text-4xl">{treat.image || getRarityIcon(treat.rarity)}</div>
+                  <Badge className={`${getRarityColor(treat.rarity)} text-white`}>
+                    {treat.rarity}
+                  </Badge>
+                </div>
+                <CardTitle className="text-lg">{treat.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600">Flavor Profile:</p>
+                    <p className="text-sm">{treat.flavor}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600">Ingredients Used:</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {treat.ingredients && treat.ingredients.map((ingredientId, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs">
+                          Ingredient #{ingredientId}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-sm text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {treat.createdAt ? new Date(treat.createdAt).toLocaleDateString() : 'Unknown'}
+                    </div>
+                    {treat.level && (
+                      <div>Lab Level {treat.level}</div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Call to Action */}
+      {filteredTreats.length > 0 && (
+        <div className="mt-12 text-center">
+          <Card className="glass-panel max-w-md mx-auto">
+            <CardContent className="p-8">
+              <h3 className="text-xl font-bold mb-4">Keep Creating! 🚀</h3>
+              <p className="text-gray-600 mb-4">
+                Create more treats to unlock rare recipes and earn more $LAB tokens!
+              </p>
+              <Link to="/lab">
+                <Button className="doge-button w-full">
+                  Back to Lab 🧪
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default MyTreats;
