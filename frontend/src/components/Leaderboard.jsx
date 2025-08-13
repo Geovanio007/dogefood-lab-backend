@@ -3,31 +3,60 @@ import { Link } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Progress } from './ui/progress';
 import { useGame } from '../contexts/GameContext';
-import { ArrowLeft, Trophy, Crown, Medal, Star, Zap } from 'lucide-react';
+import { useWeb3 } from '../hooks/useWeb3';
+import { ArrowLeft, Trophy, Crown, Star, Users, TrendingUp, Clock } from 'lucide-react';
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
 const Leaderboard = () => {
-  const { isNFTHolder, points, currentLevel } = useGame();
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [gameStats, setGameStats] = useState({});
+  const { points, isNFTHolder, currentLevel } = useGame();
+  const { address } = useWeb3();
+  const [leaderboardData, setLeaderboardData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentUserRank, setCurrentUserRank] = useState(null);
+  const [seasonInfo, setSeasonInfo] = useState({
+    current: 1,
+    timeRemaining: '85 days',
+    totalRewards: '70,000,000 LAB',
+    participants: 0
+  });
+
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
     fetchLeaderboard();
-    fetchGameStats();
   }, []);
 
   const fetchLeaderboard = async () => {
     try {
-      const response = await axios.get(`${API}/leaderboard`);
-      setLeaderboard(response.data);
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error);
+      setLoading(true);
+      const response = await axios.get(`${BACKEND_URL}/api/leaderboard?limit=50`);
+      setLeaderboardData(response.data);
+      
+      // Find current user's rank if they have an address
+      if (address && response.data) {
+        const userIndex = response.data.findIndex(player => 
+          player.address.toLowerCase() === address.toLowerCase()
+        );
+        if (userIndex !== -1) {
+          setCurrentUserRank(userIndex + 1);
+        }
+      }
+      
+      setSeasonInfo(prev => ({ 
+        ...prev, 
+        participants: response.data.length 
+      }));
+      
+    } catch (err) {
+      console.error('Error fetching leaderboard:', err);
+      setError('Failed to load leaderboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
       // Mock data for demonstration
       setLeaderboard([
         { address: '0x1234...7890', points: 2850, level: 8, rank: 1, is_nft_holder: true },
