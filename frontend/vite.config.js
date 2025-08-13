@@ -12,6 +12,10 @@ export default defineConfig({
       interval: 1000
     }
   },
+  define: {
+    global: 'globalThis',
+    'process.env': {}
+  },
   esbuild: {
     loader: "jsx",
     include: /src\/.*\.jsx?$/,
