@@ -176,6 +176,7 @@ async def get_leaderboard(limit: int = 50):
     for rank, player in enumerate(top_players, 1):
         leaderboard.append(LeaderboardEntry(
             address=player["address"],
+            nickname=player.get("nickname"),  # Enhanced: Include nickname
             points=player["points"],
             level=player["level"],
             is_nft_holder=player["is_nft_holder"],
