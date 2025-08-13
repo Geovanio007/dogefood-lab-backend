@@ -2,13 +2,19 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import SimpleMainMenu from './components/SimpleMainMenu.jsx';
 
-// Simple placeholder components
+// Clean placeholder components with proper Dogecoin colors
 const GameLab = () => (
-  <div className="min-h-screen p-8" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-    <div className="text-white text-center py-20">
-      <h1 className="text-4xl font-bold mb-4">🧪 Game Lab</h1>
-      <p className="text-xl mb-8">Coming Soon! Full game functionality is being restored.</p>
-      <a href="/" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+  <div className="min-h-screen bg-white">
+    <div className="container mx-auto px-6 py-16 text-center">
+      <h1 className="text-5xl font-bold mb-6" style={{ color: '#FFD700' }}>🧪 Game Lab</h1>
+      <p className="text-xl mb-12" style={{ color: '#B57B2E' }}>
+        Coming Soon! Full game functionality is being restored.
+      </p>
+      <a 
+        href="/" 
+        className="inline-block px-8 py-4 rounded-xl text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+        style={{ backgroundColor: '#FFD700' }}
+      >
         ← Back to Menu
       </a>
     </div>
@@ -16,11 +22,17 @@ const GameLab = () => (
 );
 
 const MyTreats = () => (
-  <div className="min-h-screen p-8" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-    <div className="text-white text-center py-20">
-      <h1 className="text-4xl font-bold mb-4">🎨 My Treats</h1>
-      <p className="text-xl mb-8">Coming Soon! View your NFT collection here.</p>
-      <a href="/" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+  <div className="min-h-screen bg-white">
+    <div className="container mx-auto px-6 py-16 text-center">
+      <h1 className="text-5xl font-bold mb-6" style={{ color: '#FFD700' }}>🎨 My Treats</h1>
+      <p className="text-xl mb-12" style={{ color: '#B57B2E' }}>
+        Coming Soon! View your NFT collection here.
+      </p>
+      <a 
+        href="/" 
+        className="inline-block px-8 py-4 rounded-xl text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+        style={{ backgroundColor: '#FFD700' }}
+      >
         ← Back to Menu
       </a>
     </div>
@@ -28,11 +40,17 @@ const MyTreats = () => (
 );
 
 const Leaderboard = () => (
-  <div className="min-h-screen p-8" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-    <div className="text-white text-center py-20">
-      <h1 className="text-4xl font-bold mb-4">🏆 Leaderboard</h1>
-      <p className="text-xl mb-8">Coming Soon! Compete for $LAB rewards.</p>
-      <a href="/" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+  <div className="min-h-screen bg-white">
+    <div className="container mx-auto px-6 py-16 text-center">
+      <h1 className="text-5xl font-bold mb-6" style={{ color: '#FFD700' }}>🏆 Leaderboard</h1>
+      <p className="text-xl mb-12" style={{ color: '#B57B2E' }}>
+        Coming Soon! Compete for $LAB rewards.
+      </p>
+      <a 
+        href="/" 
+        className="inline-block px-8 py-4 rounded-xl text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+        style={{ backgroundColor: '#FFD700' }}
+      >
         ← Back to Menu
       </a>
     </div>
@@ -41,7 +59,7 @@ const Leaderboard = () => (
 
 function App() {
   return (
-    <div className="App min-h-screen">
+    <div className="App">
       <Router>
         <Routes>
           <Route path="/" element={<SimpleMainMenu />} />
