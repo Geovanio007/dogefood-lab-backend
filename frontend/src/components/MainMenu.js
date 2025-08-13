@@ -56,7 +56,7 @@ const MainMenu = () => {
                 BETA
               </Badge>
             </div>
-            <p className="text-2xl text-white font-bold playful-text bubble-text drop-shadow-lg">
+            <p className="text-2xl text-yellow-500 font-bold playful-text bubble-text drop-shadow-lg">
               Mix, Test & Upgrade Your Way to the Top! 🚀
             </p>
           </div>
