@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { GameProvider } from './contexts/GameContext.jsx';
 
 // Simple MainMenu component for now
 const MainMenu = () => {
@@ -70,6 +71,12 @@ const MainMenu = () => {
             </p>
           </div>
         </div>
+
+        {/* Smart Contract Info */}
+        <div className="mt-6 text-xs text-gray-400">
+          <p>📊 Smart Contracts Deployed on DogeOS Devnet:</p>
+          <p>LAB Token: 0xc238...61d1 | DogeFood NFT: 0xC8AB...2C0 | Rewards: 0x37F2...a30</p>
+        </div>
       </div>
     </div>
   );
@@ -77,13 +84,15 @@ const MainMenu = () => {
 
 function App() {
   return (
-    <div className="App min-h-screen">
-      <Router>
-        <Routes>
-          <Route path="/" element={<MainMenu />} />
-        </Routes>
-      </Router>
-    </div>
+    <GameProvider>
+      <div className="App min-h-screen">
+        <Router>
+          <Routes>
+            <Route path="/" element={<MainMenu />} />
+          </Routes>
+        </Router>
+      </div>
+    </GameProvider>
   );
 }
 
