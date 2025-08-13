@@ -42,19 +42,11 @@ const Leaderboard = () => {
         setCurrentUserRank(userIndex + 1);
       }
     }
-    
-    setSeasonInfo(prev => ({ 
-      ...prev, 
-    
     setSeasonInfo(prev => ({ 
       ...prev, 
       participants: leaderboard.length 
     }));
   }, [address, leaderboard]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getRankIcon = (rank) => {
     switch (rank) {
