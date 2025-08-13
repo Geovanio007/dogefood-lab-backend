@@ -202,152 +202,292 @@ function gameReducer(state, action) {
       return state;
   }
 }
-        id: Date.now().toString(),
-        ingredients: action.payload.ingredients,
-        treatName: action.payload.treatName,
-        rarity: action.payload.rarity,
-        timestamp: Date.now()
-      };
-      
-      const maxSackSize = gameConfig.sack.maxVisibleIngredients;
-      const updatedSack = [...state.ingredientSack, newSackItem].slice(-maxSackSize);
-      const newMixesThisLevel = state.mixesThisLevel + 1;
-      
-      return {
-        ...state,
-        ingredientSack: updatedSack,
-        mixesThisLevel: newMixesThisLevel
-      };
-    
-    case 'COMPLETE_RECIPE':
-      // Award bonus XP for recipe completion
-      const recipeBonus = gameConfig.sack.bonusXpPerCompletion;
-      
-      return {
-        ...state,
-        ingredientSack: [], // Clear sack after recipe completion
-        mixesThisLevel: 0   // Reset mixes counter
-      };
-    
-    case 'START_MIXING':
-      return {
-        ...state,
-        mixing: {
-          active: true,
-          selectedIngredients: action.payload.ingredients,
-          progress: 0,
-          result: null,
-          timeLimit: action.payload.timeLimit,
-          timeRemaining: action.payload.timeLimit
-        }
-      };
-    
-    case 'UPDATE_MIXING_PROGRESS':
-      return {
-        ...state,
-        mixing: { ...state.mixing, progress: action.payload }
-      };
-    
-    case 'UPDATE_TIME_REMAINING':
-      return {
-        ...state,
-        mixing: { ...state.mixing, timeRemaining: action.payload }
-      };
-    
-    case 'COMPLETE_MIXING':
-      const treatId = Date.now().toString();
-      const newTreat = {
-        id: treatId,
-        name: action.payload.name,
-        ingredients: state.mixing.selectedIngredients,
-        rarity: action.payload.rarity,
-        flavor: action.payload.flavor,
-        createdAt: new Date().toISOString(),
-        image: action.payload.image,
-        level: state.currentLevel
-      };
-      
-      return {
-        ...state,
-        createdTreats: [...state.createdTreats, newTreat],
-        totalTreatsCreated: state.totalTreatsCreated + 1,
-        mixing: { active: false, selectedIngredients: [], progress: 0, result: newTreat, timeLimit: null, timeRemaining: null }
-      };
-    
-    case 'RESET_MIXING':
-      return {
-        ...state,
-        mixing: { active: false, selectedIngredients: [], progress: 0, result: null, timeLimit: null, timeRemaining: null }
-      };
-    
-    case 'SET_WEB3_PROFILE':
-      return {
-        ...state,
-        web3Profile: action.payload,
-        labBalance: action.payload.labBalance || '0',
-        nftBalance: action.payload.nftBalance || 0,
-        isNFTHolder: action.payload.isNftHolder || false,
-        currentSeason: action.payload.currentSeason || 0,
-      };
-
-    case 'CLEAR_WEB3_PROFILE':
-      return {
-        ...state,
-        web3Profile: null,
-        labBalance: '0',
-        nftBalance: 0,
-        isNFTHolder: false,
-        currentSeason: 0,
-      };
-
-    case 'UPDATE_LAB_BALANCE':
-      return {
-        ...state,
-        labBalance: action.payload,
-      };
-
-    case 'UPDATE_NFT_BALANCE':
-      return {
-        ...state,
-        nftBalance: action.payload,
-        isNFTHolder: action.payload > 0,
-      };
-      
-    default:
-      return state;
-  }
-}
-
+// Enhanced GameProvider with all new functionality
 export function GameProvider({ children }) {
   const [state, dispatch] = useReducer(gameReducer, initialState);
-  const [xpAnimation, setXpAnimation] = useState({ active: false, amount: 0 });
+  const { address, isConnected } = useAccount();
 
-  const updatePlayerProgress = async (experience, points) => {
-    if (state.user) {
-      try {
-        await axios.post(`${API}/player/progress`, {
-          address: state.user.address,
-          experience,
-          points: state.isNFTHolder ? points : 0,
-          level: state.currentLevel
-        });
-      } catch (error) {
-        console.error('Error updating player progress:', error);
+  // Initialize player when wallet connects
+  useEffect(() => {
+    if (isConnected && address) {
+      dispatch({ type: 'SET_WALLET_ADDRESS', payload: address });
+      loadPlayerData(address);
+    } else {
+      dispatch({ type: 'SET_REGISTRATION_STATUS', payload: false });
+      dispatch({ type: 'SHOW_REGISTRATION', payload: true });
+    }
+  }, [isConnected, address]);
+
+  // Enhanced API Functions
+  const loadPlayerData = async (walletAddress) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      const response = await axios.get(`${API}/player/${walletAddress}`);
+      if (response.status === 200) {
+        dispatch({ type: 'SET_PLAYER', payload: response.data });
+        dispatch({ type: 'SHOW_REGISTRATION', payload: false });
+        
+        // Load player's treats
+        await loadPlayerTreats(walletAddress);
       }
+    } catch (error) {
+      if (error.response?.status === 404) {
+        // Player not registered
+        dispatch({ type: 'SET_REGISTRATION_STATUS', payload: false });
+        dispatch({ type: 'SHOW_REGISTRATION', payload: true });
+      }
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  const checkNFTOwnership = async (address) => {
-    // Mock NFT verification for prototype
-    const mockNFTHolders = [
-      '0x1234567890123456789012345678901234567890',
-      '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
-    ];
-    
-    const isHolder = mockNFTHolders.includes(address.toLowerCase());
-    dispatch({ type: 'SET_NFT_HOLDER', payload: isHolder });
-    return isHolder;
+  const registerPlayer = async (walletAddress, nickname) => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      const response = await axios.post(`${API}/player`, {
+        address: walletAddress,
+        nickname: nickname,
+        is_nft_holder: true // For now, assume all registered players are NFT holders
+      });
+      
+      if (response.status === 200) {
+        dispatch({ type: 'SET_PLAYER', payload: response.data });
+        dispatch({ type: 'SHOW_REGISTRATION', payload: false });
+        
+        showNotification({
+          type: 'success',
+          title: 'Registration Complete!',
+          message: `Welcome to the lab, ${nickname}!`
+        });
+        
+        return response.data;
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      showNotification({
+        type: 'error',
+        title: 'Registration Failed',
+        message: 'Please try again later.'
+      });
+      return null;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
   };
+
+  const loadPlayerTreats = async (walletAddress) => {
+    try {
+      const response = await axios.get(`${API}/treats/${walletAddress}`);
+      if (response.status === 200) {
+        dispatch({ type: 'SET_TREATS', payload: response.data });
+        
+        // Separate brewing and ready treats
+        const brewing = response.data.filter(treat => treat.brewing_status === 'brewing');
+        const ready = response.data.filter(treat => treat.brewing_status === 'ready');
+        
+        dispatch({ type: 'UPDATE_BREWING_TREATS', payload: brewing });
+        dispatch({ type: 'UPDATE_READY_TREATS', payload: ready });
+      }
+    } catch (error) {
+      console.error('Error loading treats:', error);
+    }
+  };
+
+  const createTreat = async (treatName, selectedIngredients, mainIngredient) => {
+    if (!state.walletAddress || selectedIngredients.length < 2) {
+      showNotification({
+        type: 'error',
+        title: 'Cannot Create Treat',
+        message: 'Select at least 2 ingredients and connect your wallet.'
+      });
+      return null;
+    }
+
+    try {
+      dispatch({ type: 'SET_MIXING_PROGRESS', payload: true });
+      
+      // Create treat name from combination
+      const treatData = createTreatName(selectedIngredients, mainIngredient);
+      const xpGained = calculateTreatXP(treatData.rarity, state.currentLevel);
+      
+      // Create treat with 3-hour timer
+      const newTreatData = {
+        name: treatData.name,
+        creator_address: state.walletAddress,
+        ingredients: selectedIngredients.map(ing => ing.id),
+        main_ingredient: mainIngredient.id,
+        rarity: treatData.rarity,
+        flavor: 'custom',
+        image: 'treat-placeholder.jpg',
+        timer_duration: gameConfig.timer.treatCreationTime / 1000, // Convert to seconds
+        brewing_status: 'brewing'
+      };
+
+      const response = await axios.post(`${API}/treats`, newTreatData);
+      
+      if (response.status === 200) {
+        const createdTreat = response.data;
+        dispatch({ type: 'ADD_TREAT', payload: createdTreat });
+        dispatch({ type: 'CLEAR_SELECTION' });
+        
+        // Add XP and points
+        dispatch({ type: 'GAIN_XP', payload: xpGained });
+        dispatch({ type: 'ADD_POINTS', payload: xpGained * 2 });
+        
+        // Update player progress on backend
+        await updatePlayerProgress(xpGained, xpGained * 2);
+        
+        // Add timer for this treat
+        const timer = {
+          treatId: createdTreat.id,
+          startTime: Date.now(),
+          duration: gameConfig.timer.treatCreationTime,
+          treatName: treatData.name
+        };
+        dispatch({ type: 'ADD_TIMER', payload: timer });
+        
+        showNotification({
+          type: 'success',
+          title: 'Treat Created!',
+          message: `${treatData.name} is now brewing! It will be ready in 3 hours.`,
+          duration: 5000
+        });
+        
+        return createdTreat;
+      }
+    } catch (error) {
+      console.error('Error creating treat:', error);
+      showNotification({
+        type: 'error',
+        title: 'Creation Failed',
+        message: 'Failed to create treat. Please try again.'
+      });
+    } finally {
+      dispatch({ type: 'SET_MIXING_PROGRESS', payload: false });
+    }
+    
+    return null;
+  };
+
+  const checkBrewingTreats = async () => {
+    if (!state.walletAddress) return;
+    
+    try {
+      const response = await axios.get(`${API}/treats/${state.walletAddress}/brewing`);
+      if (response.status === 200) {
+        dispatch({ type: 'UPDATE_BREWING_TREATS', payload: response.data });
+      }
+    } catch (error) {
+      console.error('Error checking brewing treats:', error);
+    }
+  };
+
+  const updatePlayerProgress = async (experience, points) => {
+    if (!state.walletAddress) return;
+    
+    try {
+      await axios.post(`${API}/player/progress`, {
+        address: state.walletAddress,
+        experience,
+        points: state.isNFTHolder ? points : 0,
+        level: state.currentLevel
+      });
+    } catch (error) {
+      console.error('Error updating player progress:', error);
+    }
+  };
+
+  const loadLeaderboard = async () => {
+    try {
+      const response = await axios.get(`${API}/leaderboard?limit=50`);
+      if (response.status === 200) {
+        dispatch({ type: 'SET_LEADERBOARD', payload: response.data });
+      }
+    } catch (error) {
+      console.error('Error loading leaderboard:', error);
+    }
+  };
+
+  const showNotification = (notification) => {
+    dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
+    
+    // Auto-remove notification after duration
+    setTimeout(() => {
+      dispatch({ type: 'REMOVE_NOTIFICATION', payload: notification.id || Date.now() });
+    }, notification.duration || 3000);
+  };
+
+  const selectIngredient = (ingredient) => {
+    dispatch({ type: 'SELECT_INGREDIENT', payload: ingredient });
+  };
+
+  const selectMainIngredient = (ingredient) => {
+    dispatch({ type: 'SELECT_MAIN_INGREDIENT', payload: ingredient });
+  };
+
+  const clearSelection = () => {
+    dispatch({ type: 'CLEAR_SELECTION' });
+  };
+
+  const shuffleIngredients = () => {
+    dispatch({ type: 'SHUFFLE_INGREDIENTS' });
+    showNotification({
+      type: 'info',
+      title: 'Ingredients Refreshed!',
+      message: 'New ingredients are available for mixing.'
+    });
+  };
+
+  // Timer management
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (state.activeTimers.length > 0) {
+        checkBrewingTreats();
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [state.activeTimers]);
+
+  const value = {
+    // State
+    ...state,
+    
+    // Actions
+    registerPlayer,
+    createTreat,
+    loadPlayerData,
+    loadPlayerTreats,
+    loadLeaderboard,
+    selectIngredient,
+    selectMainIngredient,
+    clearSelection,
+    shuffleIngredients,
+    showNotification,
+    checkBrewingTreats,
+    
+    // Utilities
+    canCreateTreat: state.selectedIngredients.length >= 2 && state.selectedMainIngredient && !state.mixingInProgress,
+    isRegistered: state.isRegistered && state.walletAddress,
+    needsRegistration: !state.isRegistered && state.walletAddress
+  };
+
+  return (
+    <GameContext.Provider value={value}>
+      {children}
+    </GameContext.Provider>
+  );
+}
+
+export const useGame = () => {
+  const context = useContext(GameContext);
+  if (!context) {
+    throw new Error('useGame must be used within a GameProvider');
+  }
+  return context;
+};
 
   const gainXP = (ingredients, difficulty = 1.0) => {
     // Calculate XP based on ingredients and current difficulty
