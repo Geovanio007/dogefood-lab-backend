@@ -5,6 +5,7 @@ import { useGame } from '../contexts/GameContext';
 
 export const useWeb3Game = () => {
   const { address, isConnected } = useAccount();
+  const { data: walletClient } = useWalletClient();
   const { dispatch } = useGame();
   const [web3Profile, setWeb3Profile] = useState(null);
   const [loading, setLoading] = useState(false);
