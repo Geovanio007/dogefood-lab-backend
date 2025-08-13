@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAccount } from 'wagmi';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { useGame } from '../contexts/GameContext';
-import { useWeb3 } from '../hooks/useWeb3';
-import { ArrowLeft, Trophy, Crown, Star, Users, TrendingUp, Clock } from 'lucide-react';
-import axios from 'axios';
+import { ArrowLeft, Trophy, Crown, Star, Users, TrendingUp, Clock, Sparkles } from 'lucide-react';
 
 const Leaderboard = () => {
-  const { points, isNFTHolder, currentLevel } = useGame();
-  const { address } = useWeb3();
-  const [leaderboardData, setLeaderboardData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { address } = useAccount();
+  const { 
+    points, 
+    isNFTHolder, 
+    currentLevel, 
+    player,
+    leaderboard,
+    loadLeaderboard,
+    isLoading 
+  } = useGame();
+  
   const [currentUserRank, setCurrentUserRank] = useState(null);
   const [seasonInfo, setSeasonInfo] = useState({
     current: 1,
@@ -23,31 +28,26 @@ const Leaderboard = () => {
     participants: 0
   });
 
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-
   useEffect(() => {
-    fetchLeaderboard();
+    loadLeaderboard();
   }, []);
 
-  const fetchLeaderboard = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${BACKEND_URL}/api/leaderboard?limit=50`);
-      setLeaderboardData(response.data);
-      
-      // Find current user's rank if they have an address
-      if (address && response.data) {
-        const userIndex = response.data.findIndex(player => 
-          player.address.toLowerCase() === address.toLowerCase()
-        );
-        if (userIndex !== -1) {
-          setCurrentUserRank(userIndex + 1);
-        }
+  useEffect(() => {
+    // Find current user's rank if they have an address
+    if (address && leaderboard.length > 0) {
+      const userIndex = leaderboard.findIndex(entry => 
+        entry.address.toLowerCase() === address.toLowerCase()
+      );
+      if (userIndex !== -1) {
+        setCurrentUserRank(userIndex + 1);
       }
-      
-      setSeasonInfo(prev => ({ 
-        ...prev, 
-        participants: response.data.length 
+    }
+    
+    setSeasonInfo(prev => ({ 
+      ...prev, 
+      participants: leaderboard.length 
+    }));
+  }, [address, leaderboard]); 
       }));
       
     } catch (err) {
