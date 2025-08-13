@@ -219,7 +219,7 @@ const Leaderboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {leaderboardData.length === 0 ? (
+          {leaderboard.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🦗</div>
               <h3 className="text-2xl font-bold text-gray-600 mb-2">It's Quiet Here...</h3>
@@ -241,21 +241,21 @@ const Leaderboard = () => {
                     <th className="text-left py-3 px-2">Scientist</th>
                     <th className="text-center py-3 px-2">Points</th>
                     <th className="text-center py-3 px-2">Level</th>
-                    <th className="text-center py-3 px-2">NFTs</th>
+                    <th className="text-center py-3 px-2">Status</th>
                     <th className="text-right py-3 px-2">Est. Rewards</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {leaderboardData.map((player, index) => {
+                  {leaderboard.map((entry, index) => {
                     const rank = index + 1;
-                    const isCurrentUser = address && player.address.toLowerCase() === address.toLowerCase();
+                    const isCurrentUser = address && entry.address.toLowerCase() === address.toLowerCase();
                     
                     return (
                       <tr 
-                        key={player.address} 
-                        className={`border-b border-gray-100 hover:bg-gray-50 ${
+                        key={entry.address} 
+                        className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
                           isCurrentUser ? 'bg-blue-50 border-blue-200' : ''
-                        }`}
+                        } ${rank <= 3 ? `leaderboard-row rank-${rank}` : 'leaderboard-row'}`}
                       >
                         <td className="py-4 px-2">
                           <div className="flex items-center gap-2">
