@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { GameProvider } from './contexts/GameContext';
+import { Web3Provider } from './components/Web3Provider';
 import MainMenu from './components/MainMenu';
 import './App.css';
 
