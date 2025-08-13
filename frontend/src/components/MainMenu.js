@@ -152,7 +152,7 @@ const MainMenu = () => {
               className="w-40 h-40 rounded-full border-6 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300 bg-white/20 backdrop-blur-sm"
             />
           </div>
-          <h3 className="text-2xl font-bold text-gray-800 mt-4">
+          <h3 className="text-2xl font-bold text-white mt-4">
             Welcome to DogeFood Lab! 🐕‍🦺
           </h3>
         </div>
