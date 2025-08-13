@@ -28,6 +28,7 @@ api_router = APIRouter(prefix="/api")
 class Player(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     address: str
+    nickname: Optional[str] = None  # Enhanced: Add nickname support
     is_nft_holder: bool = False
     level: int = 1
     experience: int = 0
@@ -37,6 +38,7 @@ class Player(BaseModel):
 
 class PlayerCreate(BaseModel):
     address: str
+    nickname: Optional[str] = None  # Enhanced: Add nickname support
     is_nft_holder: bool = False
 
 class PlayerProgress(BaseModel):
@@ -50,21 +52,29 @@ class DogeTreat(BaseModel):
     name: str
     creator_address: str
     ingredients: List[str]
+    main_ingredient: Optional[str] = None  # Enhanced: Main ingredient
     rarity: str
     flavor: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     image: str
+    timer_duration: Optional[int] = None  # Enhanced: Timer in seconds
+    brewing_status: str = "ready"  # Enhanced: "brewing" or "ready"
+    ready_at: Optional[datetime] = None  # Enhanced: When treat will be ready
 
 class TreatCreate(BaseModel):
     name: str
     creator_address: str
     ingredients: List[str]
+    main_ingredient: Optional[str] = None  # Enhanced: Main ingredient
     rarity: str
     flavor: str
     image: str
+    timer_duration: Optional[int] = None  # Enhanced: Timer support
+    brewing_status: str = "ready"  # Enhanced: Default to ready
 
 class LeaderboardEntry(BaseModel):
     address: str
+    nickname: Optional[str] = None  # Enhanced: Show nicknames
     points: int
     level: int
     is_nft_holder: bool
