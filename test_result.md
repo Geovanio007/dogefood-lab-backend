@@ -208,8 +208,8 @@ backend:
           comment: "✅ ENHANCED TREAT SYSTEM FULLY WORKING! Tested POST /api/treats with all enhanced fields: main_ingredient='bacon', timer_duration=10800 (3 hours), brewing_status='brewing'. All fields properly stored and returned. ready_at timestamp automatically calculated. Enhanced treat creation system is fully functional with timer support."
 
   - task: "Timer System Support for 3-Hour Brewing"
-    implemented: false
-    working: "NA"
+    implemented: true
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
@@ -218,6 +218,9 @@ backend:
         - working: "NA"
           agent: "testing"
           comment: "Not implemented. Treats store creation timestamps but lack timer_duration, brewing_status fields. No API endpoints for checking treat brewing status or completion."
+        - working: true
+          agent: "testing"
+          comment: "✅ TIMER SYSTEM FULLY IMPLEMENTED! Tested both timer endpoints: 1) POST /api/treats/{treat_id}/check-timer - Returns brewing status and remaining seconds, automatically updates status to 'ready' when timer completes. 2) GET /api/treats/{address}/brewing - Returns all brewing treats for a player with auto-status updates. Timer calculations working correctly (tested with 5-second timer that properly completed). 3-hour brewing system fully functional."
 
 frontend:
   - task: "Main Menu Interface"
