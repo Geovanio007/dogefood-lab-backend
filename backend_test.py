@@ -58,13 +58,114 @@ class DogeLabAPITester:
         """Test API health check"""
         return self.run_test("Health Check", "GET", "", 200)
 
-    def test_create_player(self):
-        """Test player creation"""
+    def test_create_player_with_nickname(self):
+        """Test player creation with nickname (Enhanced Feature)"""
         player_data = {
             "address": self.test_player_address,
+            "nickname": "DogeScientist",
             "is_nft_holder": True
         }
-        return self.run_test("Create Player", "POST", "player", 200, data=player_data)
+        success, response = self.run_test("Create Player with Nickname", "POST", "player", 200, data=player_data)
+        
+        # Check if nickname is supported
+        if success and 'nickname' not in response:
+            self.missing_features.append("Player nickname support")
+            print("   ⚠️  Note: Nickname field not supported in current implementation")
+        
+        return success, response
+
+    def test_create_enhanced_treat(self):
+        """Test creating enhanced treat with main ingredient and timer info"""
+        treat_data = {
+            "name": "Premium Bacon Delight",
+            "creator_address": self.test_player_address,
+            "ingredients": ["premium_bacon", "aged_cheese", "organic_herbs"],
+            "main_ingredient": "premium_bacon",  # Enhanced feature
+            "rarity": "legendary",
+            "flavor": "savory",
+            "image": "premium-treat-image-url",
+            "timer_duration": 10800,  # 3 hours in seconds
+            "brewing_status": "brewing"  # Enhanced feature
+        }
+        success, response = self.run_test("Create Enhanced Treat", "POST", "treats", 200, data=treat_data)
+        
+        # Check for enhanced features
+        if success:
+            if 'main_ingredient' not in response:
+                self.missing_features.append("Treat main_ingredient field")
+                print("   ⚠️  Note: main_ingredient field not supported")
+            if 'timer_duration' not in response:
+                self.missing_features.append("Treat timer system")
+                print("   ⚠️  Note: Timer system not implemented")
+            if 'brewing_status' not in response:
+                self.missing_features.append("Treat brewing status")
+                print("   ⚠️  Note: Brewing status not supported")
+            
+            if 'id' in response:
+                self.test_treat_id = response['id']
+        
+        return success, response
+
+    def test_timer_system_support(self):
+        """Test timer system functionality"""
+        # Test getting treats with timer info
+        success, response = self.run_test("Get Treats with Timer Info", "GET", f"treats/{self.test_player_address}", 200)
+        
+        if success and response:
+            has_timer_fields = any('timer_duration' in treat or 'brewing_status' in treat for treat in response)
+            if not has_timer_fields:
+                self.missing_features.append("Timer system in treat retrieval")
+                print("   ⚠️  Note: Timer fields not present in treat responses")
+        
+        return success, response
+
+    def test_leaderboard_with_nicknames(self):
+        """Test leaderboard returns nicknames"""
+        success, response = self.run_test("Get Leaderboard with Nicknames", "GET", "leaderboard", 200, params={"limit": 10})
+        
+        if success and response:
+            has_nicknames = any('nickname' in entry for entry in response)
+            if not has_nicknames:
+                self.missing_features.append("Leaderboard nickname support")
+                print("   ⚠️  Note: Leaderboard doesn't include player nicknames")
+        
+        return success, response
+
+    def test_multiple_wallet_addresses(self):
+        """Test with multiple realistic wallet addresses"""
+        test_addresses = [
+            "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54",
+            "0x8ba1f109551bD432803012645Hac136c0c6160",
+            "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+        ]
+        
+        all_success = True
+        for i, address in enumerate(test_addresses):
+            player_data = {
+                "address": address,
+                "is_nft_holder": i % 2 == 0  # Alternate NFT holder status
+            }
+            success, _ = self.run_test(f"Create Player {i+1}", "POST", "player", 200, data=player_data)
+            if not success:
+                all_success = False
+        
+        return all_success, {}
+
+    def test_enhanced_ingredient_combinations(self):
+        """Test treats with complex ingredient combinations"""
+        complex_treat_data = {
+            "name": "Master Chef's Special",
+            "creator_address": self.test_player_address,
+            "ingredients": [
+                "truffle_oil", "wagyu_beef", "gold_flakes", 
+                "aged_parmesan", "black_pepper", "sea_salt"
+            ],
+            "rarity": "mythical",
+            "flavor": "umami",
+            "image": "master-chef-special-url"
+        }
+        
+        return self.run_test("Create Complex Ingredient Treat", "POST", "treats", 200, data=complex_treat_data)
 
     def test_get_player(self):
         """Test getting player by address"""
