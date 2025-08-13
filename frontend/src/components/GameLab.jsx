@@ -380,7 +380,7 @@ const GameLab = () => {
         if (newProgress >= 100) {
           clearInterval(interval);
           setTimeout(() => {
-            completeMixing();
+            completeMixing(web3Game);
             
             // Reset selected ingredients AFTER mixing completes
             setTimeout(() => {
