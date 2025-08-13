@@ -243,8 +243,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Web3 Integration - NFT Minting"
-    - "GameLab Component"
+    - "Component Dependency Resolution"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
