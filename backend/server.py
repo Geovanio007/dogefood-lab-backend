@@ -90,6 +90,7 @@ async def create_player(player_data: PlayerCreate):
     
     player = Player(
         address=player_data.address,
+        nickname=player_data.nickname,  # Enhanced: Store nickname
         is_nft_holder=player_data.is_nft_holder
     )
     
