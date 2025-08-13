@@ -203,6 +203,41 @@ export class BlockchainService {
       return null;
     }
   }
+
+  // NFT Minting Function (requires wallet client)
+  async mintTreatNFT(walletClient, userAddress) {
+    try {
+      console.log('🎨 Minting DogeFood NFT for treat creation...');
+      
+      const txHash = await walletClient.writeContract({
+        address: CONTRACT_ADDRESSES.DOGEFOOD_NFT,
+        abi: DOGEFOOD_NFT_ABI,
+        functionName: 'mintTreat',
+        args: [userAddress],
+        account: userAddress,
+      });
+
+      console.log('✅ NFT mint transaction sent:', txHash);
+      
+      // Wait for transaction confirmation
+      const receipt = await this.client.waitForTransactionReceipt({ hash: txHash });
+      
+      console.log('✅ NFT minted successfully! Transaction:', receipt);
+      
+      return {
+        success: true,
+        txHash,
+        receipt,
+        explorerUrl: this.getTxUrl(txHash)
+      };
+    } catch (error) {
+      console.error('❌ Error minting NFT:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to mint NFT'
+      };
+    }
+  }
 }
 
 // Export singleton instance
