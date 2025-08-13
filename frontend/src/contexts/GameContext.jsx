@@ -331,7 +331,7 @@ export function GameProvider({ children }) {
     });
   };
 
-  const completeMixing = () => {
+  const completeMixing = async (web3GameHook = null) => {
     const { selectedIngredients } = state.mixing;
     const difficulty = calculateDifficulty(state.currentLevel);
     
@@ -372,6 +372,22 @@ export function GameProvider({ children }) {
         rarity: rarity
       } 
     });
+    
+    // Web3 Integration: Mint NFT if wallet is connected
+    if (web3GameHook && typeof web3GameHook.mintTreatNFT === 'function') {
+      try {
+        console.log('🎨 Attempting to mint DogeFood NFT for treat creation...');
+        const mintResult = await web3GameHook.mintTreatNFT();
+        
+        if (mintResult && mintResult.success) {
+          console.log('✅ DogeFood NFT minted successfully!', mintResult);
+          // Could add additional celebration here
+        }
+      } catch (error) {
+        console.warn('⚠️ NFT minting failed (continuing with game):', error.message);
+        // Don't block game progression if NFT minting fails
+      }
+    }
     
     // Award XP and points after a short delay for better UX
     setTimeout(() => {
