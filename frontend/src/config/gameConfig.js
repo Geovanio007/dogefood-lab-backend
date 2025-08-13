@@ -183,3 +183,49 @@ export const formatTimeRemaining = (milliseconds) => {
 export const isTimerComplete = (startTime, duration) => {
   return Date.now() - startTime >= duration;
 };
+
+// Compatibility functions for old GameContext
+export const ingredientDatabase = [
+  // Tier 1 – Starter Ingredients (Levels 1–5)
+  { id: '1', name: 'Basic Bone Biscuit', tier: 1, type: 'base', rarity: 'common', unlockLevel: 1, image: '🦴' },
+  { id: '2', name: 'Chicken Crunch', tier: 1, type: 'protein', rarity: 'common', unlockLevel: 1, image: '🍗' },
+  { id: '3', name: 'Beefy Bite', tier: 1, type: 'protein', rarity: 'common', unlockLevel: 2, image: '🥩' },
+  { id: '4', name: 'Cheesy Kibble', tier: 1, type: 'flavor', rarity: 'common', unlockLevel: 3, image: '🧀' },
+  { id: '5', name: 'Puppy Pea', tier: 1, type: 'veggie', rarity: 'common', unlockLevel: 4, image: '🟢' },
+  
+  // Tier 2 – Intermediate Ingredients (Levels 6–10)
+  { id: '6', name: 'Salmon Surprise', tier: 2, type: 'protein', rarity: 'rare', unlockLevel: 6, image: '🐟' },
+  { id: '7', name: 'Bacon Strip Delight', tier: 2, type: 'protein', rarity: 'rare', unlockLevel: 7, image: '🥓' },
+  { id: '8', name: 'Peanut Woof Butter', tier: 2, type: 'flavor', rarity: 'rare', unlockLevel: 8, image: '🥜' },
+  { id: '9', name: 'Carrot Chew', tier: 2, type: 'veggie', rarity: 'rare', unlockLevel: 9, image: '🥕' },
+  { id: '10', name: 'Spinach Crunch', tier: 2, type: 'veggie', rarity: 'rare', unlockLevel: 10, image: '🥬' },
+];
+
+// Level-based difficulty calculation
+export const calculateDifficulty = (level) => {
+  const { baseMultiplier, scalingFactor, maxMultiplier } = gameConfig.difficulty;
+  const difficulty = Math.min(
+    baseMultiplier + (level - 1) * scalingFactor,
+    maxMultiplier
+  );
+  return parseFloat(difficulty.toFixed(2));
+};
+
+// XP calculation based on ingredients and level
+export const calculateXP = (ingredients, level, rarity = 'common') => {
+  const baseXp = gameConfig.xp.baseXpPerCombo;
+  const bonusXp = Math.max(0, ingredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient;
+  const rarityMultiplier = gameConfig.ingredients?.rarityMultiplier?.[rarity] || 1.0;
+  
+  return Math.floor((baseXp + bonusXp) * rarityMultiplier);
+};
+
+// Get unlocked ingredients for a specific level
+export const getUnlockedIngredients = (currentLevel) => {
+  return ingredientDatabase.filter(ingredient => ingredient.unlockLevel <= currentLevel);
+};
+
+// Get ingredients unlocked at a specific level (for level up notifications)
+export const getIngredientsUnlockedAtLevel = (level) => {
+  return ingredientDatabase.filter(ingredient => ingredient.unlockLevel === level);
+};
