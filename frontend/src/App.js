@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { GameProvider } from './contexts/GameContext';
 import { Web3Provider } from './components/Web3Provider';
 import LoadingScreen from './components/LoadingScreen';
-import NotificationSystem from './components/NotificationSystem';
 import MainMenu from './components/MainMenu';
 import GameLab from './components/GameLab';
 import MyTreats from './components/MyTreats';
@@ -43,7 +42,6 @@ function App() {
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </Router>
-          <NotificationSystem />
         </div>
       </GameProvider>
     </Web3Provider>
