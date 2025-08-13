@@ -52,7 +52,7 @@ body {
   }
   
   .game-card {
-    @apply bg-gradient-to-br from-sky-400/95 to-blue-500/95 backdrop-blur-lg border-4 border-sky-300/50 shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl;
+    @apply bg-gradient-to-br from-sky-400/95 to-blue-500/95 backdrop-blur-lg border-4 border-sky-300/50 shadow-2xl transition-all duration-300 hover:scale-105;
     border-radius: 25px;
     box-shadow: 0 25px 50px rgba(56, 189, 248, 0.4), 
                 0 20px 30px rgba(56, 189, 248, 0.3),
