@@ -55,7 +55,6 @@ const initialState = {
   // Notifications
   notifications: []
 };
-};
 
 // Enhanced Game Reducer
 function gameReducer(state, action) {
