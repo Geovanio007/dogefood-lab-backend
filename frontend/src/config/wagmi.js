@@ -29,7 +29,7 @@ export const dogeOSDevnet = defineChain({
 
 export const wagmiConfig = getDefaultConfig({
   appName: 'DogeFood Lab Beta',
-  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID_HERE',
+  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '',
   chains: [dogeOSDevnet],
   ssr: false,
 });
