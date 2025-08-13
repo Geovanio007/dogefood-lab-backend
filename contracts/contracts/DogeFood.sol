@@ -28,6 +28,17 @@ contract DogeFood is ERC721, Ownable {
         emit DogeNFTMinted(to, tokenId);
     }
     
+    // Public minting function for game mechanics
+    function mintTreat(address to) public {
+        require(_tokenIdCounter < MAX_SUPPLY, "Max supply reached");
+        require(to != address(0), "Cannot mint to zero address");
+        
+        uint256 tokenId = _tokenIdCounter;
+        _tokenIdCounter++;
+        _safeMint(to, tokenId);
+        emit DogeNFTMinted(to, tokenId);
+    }
+    
     function batchMint(address[] calldata addresses) external onlyOwner {
         require(_tokenIdCounter + addresses.length <= MAX_SUPPLY, "Would exceed max supply");
         
