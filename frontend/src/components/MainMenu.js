@@ -9,24 +9,19 @@ import { useGame } from '../contexts/GameContext';
 import { Beaker, Trophy, Settings, Palette } from 'lucide-react';
 
 const MainMenu = () => {
+  const { address, isConnected } = useAccount();
   const { user, isNFTHolder, currentLevel, points, checkNFTOwnership, dispatch } = useGame();
-  const [isConnected, setIsConnected] = useState(false);
-  const [address, setAddress] = useState(null);
+  const [nftBalance, setNftBalance] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  const connectWallet = async () => {
-    // Mock wallet connection for prototype
-    const mockAddress = '0x1234567890123456789012345678901234567890';
-    setAddress(mockAddress);
-    setIsConnected(true);
-    dispatch({ type: 'SET_USER', payload: { address: mockAddress } });
-    checkNFTOwnership(mockAddress);
-  };
-
-  const disconnectWallet = () => {
-    setAddress(null);
-    setIsConnected(false);
-    dispatch({ type: 'SET_USER', payload: null });
-  };
+  // Check NFT ownership when wallet connects
+  useEffect(() => {
+    if (isConnected && address) {
+      checkNFTOwnership(address);
+      // In a real implementation, you'd check the actual NFT balance here
+      // For now, we'll use the GameContext's checkNFTOwnership function
+    }
+  }, [isConnected, address, checkNFTOwnership]);
 
   return (
     <div className="lab-container min-h-screen p-8">
