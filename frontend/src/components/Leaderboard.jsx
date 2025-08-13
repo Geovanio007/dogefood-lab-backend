@@ -273,10 +273,10 @@ const Leaderboard = () => {
                             </div>
                             <div>
                               <div className="font-bold text-gray-800 playful-text">
-                                {player.nickname || `Scientist ${rank}`}
+                                {entry.nickname || `Scientist ${rank}`}
                               </div>
                               <div className="font-mono text-xs text-gray-500">
-                                {formatAddress(player.address)}
+                                {formatAddress(entry.address)}
                               </div>
                               {isCurrentUser && (
                                 <Badge className="bg-blue-500 text-white text-xs mt-1">You</Badge>
@@ -286,19 +286,23 @@ const Leaderboard = () => {
                         </td>
                         
                         <td className="py-4 px-2 text-center">
-                          <div className="font-bold text-green-600">{player.points}</div>
+                          <div className="font-bold text-green-600 text-lg playful-text">
+                            {entry.points.toLocaleString()}
+                          </div>
                         </td>
                         
                         <td className="py-4 px-2 text-center">
-                          <Badge variant="outline">Level {player.level}</Badge>
+                          <Badge variant="outline" className="font-bold">
+                            Level {entry.level}
+                          </Badge>
                         </td>
                         
                         <td className="py-4 px-2 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            {player.nft_holder && <Crown className="w-4 h-4 text-purple-500" />}
-                            <span className="text-sm">
-                              {player.nft_holder ? 'VIP' : 'Regular'}
-                            </span>
+                          <div className="flex items-center justify-center gap-2">
+                            {entry.is_nft_holder && <Crown className="w-5 h-5 text-purple-500" />}
+                            <Badge className={entry.is_nft_holder ? 'vip-badge' : 'bg-gray-200 text-gray-700'}>
+                              {entry.is_nft_holder ? 'VIP Scientist' : 'Scientist'}
+                            </Badge>
                           </div>
                         </td>
                         
