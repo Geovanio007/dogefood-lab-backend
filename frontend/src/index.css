@@ -2,12 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'Comic Sans MS', 'Arial', sans-serif;
-  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
-  min-height: 100vh;
-  margin: 0;
-  padding: 20px;
+/* Ensure consistent font family across all devices */
+*, *::before, *::after {
+  font-family: 'Comic Sans MS', 'Arial', sans-serif !important;
+}
+
+/* Force consistent playful titles on all devices */
+.playful-title {
+  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+  font-weight: bold !important;
+  text-shadow: 4px 4px 8px rgba(0,0,0,0.4), 
+               2px 2px 4px rgba(139, 69, 19, 0.3),
+               0 0 20px rgba(255, 193, 7, 0.2) !important;
+  letter-spacing: 1px !important;
+}
+
+/* Ensure bubble text styling is consistent */
+.bubble-text {
+  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+  font-weight: bold !important;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;
+}
+
+/* Force consistent button text styling */
+.doge-button, .doge-button:hover, .doge-button:active {
+  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+  font-weight: bold !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
 }
 
 @layer components {
