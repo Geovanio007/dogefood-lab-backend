@@ -97,7 +97,7 @@ class MerkleTreeGenerator:
                 rewards.append(reward_entry)
         
         logger.info(f"Generated {len(rewards)} reward entries for season {season}")
-        logger.info(f"Total rewards allocated: {sum(r.amount for r in rewards) / self.WEI_MULTIPLIER:.2f} LAB tokens")
+        logger.info(f"Total rewards allocated: {sum(r.amount for r in rewards) / 1000000:.2f} LAB tokens (testing scale)")
         
         return rewards
     
