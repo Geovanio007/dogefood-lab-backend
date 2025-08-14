@@ -456,6 +456,17 @@ const GameLab = () => {
     startMixing(selectedIngredients);
     setMixingProgress(0);
 
+    // Show timer information to user
+    const timerDuration = calculateTreatTimer(currentLevel);
+    const hours = Math.floor(timerDuration / (1000 * 60 * 60));
+    const minutes = Math.floor((timerDuration % (1000 * 60 * 60)) / (1000 * 60));
+    
+    toast({
+      title: "Mixing Started! 🧪",
+      description: `Your treat will be ready in ${hours}h ${minutes}m. Higher levels = longer wait times!`,
+      className: "bg-blue-100 border-blue-400"
+    });
+
     // Simulate mixing progress
     const interval = setInterval(() => {
       setMixingProgress(prev => {
@@ -465,7 +476,24 @@ const GameLab = () => {
         if (newProgress >= 100) {
           clearInterval(interval);
           setTimeout(() => {
+            // Complete mixing and create treat with timer
             completeMixing(web3Game);
+            
+            // Create treat with timer
+            const treatId = Date.now().toString();
+            const newTreat = {
+              id: treatId,
+              name: `Level ${currentLevel} Special Treat`,
+              ingredients: selectedIngredients,
+              createdAt: Date.now(),
+              completesAt: Date.now() + timerDuration,
+              isReady: false,
+              level: currentLevel,
+              status: 'brewing'
+            };
+            
+            // Add to active treats
+            setActiveTreats(prev => [...prev, newTreat]);
             
             // Reset selected ingredients AFTER mixing completes
             setTimeout(() => {
@@ -477,9 +505,9 @@ const GameLab = () => {
                              Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient;
               
               toast({
-                title: "Mixing Complete! 🎉",
-                description: `Your new Dogetreat has been created! +${Math.floor(xpGained * currentDifficulty)} XP`,
-                className: "bg-green-100 border-green-400"
+                title: "Treat is Brewing! ⏰",
+                description: `Your Level ${currentLevel} treat is now brewing. Come back in ${hours}h ${minutes}m!`,
+                className: "bg-yellow-100 border-yellow-400"
               });
             }, 100);
           }, 500);
@@ -488,6 +516,37 @@ const GameLab = () => {
       });
     }, 300);
   };
+
+  // Handle treat completion
+  const handleTreatComplete = (treatId) => {
+    setActiveTreats(prev => prev.map(treat => 
+      treat.id === treatId 
+        ? { ...treat, isReady: true, status: 'ready' }
+        : treat
+    ));
+    
+    toast({
+      title: "Treat Ready! 🎉",
+      description: "Your patient waiting has paid off! Your treat is ready to collect.",
+      className: "bg-green-100 border-green-400"
+    });
+  };
+
+  // Check for completed treats
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveTreats(prev => prev.map(treat => {
+        if (!treat.isReady && Date.now() >= treat.completesAt) {
+          // Treat is ready!
+          setTimeout(() => handleTreatComplete(treat.id), 100);
+          return { ...treat, isReady: true, status: 'ready' };
+        }
+        return treat;
+      }));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const getIngredientEmoji = (type) => {
     switch (type) {
