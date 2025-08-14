@@ -268,7 +268,9 @@ class MerkleTreeGenerator:
         else:
             combined = right_clean + left_clean
         
-        hash_bytes = hashlib.keccak(bytes.fromhex(combined)).digest()
+        k = keccak.new(digest_bits=256)
+        k.update(bytes.fromhex(combined))
+        hash_bytes = k.digest()
         return '0x' + hash_bytes.hex()
     
     def _get_merkle_proof(self, tree: List[List[str]], leaf_index: int) -> List[str]:
