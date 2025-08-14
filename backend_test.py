@@ -2,17 +2,20 @@ import requests
 import sys
 from datetime import datetime
 import json
+import time
 
 class DogeLabAPITester:
-    def __init__(self, base_url="https://dogefoodlab-1.preview.emergentagent.com"):
+    def __init__(self, base_url="https://b68f7c0c-2650-4e0a-a067-d4c7c127a8d1.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
-        # Using realistic wallet address as requested
+        # Using realistic wallet addresses for Phase 2 testing
         self.test_player_address = "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54"
         self.test_player_address_2 = "0x8ba1f109551bD432803012645Hac136c0c6160"
+        self.test_player_address_3 = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
         self.test_treat_id = None
         self.missing_features = []
+        self.season_id = 1
 
     def run_test(self, name, method, endpoint, expected_status, data=None, params=None):
         """Run a single API test"""
