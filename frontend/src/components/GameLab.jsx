@@ -865,6 +865,43 @@ const GameLab = () => {
         <IngredientSack />
       </div>
 
+      {/* Active Treats Timer Section */}
+      {activeTreats.length > 0 && (
+        <Card className="game-card mt-8">
+          <CardHeader>
+            <CardTitle className="text-center playful-title text-white text-2xl">
+              ⏰ Your Brewing Treats
+            </CardTitle>
+            <p className="text-center text-white/80 playful-text">
+              Patience is key - higher levels require longer brewing times!
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {activeTreats.map((treat) => (
+              <TreatTimer
+                key={treat.id}
+                treatId={treat.id}
+                startTime={treat.createdAt}
+                duration={treat.completesAt - treat.createdAt}
+                treatName={treat.name}
+                onComplete={handleTreatComplete}
+                size="normal"
+              />
+            ))}
+            
+            {/* Timer Level Information */}
+            <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg p-4 border border-blue-300/30">
+              <h4 className="font-bold text-white mb-2 playful-text">⚡ Timer System:</h4>
+              <div className="text-white/90 text-sm space-y-1">
+                <p>🕐 <strong>Level {currentLevel}:</strong> {Math.floor(calculateTreatTimer(currentLevel) / (1000 * 60 * 60))}h {Math.floor((calculateTreatTimer(currentLevel) % (1000 * 60 * 60)) / (1000 * 60))}m brewing time</p>
+                <p>📈 <strong>Next Level:</strong> {Math.floor(calculateTreatTimer(currentLevel + 1) / (1000 * 60 * 60))}h {Math.floor((calculateTreatTimer(currentLevel + 1) % (1000 * 60 * 60)) / (1000 * 60))}m brewing time</p>
+                <p>🏆 <strong>Competitive:</strong> Only the most patient players reach higher levels!</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tips Section - Personalized */}
       <Card className="glass-panel mt-8">
         <CardHeader>
