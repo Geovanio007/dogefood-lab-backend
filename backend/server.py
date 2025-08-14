@@ -28,6 +28,19 @@ anti_cheat_system = AntiCheatSystem(db)
 points_system = PointsCollectionSystem(db)
 merkle_generator = MerkleTreeGenerator()
 
+# Background task functions
+async def award_treat_creation_points(player_address: str, treat_metadata: dict):
+    """Background task to award points for treat creation"""
+    try:
+        points_awarded = await points_system.award_points(
+            player_address=player_address,
+            source="treat_creation",
+            metadata=treat_metadata
+        )
+        logger.info(f"Awarded {points_awarded} points to {player_address} for treat creation")
+    except Exception as e:
+        logger.error(f"Error awarding treat creation points: {e}")
+
 # Create the main app without a prefix
 app = FastAPI()
 
