@@ -1621,12 +1621,16 @@ body {
       padding: 0.875rem;
     }
     
+    /* Keep desktop notification font sizes */
     .notification-title {
-      font-size: 0.875rem;
+      font-size: 1rem; /* Keep larger font size */
+      font-family: 'Comic Sans MS', 'Marker Felt', cursive;
+      font-weight: bold;
     }
     
     .notification-message {
-      font-size: 0.8125rem;
+      font-size: 0.9rem; /* Keep readable size */
+      font-family: 'Comic Sans MS', 'Arial', sans-serif;
     }
   }
 }
