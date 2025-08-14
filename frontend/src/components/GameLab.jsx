@@ -569,7 +569,7 @@ const GameLab = () => {
   return (
     <div className="lab-container min-h-screen p-6">
       {/* Level Up Notification */}
-      <LevelUpNotification />
+      {/* <LevelUpNotification /> */}
       
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
