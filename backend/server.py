@@ -150,7 +150,19 @@ async def update_player_progress(progress: PlayerProgress):
 
 # Treat Management Routes
 @api_router.post("/treats", response_model=DogeTreat)
-async def create_treat(treat_data: TreatCreate):
+async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTasks):
+    # Phase 2: Anti-cheat validation
+    cheat_check = await anti_cheat_system.validate_treat_creation(
+        treat_data.creator_address,
+        treat_data.dict()
+    )
+    
+    if not cheat_check["valid"]:
+        raise HTTPException(
+            status_code=429,  # Too Many Requests
+            detail=f"Anti-cheat triggered: {cheat_check['reason']}"
+        )
+    
     # Enhanced: Calculate ready_at time if timer is specified
     ready_at = None
     if treat_data.timer_duration and treat_data.brewing_status == "brewing":
@@ -169,6 +181,17 @@ async def create_treat(treat_data: TreatCreate):
     await db.players.update_one(
         {"address": treat_data.creator_address},
         {"$push": {"created_treats": treat.id}}
+    )
+    
+    # Phase 2: Award points for treat creation
+    background_tasks.add_task(
+        award_treat_creation_points,
+        treat_data.creator_address,
+        {
+            "rarity": treat_data.rarity,
+            "ingredients": treat_data.ingredients,
+            "main_ingredient": treat_data.main_ingredient
+        }
     )
     
     return treat
