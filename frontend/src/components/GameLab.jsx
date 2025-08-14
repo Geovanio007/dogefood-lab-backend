@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Link } from 'react-router-dom';
-import { useAccount, ConnectButton } from 'wagmi';
+import { useAccount } from 'wagmi';
+// import { useAccount, ConnectButton } from 'wagmi';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 // import { Progress } from './ui/progress';
