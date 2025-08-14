@@ -376,6 +376,112 @@ async def verify_nft_ownership(address: str):
     
     return {"address": address, "is_nft_holder": is_holder}
 
+# Phase 2: Web3 Rewards & Merkle Tree Routes
+@api_router.post("/rewards/generate-season/{season_id}")
+async def generate_season_rewards(season_id: int, reward_pool_tokens: int = 100000):
+    """Generate Merkle tree for season rewards distribution"""
+    
+    # Get all eligible players (NFT holders with points)
+    eligible_players = await db.players.find({
+        "is_nft_holder": True,
+        "points": {"$gt": 0}
+    }).to_list(1000)
+    
+    if not eligible_players:
+        raise HTTPException(status_code=400, detail="No eligible players found")
+    
+    # Get additional stats for each player
+    enhanced_players = []
+    for player in eligible_players:
+        # Get treat count
+        treat_count = await db.treats.count_documents({"creator_address": player["address"]})
+        
+        # Calculate activity score (simplified)
+        activity_score = await points_system.calculate_player_streak(player["address"])
+        activity_value = activity_score["login_streak"] + activity_score["treat_creation_streak"]
+        
+        enhanced_players.append({
+            **player,
+            "treats_created": treat_count,
+            "activity_score": activity_value
+        })
+    
+    # Generate rewards
+    rewards = merkle_generator.generate_rewards_for_season(
+        enhanced_players, season_id, reward_pool_tokens
+    )
+    
+    # Generate Merkle tree
+    merkle_data = merkle_generator.generate_merkle_tree(rewards)
+    
+    # Generate proofs
+    proofs = merkle_generator.generate_merkle_proofs(merkle_data)
+    
+    # Export for smart contract
+    contract_data = merkle_generator.export_for_smart_contract(merkle_data, proofs, season_id)
+    
+    # Generate summary
+    summary = merkle_generator.generate_season_summary(rewards, merkle_data["merkle_root"])
+    
+    # Save season data to database
+    season_doc = {
+        "season_id": season_id,
+        "merkle_root": merkle_data["merkle_root"],
+        "total_rewards": merkle_data["total_rewards"],
+        "total_recipients": len(rewards),
+        "contract_data": contract_data,
+        "summary": summary,
+        "generated_at": datetime.utcnow(),
+        "status": "generated"
+    }
+    
+    await db.reward_seasons.insert_one(season_doc)
+    
+    return {
+        "message": f"Season {season_id} rewards generated successfully",
+        "merkle_root": merkle_data["merkle_root"],
+        "total_recipients": len(rewards),
+        "total_rewards_tokens": merkle_data["total_rewards"] / (10**18),
+        "summary": summary
+    }
+
+@api_router.get("/rewards/season/{season_id}")
+async def get_season_rewards(season_id: int):
+    """Get season rewards information"""
+    season_data = await db.reward_seasons.find_one({"season_id": season_id})
+    
+    if not season_data:
+        raise HTTPException(status_code=404, detail="Season not found")
+    
+    return season_data
+
+@api_router.get("/rewards/claim/{address}/{season_id}")
+async def get_claim_data(address: str, season_id: int):
+    """Get Merkle proof data for claiming rewards"""
+    season_data = await db.reward_seasons.find_one({"season_id": season_id})
+    
+    if not season_data:
+        raise HTTPException(status_code=404, detail="Season not found")
+    
+    claim_data = season_data.get("contract_data", {}).get("claim_data", {}).get(address)
+    
+    if not claim_data:
+        raise HTTPException(status_code=404, detail="No rewards available for this address in this season")
+    
+    return {
+        "address": address,
+        "season_id": season_id,
+        "amount": claim_data["amount"],
+        "proof": claim_data["proof"],
+        "merkle_root": season_data["merkle_root"]
+    }
+
+@api_router.get("/rewards/seasons")
+async def get_all_seasons():
+    """Get all reward seasons"""
+    seasons = await db.reward_seasons.find({}).sort("season_id", -1).to_list(100)
+    return {"seasons": seasons}
+
 # Health check
 @api_router.get("/")
 async def root():
