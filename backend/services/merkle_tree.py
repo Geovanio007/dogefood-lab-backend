@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 import logging
+from Crypto.Hash import keccak
 
 logger = logging.getLogger(__name__)
 
