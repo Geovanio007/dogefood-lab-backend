@@ -39,6 +39,33 @@ body {
   padding: 20px;
 }
 
+/* Mobile-specific font consistency overrides */
+@media (max-width: 768px) {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+    font-weight: bold !important;
+  }
+  
+  /* Main menu title consistency */
+  h1 {
+    font-size: 3.5rem !important;
+    text-shadow: 4px 4px 8px rgba(0,0,0,0.5) !important;
+  }
+  
+  /* Card titles consistency */
+  .card-title, [class*="CardTitle"] {
+    font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+    font-weight: bold !important;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;
+  }
+  
+  /* Ensure all buttons maintain desktop styling */
+  button, .btn, [class*="button"], [role="button"] {
+    font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+    font-weight: bold !important;
+  }
+}
+
 @layer components {
   .glass-panel {
     @apply bg-gradient-to-br from-blue-400/90 to-sky-500/90 backdrop-blur-lg border-2 border-sky-300/40 shadow-2xl;
