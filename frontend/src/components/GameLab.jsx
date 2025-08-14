@@ -7,7 +7,7 @@ import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
 import { useWeb3Game } from '../hooks/useWeb3Game';
-import { XPProgressBar, LevelUpNotification, IngredientSack } from './game/ProgressSystem';
+// import { XPProgressBar, LevelUpNotification, IngredientSack } from './game/ProgressSystem';
 import { getTierInfo } from '../config/gameConfig';
 import TreatTimer from './TreatTimer';
 import { ArrowLeft, Zap, Star, Sparkles, Clock, Target, Crown, ChefHat, Wallet } from 'lucide-react';
