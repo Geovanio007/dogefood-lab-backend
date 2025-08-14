@@ -16,10 +16,10 @@ const Leaderboard = () => {
     currentLevel, 
     player,
     leaderboard,
-    loadLeaderboard,
-    isLoading 
+    loadLeaderboard
   } = useGame();
   
+  const [loading, setLoading] = useState(true);
   const [currentUserRank, setCurrentUserRank] = useState(null);
   const [seasonInfo, setSeasonInfo] = useState({
     current: 1,
@@ -29,22 +29,34 @@ const Leaderboard = () => {
   });
 
   useEffect(() => {
-    loadLeaderboard();
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        await loadLeaderboard();
+      } catch (error) {
+        console.error('Error loading leaderboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
   }, []);
 
   useEffect(() => {
     // Find current user's rank if they have an address
-    if (address && leaderboard.length > 0) {
+    if (address && leaderboard && leaderboard.length > 0) {
       const userIndex = leaderboard.findIndex(entry => 
-        entry.address.toLowerCase() === address.toLowerCase()
+        entry.address && entry.address.toLowerCase() === address.toLowerCase()
       );
       if (userIndex !== -1) {
         setCurrentUserRank(userIndex + 1);
       }
     }
+    
     setSeasonInfo(prev => ({ 
       ...prev, 
-      participants: leaderboard.length 
+      participants: leaderboard ? leaderboard.length : 0
     }));
   }, [address, leaderboard]);
 
