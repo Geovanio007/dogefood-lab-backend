@@ -1681,7 +1681,11 @@ body {
     @apply p-4;
   }
   
+  /* Keep desktop button styling on mobile */
   .doge-button {
-    @apply py-2 px-4 text-sm;
+    padding: 1rem 2rem !important; /* Force desktop padding */
+    font-size: 1rem !important; /* Force desktop font size */
+    font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+    font-weight: bold !important;
   }
 }
