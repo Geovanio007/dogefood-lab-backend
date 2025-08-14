@@ -7,6 +7,7 @@ import MainMenu from './components/MainMenu';
 import GameLab from './components/GameLab';
 import MyTreats from './components/MyTreats';
 import Leaderboard from './components/Leaderboard';
+import AdminDashboard from './components/AdminDashboard';
 import './App.css';
 
 // Settings placeholder component
