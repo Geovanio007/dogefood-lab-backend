@@ -41,6 +41,7 @@ function App() {
               <Route path="/nfts" element={<MyTreats />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/admin" element={<AdminDashboard />} />
             </Routes>
           </Router>
         </div>
