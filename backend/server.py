@@ -23,6 +23,11 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# Initialize Phase 2 services
+anti_cheat_system = AntiCheatSystem(db)
+points_system = PointsCollectionSystem(db)
+merkle_generator = MerkleTreeGenerator()
+
 # Create the main app without a prefix
 app = FastAPI()
 
