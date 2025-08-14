@@ -31,6 +31,14 @@
   text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
 }
 
+body {
+  font-family: 'Comic Sans MS', 'Arial', sans-serif !important;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  min-height: 100vh;
+  margin: 0;
+  padding: 20px;
+}
+
 @layer components {
   .glass-panel {
     @apply bg-gradient-to-br from-blue-400/90 to-sky-500/90 backdrop-blur-lg border-2 border-sky-300/40 shadow-2xl;
