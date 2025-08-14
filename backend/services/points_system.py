@@ -192,6 +192,11 @@ class PointsCollectionSystem:
             "timestamp": {"$gte": cutoff_date}
         }).sort("timestamp", -1).to_list(100)
         
+        # Convert datetime objects to ISO strings for JSON serialization
+        for transaction in transactions:
+            if 'timestamp' in transaction and isinstance(transaction['timestamp'], datetime):
+                transaction['timestamp'] = transaction['timestamp'].isoformat()
+        
         return transactions
     
     async def calculate_player_streak(self, player_address: str) -> Dict:
