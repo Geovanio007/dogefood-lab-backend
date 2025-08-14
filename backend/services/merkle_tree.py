@@ -39,7 +39,7 @@ class MerkleTreeGenerator:
         
         # $LAB token has 18 decimals
         self.TOKEN_DECIMALS = 18
-        self.WEI_MULTIPLIER = 10 ** self.TOKEN_DECIMALS
+        self.WEI_MULTIPLIER = 1000000000000000000  # 10^18 as literal to avoid overflow
     
     def generate_rewards_for_season(self, player_stats: List[Dict], season: int, total_reward_pool: int) -> List[RewardEntry]:
         """
