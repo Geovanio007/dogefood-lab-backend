@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { useToast } from '../ui/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { useToast } from './ui/use-toast';
 import { 
   Coins, 
   ArrowRightLeft, 
