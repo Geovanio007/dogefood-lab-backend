@@ -276,6 +276,237 @@ class DogeLabAPITester:
         """Test getting game statistics"""
         return self.run_test("Get Game Stats", "GET", "stats", 200)
 
+    # ========== PHASE 2: OFF-CHAIN POINTS COLLECTION SYSTEM ==========
+    
+    def test_points_leaderboard(self):
+        """Test enhanced points-based leaderboard"""
+        success, response = self.run_test("Points Leaderboard", "GET", "points/leaderboard", 200, params={"limit": 10})
+        
+        if success and response:
+            if 'leaderboard' not in response:
+                self.missing_features.append("Points leaderboard structure")
+                print("   ⚠️  Note: Expected 'leaderboard' key in response")
+        
+        return success, response
+
+    def test_player_points_stats(self):
+        """Test detailed player points statistics"""
+        success, response = self.run_test("Player Points Stats", "GET", f"points/{self.test_player_address}/stats", 200)
+        
+        if success and response:
+            expected_keys = ['player', 'activity', 'points_breakdown']
+            missing_keys = [key for key in expected_keys if key not in response]
+            if missing_keys:
+                self.missing_features.append(f"Player stats missing keys: {missing_keys}")
+                print(f"   ⚠️  Note: Missing keys in player stats: {missing_keys}")
+        
+        return success, response
+
+    def test_player_points_history(self):
+        """Test player points transaction history"""
+        success, response = self.run_test("Player Points History", "GET", f"points/{self.test_player_address}/history", 200, params={"days": 30})
+        
+        if success and response:
+            if 'transactions' not in response:
+                self.missing_features.append("Points history structure")
+                print("   ⚠️  Note: Expected 'transactions' key in response")
+        
+        return success, response
+
+    def test_daily_bonus_claim(self):
+        """Test NFT holder daily bonus claiming"""
+        success, response = self.run_test("Daily Bonus Claim", "POST", f"points/{self.test_player_address}/daily-bonus", 200)
+        
+        # Test claiming again (should fail or return 0 points)
+        success2, response2 = self.run_test("Daily Bonus Claim (Duplicate)", "POST", f"points/{self.test_player_address}/daily-bonus", 400)
+        
+        return success and success2, response
+
+    # ========== PHASE 2: ANTI-CHEAT SYSTEM INTEGRATION ==========
+    
+    def test_anti_cheat_normal_treat_creation(self):
+        """Test normal treat creation passes anti-cheat validation"""
+        treat_data = {
+            "name": "Normal Bacon Treat",
+            "creator_address": self.test_player_address_2,
+            "ingredients": ["bacon", "cheese", "herbs"],
+            "main_ingredient": "bacon",
+            "rarity": "common",
+            "flavor": "savory",
+            "image": "normal-treat.jpg",
+            "timer_duration": 3600,  # 1 hour - normal timer
+            "brewing_status": "brewing"
+        }
+        
+        success, response = self.run_test("Anti-cheat Normal Treat", "POST", "treats", 200, data=treat_data)
+        return success, response
+
+    def test_anti_cheat_suspicious_rapid_creation(self):
+        """Test anti-cheat blocks rapid treat creation"""
+        # Create multiple treats rapidly to trigger anti-cheat
+        for i in range(3):
+            treat_data = {
+                "name": f"Rapid Treat {i+1}",
+                "creator_address": self.test_player_address_3,
+                "ingredients": ["bacon", "cheese"],
+                "rarity": "common",
+                "flavor": "savory",
+                "image": f"rapid-treat-{i+1}.jpg"
+            }
+            
+            success, response = self.run_test(f"Rapid Treat Creation {i+1}", "POST", "treats", 200 if i < 2 else 429, data=treat_data)
+            
+            if i < 2:  # First few should succeed
+                time.sleep(1)  # Small delay between treats
+        
+        return True, {}
+
+    def test_player_risk_assessment(self):
+        """Test player risk score assessment"""
+        success, response = self.run_test("Player Risk Assessment", "GET", f"security/player-risk/{self.test_player_address_3}", 200)
+        
+        if success and response:
+            expected_keys = ['player_address', 'risk_score', 'risk_level']
+            missing_keys = [key for key in expected_keys if key not in response]
+            if missing_keys:
+                self.missing_features.append(f"Risk assessment missing keys: {missing_keys}")
+                print(f"   ⚠️  Note: Missing keys in risk assessment: {missing_keys}")
+        
+        return success, response
+
+    def test_flagged_players_monitoring(self):
+        """Test flagged players monitoring"""
+        success, response = self.run_test("Flagged Players", "GET", "security/flagged-players", 200, params={"risk_level": "high"})
+        
+        if success and response:
+            if 'flagged_players' not in response:
+                self.missing_features.append("Flagged players structure")
+                print("   ⚠️  Note: Expected 'flagged_players' key in response")
+        
+        return success, response
+
+    # ========== PHASE 2: MERKLE TREE GENERATION ==========
+    
+    def test_generate_season_rewards(self):
+        """Test Merkle tree generation for season rewards"""
+        success, response = self.run_test("Generate Season Rewards", "POST", f"rewards/generate-season/{self.season_id}", 200, data={"reward_pool_tokens": 10000})
+        
+        if success and response:
+            expected_keys = ['message', 'merkle_root', 'total_recipients', 'total_rewards_tokens']
+            missing_keys = [key for key in expected_keys if key not in response]
+            if missing_keys:
+                self.missing_features.append(f"Season generation missing keys: {missing_keys}")
+                print(f"   ⚠️  Note: Missing keys in season generation: {missing_keys}")
+        
+        return success, response
+
+    def test_get_season_data(self):
+        """Test retrieving season reward data"""
+        success, response = self.run_test("Get Season Data", "GET", f"rewards/season/{self.season_id}", 200)
+        
+        if success and response:
+            expected_keys = ['season_id', 'merkle_root', 'total_rewards', 'total_recipients']
+            missing_keys = [key for key in expected_keys if key not in response]
+            if missing_keys:
+                self.missing_features.append(f"Season data missing keys: {missing_keys}")
+                print(f"   ⚠️  Note: Missing keys in season data: {missing_keys}")
+        
+        return success, response
+
+    def test_get_claim_proofs(self):
+        """Test Merkle proof retrieval for reward claiming"""
+        success, response = self.run_test("Get Claim Proofs", "GET", f"rewards/claim/{self.test_player_address}/{self.season_id}", 200)
+        
+        if success and response:
+            expected_keys = ['address', 'season_id', 'amount', 'proof', 'merkle_root']
+            missing_keys = [key for key in expected_keys if key not in response]
+            if missing_keys:
+                self.missing_features.append(f"Claim proofs missing keys: {missing_keys}")
+                print(f"   ⚠️  Note: Missing keys in claim proofs: {missing_keys}")
+        
+        return success, response
+
+    def test_get_all_seasons(self):
+        """Test listing all reward seasons"""
+        success, response = self.run_test("Get All Seasons", "GET", "rewards/seasons", 200)
+        
+        if success and response:
+            if 'seasons' not in response:
+                self.missing_features.append("Seasons list structure")
+                print("   ⚠️  Note: Expected 'seasons' key in response")
+        
+        return success, response
+
+    # ========== PHASE 2: BACKGROUND TASK INTEGRATION ==========
+    
+    def test_background_points_awarding(self):
+        """Test that treat creation awards points via background tasks"""
+        # Get initial points
+        success1, initial_stats = self.run_test("Initial Player Stats", "GET", f"points/{self.test_player_address}/stats", 200)
+        initial_points = 0
+        if success1 and initial_stats and 'player' in initial_stats:
+            initial_points = initial_stats['player'].get('total_points', 0)
+        
+        # Create a treat (should trigger background points awarding)
+        treat_data = {
+            "name": "Points Test Treat",
+            "creator_address": self.test_player_address,
+            "ingredients": ["premium_bacon", "aged_cheese", "truffle_oil"],
+            "main_ingredient": "premium_bacon",
+            "rarity": "legendary",
+            "flavor": "umami",
+            "image": "points-test-treat.jpg"
+        }
+        
+        success2, treat_response = self.run_test("Create Treat for Points", "POST", "treats", 200, data=treat_data)
+        
+        # Wait a moment for background task to complete
+        time.sleep(2)
+        
+        # Check if points were awarded
+        success3, final_stats = self.run_test("Final Player Stats", "GET", f"points/{self.test_player_address}/stats", 200)
+        final_points = 0
+        if success3 and final_stats and 'player' in final_stats:
+            final_points = final_stats['player'].get('total_points', 0)
+        
+        points_awarded = final_points - initial_points
+        if points_awarded <= 0:
+            self.missing_features.append("Background points awarding")
+            print(f"   ⚠️  Note: No points awarded for treat creation (initial: {initial_points}, final: {final_points})")
+        else:
+            print(f"   ✅ Points awarded: {points_awarded} (initial: {initial_points}, final: {final_points})")
+        
+        return success1 and success2 and success3, {"points_awarded": points_awarded}
+
+    def test_enhanced_treat_creation_integration(self):
+        """Test enhanced treat creation with all Phase 2 integrations"""
+        treat_data = {
+            "name": "Phase 2 Integration Test Treat",
+            "creator_address": self.test_player_address,
+            "ingredients": ["wagyu_beef", "truffle_oil", "gold_flakes", "aged_wine"],
+            "main_ingredient": "wagyu_beef",
+            "rarity": "legendary",
+            "flavor": "umami",
+            "image": "phase2-integration-treat.jpg",
+            "timer_duration": 10800,  # 3 hours
+            "brewing_status": "brewing"
+        }
+        
+        success, response = self.run_test("Phase 2 Enhanced Treat Creation", "POST", "treats", 200, data=treat_data)
+        
+        if success and response:
+            # Verify all enhanced fields are present
+            enhanced_fields = ['main_ingredient', 'timer_duration', 'brewing_status', 'ready_at']
+            missing_fields = [field for field in enhanced_fields if field not in response]
+            if missing_fields:
+                self.missing_features.append(f"Enhanced treat fields: {missing_fields}")
+                print(f"   ⚠️  Note: Missing enhanced fields: {missing_fields}")
+            
+            if 'id' in response:
+                self.test_treat_id = response['id']
+        
+        return success, response
+
 def main():
     print("🐕 Starting Enhanced DogeFood Lab API Tests 🧪")
     print("Testing enhanced treat creation system with wallet registration")
