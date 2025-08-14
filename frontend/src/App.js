@@ -43,6 +43,7 @@ function App() {
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/convert" element={<PointsToBlockchain />} />
             </Routes>
           </Router>
         </div>
