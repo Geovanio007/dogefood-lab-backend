@@ -508,56 +508,111 @@ class DogeLabAPITester:
         return success, response
 
 def main():
-    print("🐕 Starting Enhanced DogeFood Lab API Tests 🧪")
-    print("Testing enhanced treat creation system with wallet registration")
-    print("=" * 60)
+    print("🐕 Starting DogeFood Lab Phase 2 API Tests 🧪")
+    print("Testing Phase 2 off-chain services: Points, Anti-cheat, Merkle Trees")
+    print("=" * 70)
     
     tester = DogeLabAPITester()
     
-    # Enhanced test sequence based on review request
+    # Phase 2 comprehensive test sequence
     tests = [
+        # Core API Health Check
         ("Health Check", tester.test_health_check),
+        
+        # Setup: Create test players
         ("Multiple Wallet Addresses", tester.test_multiple_wallet_addresses),
         ("Create Player with Nickname", tester.test_create_player_with_nickname),
         ("Get Player", tester.test_get_player),
         ("Verify NFT", tester.test_verify_nft),
         ("Update Player Progress", tester.test_update_player_progress),
+        
+        # Phase 1 Features (ensure still working)
         ("Create Enhanced Treat", tester.test_create_enhanced_treat),
-        ("Get Player Treats", tester.test_get_player_treats),
         ("Timer System Support", tester.test_timer_system_support),
         ("Check Timer Endpoint", tester.test_check_timer_endpoint),
         ("Brewing Treats Endpoint", tester.test_brewing_treats_endpoint),
-        ("Get All Treats", tester.test_get_all_treats),
         ("Leaderboard with Nicknames", tester.test_leaderboard_with_nicknames),
+        
+        # PHASE 2: OFF-CHAIN POINTS COLLECTION SYSTEM
+        ("Points Leaderboard", tester.test_points_leaderboard),
+        ("Player Points Stats", tester.test_player_points_stats),
+        ("Player Points History", tester.test_player_points_history),
+        ("Daily Bonus Claim", tester.test_daily_bonus_claim),
+        ("Background Points Awarding", tester.test_background_points_awarding),
+        
+        # PHASE 2: ANTI-CHEAT SYSTEM INTEGRATION
+        ("Anti-cheat Normal Treat Creation", tester.test_anti_cheat_normal_treat_creation),
+        ("Anti-cheat Suspicious Activity", tester.test_anti_cheat_suspicious_rapid_creation),
+        ("Player Risk Assessment", tester.test_player_risk_assessment),
+        ("Flagged Players Monitoring", tester.test_flagged_players_monitoring),
+        
+        # PHASE 2: MERKLE TREE GENERATION
+        ("Generate Season Rewards", tester.test_generate_season_rewards),
+        ("Get Season Data", tester.test_get_season_data),
+        ("Get Claim Proofs", tester.test_get_claim_proofs),
+        ("Get All Seasons", tester.test_get_all_seasons),
+        
+        # PHASE 2: INTEGRATION TESTING
+        ("Enhanced Treat Creation Integration", tester.test_enhanced_treat_creation_integration),
+        
+        # Core functionality verification
+        ("Get Player Treats", tester.test_get_player_treats),
+        ("Get All Treats", tester.test_get_all_treats),
         ("Get Game Stats", tester.test_get_game_stats),
         ("Error Handling", tester.test_error_handling),
         ("Realistic Game Scenario", tester.test_realistic_game_scenario)
     ]
     
+    # Execute all tests
     for test_name, test_func in tests:
         try:
+            print(f"\n{'='*50}")
+            print(f"🧪 RUNNING: {test_name}")
+            print(f"{'='*50}")
             test_func()
         except Exception as e:
             print(f"❌ {test_name} failed with exception: {str(e)}")
     
-    # Print final results
-    print("\n" + "=" * 60)
-    print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
+    # Print comprehensive results
+    print("\n" + "=" * 70)
+    print(f"📊 PHASE 2 TEST RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
+    print("=" * 70)
     
-    # Report missing enhanced features
+    # Categorize results
+    success_rate = (tester.tests_passed / tester.tests_run) * 100 if tester.tests_run > 0 else 0
+    
+    if success_rate >= 90:
+        print("🎉 EXCELLENT: Phase 2 backend is highly stable!")
+    elif success_rate >= 75:
+        print("✅ GOOD: Phase 2 backend is mostly functional with minor issues")
+    elif success_rate >= 50:
+        print("⚠️  MODERATE: Phase 2 backend has significant issues requiring attention")
+    else:
+        print("❌ CRITICAL: Phase 2 backend has major failures requiring immediate fixes")
+    
+    # Report missing Phase 2 features
     if tester.missing_features:
-        print("\n🔍 Enhanced Features Analysis:")
-        print("Missing features for full enhanced treat creation system:")
+        print(f"\n🔍 PHASE 2 FEATURES ANALYSIS:")
+        print("Missing or incomplete Phase 2 features:")
         for feature in set(tester.missing_features):
             print(f"   ❌ {feature}")
-    
-    if tester.tests_passed == tester.tests_run:
-        print("🎉 All current API tests passed! Backend is stable.")
-        if tester.missing_features:
-            print("⚠️  However, some enhanced features are not yet implemented.")
-        return 0
+        print(f"\nTotal missing features: {len(set(tester.missing_features))}")
     else:
-        print(f"⚠️  {tester.tests_run - tester.tests_passed} tests failed.")
+        print("\n✅ All Phase 2 features appear to be implemented correctly!")
+    
+    # Final assessment
+    if tester.tests_passed == tester.tests_run and not tester.missing_features:
+        print("\n🚀 PHASE 2 READY FOR PRODUCTION!")
+        print("All off-chain services are working perfectly.")
+        return 0
+    elif success_rate >= 75:
+        print(f"\n⚠️  PHASE 2 MOSTLY READY - {tester.tests_run - tester.tests_passed} tests failed")
+        if tester.missing_features:
+            print("Some enhanced features need completion.")
+        return 1
+    else:
+        print(f"\n🔧 PHASE 2 NEEDS WORK - {tester.tests_run - tester.tests_passed} tests failed")
+        print("Significant issues require resolution before production.")
         return 1
 
 if __name__ == "__main__":
