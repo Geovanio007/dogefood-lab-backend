@@ -313,6 +313,49 @@ async def get_game_stats():
             "active_today": 156
         }
 
+# Phase 2: Enhanced Points System Routes
+@api_router.get("/points/leaderboard")
+async def get_points_leaderboard(limit: int = 50, nft_holders_only: bool = True):
+    """Get enhanced points-based leaderboard"""
+    leaderboard = await points_system.get_points_leaderboard(limit=limit, nft_holders_only=nft_holders_only)
+    return {"leaderboard": leaderboard, "generated_at": datetime.utcnow()}
+
+@api_router.get("/points/{address}/stats")
+async def get_player_points_stats(address: str):
+    """Get detailed player points statistics"""
+    stats = await points_system.get_player_stats(address)
+    if not stats:
+        raise HTTPException(status_code=404, detail="Player not found")
+    return stats
+
+@api_router.get("/points/{address}/history")
+async def get_player_points_history(address: str, days: int = 30):
+    """Get player's points transaction history"""
+    history = await points_system.get_player_points_history(address, days)
+    return {"transactions": history, "days": days}
+
+@api_router.post("/points/{address}/daily-bonus")
+async def claim_daily_bonus(address: str):
+    """Claim daily bonus points (NFT holders only)"""
+    points_awarded = await points_system.award_points(address, "daily_bonus")
+    if points_awarded > 0:
+        return {"message": f"Daily bonus claimed: +{points_awarded} points", "points": points_awarded}
+    else:
+        raise HTTPException(status_code=400, detail="Daily bonus already claimed or not eligible")
+
+# Phase 2: Anti-cheat System Routes  
+@api_router.get("/security/player-risk/{address}")
+async def get_player_risk_score(address: str):
+    """Get player's anti-cheat risk assessment"""
+    risk_data = await anti_cheat_system.get_player_risk_score(address)
+    return risk_data
+
+@api_router.get("/security/flagged-players")
+async def get_flagged_players(risk_level: str = "high"):
+    """Get list of players flagged for suspicious activity (admin only)"""
+    flagged = await anti_cheat_system.get_flagged_players(risk_level)
+    return {"flagged_players": flagged, "risk_level": risk_level}
+
 # NFT Verification Route (Mock for prototype)
 @api_router.post("/verify-nft/{address}")
 async def verify_nft_ownership(address: str):
