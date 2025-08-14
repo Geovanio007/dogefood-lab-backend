@@ -272,6 +272,7 @@ const ThreeDMixingStation = ({ isActive, ingredients, onMix, timeRemaining }) =>
 };
 
 const GameLab = () => {
+  const { isConnected, address } = useAccount();
   const {
     currentLevel,
     xpProgress,
@@ -293,7 +294,89 @@ const GameLab = () => {
   const [mixingProgress, setMixingProgress] = useState(0);
   const [webGLSupported, setWebGLSupported] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState(null);
+  const [activeTreats, setActiveTreats] = useState([]); // For timer management
   const { toast } = useToast();
+
+  // Timer calculation based on level (1 hour base, increases with level)
+  const calculateTreatTimer = (level) => {
+    const baseTimeHours = 1; // 1 hour base
+    const additionalTimePerLevel = 0.5; // 30 minutes per level
+    return Math.floor((baseTimeHours + (level - 1) * additionalTimePerLevel) * 60 * 60 * 1000); // Convert to milliseconds
+  };
+
+  // Show wallet connection requirement if not connected
+  if (!isConnected || !address) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="container mx-auto max-w-4xl">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <Link to="/" className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors">
+              <ArrowLeft size={20} />
+              <span className="font-bold">Back to Menu</span>
+            </Link>
+            <h1 className="text-4xl font-bold playful-title text-blue-800">
+              🧪 DogeFood Lab
+            </h1>
+          </div>
+
+          {/* Wallet Connection Gate */}
+          <Card className="game-card max-w-2xl mx-auto">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-6 shadow-xl">
+                <Wallet size={48} className="text-white drop-shadow-lg" />
+              </div>
+              <CardTitle className="playful-title text-white text-4xl mb-4">
+                🔗 Connect Your Wallet to Start Creating!
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-8">
+              <p className="text-white/90 playful-text text-xl leading-relaxed">
+                Welcome to the DogeFood Lab! Connect your wallet to unlock the full laboratory experience.
+              </p>
+              
+              {/* Benefits Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-8">
+                <div className="text-center p-6 bg-gradient-to-br from-green-400/30 to-emerald-500/20 rounded-3xl border-2 border-green-300/50">
+                  <div className="text-4xl mb-3">🧪</div>
+                  <h4 className="font-bold text-white text-xl mb-3 playful-title">Create Amazing Treats</h4>
+                  <p className="text-white/80 playful-text">Mix ingredients and create unique Dogetreats with progressive timers!</p>
+                </div>
+                
+                <div className="text-center p-6 bg-gradient-to-br from-yellow-400/30 to-orange-500/20 rounded-3xl border-2 border-yellow-300/50">
+                  <div className="text-4xl mb-3">⏰</div>
+                  <h4 className="font-bold text-white text-xl mb-3 playful-title">Competitive Timers</h4>
+                  <p className="text-white/80 playful-text">Wait times increase with each level - only for the most patient players!</p>
+                </div>
+                
+                <div className="text-center p-6 bg-gradient-to-br from-purple-400/30 to-pink-500/20 rounded-3xl border-2 border-purple-300/50">
+                  <div className="text-4xl mb-3">🏆</div>
+                  <h4 className="font-bold text-white text-xl mb-3 playful-title">Compete & Earn</h4>
+                  <p className="text-white/80 playful-text">Earn XP, level up, and compete on leaderboards for $LAB rewards!</p>
+                </div>
+                
+                <div className="text-center p-6 bg-gradient-to-br from-indigo-400/30 to-blue-500/20 rounded-3xl border-2 border-indigo-300/50">
+                  <div className="text-4xl mb-3">👑</div>
+                  <h4 className="font-bold text-white text-xl mb-3 playful-title">VIP Benefits</h4>
+                  <p className="text-white/80 playful-text">NFT holders get bonus XP and exclusive scientist status!</p>
+                </div>
+              </div>
+
+              {/* Connect Button */}
+              <div className="flex justify-center">
+                <ConnectButton />
+              </div>
+              
+              <div className="text-white/70 playful-text text-sm">
+                <p>💡 <strong>New to Web3?</strong> Don't worry! We'll guide you through every step.</p>
+                <p>🔒 <strong>Safe & Secure:</strong> Your wallet stays in your control at all times.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     // Check WebGL support on component mount
