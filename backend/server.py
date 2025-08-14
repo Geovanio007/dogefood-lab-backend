@@ -453,6 +453,12 @@ async def get_season_rewards(season_id: int):
     if not season_data:
         raise HTTPException(status_code=404, detail="Season not found")
     
+    # Convert ObjectId and datetime for JSON serialization
+    if '_id' in season_data:
+        season_data['_id'] = str(season_data['_id'])
+    if 'generated_at' in season_data and hasattr(season_data['generated_at'], 'isoformat'):
+        season_data['generated_at'] = season_data['generated_at'].isoformat()
+    
     return season_data
 
 @api_router.get("/rewards/claim/{address}/{season_id}")
