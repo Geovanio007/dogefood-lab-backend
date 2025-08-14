@@ -813,7 +813,13 @@ const GameLab = () => {
                     />
                     You're creating magic... 🧪
                   </div>
-                  <Progress value={mixingProgress} className="h-3" />
+                  {/* <Progress value={mixingProgress} className="h-3" /> */}
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div 
+                      className="bg-blue-600 h-3 rounded-full transition-all duration-300" 
+                      style={{ width: `${mixingProgress}%` }}
+                    ></div>
+                  </div>
                 </div>
                 <div className="text-sm text-gray-600">
                   Your legendary creation is coming together! ✨
