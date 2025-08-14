@@ -172,7 +172,12 @@ class PointsCollectionSystem:
     
     async def _record_points_transaction(self, transaction: PointsTransaction):
         """Record points transaction in database"""
-        await self.db.points_transactions.insert_one(asdict(transaction))
+        # Convert to dict and handle datetime serialization
+        transaction_dict = asdict(transaction)
+        if isinstance(transaction_dict['timestamp'], datetime):
+            transaction_dict['timestamp'] = transaction_dict['timestamp']  # Keep as datetime for MongoDB
+        
+        await self.db.points_transactions.insert_one(transaction_dict)
         
         logger.info(f"Points awarded: {transaction.player_address} +{transaction.amount} ({transaction.source})")
     
