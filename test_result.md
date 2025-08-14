@@ -379,8 +379,56 @@ test_plan:
           agent: "main"
           comment: "IMPLEMENTED: TreatTimer.jsx component with 3D glass timer visual effects, sand animation, completion sparkles. Integrated into GameLab display section (lines 868-903). Shows active brewing treats with timer information and level-based wait times."
 
+  - task: "Off-chain Points Collection System"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/services/points_system.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "IMPLEMENTED: Complete points collection system with treat creation rewards, daily bonuses, streak calculations, tier-based multipliers. Enhanced leaderboard with activity tracking. Points awarded automatically via background tasks."
+
+  - task: "Anti-cheat System Integration"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/services/anti_cheat.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "IMPLEMENTED: Comprehensive anti-cheat validation for treat creation, XP gains, level progression. Thresholds for activity limits, timer manipulation detection, ingredient farming prevention. Risk scoring and flagged player tracking."
+
+  - task: "Merkle Tree Generation for Web3 Rewards"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/services/merkle_tree.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "IMPLEMENTED: Full Merkle tree generation system with Solidity-compatible hashing (keccak256). Season rewards distribution, tier-based allocations, proof generation. Smart contract export format with 180-day unclaimed token policy."
+
+  - task: "Enhanced API Endpoints for Phase 2"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "IMPLEMENTED: Added Phase 2 API routes - points leaderboard, player stats, daily bonus claiming, anti-cheat monitoring, season reward generation, Merkle proof retrieval. Background task integration for automatic points awarding."
+
 agent_communication:
     - agent: "main"
-      message: "🎯 PHASE 1 IMPLEMENTATION COMPLETED! ✅ WALLET CONNECTION GATE: Implemented full wallet gate in GameLab - users must connect wallet to access lab features. Beautiful informational card shows benefits and Connect Wallet button when not connected. ✅ PROGRESSIVE TIMER SYSTEM: 1-hour base timer + 30 minutes per level calculation implemented. Timer integrated into treat creation flow with toast notifications showing brewing times. ✅ 3D GLASS TIMER DISPLAY: TreatTimer component with 3D glass visual effects, sand animation, completion sparkles integrated into GameLab UI. Shows active brewing treats with level-based wait time information. All Phase 1 features implemented and ready for backend testing!"
+      message: "🚀 PHASE 2 IMPLEMENTATION COMPLETED! ✅ OFF-CHAIN SERVICES: Implemented comprehensive points collection system with automatic rewards, streak bonuses, tier calculations. ✅ ANTI-CHEAT SYSTEM: Full validation for treat creation, XP gains, level progression with risk scoring. ✅ MERKLE TREE GENERATION: Solidity-compatible Merkle trees for Web3 reward distribution with tier-based allocations. ✅ API INTEGRATION: Enhanced backend with 12+ new endpoints for points management, security monitoring, and season rewards. All Phase 2 systems integrated and ready for backend testing!"
     - agent: "testing"
       message: "🎉 COMPREHENSIVE PHASE 1 BACKEND TESTING COMPLETED! ✅ ALL 6 PHASE 1 FEATURES FULLY WORKING: 1) Enhanced Player Registration with Nicknames - POST /api/player supports nickname field, GET /api/player/{address} returns nicknames correctly. 2) Enhanced Treat Creation with Timer Support - POST /api/treats accepts main_ingredient, timer_duration (10800s for 3hrs), brewing_status='brewing', ready_at timestamp calculated automatically. 3) Timer System Endpoints - POST /api/treats/{treat_id}/check-timer returns brewing status and remaining seconds, auto-updates to 'ready' when complete. GET /api/treats/{address}/brewing returns only brewing treats with auto-status updates. 4) 3-Hour Timer Functionality - Tested with both 10-second quick completion and 3-hour timers, all calculations working correctly. 5) Leaderboard with Nicknames - GET /api/leaderboard includes nickname field in all responses. 6) Comprehensive Error Handling - 404 for non-existent treats/players, 422 for missing fields. TESTED: 21/21 standard API tests + 6/6 Phase 1 specific tests = 27/27 TOTAL TESTS PASSED. Backend is production-ready for wallet gate and timer features!"
