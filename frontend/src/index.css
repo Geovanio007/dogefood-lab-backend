@@ -1452,12 +1452,13 @@ body {
   }
 
   @media (max-width: 480px) {
+    /* Keep desktop font sizes on mobile */
     .loading-title {
-      font-size: 2.5rem;
+      font-size: 3.5rem; /* Keep desktop size */
     }
     
     .loading-subtitle {
-      font-size: 1rem;
+      font-size: 1.125rem; /* Keep larger size */
     }
     
     .thermometer-container {
@@ -1477,9 +1478,12 @@ body {
       min-height: 70px;
     }
     
+    /* Keep desktop button styling on mobile */
     .doge-button {
-      padding: 0.75rem 1.5rem;
-      font-size: 0.875rem;
+      padding: 1rem 2rem; /* Keep larger padding */
+      font-size: 1rem; /* Keep desktop font size */
+      font-family: 'Comic Sans MS', 'Marker Felt', cursive;
+      font-weight: bold;
     }
   }
 
