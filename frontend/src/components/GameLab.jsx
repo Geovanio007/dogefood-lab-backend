@@ -365,7 +365,10 @@ const GameLab = () => {
 
               {/* Connect Button */}
               <div className="flex justify-center">
-                <ConnectButton />
+                {/* <ConnectButton /> */}
+                <Button className="doge-button text-lg px-8 py-3">
+                  Connect Wallet
+                </Button>
               </div>
               
               <div className="text-white/70 playful-text text-sm">
