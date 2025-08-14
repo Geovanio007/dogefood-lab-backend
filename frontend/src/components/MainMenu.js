@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
 import { useNFTVerification } from '../hooks/useNFTVerification';
-import { Beaker, Trophy, Settings, Palette } from 'lucide-react';
+import { Beaker, Trophy, Settings, Palette, Coins } from 'lucide-react';
 
 const MainMenu = () => {
   const { address, isConnected } = useAccount();
