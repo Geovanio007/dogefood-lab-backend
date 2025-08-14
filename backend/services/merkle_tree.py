@@ -220,7 +220,9 @@ class MerkleTreeGenerator:
         
         # Concatenate and hash (similar to abi.encodePacked)
         combined = clean_address + amount_hex
-        hash_bytes = hashlib.keccak(bytes.fromhex(combined)).digest()
+        k = keccak.new(digest_bits=256)
+        k.update(bytes.fromhex(combined))
+        hash_bytes = k.digest()
         
         return '0x' + hash_bytes.hex()
     
