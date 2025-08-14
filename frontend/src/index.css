@@ -56,17 +56,65 @@ body {
   .game-card {
     @apply bg-gradient-to-br from-sky-400/95 to-blue-500/95 backdrop-blur-lg border-4 border-sky-300/50 shadow-2xl transition-all duration-300 hover:scale-105;
     border-radius: 25px;
-    box-shadow: 0 25px 50px rgba(56, 189, 248, 0.4), 
-                0 20px 30px rgba(56, 189, 248, 0.3),
-                inset 0 -4px 0 rgba(255, 255, 255, 0.4),
-                inset 0 4px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: 
+      /* Main shadow for depth */
+      0 25px 50px rgba(56, 189, 248, 0.4), 
+      0 20px 30px rgba(56, 189, 248, 0.3),
+      /* 3D beveled edges */
+      inset 0 -8px 0 rgba(30, 58, 138, 0.6),
+      inset 0 8px 0 rgba(255, 255, 255, 0.4),
+      inset -4px 0 0 rgba(30, 58, 138, 0.3),
+      inset 4px 0 0 rgba(255, 255, 255, 0.2),
+      /* Cartoonish glow */
+      0 0 30px rgba(56, 189, 248, 0.2);
+    transform-style: preserve-3d;
   }
   
   .game-card:hover {
-    box-shadow: 0 30px 60px rgba(56, 189, 248, 0.5), 
-                0 25px 40px rgba(56, 189, 248, 0.4),
-                inset 0 -4px 0 rgba(255, 255, 255, 0.5),
-                inset 0 4px 0 rgba(255, 255, 255, 0.2);
+    box-shadow: 
+      /* Enhanced shadow on hover */
+      0 35px 70px rgba(56, 189, 248, 0.5), 
+      0 30px 50px rgba(56, 189, 248, 0.4),
+      /* Enhanced 3D beveled edges */
+      inset 0 -10px 0 rgba(30, 58, 138, 0.7),
+      inset 0 10px 0 rgba(255, 255, 255, 0.5),
+      inset -6px 0 0 rgba(30, 58, 138, 0.4),
+      inset 6px 0 0 rgba(255, 255, 255, 0.3),
+      /* Enhanced glow */
+      0 0 50px rgba(56, 189, 248, 0.4);
+    transform: translateY(-10px) scale(1.05);
+  }
+  
+  /* 3D cartoonish button styling */
+  .doge-button {
+    @apply bg-gradient-to-b from-yellow-400 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 text-white font-bold py-4 px-8 shadow-lg transform transition-all duration-200 hover:scale-110;
+    border-radius: 25px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    box-shadow: 
+      /* Main 3D shadow */
+      0 12px 25px rgba(255, 193, 7, 0.4),
+      /* 3D beveled button */
+      inset 0 -4px 0 rgba(180, 83, 9, 0.8),
+      inset 0 4px 0 rgba(255, 255, 255, 0.3),
+      inset -2px 0 0 rgba(180, 83, 9, 0.3),
+      inset 2px 0 0 rgba(255, 255, 255, 0.2);
+  }
+  
+  .doge-button:hover {
+    box-shadow: 
+      0 15px 35px rgba(255, 193, 7, 0.5),
+      inset 0 -5px 0 rgba(180, 83, 9, 0.9),
+      inset 0 5px 0 rgba(255, 255, 255, 0.4),
+      inset -3px 0 0 rgba(180, 83, 9, 0.4),
+      inset 3px 0 0 rgba(255, 255, 255, 0.3);
+  }
+  
+  .doge-button:active {
+    @apply scale-95;
+    box-shadow: 
+      0 8px 15px rgba(255, 193, 7, 0.3),
+      inset 0 -2px 0 rgba(180, 83, 9, 0.6),
+      inset 0 2px 0 rgba(255, 255, 255, 0.2);
   }
   
   .ingredient-card {
