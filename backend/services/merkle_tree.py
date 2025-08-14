@@ -83,8 +83,8 @@ class MerkleTreeGenerator:
             if total_weight > 0:
                 reward_amount = int((player["weight"] / total_weight) * total_pool_wei)
                 
-                # Minimum reward check (at least 1 token)
-                min_reward = self.WEI_MULTIPLIER  # 1 token
+                # Minimum reward check (at least 1000 units for testing)
+                min_reward = 1000  # Smaller minimum for testing
                 reward_amount = max(reward_amount, min_reward)
                 
                 reward_entry = RewardEntry(
