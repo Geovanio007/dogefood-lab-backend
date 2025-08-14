@@ -336,9 +336,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Wallet Gate for GameLab Access"
-    - "Progressive Treat Creation Timer System"
-    - "3D Glass Timer Integration"
+    - "Off-chain Points Collection System"
+    - "Anti-cheat System Integration" 
+    - "Merkle Tree Generation for Web3 Rewards"
+    - "Enhanced API Endpoints for Phase 2"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
