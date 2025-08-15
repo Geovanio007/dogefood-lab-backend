@@ -55,35 +55,26 @@ const WelcomeScreen = ({ onPlayNow }) => {
           <button
             onClick={onPlayNow}
             className="play-now-button group relative inline-flex items-center justify-center"
+            style={{ zIndex: 50 }}
           >
-            {/* Button Background with Glow */}
-            <div className={`absolute inset-0 rounded-full transition-all duration-300 group-hover:scale-110 ${
-              isDarkMode 
-                ? 'bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-600 shadow-2xl shadow-blue-500/50' 
-                : 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 shadow-2xl shadow-orange-500/50'
-            }`}></div>
+            {/* Button Background with Glow - Sky Blue Theme */}
+            <div className="absolute inset-0 rounded-full transition-all duration-300 group-hover:scale-110 bg-gradient-to-r from-sky-400 via-sky-500 to-sky-600 shadow-2xl shadow-sky-500/50"></div>
             
             {/* Button Content */}
             <div className="relative z-10 px-16 py-6 flex items-center gap-4">
               <div className="text-6xl">🚀</div>
-              <span className="text-4xl md:text-5xl font-black text-white">
+              <span className="text-4xl md:text-5xl font-black text-yellow-400">
                 PLAY NOW
               </span>
               <div className="text-6xl animate-pulse">✨</div>
             </div>
 
-            {/* Hover Effect Ring */}
-            <div className={`absolute inset-0 rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover:scale-125 ${
-              isDarkMode 
-                ? 'border-4 border-cyan-300 shadow-lg shadow-cyan-300/30' 
-                : 'border-4 border-yellow-300 shadow-lg shadow-yellow-300/30'
-            }`}></div>
+            {/* Hover Effect Ring - Sky Blue */}
+            <div className="absolute inset-0 rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover:scale-125 border-4 border-sky-300 shadow-lg shadow-sky-300/30"></div>
           </button>
 
-          {/* Pulsing Effect */}
-          <div className={`absolute inset-0 rounded-full animate-ping opacity-20 ${
-            isDarkMode ? 'bg-blue-400' : 'bg-orange-400'
-          }`} style={{ animationDuration: '2s' }}></div>
+          {/* Pulsing Effect - Sky Blue */}
+          <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-sky-400" style={{ animationDuration: '2s' }}></div>
         </div>
 
         {/* Bottom Tagline */}
