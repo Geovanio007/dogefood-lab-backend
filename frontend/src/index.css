@@ -1881,3 +1881,118 @@ body {
 .dark-mode p {
   color: var(--text-secondary);
 }
+
+/* Welcome Screen Styles */
+.welcome-screen {
+  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+}
+
+.welcome-title {
+  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+  text-shadow: 8px 8px 16px rgba(0,0,0,0.5);
+  letter-spacing: 2px;
+}
+
+.welcome-subtitle {
+  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+  text-shadow: 4px 4px 8px rgba(0,0,0,0.3);
+}
+
+.welcome-description {
+  font-family: 'Comic Sans MS', 'Arial', sans-serif !important;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+.play-now-button {
+  position: relative;
+  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+  border: none;
+  cursor: pointer;
+  transform: scale(1);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  margin: 20px;
+}
+
+.play-now-button:hover {
+  transform: scale(1.1) translateY(-5px);
+}
+
+.play-now-button:active {
+  transform: scale(0.95);
+}
+
+.welcome-button-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Enhanced Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-15px) rotate(5deg); }
+  50% { transform: translateY(-10px) rotate(-3deg); }
+  75% { transform: translateY(-20px) rotate(3deg); }
+}
+
+@keyframes float-delayed {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-20px) rotate(-5deg); }
+  50% { transform: translateY(-5px) rotate(3deg); }
+  75% { transform: translateY(-15px) rotate(-3deg); }
+}
+
+@keyframes bounce-slow {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 5s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+/* Welcome screen mobile responsiveness */
+@media (max-width: 768px) {
+  .welcome-title {
+    font-size: 4rem !important;
+  }
+  
+  .welcome-subtitle {
+    font-size: 2.5rem !important;
+  }
+  
+  .welcome-description {
+    font-size: 1.5rem !important;
+    padding: 0 1rem;
+  }
+  
+  .play-now-button span {
+    font-size: 2.5rem !important;
+  }
+  
+  .play-now-button div {
+    font-size: 3rem !important;
+  }
+  
+  .floating-elements {
+    display: none; /* Hide floating elements on mobile for cleaner look */
+  }
+}
