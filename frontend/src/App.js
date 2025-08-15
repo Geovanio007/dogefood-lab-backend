@@ -13,15 +13,6 @@ import Leaderboard from './components/Leaderboard';
 // import PointsToBlockchain from './components/PointsToBlockchain';
 import './App.css';
 
-// Settings placeholder component
-const Settings = () => (
-  <div className="min-h-screen p-8">
-    <h1 className="text-4xl font-bold text-center">⚙️ Settings</h1>
-    <p className="text-center mt-4">Coming Soon!</p>
-    <a href="/" className="block text-center mt-4 text-blue-600">← Back to Menu</a>
-  </div>
-);
-
 function App() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
