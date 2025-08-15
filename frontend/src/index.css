@@ -1907,18 +1907,32 @@ body {
   position: relative;
   font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
   border: none;
-  cursor: pointer;
+  cursor: pointer !important;
   transform: scale(1);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   margin: 20px;
+  background: none;
+  outline: none;
+  z-index: 50;
 }
 
 .play-now-button:hover {
   transform: scale(1.1) translateY(-5px);
+  cursor: pointer !important;
 }
 
 .play-now-button:active {
   transform: scale(0.95);
+}
+
+.play-now-button:focus {
+  outline: none;
+}
+
+/* Ensure yellow text is visible */
+.play-now-button span {
+  color: #facc15 !important; /* Force yellow color */
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5) !important;
 }
 
 .welcome-button-container {
