@@ -7,36 +7,44 @@
   font-family: 'Comic Sans MS', 'Arial', sans-serif !important;
 }
 
-/* Force consistent playful titles on all devices */
-.playful-title {
-  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
-  font-weight: bold !important;
-  text-shadow: 4px 4px 8px rgba(0,0,0,0.4), 
-               2px 2px 4px rgba(139, 69, 19, 0.3),
-               0 0 20px rgba(255, 193, 7, 0.2) !important;
-  letter-spacing: 1px !important;
+/* CSS Variables for theme colors */
+:root {
+  /* Light mode colors (current theme) */
+  --bg-primary: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  --bg-secondary: rgba(255, 255, 255, 0.9);
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-accent: #dab444;
+  --card-bg: linear-gradient(to bottom right, rgba(56, 189, 248, 0.95), rgba(59, 130, 246, 0.95));
+  --card-border: rgba(56, 189, 248, 0.5);
+  --glass-bg: linear-gradient(to bottom right, rgba(56, 189, 248, 0.9), rgba(14, 165, 233, 0.9));
+  --button-gradient: linear-gradient(to bottom, #facc15, #eab308, #ca8a04);
+  --shadow-color: rgba(56, 189, 248, 0.4);
 }
 
-/* Ensure bubble text styling is consistent */
-.bubble-text {
-  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
-  font-weight: bold !important;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;
+/* Dark mode colors - Dark Shiny Blue Theme */
+.dark-mode {
+  --bg-primary: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  --bg-secondary: rgba(15, 23, 42, 0.95);
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-accent: #fbbf24;
+  --card-bg: linear-gradient(to bottom right, rgba(30, 58, 138, 0.9), rgba(37, 99, 235, 0.9));
+  --card-border: rgba(59, 130, 246, 0.6);
+  --glass-bg: linear-gradient(to bottom right, rgba(30, 58, 138, 0.95), rgba(37, 99, 235, 0.95));
+  --button-gradient: linear-gradient(to bottom, #3b82f6, #2563eb, #1d4ed8);
+  --shadow-color: rgba(37, 99, 235, 0.5);
 }
 
-/* Force consistent button text styling */
-.doge-button, .doge-button:hover, .doge-button:active {
-  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
-  font-weight: bold !important;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
-}
-
+/* Apply theme colors to body */
 body {
   font-family: 'Comic Sans MS', 'Arial', sans-serif !important;
-  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  background: var(--bg-primary);
   min-height: 100vh;
   margin: 0;
   padding: 20px;
+  color: var(--text-primary);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* Mobile-specific font consistency overrides */
