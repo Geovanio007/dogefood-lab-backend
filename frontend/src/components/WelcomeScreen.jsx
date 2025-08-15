@@ -53,8 +53,11 @@ const WelcomeScreen = ({ onPlayNow }) => {
         {/* Play Now Button */}
         <div className="welcome-button-container">
           <button
-            onClick={onPlayNow}
-            className="play-now-button group relative inline-flex items-center justify-center"
+            onClick={() => {
+              console.log('PLAY NOW button clicked!');
+              onPlayNow();
+            }}
+            className="play-now-button group relative inline-flex items-center justify-center cursor-pointer"
             style={{ zIndex: 50 }}
           >
             {/* Button Background with Glow - Sky Blue Theme */}
