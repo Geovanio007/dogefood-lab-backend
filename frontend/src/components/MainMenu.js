@@ -63,6 +63,9 @@ const MainMenu = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Theme Toggle Button */}
+            <ThemeToggle />
+            
             {isConnected && (
               <div className="flex items-center gap-2">
                 {isNFTHolder && (
