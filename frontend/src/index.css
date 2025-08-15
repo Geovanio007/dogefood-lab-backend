@@ -47,6 +47,38 @@ body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
+/* Force consistent playful titles on all devices with theme support */
+.playful-title {
+  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+  font-weight: bold !important;
+  color: var(--text-accent) !important;
+  text-shadow: 4px 4px 8px rgba(0,0,0,0.4), 
+               2px 2px 4px rgba(139, 69, 19, 0.3),
+               0 0 20px var(--text-accent) !important;
+  letter-spacing: 1px !important;
+}
+
+/* Ensure bubble text styling is consistent with theme */
+.bubble-text {
+  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+  font-weight: bold !important;
+  color: var(--text-primary) !important;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;
+}
+
+/* Theme toggle button styling */
+.theme-toggle {
+  box-shadow: 0 4px 15px var(--shadow-color), 
+              inset 0 -2px 0 rgba(0, 0, 0, 0.2),
+              inset 0 2px 0 rgba(255, 255, 255, 0.2);
+}
+
+.dark-mode .theme-toggle {
+  box-shadow: 0 4px 15px var(--shadow-color), 
+              inset 0 -2px 0 rgba(0, 0, 0, 0.3),
+              inset 0 2px 0 rgba(255, 255, 255, 0.1);
+}
+
 /* Mobile-specific font consistency overrides */
 @media (max-width: 768px) {
   h1, h2, h3, h4, h5, h6 {
