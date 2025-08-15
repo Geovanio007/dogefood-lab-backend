@@ -108,25 +108,46 @@ body {
 
 @layer components {
   .glass-panel {
-    @apply bg-gradient-to-br from-blue-400/90 to-sky-500/90 backdrop-blur-lg border-2 border-sky-300/40 shadow-2xl;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(56, 189, 248, 0.3), 
-                0 15px 25px rgba(56, 189, 248, 0.2),
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    border: 2px solid var(--card-border);
+    box-shadow: 0 20px 40px var(--shadow-color), 
+                0 15px 25px var(--shadow-color),
                 inset 0 -3px 0 rgba(255, 255, 255, 0.3),
                 inset 0 3px 0 rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    transition: all 0.3s ease;
   }
   
   .doge-button {
-    @apply bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 text-white font-bold py-4 px-8 shadow-lg transform transition-all duration-200 hover:scale-110 hover:shadow-xl;
+    background: var(--button-gradient);
+    color: white;
+    font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+    font-weight: bold !important;
+    padding: 1rem 2rem;
     border-radius: 25px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4),
+    border: none;
+    cursor: pointer;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+    box-shadow: 0 8px 25px var(--shadow-color),
                 inset 0 -2px 0 rgba(0, 0, 0, 0.2),
                 inset 0 2px 0 rgba(255, 255, 255, 0.2);
+    transform: translateY(0);
+    transition: all 0.2s ease;
+  }
+  
+  .doge-button:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 15px 35px var(--shadow-color),
+                inset 0 -3px 0 rgba(0, 0, 0, 0.3),
+                inset 0 3px 0 rgba(255, 255, 255, 0.3);
   }
   
   .doge-button:active {
-    @apply scale-95;
+    transform: scale(0.95);
+    box-shadow: 0 5px 15px var(--shadow-color),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
   
   .doge-gradient {
