@@ -33,23 +33,25 @@ function App() {
   }
 
   return (
-    <Web3Provider>
-      <GameProvider>
-        <div className="App">
-          <Router>
-            <Routes>
-              <Route path="/" element={<MainMenu />} />
-              <Route path="/lab" element={<GameLab />} />
-              <Route path="/nfts" element={<MyTreats />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/settings" element={<Settings />} />
-              {/* <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/convert" element={<PointsToBlockchain />} /> */}
-            </Routes>
-          </Router>
-        </div>
-      </GameProvider>
-    </Web3Provider>
+    <ThemeProvider>
+      <Web3Provider>
+        <GameProvider>
+          <div className="App">
+            <Router>
+              <Routes>
+                <Route path="/" element={<MainMenu />} />
+                <Route path="/lab" element={<GameLab />} />
+                <Route path="/nfts" element={<MyTreats />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/settings" element={<Settings />} />
+                {/* <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/convert" element={<PointsToBlockchain />} /> */}
+              </Routes>
+            </Router>
+          </div>
+        </GameProvider>
+      </Web3Provider>
+    </ThemeProvider>
   );
 }
 
