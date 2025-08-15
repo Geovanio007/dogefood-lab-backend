@@ -1833,3 +1833,51 @@ body {
     font-weight: bold !important;
   }
 }
+
+/* Dark mode text adjustments for better contrast */
+.dark-mode .playful-title {
+  color: #fbbf24 !important; /* Brighter gold for dark mode */
+  text-shadow: 4px 4px 8px rgba(0,0,0,0.8), 
+               2px 2px 4px rgba(251, 191, 36, 0.5),
+               0 0 20px rgba(251, 191, 36, 0.3) !important;
+}
+
+.dark-mode .bubble-text {
+  color: #f1f5f9 !important; /* Light text for dark mode */
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8) !important;
+}
+
+/* Dark mode adjustments for various components */
+.dark-mode .glass-panel {
+  color: #f1f5f9;
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+.dark-mode .vip-badge {
+  background: linear-gradient(to right, #3b82f6, #1e40af);
+  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.5);
+}
+
+/* Dark mode button styling */
+.dark-mode .doge-button {
+  background: linear-gradient(to bottom, #3b82f6, #2563eb, #1d4ed8);
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5),
+              inset 0 -2px 0 rgba(0, 0, 0, 0.3),
+              inset 0 2px 0 rgba(59, 130, 246, 0.2);
+}
+
+.dark-mode .doge-button:hover {
+  background: linear-gradient(to bottom, #2563eb, #1d4ed8, #1e3a8a);
+  box-shadow: 0 15px 35px rgba(37, 99, 235, 0.7),
+              inset 0 -3px 0 rgba(0, 0, 0, 0.4),
+              inset 0 3px 0 rgba(59, 130, 246, 0.3);
+}
+
+/* Dark mode text colors for GameLab */
+.dark-mode h1, .dark-mode h2, .dark-mode h3, .dark-mode h4, .dark-mode h5, .dark-mode h6 {
+  color: var(--text-primary);
+}
+
+.dark-mode p {
+  color: var(--text-secondary);
+}
