@@ -9,9 +9,11 @@ const LoadingScreen = ({ onLoadingComplete }) => {
       setProgress(prev => {
         if (prev >= 100) {
           setIsComplete(true);
-          setTimeout(() => {
-            onLoadingComplete();
-          }, 800); // Small delay after completion
+          if (onLoadingComplete) {
+            setTimeout(() => {
+              onLoadingComplete();
+            }, 800); // Small delay after completion
+          }
           clearInterval(interval);
           return 100;
         }
