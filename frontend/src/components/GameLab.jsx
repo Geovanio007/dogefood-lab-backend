@@ -812,14 +812,7 @@ const GameLab = () => {
             </div>
             
             <div className="mb-6">
-              <Suspense fallback={
-                <FallbackMixingStation
-                  isActive={mixing.active}
-                  ingredients={selectedIngredients}
-                  onMix={handleStartMixing}
-                  timeRemaining={timeRemaining}
-                />
-              }>
+              <Suspense fallback={<div className="text-center">Loading mixing station...</div>}>
                 {webGLSupported ? (
                   <div className="relative">
                     {/* Character overlay for 3D mode */}
@@ -829,6 +822,7 @@ const GameLab = () => {
                         alt="You in 3D Lab"
                         className={`w-16 h-16 object-contain ${mixing.active ? 'animate-bounce' : 'hover:scale-110'} transition-all`}
                       />
+                    </div>
                     </div>
                     <ThreeDMixingStation
                       isActive={mixing.active}
