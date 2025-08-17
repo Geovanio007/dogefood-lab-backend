@@ -4,9 +4,10 @@ import { useAccount } from 'wagmi';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { Progress } from './ui/progress';
 import { useGame } from '../contexts/GameContext';
 import { ArrowLeft, Trophy, Crown, Star, Users, TrendingUp, Clock, Sparkles } from 'lucide-react';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Leaderboard = () => {
   const { address } = useAccount();
@@ -14,12 +15,12 @@ const Leaderboard = () => {
     points, 
     isNFTHolder, 
     currentLevel, 
-    player,
-    leaderboard,
-    loadLeaderboard
+    player
   } = useGame();
   
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [currentUserRank, setCurrentUserRank] = useState(null);
   const [seasonInfo, setSeasonInfo] = useState({
     current: 1,
@@ -28,19 +29,35 @@ const Leaderboard = () => {
     participants: 0
   });
 
+  const loadLeaderboard = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/leaderboard`);
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(Array.isArray(data) ? data : []);
+        setError(null);
+      } else {
+        throw new Error('Failed to load leaderboard');
+      }
+    } catch (err) {
+      console.error('Error loading leaderboard:', err);
+      setError(err.message);
+      setLeaderboard([]);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      try {
-        await loadLeaderboard();
-      } catch (error) {
-        console.error('Error loading leaderboard:', error);
-      } finally {
-        setLoading(false);
-      }
+      await loadLeaderboard();
+      setLoading(false);
     };
     
     fetchData();
+    
+    // Auto-refresh every 30 seconds to update after mixing
+    const interval = setInterval(loadLeaderboard, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -51,6 +68,8 @@ const Leaderboard = () => {
       );
       if (userIndex !== -1) {
         setCurrentUserRank(userIndex + 1);
+      } else {
+        setCurrentUserRank(null);
       }
     }
     
