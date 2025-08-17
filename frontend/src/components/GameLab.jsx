@@ -981,11 +981,7 @@ const GameLab = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             {activeTreats.map((treat) => (
-              <div key={treat.id} className="border border-gray-200 rounded-lg p-4">
-                <p className="font-semibold">{treat.name}</p>
-                <p className="text-sm text-gray-600">Brewing...</p>
-              </div>
-              /* <TreatTimer
+              <TreatTimer
                 key={treat.id}
                 treatId={treat.id}
                 startTime={treat.createdAt}
@@ -993,7 +989,7 @@ const GameLab = () => {
                 treatName={treat.name}
                 onComplete={handleTreatComplete}
                 size="normal"
-              /> */
+              />
             ))}
             
             {/* Timer Level Information */}
