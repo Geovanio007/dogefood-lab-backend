@@ -872,7 +872,54 @@ const GameLab = () => {
         </Card>
 
         {/* Right Sidebar - Ingredient Sack */}
-        <IngredientSack />
+        <Card className="glass-panel">
+          <CardContent className="p-4">
+            {/* Sack Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="text-2xl">🎒</div>
+                <div>
+                  <div className="font-bold text-gray-800">Ingredient Sack</div>
+                  <div className="text-sm text-gray-600">
+                    {mixingProgress ? Math.floor(mixingProgress / 100) : 0} / 5 mixes completed
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Progress Visual */}
+            <div className="mb-4">
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-green-600 h-3 rounded-full transition-all duration-300" 
+                  style={{ width: `${Math.min((mixingProgress || 0) / 100 * 20, 100)}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>{Math.floor((mixingProgress || 0) / 5)}% complete</span>
+                <span>{Math.max(0, 5 - Math.floor((mixingProgress || 0) / 100))} more to bonus</span>
+              </div>
+            </div>
+            
+            {/* Sack Contents */}
+            <div className="relative bg-gradient-to-b from-amber-100 to-amber-200 rounded-xl p-4 min-h-[120px] border-2 border-amber-300">
+              <div className="text-center text-gray-500 py-8">
+                <div className="text-4xl mb-2">📥</div>
+                <div className="text-sm">
+                  Mix ingredients to fill your sack!
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Complete 5 mixes for bonus XP
+                </div>
+              </div>
+            </div>
+            
+            {/* Sack Tips */}
+            <div className="text-xs text-gray-500 mt-3 text-center">
+              💡 Complete 5 successful mixes to unlock +50 bonus XP!
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Active Treats Timer Section */}
