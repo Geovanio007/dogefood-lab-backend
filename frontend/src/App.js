@@ -14,7 +14,10 @@ import Leaderboard from './components/Leaderboard';
 import './App.css';
 
 function App() {
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(() => {
+    // Only show welcome screen if user is on the home page
+    return window.location.pathname === '/';
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   const handlePlayNow = () => {
