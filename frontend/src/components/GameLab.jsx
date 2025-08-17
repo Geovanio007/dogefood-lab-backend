@@ -14,6 +14,8 @@ import { getTierInfo } from '../config/gameConfig';
 import { ArrowLeft, Zap, Star, Sparkles, Clock, Target, Crown, ChefHat, Wallet } from 'lucide-react';
 import { useToast } from './ui/use-toast';
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
 // WebGL Detection
 const isWebGLAvailable = () => {
   try {
