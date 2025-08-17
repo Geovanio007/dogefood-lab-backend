@@ -618,7 +618,7 @@ const GameLab = () => {
       </div>
 
       {/* XP Progress Bar */}
-      {/* <XPProgressBar /> */}
+      <XPProgressBar />
 
       {/* WebGL Status */}
       {!webGLSupported && (
