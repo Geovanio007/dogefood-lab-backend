@@ -872,12 +872,7 @@ const GameLab = () => {
         </Card>
 
         {/* Right Sidebar - Ingredient Sack */}
-        {/* <IngredientSack /> */}
-        <Card className="glass-panel">
-          <CardContent className="p-4 text-center">
-            <p className="text-gray-600">Ingredient Sack Coming Soon!</p>
-          </CardContent>
-        </Card>
+        <IngredientSack />
       </div>
 
       {/* Active Treats Timer Section */}
