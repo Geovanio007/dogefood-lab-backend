@@ -823,13 +823,14 @@ const GameLab = () => {
                         className={`w-16 h-16 object-contain ${mixing.active ? 'animate-bounce' : 'hover:scale-110'} transition-all`}
                       />
                     </div>
-                    </div>
+                    
                     <ThreeDMixingStation
                       isActive={mixing.active}
                       ingredients={selectedIngredients}
                       onMix={handleStartMixing}
                       timeRemaining={timeRemaining}
                     />
+                    
                     {/* Personal lab indicator for 3D */}
                     <div className="absolute bottom-4 left-4 bg-gradient-to-r from-yellow-400 to-orange-400 px-2 py-1 rounded text-white text-xs font-bold">
                       Your 3D Lab 🚀
