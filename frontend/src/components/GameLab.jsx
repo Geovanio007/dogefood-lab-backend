@@ -524,18 +524,46 @@ const GameLab = () => {
   };
 
   // Handle treat completion
-  const handleTreatComplete = (treatId) => {
-    setActiveTreats(prev => prev.map(treat => 
-      treat.id === treatId 
-        ? { ...treat, isReady: true, status: 'ready' }
-        : treat
-    ));
+  const handleTreatComplete = async (treatId) => {
+    console.log(`Treat ${treatId} is ready!`);
     
-    toast({
-      title: "Treat Ready! 🎉",
-      description: "Your patient waiting has paid off! Your treat is ready to collect.",
-      className: "bg-green-100 border-green-400"
-    });
+    // Award points for treat completion
+    if (address && isNFTHolder) {
+      try {
+        // Award points to the player
+        const pointsResponse = await fetch(`${BACKEND_URL}/api/player/progress`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            address: address,
+            xp_gained: 50, // Base XP for completing a treat
+            points_gained: 25, // Points for NFT holders
+            level: currentLevel
+          }),
+        });
+        
+        if (pointsResponse.ok) {
+          console.log('Points awarded for treat completion');
+          
+          // Update local points state
+          dispatch({ type: 'ADD_POINTS', payload: 25 });
+          
+          // Show success notification
+          toast({
+            title: "🎉 Treat Complete!",
+            description: "You earned +25 points and +50 XP!",
+            className: "bg-green-100 border-green-400"
+          });
+        }
+      } catch (error) {
+        console.error('Error awarding points:', error);
+      }
+    }
+    
+    // Remove from active treats
+    setActiveTreats(prev => prev.filter(treat => treat.id !== treatId));
   };
 
   // Check for completed treats
