@@ -618,7 +618,26 @@ const GameLab = () => {
       </div>
 
       {/* XP Progress Bar */}
-      <XPProgressBar />
+      <Card className="game-card mb-6">
+        <CardHeader>
+          <CardTitle className="text-center playful-title text-white text-xl">
+            ⭐ Your Progress
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center">
+          <div className="bg-gradient-to-r from-yellow-100 to-orange-100 px-4 py-2 rounded-full inline-flex items-center gap-2">
+            <img 
+              src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+              alt="Your Avatar"
+              className="w-6 h-6 object-contain"
+            />
+            <span className="font-medium text-gray-800">
+              Level {currentLevel} • {Math.floor(xpProgress || 0)} / {gameConfig?.xp?.xpCapPerLevel || 100} XP
+            </span>
+            <span className="text-lg">🌟</span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* WebGL Status */}
       {!webGLSupported && (
