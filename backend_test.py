@@ -5,7 +5,7 @@ import json
 import time
 
 class DogeLabAPITester:
-    def __init__(self, base_url="https://b68f7c0c-2650-4e0a-a067-d4c7c127a8d1.preview.emergentagent.com"):
+    def __init__(self, base_url="https://web3-lab-game.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
