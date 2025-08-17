@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
-// import { useAccount, ConnectButton } from 'wagmi';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
 import { useWeb3Game } from '../hooks/useWeb3Game';
-// import { XPProgressBar, LevelUpNotification, IngredientSack } from './game/ProgressSystem';
 import { getTierInfo } from '../config/gameConfig';
-// import TreatTimer from './TreatTimer';
+import TreatTimer from './TreatTimer';
 import { ArrowLeft, Zap, Star, Sparkles, Clock, Target, Crown, ChefHat, Wallet } from 'lucide-react';
 import { useToast } from './ui/use-toast';
 
