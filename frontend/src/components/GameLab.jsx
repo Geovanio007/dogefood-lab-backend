@@ -1077,6 +1077,23 @@ const GameLab = () => {
         </Card>
       </div>
 
+      {/* Toggle Button for Active Treats */}
+      <div className="flex justify-center mt-6">
+        <button
+          onClick={() => setShowActiveTreats(!showActiveTreats)}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-bold transition-all duration-200 flex items-center gap-2 shadow-lg"
+        >
+          {showActiveTreats ? '🧪 Back to Lab' : `📦 View My Treats (${treatTracker.activeTreats.length + treatTracker.completedTreats.length})`}
+        </button>
+      </div>
+
+      {/* Active Treats Display */}
+      {showActiveTreats && (
+        <div className="mt-8">
+          <ActiveTreats playerAddress={address} />
+        </div>
+      )}
+
       {/* Active Treats Timer Section */}
       {activeTreats.length > 0 && (
         <Card className="game-card mt-8">
