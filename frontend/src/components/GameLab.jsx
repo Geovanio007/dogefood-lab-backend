@@ -828,12 +828,12 @@ const GameLab = () => {
         
         <div className="flex items-center gap-4">
           <div className="glass-panel p-3">
-            <div className="text-sm text-gray-600">Your Points</div>
-            <div className="font-bold text-xl text-yellow-600">{points}</div>
+            <div className="text-sm text-gray-600">{demoMode ? 'Demo Points' : 'Your Points'}</div>
+            <div className="font-bold text-xl text-yellow-600">{points}{demoMode ? ' (Demo)' : ''}</div>
           </div>
           <div className="glass-panel p-3">
-            <div className="text-sm text-gray-600">Your Creations</div>
-            <div className="font-bold text-xl text-purple-600">{createdTreats.length}</div>
+            <div className="text-sm text-gray-600">{demoMode ? 'Demo Creations' : 'Your Creations'}</div>
+            <div className="font-bold text-xl text-purple-600">{createdTreats.length}{demoMode ? ' (Demo)' : ''}</div>
           </div>
         </div>
       </div>
