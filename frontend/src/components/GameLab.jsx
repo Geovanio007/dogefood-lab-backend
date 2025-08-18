@@ -295,6 +295,7 @@ const GameLab = () => {
   const [webGLSupported, setWebGLSupported] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [activeTreats, setActiveTreats] = useState([]); // For timer management
+  const [mixingInterval, setMixingInterval] = useState(null); // Store interval for cleanup
   const { toast } = useToast();
 
   // Timer calculation based on level (1 hour base, increases with level)
