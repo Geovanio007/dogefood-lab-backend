@@ -473,6 +473,46 @@ const GameLab = () => {
       return;
     }
 
+    // Demo mode - simulate treat creation without backend call
+    if (demoMode) {
+      const demoRarities = ['Common', 'Rare', 'Epic', 'Legendary'];
+      const randomRarity = demoRarities[Math.floor(Math.random() * demoRarities.length)];
+      const demoTreatNames = ['Demo Biscuit', 'Sample Snack', 'Test Treat', 'Practice Pastry'];
+      const randomName = demoTreatNames[Math.floor(Math.random() * demoTreatNames.length)];
+      
+      // Show demo success message
+      toast({
+        title: `${randomRarity} Demo Treat Created! 🎉`,
+        description: `Your ${randomRarity.toLowerCase()} demo treat "${randomName}" is ready! This is just a preview - connect your wallet for real treats.`,
+        className: "bg-green-100 border-green-400"
+      });
+
+      // Update demo game state
+      dispatch({ 
+        type: 'COMPLETE_MIXING', 
+        payload: {
+          name: randomName,
+          rarity: randomRarity,
+          flavor: selectedIngredients.map(id => ingredients.find(ing => ing.id === id)?.name).join(' & '),
+          image: randomRarity === 'Legendary' ? '🌟' : 
+                 randomRarity === 'Epic' ? '⭐' :
+                 randomRarity === 'Rare' ? '✨' : '🍪'
+        }
+      });
+
+      // Award demo XP and points
+      const baseXP = gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient;
+      const xpGained = Math.floor(baseXP * currentDifficulty);
+      const pointsGained = Math.floor(xpGained * 0.5);
+      
+      dispatch({ type: 'ADD_POINTS', payload: pointsGained });
+      dispatch({ type: 'RESET_MIXING' });
+      
+      // Clear selected ingredients
+      setSelectedIngredients([]);
+      return;
+    }
+
     try {
       console.log('🧪 Starting enhanced treat creation...', {
         address,
