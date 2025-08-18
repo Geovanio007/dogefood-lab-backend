@@ -33,6 +33,11 @@ anti_cheat_system = AntiCheatSystem(db)
 points_system = PointsCollectionSystem(db)
 merkle_generator = MerkleTreeGenerator()
 
+# Initialize Enhanced Game Mechanics (Phase 3)
+game_engine = TreatGameEngine(os.environ.get('GAME_SECRET_KEY', 'development_key_123'))
+ingredient_system = IngredientSystem()
+season_manager = SeasonManager(db)
+
 # Background task functions
 async def award_treat_creation_points(player_address: str, treat_metadata: dict):
     """Background task to award points for treat creation"""
