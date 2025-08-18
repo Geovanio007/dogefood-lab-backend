@@ -300,6 +300,7 @@ const GameLab = () => {
   const [activeTreats, setActiveTreats] = useState([]); // For timer management
   const [mixingInterval, setMixingInterval] = useState(null); // Store interval for cleanup
   const [showActiveTreats, setShowActiveTreats] = useState(false); // Toggle view
+  const [demoMode, setDemoMode] = useState(false); // Demo mode state
   const { toast } = useToast();
 
   // Initialize treat tracker
