@@ -12,6 +12,7 @@ import { ArrowLeft, Zap, Star, Sparkles, Clock, Target, Crown, ChefHat, Wallet }
 import { useToast } from './ui/use-toast';
 import { useTreatTracker } from '../hooks/useTreatTracker';
 import ActiveTreats from './ActiveTreats';
+import TreatNotifications from './TreatNotifications';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
