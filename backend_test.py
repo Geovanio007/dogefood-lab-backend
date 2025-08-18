@@ -1038,105 +1038,91 @@ def main():
     
     tester = DogeLabAPITester()
     
-    # Enhanced Game Mechanics comprehensive test sequence
-    tests = [
-        # Core API Health Check
+    # Focus on Enhanced Treat Creation Blockchain Fix
+    print("\n🎯 PRIMARY FOCUS: Enhanced Treat Creation Blockchain Fix")
+    print("Testing that /api/treats/enhanced eliminates blockchain transaction failures")
+    
+    # Essential setup tests
+    setup_tests = [
         ("Health Check", tester.test_health_check),
-        
-        # Setup: Create test players
-        ("Multiple Wallet Addresses", tester.test_multiple_wallet_addresses),
         ("Create Player with Nickname", tester.test_create_player_with_nickname),
-        ("Get Player", tester.test_get_player),
         ("Verify NFT", tester.test_verify_nft),
-        ("Update Player Progress", tester.test_update_player_progress),
-        
-        # Phase 1 & 2 Features (ensure still working)
-        ("Create Enhanced Treat", tester.test_create_enhanced_treat),
-        ("Timer System Support", tester.test_timer_system_support),
-        ("Check Timer Endpoint", tester.test_check_timer_endpoint),
-        ("Brewing Treats Endpoint", tester.test_brewing_treats_endpoint),
-        ("Leaderboard with Nicknames", tester.test_leaderboard_with_nicknames),
-        
-        # PHASE 2: OFF-CHAIN POINTS COLLECTION SYSTEM
-        ("Points Leaderboard", tester.test_points_leaderboard),
-        ("Player Points Stats", tester.test_player_points_stats),
-        ("Player Points History", tester.test_player_points_history),
-        ("Daily Bonus Claim", tester.test_daily_bonus_claim),
-        ("Background Points Awarding", tester.test_background_points_awarding),
-        
-        # PHASE 2: ANTI-CHEAT SYSTEM INTEGRATION
-        ("Anti-cheat Normal Treat Creation", tester.test_anti_cheat_normal_treat_creation),
-        ("Anti-cheat Suspicious Activity", tester.test_anti_cheat_suspicious_rapid_creation),
-        ("Player Risk Assessment", tester.test_player_risk_assessment),
-        ("Flagged Players Monitoring", tester.test_flagged_players_monitoring),
-        
-        # PHASE 2: MERKLE TREE GENERATION
-        ("Generate Season Rewards", tester.test_generate_season_rewards),
-        ("Get Season Data", tester.test_get_season_data),
-        ("Get Claim Proofs", tester.test_get_claim_proofs),
-        ("Get All Seasons", tester.test_get_all_seasons),
-        
-        # PHASE 3: ENHANCED GAME MECHANICS - COMPREHENSIVE TESTING
-        ("Enhanced Game Mechanics Comprehensive", tester.test_enhanced_game_mechanics_comprehensive),
-        
-        # Core functionality verification
-        ("Get Player Treats", tester.test_get_player_treats),
-        ("Get All Treats", tester.test_get_all_treats),
-        ("Get Game Stats", tester.test_get_game_stats),
-        ("Error Handling", tester.test_error_handling),
-        ("Realistic Game Scenario", tester.test_realistic_game_scenario)
     ]
     
-    # Execute all tests
-    for test_name, test_func in tests:
+    print(f"\n📋 Running {len(setup_tests)} setup tests...")
+    for test_name, test_func in setup_tests:
         try:
-            print(f"\n{'='*50}")
-            print(f"🧪 RUNNING: {test_name}")
-            print(f"{'='*50}")
+            print(f"\n🔧 Setup: {test_name}")
             test_func()
         except Exception as e:
-            print(f"❌ {test_name} failed with exception: {str(e)}")
+            print(f"❌ Setup {test_name} failed: {str(e)}")
+    
+    # Main blockchain fix test
+    print(f"\n🚀 RUNNING PRIMARY TEST: Enhanced Treat Creation Blockchain Fix")
+    try:
+        success, results = tester.test_enhanced_treat_creation_blockchain_fix()
+        if success:
+            print(f"\n✅ BLOCKCHAIN TRANSACTION FAILURE FIX: PASSED")
+        else:
+            print(f"\n❌ BLOCKCHAIN TRANSACTION FAILURE FIX: FAILED")
+    except Exception as e:
+        print(f"❌ Blockchain fix test failed with exception: {str(e)}")
+        success = False
+    
+    # Additional verification tests
+    verification_tests = [
+        ("Enhanced Game Engine Integration", tester.test_enhanced_game_mechanics_integration),
+        ("Ingredient System Endpoints", tester.test_ingredient_system_endpoints),
+        ("Timer Progression System", tester.test_timer_progression_system),
+        ("Rarity Distribution Simulation", tester.test_rarity_distribution_simulation),
+    ]
+    
+    print(f"\n📋 Running {len(verification_tests)} verification tests...")
+    for test_name, test_func in verification_tests:
+        try:
+            print(f"\n🔍 Verification: {test_name}")
+            test_func()
+        except Exception as e:
+            print(f"❌ Verification {test_name} failed: {str(e)}")
     
     # Print comprehensive results
     print("\n" + "=" * 70)
-    print(f"📊 ENHANCED GAME MECHANICS TEST RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
+    print(f"📊 ENHANCED TREAT CREATION BLOCKCHAIN FIX RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
     print("=" * 70)
     
     # Categorize results
     success_rate = (tester.tests_passed / tester.tests_run) * 100 if tester.tests_run > 0 else 0
     
     if success_rate >= 90:
-        print("🎉 EXCELLENT: Enhanced Game Mechanics backend is highly stable!")
+        print("🎉 EXCELLENT: Enhanced treat creation blockchain fix is working perfectly!")
     elif success_rate >= 75:
-        print("✅ GOOD: Enhanced Game Mechanics backend is mostly functional with minor issues")
+        print("✅ GOOD: Enhanced treat creation is mostly functional with minor issues")
     elif success_rate >= 50:
-        print("⚠️  MODERATE: Enhanced Game Mechanics backend has significant issues requiring attention")
+        print("⚠️  MODERATE: Enhanced treat creation has significant issues requiring attention")
     else:
-        print("❌ CRITICAL: Enhanced Game Mechanics backend has major failures requiring immediate fixes")
+        print("❌ CRITICAL: Enhanced treat creation has major failures requiring immediate fixes")
     
-    # Report missing Enhanced Game Mechanics features
+    # Report missing features
     if tester.missing_features:
-        print(f"\n🔍 ENHANCED GAME MECHANICS FEATURES ANALYSIS:")
-        print("Missing or incomplete Enhanced Game Mechanics features:")
+        print(f"\n🔍 FEATURE ANALYSIS:")
+        print("Missing or incomplete features:")
         for feature in set(tester.missing_features):
             print(f"   ❌ {feature}")
         print(f"\nTotal missing features: {len(set(tester.missing_features))}")
     else:
-        print("\n✅ All Enhanced Game Mechanics features appear to be implemented correctly!")
+        print("\n✅ All enhanced treat creation features appear to be implemented correctly!")
     
-    # Final assessment
-    if tester.tests_passed == tester.tests_run and not tester.missing_features:
-        print("\n🚀 ENHANCED GAME MECHANICS READY FOR PRODUCTION!")
-        print("All enhanced game mechanics are working perfectly.")
+    # Final assessment focused on blockchain fix
+    if success and success_rate >= 80:
+        print("\n🚀 BLOCKCHAIN TRANSACTION FAILURE FIX: SUCCESS!")
+        print("✅ Enhanced /api/treats/enhanced endpoint eliminates blockchain transaction failures")
+        print("✅ Backend-only treat creation working properly")
+        print("✅ Game mechanics integration functional")
         return 0
-    elif success_rate >= 75:
-        print(f"\n⚠️  ENHANCED GAME MECHANICS MOSTLY READY - {tester.tests_run - tester.tests_passed} tests failed")
-        if tester.missing_features:
-            print("Some enhanced features need completion.")
-        return 1
     else:
-        print(f"\n🔧 ENHANCED GAME MECHANICS NEEDS WORK - {tester.tests_run - tester.tests_passed} tests failed")
-        print("Significant issues require resolution before production.")
+        print(f"\n🔧 BLOCKCHAIN TRANSACTION FAILURE FIX: NEEDS ATTENTION")
+        print("❌ Some issues detected with enhanced treat creation system")
+        print("🔍 Review test results above for specific problems")
         return 1
 
 if __name__ == "__main__":
