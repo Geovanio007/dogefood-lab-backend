@@ -112,8 +112,6 @@ class LeaderboardEntry(BaseModel):
     level: int
     is_nft_holder: bool
     rank: int
-
-# Enhanced Game Mechanics Models (Phase 3)
 class EnhancedTreatCreate(BaseModel):
     creator_address: str
     ingredients: List[str]
