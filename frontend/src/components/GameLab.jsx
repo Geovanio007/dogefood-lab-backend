@@ -564,20 +564,12 @@ const GameLab = () => {
         if (newProgress >= 100) {
           clearInterval(interval);
           setTimeout(() => {
-            // Complete mixing and create treat with timer
-            completeMixing(web3Game);
+            // Use enhanced backend system instead of Web3 minting
+            handleEnhancedMixCompletion();
             
-            // Create treat with timer
-            const treatId = Date.now().toString();
-            const newTreat = {
-              id: treatId,
-              name: `Level ${currentLevel} Special Treat`,
-              ingredients: selectedIngredients,
-              createdAt: Date.now(),
-              completesAt: Date.now() + timerDuration,
-              isReady: false,
-              level: currentLevel,
-              status: 'brewing'
+            // Note: Treat creation is now handled by the enhanced backend
+            // The handleEnhancedMixCompletion function manages all treat creation,
+            // timer calculation, rarity determination, and game state updates
             };
             
             // Add to active treats
