@@ -842,7 +842,7 @@ const GameLab = () => {
       <Card className="game-card mb-6">
         <CardHeader>
           <CardTitle className="text-center playful-title text-white text-xl">
-            ⭐ Your Progress
+            ⭐ {demoMode ? 'Demo Progress' : 'Your Progress'}
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center">
