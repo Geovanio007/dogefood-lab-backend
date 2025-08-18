@@ -10,6 +10,8 @@ import { getTierInfo } from '../config/gameConfig';
 import TreatTimer from './TreatTimer';
 import { ArrowLeft, Zap, Star, Sparkles, Clock, Target, Crown, ChefHat, Wallet } from 'lucide-react';
 import { useToast } from './ui/use-toast';
+import { useTreatTracker } from '../hooks/useTreatTracker';
+import ActiveTreats from './ActiveTreats';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
