@@ -503,6 +503,9 @@ const GameLab = () => {
       // Update points in game state
       dispatch({ type: 'ADD_POINTS', payload: pointsGained });
 
+      // CRITICAL FIX: Reset mixing state after completion
+      dispatch({ type: 'RESET_MIXING' });
+
     } catch (error) {
       console.error('❌ Enhanced treat creation failed:', error);
       toast({
@@ -510,7 +513,11 @@ const GameLab = () => {
         description: error.message || "Something went wrong. Please try again.",
         variant: "destructive"
       });
+      
+      // Reset mixing state even on error
+      dispatch({ type: 'RESET_MIXING' });
     } finally {
+      // Clear selected ingredients
       setSelectedIngredients([]);
     }
   };
