@@ -298,7 +298,11 @@ const GameLab = () => {
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [activeTreats, setActiveTreats] = useState([]); // For timer management
   const [mixingInterval, setMixingInterval] = useState(null); // Store interval for cleanup
+  const [showActiveTreats, setShowActiveTreats] = useState(false); // Toggle view
   const { toast } = useToast();
+
+  // Initialize treat tracker
+  const treatTracker = useTreatTracker(address);
 
   // Cleanup interval on component unmount or mixing state change
   useEffect(() => {
