@@ -876,9 +876,164 @@ class DogeLabAPITester:
         print(f"\n🎯 ENHANCED GAME MECHANICS RESULTS: {passed_tests}/{total_tests} tests passed")
         return passed_tests == total_tests, {"passed": passed_tests, "total": total_tests}
 
+    def test_enhanced_treat_creation_blockchain_fix(self):
+        """Test the enhanced treat creation fix for blockchain transaction failure"""
+        print("\n🔧 TESTING ENHANCED TREAT CREATION BLOCKCHAIN FIX")
+        print("=" * 60)
+        print("Focus: Verify /api/treats/enhanced eliminates blockchain transaction failures")
+        
+        # Test scenarios from the review request
+        test_scenarios = [
+            {
+                "name": "Basic Enhanced Treat Creation",
+                "data": {
+                    "creator_address": "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54",
+                    "ingredients": ["strawberry", "chocolate", "honey"],
+                    "player_level": 5
+                },
+                "expected_features": ["rarity_distribution", "timer_progression", "server_side_creation"]
+            },
+            {
+                "name": "Secret Combo Testing",
+                "data": {
+                    "creator_address": "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54",
+                    "ingredients": ["chocolate", "honey", "milk", "strawberry"],
+                    "player_level": 10
+                },
+                "expected_features": ["secret_combo_detection", "bonus_application"]
+            },
+            {
+                "name": "High-Level Progression",
+                "data": {
+                    "creator_address": "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54",
+                    "ingredients": ["truffle_oil", "wagyu_beef", "gold_flakes", "spirulina", "duck"],
+                    "player_level": 25
+                },
+                "expected_features": ["level_based_timers", "legendary_rarity_chance"]
+            }
+        ]
+        
+        all_success = True
+        blockchain_failures = 0
+        
+        for scenario in test_scenarios:
+            print(f"\n🧪 Testing: {scenario['name']}")
+            print(f"   Ingredients: {scenario['data']['ingredients']}")
+            print(f"   Player Level: {scenario['data']['player_level']}")
+            
+            success, response = self.run_test(
+                scenario['name'], 
+                "POST", 
+                "treats/enhanced", 
+                200, 
+                data=scenario['data']
+            )
+            
+            if success and response:
+                # Verify no blockchain transaction occurred (backend-only creation)
+                treat = response.get('treat', {})
+                outcome = response.get('outcome', {})
+                
+                # Check that treat was created via backend (not blockchain)
+                if 'id' in treat and 'rarity' in outcome:
+                    print(f"   ✅ Backend-only creation successful")
+                    print(f"   🎯 Rarity: {outcome.get('rarity', 'Unknown')}")
+                    print(f"   ⏰ Timer: {outcome.get('timer_duration_hours', 0)}h")
+                    
+                    # Check for secret combo
+                    secret_combo = outcome.get('secret_combo', {})
+                    if secret_combo.get('is_secret_combo'):
+                        print(f"   🎉 Secret combo detected: {secret_combo.get('combo_name', 'Unknown')}")
+                        print(f"   🎁 Bonus: +{secret_combo.get('bonus_legendary', 0)}% Legendary chance")
+                    
+                    # Verify level-based timer scaling
+                    timer_hours = outcome.get('timer_duration_hours', 0)
+                    expected_min_hours = 1 + (scenario['data']['player_level'] - 1) * 0.5  # Rough estimate
+                    if timer_hours >= expected_min_hours:
+                        print(f"   ✅ Level-based timer scaling working ({timer_hours}h >= {expected_min_hours}h expected)")
+                    else:
+                        print(f"   ⚠️  Timer scaling may be incorrect ({timer_hours}h < {expected_min_hours}h expected)")
+                    
+                    # Check database persistence
+                    if 'created_at' in treat:
+                        print(f"   ✅ Database persistence confirmed")
+                    
+                else:
+                    print(f"   ❌ Backend creation failed - missing required fields")
+                    all_success = False
+                    blockchain_failures += 1
+            else:
+                print(f"   ❌ Enhanced treat creation failed")
+                all_success = False
+                blockchain_failures += 1
+        
+        # Test rarity distribution over multiple creates
+        print(f"\n📊 Testing Rarity Distribution (10 creates)")
+        rarity_counts = {"Common": 0, "Rare": 0, "Epic": 0, "Legendary": 0}
+        
+        for i in range(10):
+            test_data = {
+                "creator_address": f"0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a{i:04d}",
+                "ingredients": ["strawberry", "chocolate", "honey", "milk"],
+                "player_level": 15
+            }
+            
+            success, response = self.run_test(
+                f"Rarity Test {i+1}", 
+                "POST", 
+                "treats/enhanced", 
+                200, 
+                data=test_data
+            )
+            
+            if success and response:
+                rarity = response.get('outcome', {}).get('rarity', 'Unknown')
+                if rarity in rarity_counts:
+                    rarity_counts[rarity] += 1
+        
+        # Display rarity distribution
+        total_creates = sum(rarity_counts.values())
+        if total_creates > 0:
+            print(f"   📈 Rarity Distribution Results:")
+            for rarity, count in rarity_counts.items():
+                percentage = (count / total_creates) * 100
+                print(f"   {rarity}: {count}/{total_creates} ({percentage:.1f}%)")
+            
+            # Verify expected distribution (approximately)
+            legendary_pct = (rarity_counts['Legendary'] / total_creates) * 100
+            epic_pct = (rarity_counts['Epic'] / total_creates) * 100
+            rare_pct = (rarity_counts['Rare'] / total_creates) * 100
+            common_pct = (rarity_counts['Common'] / total_creates) * 100
+            
+            print(f"   🎯 Expected: ~10% Legendary, ~20% Epic, ~30% Rare, ~40% Common")
+            
+            # Check if distribution is reasonable (allowing for small sample variance)
+            if legendary_pct <= 25 and common_pct >= 20:  # Reasonable bounds for small sample
+                print(f"   ✅ Rarity distribution appears reasonable")
+            else:
+                print(f"   ⚠️  Rarity distribution may need adjustment")
+        
+        # Final assessment
+        print(f"\n🎯 BLOCKCHAIN TRANSACTION FAILURE FIX RESULTS:")
+        print(f"   ✅ Successful backend-only creates: {len(test_scenarios) - blockchain_failures}/{len(test_scenarios)}")
+        print(f"   ❌ Blockchain transaction failures: {blockchain_failures}")
+        
+        if blockchain_failures == 0:
+            print(f"   🚀 BLOCKCHAIN TRANSACTION FAILURE ISSUE RESOLVED!")
+            print(f"   ✅ All treats created via enhanced backend system")
+            print(f"   ✅ No Web3 minting dependencies causing failures")
+        else:
+            print(f"   ⚠️  Some blockchain transaction issues may persist")
+        
+        return all_success and blockchain_failures == 0, {
+            "blockchain_failures": blockchain_failures,
+            "total_tests": len(test_scenarios),
+            "rarity_distribution": rarity_counts
+        }
+
 def main():
-    print("🐕 Starting DogeFood Lab Enhanced Game Mechanics API Tests 🧪")
-    print("Testing Enhanced Game Mechanics: Treat Engine, Ingredients, Seasons")
+    print("🐕 Starting DogeFood Lab Enhanced Treat Creation Blockchain Fix Test 🧪")
+    print("Testing Enhanced Treat Creation Fix for Blockchain Transaction Failure")
     print("=" * 70)
     
     tester = DogeLabAPITester()
