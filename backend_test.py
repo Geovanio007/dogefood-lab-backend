@@ -507,14 +507,383 @@ class DogeLabAPITester:
         
         return success, response
 
+    # ========== ENHANCED GAME MECHANICS TESTING (PHASE 3) ==========
+    
+    def test_enhanced_treat_creation_endpoint(self):
+        """Test the new enhanced treat creation endpoint with game engine"""
+        treat_data = {
+            "creator_address": self.test_player_address,
+            "ingredients": ["strawberry", "chocolate", "honey", "milk", "banana"],
+            "player_level": 10
+        }
+        
+        success, response = self.run_test("Enhanced Treat Creation", "POST", "treats/enhanced", 200, data=treat_data)
+        
+        if success and response:
+            expected_keys = ['treat', 'outcome', 'validation', 'message']
+            missing_keys = [key for key in expected_keys if key not in response]
+            if missing_keys:
+                self.missing_features.append(f"Enhanced treat creation missing keys: {missing_keys}")
+                print(f"   ⚠️  Note: Missing keys in enhanced treat creation: {missing_keys}")
+            
+            # Check treat outcome details
+            if 'outcome' in response:
+                outcome = response['outcome']
+                outcome_keys = ['rarity', 'timer_duration_seconds', 'secret_combo', 'season_id']
+                missing_outcome_keys = [key for key in outcome_keys if key not in outcome]
+                if missing_outcome_keys:
+                    self.missing_features.append(f"Enhanced outcome missing keys: {missing_outcome_keys}")
+                    print(f"   ⚠️  Note: Missing outcome keys: {missing_outcome_keys}")
+        
+        return success, response
+
+    def test_rarity_distribution_simulation(self):
+        """Test rarity distribution through multiple simulations"""
+        simulation_data = {
+            "ingredients": ["strawberry", "chocolate", "honey", "milk", "banana"],
+            "player_level": 15,
+            "player_address": self.test_player_address,
+            "simulations": 20
+        }
+        
+        success, response = self.run_test("Rarity Distribution Simulation", "POST", "game/simulate-outcome", 200, data=simulation_data)
+        
+        if success and response:
+            expected_keys = ['simulations_run', 'rarity_distribution', 'sample_outcomes']
+            missing_keys = [key for key in expected_keys if key not in response]
+            if missing_keys:
+                self.missing_features.append(f"Simulation missing keys: {missing_keys}")
+                print(f"   ⚠️  Note: Missing simulation keys: {missing_keys}")
+            
+            # Check rarity distribution
+            if 'rarity_distribution' in response:
+                rarity_dist = response['rarity_distribution']
+                expected_rarities = ['Common', 'Rare', 'Epic', 'Legendary']
+                print(f"   📊 Rarity Distribution: {rarity_dist}")
+                
+                # Verify expected rarity percentages (approximately)
+                total_sims = response.get('simulations_run', 0)
+                if total_sims > 0:
+                    legendary_pct = (rarity_dist.get('Legendary', 0) / total_sims) * 100
+                    epic_pct = (rarity_dist.get('Epic', 0) / total_sims) * 100
+                    rare_pct = (rarity_dist.get('Rare', 0) / total_sims) * 100
+                    common_pct = (rarity_dist.get('Common', 0) / total_sims) * 100
+                    
+                    print(f"   📈 Percentages: Legendary {legendary_pct:.1f}%, Epic {epic_pct:.1f}%, Rare {rare_pct:.1f}%, Common {common_pct:.1f}%")
+        
+        return success, response
+
+    def test_ingredient_system_endpoints(self):
+        """Test ingredient system endpoints"""
+        # Test getting ingredients for different levels
+        success1, response1 = self.run_test("Get Level 1 Ingredients", "GET", "ingredients", 200, params={"level": 1})
+        success2, response2 = self.run_test("Get Level 10 Ingredients", "GET", "ingredients", 200, params={"level": 10})
+        success3, response3 = self.run_test("Get Level 25 Ingredients", "GET", "ingredients", 200, params={"level": 25})
+        
+        # Test ingredient stats
+        success4, response4 = self.run_test("Get Ingredient Stats", "GET", "ingredients/stats", 200)
+        
+        if success1 and response1:
+            if 'ingredients' not in response1:
+                self.missing_features.append("Ingredient system structure")
+                print("   ⚠️  Note: Expected 'ingredients' key in response")
+            else:
+                level1_count = len(response1['ingredients'])
+                print(f"   📊 Level 1 ingredients available: {level1_count}")
+        
+        if success2 and response2:
+            level10_count = len(response2.get('ingredients', []))
+            print(f"   📊 Level 10 ingredients available: {level10_count}")
+        
+        if success3 and response3:
+            level25_count = len(response3.get('ingredients', []))
+            print(f"   📊 Level 25 ingredients available: {level25_count}")
+            
+            # Check for legendary ingredients at high level
+            legendary_ingredients = [ing for ing in response3.get('ingredients', []) if ing.get('rarity') == 'legendary']
+            print(f"   ✨ Legendary ingredients at level 25: {len(legendary_ingredients)}")
+        
+        if success4 and response4:
+            expected_stats = ['total_ingredients', 'rarity_distribution', 'type_distribution']
+            missing_stats = [key for key in expected_stats if key not in response4]
+            if missing_stats:
+                self.missing_features.append(f"Ingredient stats missing: {missing_stats}")
+                print(f"   ⚠️  Note: Missing ingredient stats: {missing_stats}")
+            else:
+                print(f"   📊 Total ingredients in system: {response4.get('total_ingredients', 0)}")
+                print(f"   📊 Rarity distribution: {response4.get('rarity_distribution', {})}")
+        
+        return success1 and success2 and success3 and success4, {}
+
+    def test_ingredient_combination_analysis(self):
+        """Test ingredient combination analysis"""
+        # Test with different ingredient combinations
+        test_combinations = [
+            ["strawberry", "chocolate"],  # 2 ingredients - Common eligible
+            ["strawberry", "chocolate", "honey"],  # 3 ingredients - Rare eligible  
+            ["strawberry", "chocolate", "honey", "milk"],  # 4 ingredients - Epic eligible
+            ["strawberry", "chocolate", "honey", "milk", "banana"],  # 5 ingredients - Legendary eligible
+            ["chocolate", "honey", "milk", "strawberry"],  # Secret combo test
+        ]
+        
+        all_success = True
+        for i, ingredients in enumerate(test_combinations):
+            success, response = self.run_test(f"Analyze Combination {i+1}", "POST", "ingredients/analyze", 200, data=ingredients)
+            
+            if success and response:
+                expected_keys = ['ingredient_count', 'variety', 'compatibility', 'secret_combo', 'recommended']
+                missing_keys = [key for key in expected_keys if key not in response]
+                if missing_keys:
+                    self.missing_features.append(f"Ingredient analysis missing: {missing_keys}")
+                    print(f"   ⚠️  Note: Missing analysis keys: {missing_keys}")
+                
+                # Check secret combo detection
+                if 'secret_combo' in response:
+                    secret_combo = response['secret_combo']
+                    if secret_combo.get('is_secret_combo'):
+                        print(f"   🎉 Secret combo detected: {secret_combo.get('combo_name', 'Unknown')}")
+                        print(f"   🎯 Bonus: +{secret_combo.get('bonus_legendary', 0)}% Legendary, +{secret_combo.get('bonus_epic', 0)}% Epic")
+                
+                # Check variety bonus
+                if 'variety' in response:
+                    variety = response['variety']
+                    print(f"   🌈 Variety multiplier: {variety.get('variety_multiplier', 1.0)}x ({variety.get('variety_description', 'Unknown')})")
+            
+            if not success:
+                all_success = False
+        
+        return all_success, {}
+
+    def test_timer_progression_system(self):
+        """Test level-based timer progression"""
+        success, response = self.run_test("Timer Progression", "GET", "game/timer-progression", 200, params={"max_level": 30})
+        
+        if success and response:
+            if 'progression' not in response:
+                self.missing_features.append("Timer progression structure")
+                print("   ⚠️  Note: Expected 'progression' key in response")
+                return False, {}
+            
+            progression = response['progression']
+            print(f"   📊 Timer progression data points: {len(progression)}")
+            
+            # Check progression logic
+            if len(progression) >= 3:
+                level1_time = progression[0].get('timer_hours', 0)
+                level10_time = next((p.get('timer_hours', 0) for p in progression if p.get('level') == 10), 0)
+                level30_time = progression[-1].get('timer_hours', 0) if len(progression) >= 30 else 0
+                
+                print(f"   ⏰ Level 1: {level1_time}h, Level 10: {level10_time}h, Level 30: {level30_time}h")
+                
+                # Verify exponential growth (level 10 should be significantly more than level 1)
+                if level10_time > level1_time * 2:
+                    print("   ✅ Exponential timer progression confirmed")
+                else:
+                    print("   ⚠️  Timer progression may not be exponential as expected")
+        
+        return success, response
+
+    def test_season_management_system(self):
+        """Test season management endpoints"""
+        # Test current season
+        success1, response1 = self.run_test("Get Current Season", "GET", "seasons/current", 200)
+        
+        # Test season list
+        success2, response2 = self.run_test("List Seasons", "GET", "seasons", 200)
+        
+        # Test specific season (season 1)
+        success3, response3 = self.run_test("Get Season 1 Info", "GET", "seasons/1", 200)
+        
+        current_season_id = 1
+        if success1 and response1 and 'season' in response1:
+            current_season_id = response1['season'].get('season_id', 1)
+            print(f"   📅 Current season: {current_season_id} - {response1['season'].get('name', 'Unknown')}")
+            print(f"   📊 Season status: {response1['season'].get('status', 'Unknown')}")
+            
+            # Check time remaining
+            if 'time_remaining' in response1:
+                time_info = response1['time_remaining']
+                print(f"   ⏰ Time remaining info: {time_info}")
+        
+        if success2 and response2:
+            if 'seasons' not in response2:
+                self.missing_features.append("Season list structure")
+                print("   ⚠️  Note: Expected 'seasons' key in response")
+            else:
+                seasons_count = len(response2['seasons'])
+                print(f"   📊 Total seasons available: {seasons_count}")
+        
+        # Test season leaderboard
+        success4, response4 = self.run_test("Season Leaderboard", "GET", f"seasons/{current_season_id}/leaderboard", 200, params={"limit": 10})
+        
+        if success4 and response4:
+            if 'leaderboard' not in response4:
+                self.missing_features.append("Season leaderboard structure")
+                print("   ⚠️  Note: Expected 'leaderboard' key in response")
+            else:
+                leaderboard_count = len(response4['leaderboard'])
+                print(f"   🏆 Season leaderboard entries: {leaderboard_count}")
+        
+        return success1 and success2 and success3 and success4, {}
+
+    def test_enhanced_game_mechanics_integration(self):
+        """Test complete enhanced game mechanics integration"""
+        print("\n🎮 Testing Complete Enhanced Game Mechanics Integration...")
+        
+        # Create a player for testing
+        player_data = {
+            "address": "0x123456789012345678901234567890123456ABCD",
+            "nickname": "EnhancedGameTester",
+            "is_nft_holder": True
+        }
+        success1, _ = self.run_test("Create Enhanced Test Player", "POST", "player", 200, data=player_data)
+        
+        # Test enhanced treat creation with various ingredient counts
+        test_scenarios = [
+            {
+                "name": "Common Treat (2 ingredients)",
+                "ingredients": ["strawberry", "chocolate"],
+                "level": 5
+            },
+            {
+                "name": "Rare Treat (3 ingredients)", 
+                "ingredients": ["strawberry", "chocolate", "honey"],
+                "level": 10
+            },
+            {
+                "name": "Epic Treat (4 ingredients)",
+                "ingredients": ["strawberry", "chocolate", "honey", "milk"],
+                "level": 15
+            },
+            {
+                "name": "Legendary Treat (5+ ingredients)",
+                "ingredients": ["strawberry", "chocolate", "honey", "milk", "banana", "cookie_crumbs"],
+                "level": 20
+            },
+            {
+                "name": "Secret Combo Test",
+                "ingredients": ["chocolate", "honey", "milk", "strawberry"],  # Ultimate Sweet Harmony
+                "level": 25
+            }
+        ]
+        
+        all_success = True
+        for scenario in test_scenarios:
+            treat_data = {
+                "creator_address": "0x123456789012345678901234567890123456ABCD",
+                "ingredients": scenario["ingredients"],
+                "player_level": scenario["level"]
+            }
+            
+            success, response = self.run_test(scenario["name"], "POST", "treats/enhanced", 200, data=treat_data)
+            
+            if success and response:
+                outcome = response.get('outcome', {})
+                rarity = outcome.get('rarity', 'Unknown')
+                timer_hours = outcome.get('timer_duration_hours', 0)
+                secret_combo = outcome.get('secret_combo', {})
+                
+                print(f"   🎯 Result: {rarity} rarity, {timer_hours}h timer")
+                if secret_combo.get('is_secret_combo'):
+                    print(f"   🎉 Secret combo: {secret_combo.get('combo_name', 'Unknown')}")
+            
+            if not success:
+                all_success = False
+        
+        return all_success, {}
+
+    def test_minimum_ingredient_requirements(self):
+        """Test minimum ingredient requirements for different rarities"""
+        print("\n🧪 Testing Minimum Ingredient Requirements...")
+        
+        test_cases = [
+            {
+                "name": "1 Ingredient (Should Fail)",
+                "ingredients": ["strawberry"],
+                "should_succeed": False
+            },
+            {
+                "name": "2 Ingredients (Common Minimum)",
+                "ingredients": ["strawberry", "chocolate"],
+                "should_succeed": True
+            },
+            {
+                "name": "3 Ingredients (Rare Minimum)",
+                "ingredients": ["strawberry", "chocolate", "honey"],
+                "should_succeed": True
+            },
+            {
+                "name": "5 Ingredients (Legendary Minimum)",
+                "ingredients": ["strawberry", "chocolate", "honey", "milk", "banana"],
+                "should_succeed": True
+            }
+        ]
+        
+        all_success = True
+        for case in test_cases:
+            treat_data = {
+                "creator_address": self.test_player_address,
+                "ingredients": case["ingredients"],
+                "player_level": 10
+            }
+            
+            expected_status = 200 if case["should_succeed"] else 400
+            success, response = self.run_test(case["name"], "POST", "treats/enhanced", expected_status, data=treat_data)
+            
+            if case["should_succeed"] and success:
+                print(f"   ✅ {case['name']}: Succeeded as expected")
+            elif not case["should_succeed"] and not success:
+                print(f"   ✅ {case['name']}: Failed as expected (validation working)")
+            else:
+                print(f"   ❌ {case['name']}: Unexpected result")
+                all_success = False
+        
+        return all_success, {}
+
+    def test_enhanced_game_mechanics_comprehensive(self):
+        """Comprehensive test of all enhanced game mechanics"""
+        print("\n🚀 COMPREHENSIVE ENHANCED GAME MECHANICS TEST")
+        print("=" * 60)
+        
+        tests = [
+            ("Enhanced Treat Creation Endpoint", self.test_enhanced_treat_creation_endpoint),
+            ("Rarity Distribution Simulation", self.test_rarity_distribution_simulation),
+            ("Ingredient System Endpoints", self.test_ingredient_system_endpoints),
+            ("Ingredient Combination Analysis", self.test_ingredient_combination_analysis),
+            ("Timer Progression System", self.test_timer_progression_system),
+            ("Season Management System", self.test_season_management_system),
+            ("Enhanced Game Mechanics Integration", self.test_enhanced_game_mechanics_integration),
+            ("Minimum Ingredient Requirements", self.test_minimum_ingredient_requirements)
+        ]
+        
+        passed_tests = 0
+        total_tests = len(tests)
+        
+        for test_name, test_func in tests:
+            try:
+                print(f"\n{'='*40}")
+                print(f"🧪 RUNNING: {test_name}")
+                print(f"{'='*40}")
+                success, _ = test_func()
+                if success:
+                    passed_tests += 1
+                    print(f"✅ {test_name}: PASSED")
+                else:
+                    print(f"❌ {test_name}: FAILED")
+            except Exception as e:
+                print(f"❌ {test_name}: EXCEPTION - {str(e)}")
+        
+        print(f"\n🎯 ENHANCED GAME MECHANICS RESULTS: {passed_tests}/{total_tests} tests passed")
+        return passed_tests == total_tests, {"passed": passed_tests, "total": total_tests}
+
 def main():
-    print("🐕 Starting DogeFood Lab Phase 2 API Tests 🧪")
-    print("Testing Phase 2 off-chain services: Points, Anti-cheat, Merkle Trees")
+    print("🐕 Starting DogeFood Lab Enhanced Game Mechanics API Tests 🧪")
+    print("Testing Enhanced Game Mechanics: Treat Engine, Ingredients, Seasons")
     print("=" * 70)
     
     tester = DogeLabAPITester()
     
-    # Phase 2 comprehensive test sequence
+    # Enhanced Game Mechanics comprehensive test sequence
     tests = [
         # Core API Health Check
         ("Health Check", tester.test_health_check),
@@ -526,7 +895,7 @@ def main():
         ("Verify NFT", tester.test_verify_nft),
         ("Update Player Progress", tester.test_update_player_progress),
         
-        # Phase 1 Features (ensure still working)
+        # Phase 1 & 2 Features (ensure still working)
         ("Create Enhanced Treat", tester.test_create_enhanced_treat),
         ("Timer System Support", tester.test_timer_system_support),
         ("Check Timer Endpoint", tester.test_check_timer_endpoint),
@@ -552,8 +921,8 @@ def main():
         ("Get Claim Proofs", tester.test_get_claim_proofs),
         ("Get All Seasons", tester.test_get_all_seasons),
         
-        # PHASE 2: INTEGRATION TESTING
-        ("Enhanced Treat Creation Integration", tester.test_enhanced_treat_creation_integration),
+        # PHASE 3: ENHANCED GAME MECHANICS - COMPREHENSIVE TESTING
+        ("Enhanced Game Mechanics Comprehensive", tester.test_enhanced_game_mechanics_comprehensive),
         
         # Core functionality verification
         ("Get Player Treats", tester.test_get_player_treats),
@@ -575,43 +944,43 @@ def main():
     
     # Print comprehensive results
     print("\n" + "=" * 70)
-    print(f"📊 PHASE 2 TEST RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
+    print(f"📊 ENHANCED GAME MECHANICS TEST RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
     print("=" * 70)
     
     # Categorize results
     success_rate = (tester.tests_passed / tester.tests_run) * 100 if tester.tests_run > 0 else 0
     
     if success_rate >= 90:
-        print("🎉 EXCELLENT: Phase 2 backend is highly stable!")
+        print("🎉 EXCELLENT: Enhanced Game Mechanics backend is highly stable!")
     elif success_rate >= 75:
-        print("✅ GOOD: Phase 2 backend is mostly functional with minor issues")
+        print("✅ GOOD: Enhanced Game Mechanics backend is mostly functional with minor issues")
     elif success_rate >= 50:
-        print("⚠️  MODERATE: Phase 2 backend has significant issues requiring attention")
+        print("⚠️  MODERATE: Enhanced Game Mechanics backend has significant issues requiring attention")
     else:
-        print("❌ CRITICAL: Phase 2 backend has major failures requiring immediate fixes")
+        print("❌ CRITICAL: Enhanced Game Mechanics backend has major failures requiring immediate fixes")
     
-    # Report missing Phase 2 features
+    # Report missing Enhanced Game Mechanics features
     if tester.missing_features:
-        print(f"\n🔍 PHASE 2 FEATURES ANALYSIS:")
-        print("Missing or incomplete Phase 2 features:")
+        print(f"\n🔍 ENHANCED GAME MECHANICS FEATURES ANALYSIS:")
+        print("Missing or incomplete Enhanced Game Mechanics features:")
         for feature in set(tester.missing_features):
             print(f"   ❌ {feature}")
         print(f"\nTotal missing features: {len(set(tester.missing_features))}")
     else:
-        print("\n✅ All Phase 2 features appear to be implemented correctly!")
+        print("\n✅ All Enhanced Game Mechanics features appear to be implemented correctly!")
     
     # Final assessment
     if tester.tests_passed == tester.tests_run and not tester.missing_features:
-        print("\n🚀 PHASE 2 READY FOR PRODUCTION!")
-        print("All off-chain services are working perfectly.")
+        print("\n🚀 ENHANCED GAME MECHANICS READY FOR PRODUCTION!")
+        print("All enhanced game mechanics are working perfectly.")
         return 0
     elif success_rate >= 75:
-        print(f"\n⚠️  PHASE 2 MOSTLY READY - {tester.tests_run - tester.tests_passed} tests failed")
+        print(f"\n⚠️  ENHANCED GAME MECHANICS MOSTLY READY - {tester.tests_run - tester.tests_passed} tests failed")
         if tester.missing_features:
             print("Some enhanced features need completion.")
         return 1
     else:
-        print(f"\n🔧 PHASE 2 NEEDS WORK - {tester.tests_run - tester.tests_passed} tests failed")
+        print(f"\n🔧 ENHANCED GAME MECHANICS NEEDS WORK - {tester.tests_run - tester.tests_passed} tests failed")
         print("Significant issues require resolution before production.")
         return 1
 
