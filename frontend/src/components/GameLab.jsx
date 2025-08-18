@@ -495,10 +495,13 @@ const GameLab = () => {
         } 
       });
 
-      // Award XP and points
-      const xpGained = gainXP(selectedIngredients, currentDifficulty);
+      // Award XP and points based on game config
+      const baseXP = gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient;
+      const xpGained = Math.floor(baseXP * currentDifficulty);
       const pointsGained = Math.floor(xpGained * 0.5);
-      addPoints(pointsGained);
+      
+      // Update points in game state
+      dispatch({ type: 'ADD_POINTS', payload: pointsGained });
 
     } catch (error) {
       console.error('❌ Enhanced treat creation failed:', error);
@@ -509,7 +512,6 @@ const GameLab = () => {
       });
     } finally {
       setSelectedIngredients([]);
-      setShowResult(false);
     }
   };
 
