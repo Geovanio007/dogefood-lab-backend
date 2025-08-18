@@ -205,10 +205,14 @@ const AdminDashboard = () => {
 
         {/* Main Dashboard Tabs */}
         <Tabs defaultValue="seasons" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-white">
+          <TabsList className="grid w-full grid-cols-4 bg-white">
             <TabsTrigger value="seasons" className="flex items-center gap-2">
               <Trophy className="w-4 h-4" />
               Season Management
+            </TabsTrigger>
+            <TabsTrigger value="game-engine" className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Game Engine
             </TabsTrigger>
             <TabsTrigger value="security" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
@@ -221,8 +225,15 @@ const AdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="seasons" className="mt-6">
-            <SeasonManagement 
+            <EnhancedSeasonManagement 
               seasons={seasons} 
+              onRefresh={loadDashboardData}
+              toast={toast}
+            />
+          </TabsContent>
+
+          <TabsContent value="game-engine" className="mt-6">
+            <GameEngineManagement 
               onRefresh={loadDashboardData}
               toast={toast}
             />
