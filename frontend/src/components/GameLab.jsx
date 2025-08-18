@@ -1175,6 +1175,9 @@ const GameLab = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Real-time Treat Notifications */}
+      <TreatNotifications playerAddress={address} />
     </div>
   );
 };
