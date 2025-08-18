@@ -570,25 +570,10 @@ const GameLab = () => {
             // Note: Treat creation is now handled by the enhanced backend
             // The handleEnhancedMixCompletion function manages all treat creation,
             // timer calculation, rarity determination, and game state updates
-            };
             
-            // Add to active treats
-            setActiveTreats(prev => [...prev, newTreat]);
-            
-            // Reset selected ingredients AFTER mixing completes
+            // Reset mixing progress after completion
             setTimeout(() => {
-              setSelectedIngredients([]);
               setMixingProgress(0);
-              
-              // Calculate XP for user feedback
-              const xpGained = gameConfig.xp.baseXpPerCombo + 
-                             Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient;
-              
-              toast({
-                title: "Treat is Brewing! ⏰",
-                description: `Your Level ${currentLevel} treat is now brewing. Come back in ${hours}h ${minutes}m!`,
-                className: "bg-yellow-100 border-yellow-400"
-              });
             }, 100);
           }, 500);
         }
