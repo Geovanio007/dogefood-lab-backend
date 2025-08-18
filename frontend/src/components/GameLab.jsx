@@ -303,8 +303,8 @@ const GameLab = () => {
   const [demoMode, setDemoMode] = useState(false); // Demo mode state
   const { toast } = useToast();
 
-  // Initialize treat tracker (only for real mode)
-  const treatTracker = useTreatTracker(demoMode ? null : address);
+  // Initialize treat tracker (always call hook, handle demo mode inside)
+  const treatTracker = useTreatTracker(address, demoMode);
 
   // Cleanup interval on component unmount or mixing state change
   useEffect(() => {
