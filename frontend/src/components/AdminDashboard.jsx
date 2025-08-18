@@ -259,7 +259,403 @@ const AdminDashboard = () => {
   );
 };
 
-// Season Management Component
+// Enhanced Season Management Component
+const EnhancedSeasonManagement = ({ seasons, onRefresh, toast }) => {
+  const [currentSeason, setCurrentSeason] = useState(null);
+  const [seasonStats, setSeasonStats] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadCurrentSeason();
+  }, []);
+
+  const loadCurrentSeason = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${BACKEND_URL}/api/seasons/current`);
+      const data = await response.json();
+      setCurrentSeason(data.season);
+      
+      // Load current season stats
+      if (data.season) {
+        const statsResponse = await fetch(`${BACKEND_URL}/api/seasons/${data.season.season_id}`);
+        const statsData = await statsResponse.json();
+        setSeasonStats(statsData.stats || {});
+      }
+    } catch (error) {
+      console.error('Error loading current season:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const activateSeason = async (seasonId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/seasons/${seasonId}/activate`, {
+        method: 'POST'
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Season Activated!",
+          description: `Season ${seasonId} has been activated`,
+          className: "bg-green-100 border-green-400"
+        });
+        loadCurrentSeason();
+        onRefresh();
+      } else {
+        throw new Error('Failed to activate season');
+      }
+    } catch (error) {
+      toast({
+        title: "Activation Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-8">Loading season data...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Current Season Info */}
+      {currentSeason && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-gold-500" />
+              Current Season: {currentSeason.name}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Season ID</p>
+                <p className="text-2xl font-bold">{currentSeason.season_id}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Status</p>
+                <Badge variant={currentSeason.status === 'active' ? 'default' : 'secondary'}>
+                  {currentSeason.status}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Participants</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {seasonStats.total_participants || 0}
+                </p>
+              </div>
+            </div>
+            
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-700 mb-2">
+                <strong>Duration:</strong> {currentSeason.start_date} to {currentSeason.end_date}
+              </p>
+              <p className="text-sm text-gray-700">
+                <strong>Description:</strong> {currentSeason.description}
+              </p>
+            </div>
+
+            {seasonStats.rarity_distribution && (
+              <div className="mt-4">
+                <h4 className="font-semibold mb-2">Treat Distribution This Season</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div className="text-center p-2 bg-gray-100 rounded">
+                    <p className="text-sm text-gray-600">Common</p>
+                    <p className="font-bold">{seasonStats.rarity_distribution.Common || 0}</p>
+                  </div>
+                  <div className="text-center p-2 bg-blue-100 rounded">
+                    <p className="text-sm text-blue-600">Rare</p>
+                    <p className="font-bold text-blue-600">{seasonStats.rarity_distribution.Rare || 0}</p>
+                  </div>
+                  <div className="text-center p-2 bg-purple-100 rounded">
+                    <p className="text-sm text-purple-600">Epic</p>
+                    <p className="font-bold text-purple-600">{seasonStats.rarity_distribution.Epic || 0}</p>
+                  </div>
+                  <div className="text-center p-2 bg-yellow-100 rounded">
+                    <p className="text-sm text-yellow-600">Legendary</p>
+                    <p className="font-bold text-yellow-600">{seasonStats.rarity_distribution.Legendary || 0}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Season List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>All Seasons</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {seasons.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No seasons found</p>
+          ) : (
+            <div className="space-y-4">
+              {seasons.map((season, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <h4 className="font-semibold text-lg">
+                        Season {season.season_id}: {season.name}
+                      </h4>
+                      <p className="text-gray-600">
+                        {season.start_date} to {season.end_date}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={season.status === 'active' ? 'default' : 'secondary'}>
+                        {season.status}
+                      </Badge>
+                      {season.status !== 'active' && (
+                        <Button 
+                          size="sm" 
+                          onClick={() => activateSeason(season.season_id)}
+                        >
+                          Activate
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-gray-600">
+                    {season.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Game Engine Management Component
+const GameEngineManagement = ({ onRefresh, toast }) => {
+  const [timerProgression, setTimerProgression] = useState([]);
+  const [ingredientStats, setIngredientStats] = useState({});
+  const [simulationResults, setSimulationResults] = useState(null);
+  const [simulationForm, setSimulationForm] = useState({
+    ingredients: 'strawberry,chocolate,honey,milk,banana',
+    level: 15,
+    simulations: 10
+  });
+
+  useEffect(() => {
+    loadGameEngineData();
+  }, []);
+
+  const loadGameEngineData = async () => {
+    try {
+      // Load timer progression
+      const timerResponse = await fetch(`${BACKEND_URL}/api/game/timer-progression?max_level=30`);
+      const timerData = await timerResponse.json();
+      setTimerProgression(timerData.progression || []);
+
+      // Load ingredient stats  
+      const ingredientResponse = await fetch(`${BACKEND_URL}/api/ingredients/stats`);
+      const ingredientData = await ingredientResponse.json();
+      setIngredientStats(ingredientData);
+    } catch (error) {
+      console.error('Error loading game engine data:', error);
+    }
+  };
+
+  const runSimulation = async () => {
+    try {
+      const ingredients = simulationForm.ingredients.split(',').map(i => i.trim());
+      
+      const response = await fetch(`${BACKEND_URL}/api/game/simulate-outcome`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredients,
+          player_level: simulationForm.level,
+          player_address: '0x1234567890123456789012345678901234567890',
+          simulations: simulationForm.simulations
+        })
+      });
+
+      const data = await response.json();
+      setSimulationResults(data);
+      
+      toast({
+        title: "Simulation Complete!",
+        description: `Ran ${data.simulations_run} simulations`,
+        className: "bg-green-100 border-green-400"
+      });
+    } catch (error) {
+      toast({
+        title: "Simulation Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Timer Progression Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Timer Progression by Level</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {timerProgression.slice(0, 20).map((level) => (
+              <div key={level.level} className="text-center p-2 bg-gray-50 rounded">
+                <p className="text-sm text-gray-600">Level {level.level}</p>
+                <p className="font-bold">{level.timer_formatted}</p>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-700">
+              <strong>Formula:</strong> Exponential scaling with 1-hour base time.
+              Level 1: 1h → Level 10: ~5.2h → Level 30: 12h (capped)
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Ingredient System Stats */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Ingredient System Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-gray-600">Total Ingredients</p>
+              <p className="text-2xl font-bold">{ingredientStats.total_ingredients || 0}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Ingredient Types</p>
+              <p className="text-2xl font-bold text-green-600">
+                {ingredientStats.ingredient_types ? ingredientStats.ingredient_types.length : 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Max Unlock Level</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {ingredientStats.max_unlock_level || 0}
+              </p>
+            </div>
+          </div>
+
+          {ingredientStats.rarity_distribution && (
+            <div className="mt-4">
+              <h4 className="font-semibold mb-2">Rarity Distribution</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {Object.entries(ingredientStats.rarity_distribution).map(([rarity, count]) => (
+                  <div key={rarity} className="text-center p-2 bg-gray-100 rounded">
+                    <p className="text-sm text-gray-600 capitalize">{rarity}</p>
+                    <p className="font-bold">{count}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Rarity Testing Simulation */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Rarity Distribution Testing</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ingredients (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={simulationForm.ingredients}
+                  onChange={(e) => setSimulationForm({
+                    ...simulationForm,
+                    ingredients: e.target.value
+                  })}
+                  placeholder="strawberry,chocolate,honey"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Player Level
+                </label>
+                <input
+                  type="number"
+                  value={simulationForm.level}
+                  onChange={(e) => setSimulationForm({
+                    ...simulationForm,
+                    level: parseInt(e.target.value) || 1
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Simulations
+                </label>
+                <input
+                  type="number"
+                  value={simulationForm.simulations}
+                  onChange={(e) => setSimulationForm({
+                    ...simulationForm,
+                    simulations: parseInt(e.target.value) || 10
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            
+            <Button onClick={runSimulation} className="w-full md:w-auto">
+              Run Rarity Simulation
+            </Button>
+
+            {simulationResults && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-semibold mb-2">
+                  Simulation Results ({simulationResults.simulations_run} runs)
+                </h4>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                  {Object.entries(simulationResults.rarity_distribution).map(([rarity, count]) => {
+                    const percentage = ((count / simulationResults.simulations_run) * 100).toFixed(1);
+                    return (
+                      <div key={rarity} className="text-center p-2 bg-white rounded border">
+                        <p className="text-sm text-gray-600">{rarity}</p>
+                        <p className="font-bold">{count}</p>
+                        <p className="text-xs text-gray-500">{percentage}%</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <p className="text-sm text-gray-600">
+                  <strong>Expected:</strong> Legendary ~10%, Epic ~20%, Rare ~30%, Common ~40%
+                </p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Original Season Management Component (kept for backward compatibility)
 const SeasonManagement = ({ seasons, onRefresh, toast }) => {
   const [newSeasonData, setNewSeasonData] = useState({
     seasonId: '',
