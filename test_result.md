@@ -436,10 +436,48 @@ test_plan:
           agent: "testing"
           comment: "✅ ENHANCED API ENDPOINTS FULLY OPERATIONAL! Tested all 12+ new Phase 2 endpoints: 1) Points System APIs - /api/points/leaderboard, /api/points/{address}/stats, /api/points/{address}/history, /api/points/{address}/daily-bonus all working correctly. 2) Security APIs - /api/security/player-risk/{address}, /api/security/flagged-players operational with proper risk assessment. 3) Rewards APIs - /api/rewards/generate-season/{id}, /api/rewards/season/{id}, /api/rewards/claim/{address}/{season}, /api/rewards/seasons all functional. 4) Background task integration confirmed - treat creation automatically triggers points awarding via background tasks. 5) Enhanced treat creation maintains all Phase 1 features while adding Phase 2 anti-cheat validation. 6) Proper error handling with 400/404/422/429 status codes. All Phase 2 API integrations are production-ready and maintain backward compatibility!"
 
+  - task: "Enhanced Game Mechanics Engine"
+    implemented: false
+    working: "NA"
+    file: "/app/backend/services/treat_game_engine.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "STARTING IMPLEMENTATION: Building comprehensive game mechanics engine with level-based timer progression (1h base + exponential growth), rarity formulas (10% Legendary, 20% Epic, 30% Rare, 40% Common), ingredient combination system with 20+ ingredients, secret combos, and server-side secure randomization."
+
+  - task: "New TreatNFT Smart Contract"
+    implemented: false  
+    working: "NA"
+    file: "/app/contracts/contracts/TreatNFT.sol"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "STARTING IMPLEMENTATION: Creating new ERC721 contract specifically for treat outcomes with metadata (rarity, ingredients, season, level) and minting capabilities."
+
+  - task: "Enhanced Ingredient System"
+    implemented: false
+    working: "NA" 
+    file: "/app/backend/services/ingredient_system.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "STARTING IMPLEMENTATION: Building comprehensive ingredient system with 20+ unique ingredients, secret combo definitions stored server-side, and rarity-based unlock requirements."
+
 agent_communication:
     - agent: "main"
       message: "🚀 PHASE 2 IMPLEMENTATION COMPLETED! ✅ OFF-CHAIN SERVICES: Implemented comprehensive points collection system with automatic rewards, streak bonuses, tier calculations. ✅ ANTI-CHEAT SYSTEM: Full validation for treat creation, XP gains, level progression with risk scoring. ✅ MERKLE TREE GENERATION: Solidity-compatible Merkle trees for Web3 reward distribution with tier-based allocations. ✅ API INTEGRATION: Enhanced backend with 12+ new endpoints for points management, security monitoring, and season rewards. All Phase 2 systems integrated and ready for backend testing!"
     - agent: "testing"
       message: "🎉 COMPREHENSIVE PHASE 1 BACKEND TESTING COMPLETED! ✅ ALL 6 PHASE 1 FEATURES FULLY WORKING: 1) Enhanced Player Registration with Nicknames - POST /api/player supports nickname field, GET /api/player/{address} returns nicknames correctly. 2) Enhanced Treat Creation with Timer Support - POST /api/treats accepts main_ingredient, timer_duration (10800s for 3hrs), brewing_status='brewing', ready_at timestamp calculated automatically. 3) Timer System Endpoints - POST /api/treats/{treat_id}/check-timer returns brewing status and remaining seconds, auto-updates to 'ready' when complete. GET /api/treats/{address}/brewing returns only brewing treats with auto-status updates. 4) 3-Hour Timer Functionality - Tested with both 10-second quick completion and 3-hour timers, all calculations working correctly. 5) Leaderboard with Nicknames - GET /api/leaderboard includes nickname field in all responses. 6) Comprehensive Error Handling - 404 for non-existent treats/players, 422 for missing fields. TESTED: 21/21 standard API tests + 6/6 Phase 1 specific tests = 27/27 TOTAL TESTS PASSED. Backend is production-ready for wallet gate and timer features!"
     - agent: "testing"
-      message: "🚀 PHASE 2 COMPREHENSIVE BACKEND TESTING COMPLETED! ✅ CRITICAL SYSTEMS WORKING: 1) OFF-CHAIN POINTS COLLECTION: Enhanced leaderboard (GET /api/points/leaderboard), player stats (GET /api/points/{address}/stats), points history (GET /api/points/{address}/history), daily bonus system working correctly. Background points awarding confirmed - 60 points awarded automatically for legendary treat creation. 2) ANTI-CHEAT SYSTEM: Treat creation validation working, risk scoring active (GET /api/security/player-risk/{address}), flagged players monitoring operational. System detects rapid treat creation and logs violations. 3) MERKLE TREE GENERATION: Season rewards generation working (POST /api/rewards/generate-season/{id}), season data retrieval (GET /api/rewards/season/{id}), claim proofs available (GET /api/rewards/claim/{address}/{season}). Fixed MongoDB overflow issues with large integers. 4) ENHANCED API INTEGRATION: All Phase 2 endpoints operational, background tasks executing properly, existing Phase 1 features remain stable. TESTED: 33/40 tests passed (82.5% success rate). Minor issues: Anti-cheat thresholds may need tuning for production, some expected 400/404 responses for non-eligible users. PHASE 2 BACKEND IS PRODUCTION-READY! 🎯"
+      message: "🚀 PHASE 2 COMPREHENSIVE BACKEND TESTING COMPLETED! ✅ CRITICAL SYSTEMS WORKING: 1) OFF-CHAIN POINTS COLLECTION: Enhanced leaderboard (GET /api/points/leaderboard), player stats (GET /api/points/{address}/stats), points history (GET /app/points/{address}/history), daily bonus system working correctly. Background points awarding confirmed - 60 points awarded automatically for legendary treat creation. 2) ANTI-CHEAT SYSTEM: Treat creation validation working, risk scoring active (GET /api/security/player-risk/{address}), flagged players monitoring operational. System detects rapid treat creation and logs violations. 3) MERKLE TREE GENERATION: Season rewards generation working (POST /api/rewards/generate-season/{id}), season data retrieval (GET /api/rewards/season/{id}), claim proofs available (GET /api/rewards/claim/{address}/{season}). Fixed MongoDB overflow issues with large integers. 4) ENHANCED API INTEGRATION: All Phase 2 endpoints operational, background tasks executing properly, existing Phase 1 features remain stable. TESTED: 33/40 tests passed (82.5% success rate). Minor issues: Anti-cheat thresholds may need tuning for production, some expected 400/404 responses for non-eligible users. PHASE 2 BACKEND IS PRODUCTION-READY! 🎯"
+    - agent: "main"
+      message: "🎮 STARTING ENHANCED GAME MECHANICS IMPLEMENTATION! Building comprehensive treat creation system with: 1) Level-based progression (1h base→exponential growth) 2) Server-side rarity rolls (10% Legendary, 20% Epic, 30% Rare, 40% Common) 3) 20+ ingredient system with secret combos 4) New TreatNFT ERC721 contract 5) Season management system. This will transform the game into a competitive, skill-based experience with proper Web3 integration."
