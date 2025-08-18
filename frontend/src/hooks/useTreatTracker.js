@@ -43,7 +43,7 @@ export const useTreatTracker = (playerAddress, demoMode = false) => {
     } finally {
       setLoading(false);
     }
-  }, [playerAddress]);
+  }, [playerAddress, demoMode]);
 
   // Check treat status for a specific treat
   const checkTreatStatus = useCallback(async (treatId) => {
