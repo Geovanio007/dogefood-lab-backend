@@ -65,6 +65,23 @@ export const useTreatTracker = (playerAddress, demoMode = false) => {
 
   // Add a new treat to tracking
   const addTreat = useCallback((treatData) => {
+    if (demoMode) {
+      // In demo mode, just add to local state without persistence
+      const newTreat = {
+        id: treatData.id || Date.now().toString(),
+        name: treatData.name,
+        rarity: treatData.rarity,
+        ingredients: treatData.ingredients,
+        created_at: new Date().toISOString(),
+        ready_at: treatData.ready_at,
+        brewing_status: 'brewing',
+        timer_duration: treatData.timer_duration || 3600,
+        image: treatData.image || '🍖'
+      };
+      setActiveTreats(prev => [...prev, newTreat]);
+      return newTreat;
+    }
+
     const newTreat = {
       id: treatData.id,
       name: treatData.name,
@@ -79,14 +96,16 @@ export const useTreatTracker = (playerAddress, demoMode = false) => {
 
     setActiveTreats(prev => [...prev, newTreat]);
     
-    // Store in localStorage for persistence
-    const storageKey = `treats_${playerAddress}`;
-    const existingTreats = JSON.parse(localStorage.getItem(storageKey) || '[]');
-    existingTreats.push(newTreat);
-    localStorage.setItem(storageKey, JSON.stringify(existingTreats));
+    // Store in localStorage for persistence (only in real mode)
+    if (playerAddress) {
+      const storageKey = `treats_${playerAddress}`;
+      const existingTreats = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      existingTreats.push(newTreat);
+      localStorage.setItem(storageKey, JSON.stringify(existingTreats));
+    }
 
     return newTreat;
-  }, [playerAddress]);
+  }, [playerAddress, demoMode]);
 
   // Mark treat as completed
   const completeTreat = useCallback((treatId) => {
