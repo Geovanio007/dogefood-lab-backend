@@ -298,6 +298,15 @@ const GameLab = () => {
   const [mixingInterval, setMixingInterval] = useState(null); // Store interval for cleanup
   const { toast } = useToast();
 
+  // Cleanup interval on component unmount or mixing state change
+  useEffect(() => {
+    return () => {
+      if (mixingInterval) {
+        clearInterval(mixingInterval);
+      }
+    };
+  }, [mixingInterval]);
+
   // Timer calculation based on level (1 hour base, increases with level)
   const calculateTreatTimer = (level) => {
     const baseTimeHours = 1; // 1 hour base
