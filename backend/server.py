@@ -498,6 +498,251 @@ async def get_all_seasons():
     seasons = await db.reward_seasons.find({}).sort("season_id", -1).to_list(100)
     return {"seasons": seasons}
 
+# =====================================================
+# ENHANCED GAME MECHANICS API ENDPOINTS (PHASE 3)
+# =====================================================
+
+# Enhanced Treat Creation with Game Engine
+@api_router.post("/treats/enhanced")
+async def create_enhanced_treat(
+    creator_address: str,
+    ingredients: List[str],
+    player_level: int,
+    background_tasks: BackgroundTasks
+):
+    """Create treat with enhanced game mechanics including rarity calculation and timers"""
+    
+    try:
+        # Validate treat creation
+        validation = game_engine.validate_treat_creation(ingredients, player_level)
+        if not validation["valid"]:
+            raise HTTPException(status_code=400, detail=f"Invalid treat creation: {validation['errors']}")
+        
+        # Anti-cheat validation
+        cheat_check = await anti_cheat_system.validate_treat_creation(
+            creator_address,
+            {"ingredients": ingredients, "level": player_level}
+        )
+        if not cheat_check["valid"]:
+            raise HTTPException(status_code=429, detail=f"Anti-cheat triggered: {cheat_check['reason']}")
+        
+        # Calculate treat outcome using game engine
+        treat_outcome = game_engine.calculate_treat_outcome(
+            ingredients, player_level, creator_address
+        )
+        
+        # Create treat with enhanced data
+        treat = DogeTreat(
+            name=f"Level {player_level} {treat_outcome['rarity']} Treat",
+            creator_address=creator_address,
+            ingredients=treat_outcome["ingredients_used"],
+            main_ingredient=treat_outcome["ingredients_used"][0] if treat_outcome["ingredients_used"] else "unknown",
+            rarity=treat_outcome["rarity"],
+            flavor="Enhanced",  # Could be calculated based on ingredients
+            timer_duration=treat_outcome["timer_duration_seconds"],
+            brewing_status="brewing",
+            ready_at=datetime.fromtimestamp(treat_outcome["ready_at"]),
+            image="🍖"  # Default for now
+        )
+        
+        # Save to database
+        await db.treats.insert_one(treat.dict())
+        
+        # Update player's created treats
+        await db.players.update_one(
+            {"address": creator_address},
+            {"$push": {"created_treats": treat.id}}
+        )
+        
+        # Award points in background
+        background_tasks.add_task(
+            award_treat_creation_points,
+            creator_address,
+            {
+                "rarity": treat_outcome["rarity"],
+                "ingredients": treat_outcome["ingredients_used"],
+                "level": player_level,
+                "secret_combo": treat_outcome["secret_combo"],
+                "season_id": treat_outcome["season_id"]
+            }
+        )
+        
+        return {
+            "treat": treat.dict(),
+            "outcome": treat_outcome,
+            "validation": validation,
+            "message": f"{treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']} hours."
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating enhanced treat: {str(e)}")
+
+# Ingredient System Endpoints
+@api_router.get("/ingredients")
+async def get_ingredients(level: int = 1):
+    """Get all ingredients available at the specified level"""
+    ingredients = ingredient_system.export_ingredients_for_frontend(level)
+    return {"ingredients": ingredients, "level": level}
+
+@api_router.get("/ingredients/stats")
+async def get_ingredient_stats():
+    """Get ingredient system statistics"""
+    return ingredient_system.get_ingredient_stats()
+
+@api_router.post("/ingredients/analyze")
+async def analyze_ingredient_combination(ingredient_ids: List[str]):
+    """Analyze ingredient combination for compatibility and variety"""
+    
+    # Get variety bonus
+    variety = ingredient_system.calculate_ingredient_variety_bonus(ingredient_ids)
+    
+    # Get compatibility analysis
+    compatibility = ingredient_system.get_ingredient_compatibility(ingredient_ids)
+    
+    # Check if it's a secret combo
+    combo_bonus = game_engine.check_secret_combo_bonus(ingredient_ids)
+    
+    return {
+        "ingredient_count": len(ingredient_ids),
+        "variety": variety,
+        "compatibility": compatibility,
+        "secret_combo": combo_bonus,
+        "recommended": compatibility["is_balanced"] and len(ingredient_ids) >= 3
+    }
+
+# Game Engine Endpoints
+@api_router.get("/game/timer-progression")
+async def get_timer_progression(max_level: int = 50):
+    """Get timer progression for different levels"""
+    progression = []
+    for level in range(1, min(max_level + 1, 101)):
+        timer_seconds = game_engine.calculate_treat_timer(level)
+        progression.append({
+            "level": level,
+            "timer_seconds": timer_seconds,
+            "timer_hours": round(timer_seconds / 3600, 1),
+            "timer_formatted": f"{timer_seconds // 3600}h {(timer_seconds % 3600) // 60}m"
+        })
+    return {"progression": progression}
+
+@api_router.post("/game/simulate-outcome")
+async def simulate_treat_outcome(
+    ingredients: List[str],
+    player_level: int,
+    player_address: str,
+    simulations: int = 10
+):
+    """Simulate treat outcomes multiple times for testing (admin only)"""
+    
+    # Basic validation
+    if len(ingredients) < 2:
+        raise HTTPException(status_code=400, detail="Minimum 2 ingredients required")
+    
+    outcomes = []
+    rarity_counts = {"Common": 0, "Rare": 0, "Epic": 0, "Legendary": 0}
+    
+    for i in range(min(simulations, 50)):  # Limit to 50 simulations
+        try:
+            outcome = game_engine.calculate_treat_outcome(
+                ingredients, player_level, f"{player_address}_{i}"  # Different address for each sim
+            )
+            outcomes.append(outcome)
+            rarity_counts[outcome["rarity"]] += 1
+        except Exception as e:
+            continue
+    
+    return {
+        "simulations_run": len(outcomes),
+        "rarity_distribution": rarity_counts,
+        "sample_outcomes": outcomes[:5],  # Show first 5 outcomes
+        "ingredients_tested": ingredients,
+        "player_level": player_level
+    }
+
+# Season Management Endpoints
+@api_router.get("/seasons/current")
+async def get_current_season():
+    """Get current season information"""
+    season = season_manager.get_season_info()
+    time_remaining = season_manager.get_time_remaining_in_season()
+    
+    return {
+        "season": {
+            "season_id": season.season_id,
+            "name": season.name,
+            "start_date": season.start_date.isoformat(),
+            "end_date": season.end_date.isoformat(),
+            "status": season.status.value,
+            "description": season.description
+        },
+        "time_remaining": time_remaining
+    }
+
+@api_router.get("/seasons/{season_id}")
+async def get_season_info(season_id: int):
+    """Get specific season information"""
+    season = season_manager.get_season_info(season_id)
+    stats = await season_manager.get_season_stats(season_id)
+    
+    return {
+        "season": {
+            "season_id": season.season_id,
+            "name": season.name,
+            "start_date": season.start_date.isoformat(),
+            "end_date": season.end_date.isoformat(),
+            "status": season.status.value,
+            "description": season.description
+        },
+        "stats": stats
+    }
+
+@api_router.get("/seasons")
+async def list_seasons(include_upcoming: bool = True, include_archived: bool = False):
+    """List all seasons with filtering"""
+    seasons = season_manager.list_seasons(include_upcoming, include_archived)
+    
+    return {
+        "seasons": [
+            {
+                "season_id": s.season_id,
+                "name": s.name,
+                "start_date": s.start_date.isoformat(),
+                "end_date": s.end_date.isoformat(),
+                "status": s.status.value,
+                "description": s.description
+            }
+            for s in seasons
+        ]
+    }
+
+@api_router.get("/seasons/{season_id}/leaderboard")
+async def get_season_leaderboard(season_id: int, limit: int = 50):
+    """Get season-specific leaderboard"""
+    leaderboard = await season_manager.get_season_leaderboard(season_id, limit)
+    season = season_manager.get_season_info(season_id)
+    
+    return {
+        "season_id": season_id,
+        "season_name": season.name,
+        "leaderboard": leaderboard
+    }
+
+# Admin Endpoints for Game Management
+@api_router.post("/admin/seasons/{season_id}/activate")
+async def activate_season(season_id: int):
+    """Admin: Manually activate a season (for testing)"""
+    # This would typically require admin authentication
+    season = season_manager.get_season_info(season_id)
+    
+    return {
+        "message": f"Season {season_id} ({season.name}) activated",
+        "season": {
+            "season_id": season.season_id,
+            "name": season.name,
+            "status": season.status.value
+        }
+    }
+
 # Health check
 @api_router.get("/")
 async def root():
