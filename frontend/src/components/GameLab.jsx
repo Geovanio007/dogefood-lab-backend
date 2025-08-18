@@ -809,7 +809,7 @@ const GameLab = () => {
               className="w-10 h-10 object-contain"
             />
             <div className="lab-level-indicator">
-              Your Level {currentLevel} Lab
+              {demoMode ? 'Demo Lab (Level 1)' : `Your Level ${currentLevel} Lab`}
             </div>
           </div>
           {isNFTHolder && (
