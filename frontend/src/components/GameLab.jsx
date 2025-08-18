@@ -549,6 +549,11 @@ const GameLab = () => {
       return;
     }
 
+    // Clear any existing interval
+    if (mixingInterval) {
+      clearInterval(mixingInterval);
+    }
+
     startMixing(selectedIngredients);
     setMixingProgress(0);
 
@@ -563,7 +568,7 @@ const GameLab = () => {
       className: "bg-blue-100 border-blue-400"
     });
 
-    // Simulate mixing progress
+    // Simulate mixing progress with proper interval management
     const interval = setInterval(() => {
       setMixingProgress(prev => {
         const newProgress = prev + 10;
@@ -571,13 +576,11 @@ const GameLab = () => {
         
         if (newProgress >= 100) {
           clearInterval(interval);
+          setMixingInterval(null); // Clear interval reference
+          
           setTimeout(() => {
             // Use enhanced backend system instead of Web3 minting
             handleEnhancedMixCompletion();
-            
-            // Note: Treat creation is now handled by the enhanced backend
-            // The handleEnhancedMixCompletion function manages all treat creation,
-            // timer calculation, rarity determination, and game state updates
             
             // Reset mixing progress after completion
             setTimeout(() => {
@@ -588,6 +591,9 @@ const GameLab = () => {
         return newProgress;
       });
     }, 300);
+    
+    // Store interval reference for cleanup
+    setMixingInterval(interval);
   };
 
   // Handle treat completion
