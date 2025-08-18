@@ -458,7 +458,11 @@ const GameLab = () => {
     }
 
     try {
-      console.log('🧪 Starting enhanced treat creation...');
+      console.log('🧪 Starting enhanced treat creation...', {
+        address,
+        ingredients: selectedIngredients,
+        level: currentLevel
+      });
       
       // Call enhanced backend API for treat creation
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/treats/enhanced`, {
@@ -484,9 +488,25 @@ const GameLab = () => {
       // Show success message with rarity and timer info
       toast({
         title: `${result.outcome.rarity} Treat Created! 🎉`,
-        description: `Your ${result.outcome.rarity.toLowerCase()} treat is brewing for ${result.outcome.timer_duration_hours} hours. Check back later!`,
+        description: `Your ${result.outcome.rarity.toLowerCase()} treat is brewing for ${result.outcome.timer_duration_hours} hours. Come back later!`,
         className: "bg-green-100 border-green-400"
       });
+
+      // Add treat to tracking system for real-time display
+      const treatData = {
+        id: result.treat.id,
+        name: result.treat.name,
+        rarity: result.outcome.rarity,
+        ingredients: result.outcome.ingredients_used,
+        ready_at: new Date(result.outcome.ready_at * 1000).toISOString(), // Convert timestamp
+        timer_duration: result.outcome.timer_duration_seconds,
+        image: result.outcome.rarity === 'Legendary' ? '🌟' : 
+               result.outcome.rarity === 'Epic' ? '⭐' :
+               result.outcome.rarity === 'Rare' ? '✨' : '🍪'
+      };
+
+      // Add to treat tracker for persistent display
+      treatTracker.addTreat(treatData);
 
       // Update game state with enhanced treat data
       dispatch({ 
@@ -495,9 +515,7 @@ const GameLab = () => {
           name: result.treat.name,
           rarity: result.outcome.rarity,
           flavor: result.outcome.ingredients_used.join(' & '),
-          image: result.outcome.rarity === 'Legendary' ? '🌟' : 
-                 result.outcome.rarity === 'Epic' ? '⭐' :
-                 result.outcome.rarity === 'Rare' ? '✨' : '🍪'
+          image: treatData.image
         }
       });
 
@@ -521,6 +539,11 @@ const GameLab = () => {
 
       // CRITICAL FIX: Reset mixing state after completion
       dispatch({ type: 'RESET_MIXING' });
+
+      // Show active treats view automatically after creation
+      setTimeout(() => {
+        setShowActiveTreats(true);
+      }, 2000);
 
     } catch (error) {
       console.error('❌ Enhanced treat creation failed:', error);
