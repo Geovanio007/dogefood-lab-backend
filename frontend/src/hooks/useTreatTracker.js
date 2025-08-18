@@ -173,7 +173,7 @@ export const useTreatTracker = (playerAddress, demoMode = false) => {
 
   // Load treats when player address changes
   useEffect(() => {
-    if (playerAddress) {
+    if (playerAddress && !demoMode) {
       // Load from localStorage first for immediate display
       const storageKey = `treats_${playerAddress}`;
       const storedTreats = JSON.parse(localStorage.getItem(storageKey) || '[]');
@@ -194,8 +194,12 @@ export const useTreatTracker = (playerAddress, demoMode = false) => {
 
       // Then load from backend
       loadTreats();
+    } else if (demoMode) {
+      // Clear treats in demo mode
+      setActiveTreats([]);
+      setCompletedTreats([]);
     }
-  }, [playerAddress, loadTreats]);
+  }, [playerAddress, demoMode, loadTreats]);
 
   return {
     activeTreats,
