@@ -521,37 +521,32 @@ async def get_all_seasons():
 
 # Enhanced Treat Creation with Game Engine
 @api_router.post("/treats/enhanced")
-async def create_enhanced_treat(
-    creator_address: str,
-    ingredients: List[str],
-    player_level: int,
-    background_tasks: BackgroundTasks
-):
+async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_tasks: BackgroundTasks):
     """Create treat with enhanced game mechanics including rarity calculation and timers"""
     
     try:
         # Validate treat creation
-        validation = game_engine.validate_treat_creation(ingredients, player_level)
+        validation = game_engine.validate_treat_creation(treat_data.ingredients, treat_data.player_level)
         if not validation["valid"]:
             raise HTTPException(status_code=400, detail=f"Invalid treat creation: {validation['errors']}")
         
         # Anti-cheat validation
         cheat_check = await anti_cheat_system.validate_treat_creation(
-            creator_address,
-            {"ingredients": ingredients, "level": player_level}
+            treat_data.creator_address,
+            {"ingredients": treat_data.ingredients, "level": treat_data.player_level}
         )
         if not cheat_check["valid"]:
             raise HTTPException(status_code=429, detail=f"Anti-cheat triggered: {cheat_check['reason']}")
         
         # Calculate treat outcome using game engine
         treat_outcome = game_engine.calculate_treat_outcome(
-            ingredients, player_level, creator_address
+            treat_data.ingredients, treat_data.player_level, treat_data.creator_address
         )
         
         # Create treat with enhanced data
         treat = DogeTreat(
-            name=f"Level {player_level} {treat_outcome['rarity']} Treat",
-            creator_address=creator_address,
+            name=f"Level {treat_data.player_level} {treat_outcome['rarity']} Treat",
+            creator_address=treat_data.creator_address,
             ingredients=treat_outcome["ingredients_used"],
             main_ingredient=treat_outcome["ingredients_used"][0] if treat_outcome["ingredients_used"] else "unknown",
             rarity=treat_outcome["rarity"],
@@ -567,18 +562,18 @@ async def create_enhanced_treat(
         
         # Update player's created treats
         await db.players.update_one(
-            {"address": creator_address},
+            {"address": treat_data.creator_address},
             {"$push": {"created_treats": treat.id}}
         )
         
         # Award points in background
         background_tasks.add_task(
             award_treat_creation_points,
-            creator_address,
+            treat_data.creator_address,
             {
                 "rarity": treat_outcome["rarity"],
                 "ingredients": treat_outcome["ingredients_used"],
-                "level": player_level,
+                "level": treat_data.player_level,
                 "secret_combo": treat_outcome["secret_combo"],
                 "season_id": treat_outcome["season_id"]
             }
