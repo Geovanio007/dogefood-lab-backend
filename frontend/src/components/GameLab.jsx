@@ -812,8 +812,11 @@ const GameLab = () => {
               {demoMode ? 'Demo Lab (Level 1)' : `Your Level ${currentLevel} Lab`}
             </div>
           </div>
-          {isNFTHolder && (
+          {isNFTHolder && !demoMode && (
             <Badge className="vip-badge">VIP Scientist</Badge>
+          )}
+          {demoMode && (
+            <Badge className="bg-blue-500 text-white">🎮 Demo Mode</Badge>
           )}
           
           {/* Difficulty Indicator */}
