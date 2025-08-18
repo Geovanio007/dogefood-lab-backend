@@ -380,6 +380,20 @@ const GameLab = () => {
                 </div>
               </div>
 
+              {/* Demo Mode Option */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h3 className="font-bold text-blue-800 mb-2">🎮 Want to see the game in action?</h3>
+                <p className="text-blue-600 text-sm mb-3">
+                  Try our demo mode to experience the mixing interface, progress bars, and timers without connecting a wallet!
+                </p>
+                <button
+                  onClick={() => setDemoMode(true)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-bold transition-colors mr-4"
+                >
+                  🧪 Try Demo Mode
+                </button>
+              </div>
+
               {/* Connect Button */}
               <div className="flex justify-center">
                 {/* <ConnectButton /> */}
