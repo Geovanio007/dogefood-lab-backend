@@ -335,7 +335,16 @@ export function GameProvider({ children }) {
     const { selectedIngredients } = state.mixing;
     const difficulty = calculateDifficulty(state.currentLevel);
     
-    // Calculate rarity based on ingredients
+    /* 
+    NOTE: This function is now deprecated in favor of the enhanced backend system.
+    The enhanced treat creation is handled by handleEnhancedMixCompletion in GameLab.jsx
+    which uses the /api/treats/enhanced endpoint for proper game mechanics.
+    
+    This function is kept for backward compatibility but should not be used
+    for new treat creation as it bypasses the enhanced game mechanics.
+    */
+    
+    // Calculate rarity based on ingredients (legacy system)
     const ingredientObjects = selectedIngredients.map(id => 
       state.ingredients.find(ing => ing.id === id)
     ).filter(Boolean);
@@ -373,21 +382,10 @@ export function GameProvider({ children }) {
       } 
     });
     
-    // Web3 Integration: Mint NFT if wallet is connected
-    if (web3GameHook && typeof web3GameHook.mintTreatNFT === 'function') {
-      try {
-        console.log('🎨 Attempting to mint DogeFood NFT for treat creation...');
-        const mintResult = await web3GameHook.mintTreatNFT();
-        
-        if (mintResult && mintResult.success) {
-          console.log('✅ DogeFood NFT minted successfully!', mintResult);
-          // Could add additional celebration here
-        }
-      } catch (error) {
-        console.warn('⚠️ NFT minting failed (continuing with game):', error.message);
-        // Don't block game progression if NFT minting fails
-      }
-    }
+    // REMOVED: Web3 Integration NFT minting
+    // The enhanced backend system now handles all treat creation, NFT minting,
+    // rarity calculations, and timer management through the /api/treats/enhanced endpoint
+    console.log('ℹ️ Using legacy completeMixing - consider upgrading to enhanced backend system');
     
     // Award XP and points after a short delay for better UX
     setTimeout(() => {
