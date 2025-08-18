@@ -15,6 +15,11 @@ from services.anti_cheat import AntiCheatSystem
 from services.points_system import PointsCollectionSystem
 from services.merkle_tree import MerkleTreeGenerator
 
+# Import Enhanced Game Mechanics (Phase 3)
+from services.treat_game_engine import TreatGameEngine, TreatRarity
+from services.ingredient_system import IngredientSystem
+from services.season_manager import SeasonManager
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
