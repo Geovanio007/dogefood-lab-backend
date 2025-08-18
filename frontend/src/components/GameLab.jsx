@@ -430,6 +430,89 @@ const GameLab = () => {
     }
   }, [mixing.active, mixing.timeRemaining, dispatch, completeMixing, toast]);
 
+  // Handle mix completion - use enhanced backend instead of direct Web3
+  const handleEnhancedMixCompletion = async () => {
+    if (selectedIngredients.length < 2) {
+      toast({
+        title: "Need More Ingredients!",
+        description: "Select at least 2 ingredients to create a treat.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      console.log('🧪 Starting enhanced treat creation...');
+      
+      // Call enhanced backend API for treat creation
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/treats/enhanced`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          creator_address: address,
+          ingredients: selectedIngredients,
+          player_level: currentLevel
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to create treat');
+      }
+
+      const result = await response.json();
+      console.log('✅ Enhanced treat created:', result);
+
+      // Show success message with rarity and timer info
+      toast({
+        title: `${result.outcome.rarity} Treat Created! 🎉`,
+        description: `Your ${result.outcome.rarity.toLowerCase()} treat is brewing for ${result.outcome.timer_duration_hours} hours. Check back later!`,
+        className: "bg-green-100 border-green-400"
+      });
+
+      // Update game state with enhanced treat data
+      dispatch({ 
+        type: 'COMPLETE_MIXING', 
+        payload: {
+          name: result.treat.name,
+          rarity: result.outcome.rarity,
+          flavor: result.outcome.ingredients_used.join(' & '),
+          image: result.outcome.rarity === 'Legendary' ? '🌟' : 
+                 result.outcome.rarity === 'Epic' ? '⭐' :
+                 result.outcome.rarity === 'Rare' ? '✨' : '🍪'
+        }
+      });
+
+      // Add to ingredient sack
+      dispatch({ 
+        type: 'ADD_TO_SACK', 
+        payload: { 
+          ingredients: result.outcome.ingredients_used,
+          treatName: result.treat.name,
+          rarity: result.outcome.rarity
+        } 
+      });
+
+      // Award XP and points
+      const xpGained = gainXP(selectedIngredients, currentDifficulty);
+      const pointsGained = Math.floor(xpGained * 0.5);
+      addPoints(pointsGained);
+
+    } catch (error) {
+      console.error('❌ Enhanced treat creation failed:', error);
+      toast({
+        title: "Treat Creation Failed",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSelectedIngredients([]);
+      setShowResult(false);
+    }
+  };
+
   const handleIngredientSelect = (ingredientId) => {
     if (mixing.active) return;
     
