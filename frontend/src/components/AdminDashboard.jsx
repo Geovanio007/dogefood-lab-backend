@@ -68,10 +68,17 @@ const AdminDashboard = () => {
       const flagged = await flaggedResponse.json();
       setFlaggedPlayers(flagged.flagged_players || []);
 
-      // Load seasons
-      const seasonsResponse = await fetch(`${BACKEND_URL}/api/rewards/seasons`);
-      const seasonData = await seasonsResponse.json();
-      setSeasons(seasonData.seasons || []);
+      // Load enhanced seasons (using new season management)
+      try {
+        const enhancedSeasonsResponse = await fetch(`${BACKEND_URL}/api/seasons`);
+        const enhancedSeasonData = await enhancedSeasonsResponse.json();
+        setSeasons(enhancedSeasonData.seasons || []);
+      } catch (seasonError) {
+        // Fallback to old seasons API
+        const seasonsResponse = await fetch(`${BACKEND_URL}/api/rewards/seasons`);
+        const seasonData = await seasonsResponse.json();
+        setSeasons(seasonData.seasons || []);
+      }
 
     } catch (error) {
       console.error('Error loading dashboard data:', error);
