@@ -113,6 +113,25 @@ class LeaderboardEntry(BaseModel):
     is_nft_holder: bool
     rank: int
 
+# Enhanced Game Mechanics Models (Phase 3)
+class EnhancedTreatCreate(BaseModel):
+    creator_address: str
+    ingredients: List[str]
+    player_level: int
+
+class IngredientAnalysisRequest(BaseModel):
+    ingredient_ids: List[str]
+
+class TreatSimulationRequest(BaseModel):
+    ingredients: List[str]
+    player_level: int
+    player_address: str
+    simulations: int = 10
+    points: int
+    level: int
+    is_nft_holder: bool
+    rank: int
+
 # Player Management Routes
 @api_router.post("/player", response_model=Player)
 async def create_player(player_data: PlayerCreate):
