@@ -198,11 +198,7 @@ const GameLab = () => {
         });
 
         try {
-          const mintResult = await web3Game.mintTreatNFT({
-            rarity: treatResult.outcome.rarity,
-            ingredients: treatResult.outcome.ingredients_used,
-            treatId: treatResult.treat.id
-          });
+          const mintResult = await web3Game.mintTreatNFT();
 
           if (mintResult && mintResult.success) {
             console.log('✅ NFT minted successfully!', mintResult);
