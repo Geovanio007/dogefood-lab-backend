@@ -331,8 +331,16 @@ const GameLab = () => {
     return Math.floor((baseTimeHours + (level - 1) * additionalTimePerLevel) * 60 * 60 * 1000); // Convert to milliseconds
   };
 
-  // Show wallet connection requirement if not connected and not in demo mode
-  if ((!isConnected || !address) && !demoMode) {
+  // RENDER LOGIC - NO EARLY RETURNS TO AVOID HOOK ORDER ISSUES
+  const shouldShowWalletGate = (!isConnected || !address) && !demoMode;
+
+  if (shouldShowWalletGate) {
+    return (
+      <WalletConnectionGate onDemoModeActivate={() => setDemoMode(true)} />
+    );
+  }
+
+  // Main game interface rendering continues below...
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
         <div className="container mx-auto max-w-4xl">
