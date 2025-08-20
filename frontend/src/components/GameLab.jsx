@@ -13,6 +13,7 @@ import { useToast } from './ui/use-toast';
 import { useTreatTracker } from '../hooks/useTreatTracker';
 import ActiveTreats from './ActiveTreats';
 import TreatNotifications from './TreatNotifications';
+import DogeFoodLogo from './DogeFoodLogo';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
