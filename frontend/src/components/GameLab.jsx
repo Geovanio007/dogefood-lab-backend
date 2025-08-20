@@ -399,10 +399,15 @@ const GameLab = () => {
           </Link>
           
           <h1 className="text-4xl font-bold playful-title text-blue-800">
-            🧪 DogeFood Lab
+            🧪 {demoMode ? 'Demo Lab' : 'DogeFood Lab'}
           </h1>
 
           <div className="flex items-center gap-4">
+            {demoMode && (
+              <Badge className="bg-purple-500 text-white px-3 py-2">
+                Demo Mode Active
+              </Badge>
+            )}
             <div className="text-right">
               <div className="font-bold text-blue-800">Level {currentLevel}</div>
               <div className="text-sm text-blue-600">{points} Points</div>
