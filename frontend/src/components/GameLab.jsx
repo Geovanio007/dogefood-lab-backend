@@ -238,6 +238,12 @@ const GameLab = () => {
             className: "bg-yellow-100 border-yellow-400"
           });
         }
+      } else if (demoMode) {
+        toast({
+          title: `${treatResult.outcome.rarity} Demo Treat Created! 🧪`,
+          description: `Your ${treatResult.outcome.rarity.toLowerCase()} treat is brewing for ${treatResult.outcome.timer_duration_hours} hours. (Demo mode - no NFT minted)`,
+          className: "bg-purple-100 border-purple-400"
+        });
       } else {
         toast({
           title: `${treatResult.outcome.rarity} Treat Created! 🎉`,
