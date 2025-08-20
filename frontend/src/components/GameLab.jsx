@@ -427,25 +427,7 @@ const WalletConnectionGate = ({ onDemoModeActivate }) => (
                 </button>
               </div>
 
-              {/* Connect Button */}
-              <div className="flex justify-center">
-                {/* <ConnectButton /> */}
-                <Button className="doge-button text-lg px-8 py-3">
-                  Connect Wallet
-                </Button>
-              </div>
-              
-              <div className="text-white/70 playful-text text-sm">
-                <p>💡 <strong>New to Web3?</strong> Don't worry! We'll guide you through every step.</p>
-                <p>🔒 <strong>Safe & Secure:</strong> Your wallet stays in your control at all times.</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
+  // ALL EFFECTS MUST BE AT TOP LEVEL - MOVED FROM SCATTERED LOCATIONS
   useEffect(() => {
     // Check WebGL support on component mount
     setWebGLSupported(isWebGLAvailable());
