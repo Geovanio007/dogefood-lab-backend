@@ -44,20 +44,14 @@ const MainMenu = () => {
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto">
-        {/* Header */}
+        {/* Header with New Logo */}
         <div className="flex justify-between items-center mb-12">
-          <div>
-            <div className="flex items-center gap-4 mb-4">
-              <h1 className="text-7xl playful-title bubble-text">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-800 via-yellow-600 to-orange-700 drop-shadow-2xl font-black">
-                  DogeFood Lab
-                </span>
-                <span className="ml-3 text-6xl drop-shadow-xl">🧪</span>
-              </h1>
-              <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-lg px-4 py-2 playful-text shadow-xl">
-                BETA
-              </Badge>
-            </div>
+          <DogeFoodLogo 
+            size="hero" 
+            showText={true} 
+            showBeta={true}
+            className="animate-fade-in"
+          />
             <p className="text-2xl text-yellow-500 font-bold playful-text bubble-text drop-shadow-lg">
               Mix, Test & Upgrade Your Way to the Top! 🚀
             </p>
