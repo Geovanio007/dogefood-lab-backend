@@ -476,19 +476,40 @@ const GameLab = () => {
             </CardHeader>
             <CardContent className="p-8">
               
-              {/* Original Shiba Inu Scientist */}
-              <div className="flex justify-center mb-8">
-                <div className="relative">
-                  <img
-                    src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
-                    alt="Shiba Inu Scientist"
-                    className="w-48 h-48 object-contain drop-shadow-xl animate-bounce-slow"
-                  />
-                  <div className="absolute -top-4 -right-4 text-2xl animate-bounce">
-                    {mixing.active ? '🧪' : '⚗️'}
+              {/* 3D Laboratory or Original Shiba Inu Scientist */}
+              {webGLSupported ? (
+                <div className="mb-8">
+                  <Suspense fallback={
+                    <div className="w-full h-96 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-6xl mb-4">🧪</div>
+                        <p className="text-gray-600">Loading 3D Laboratory...</p>
+                      </div>
+                    </div>
+                  }>
+                    <Lab3D
+                      ingredients={ingredients.slice(0, Math.min(currentLevel + 5, ingredients.length))}
+                      selectedIngredients={selectedIngredients}
+                      mixing={mixing.active}
+                      onIngredientSelect={handleIngredientSelect}
+                      className="shadow-2xl border-4 border-white/30"
+                    />
+                  </Suspense>
+                </div>
+              ) : (
+                <div className="flex justify-center mb-8">
+                  <div className="relative">
+                    <img
+                      src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                      alt="Shiba Inu Scientist"
+                      className="w-48 h-48 object-contain drop-shadow-xl animate-bounce-slow"
+                    />
+                    <div className="absolute -top-4 -right-4 text-2xl animate-bounce">
+                      {mixing.active ? '🧪' : '⚗️'}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Mixing Status Display */}
               {mixing.active && (
