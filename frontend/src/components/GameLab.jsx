@@ -612,7 +612,7 @@ const GameLab = () => {
                   >
                     {selectedIngredients.length < 2 
                       ? 'Select 2+ Ingredients First'
-                      : `Create with ${selectedIngredients.length} Ingredients`
+                      : `Create with ${selectedIngredients.length} Ingredients${demoMode ? ' (Demo)' : ''}`
                     }
                   </Button>
                 ) : mixing.result ? (
