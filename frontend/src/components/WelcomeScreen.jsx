@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import DogeFoodLogo from './DogeFoodLogo';
 
 const WelcomeScreen = ({ onPlayNow }) => {
   const { isDarkMode } = useTheme();
