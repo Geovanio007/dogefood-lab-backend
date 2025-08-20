@@ -4,7 +4,7 @@ import { useToast } from '../components/ui/use-toast';
 /**
  * Custom hook for tracking active treats with real-time updates and persistence
  */
-export const useTreatTracker = (playerAddress) => {
+export const useTreatTracker = (playerAddress, demoMode = false) => {
   const [activeTreats, setActiveTreats] = useState([]);
   const [completedTreats, setCompletedTreats] = useState([]);
   const [loading, setLoading] = useState(false);
