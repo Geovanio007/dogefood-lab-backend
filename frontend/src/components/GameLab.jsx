@@ -214,8 +214,8 @@ const GameLab = () => {
 
   useEffect(() => {
     // Load active treats when component mounts
-    loadActiveTreats();
-  }, [loadActiveTreats]);
+    loadTreats();
+  }, [loadTreats]);
 
   // Show wallet connection requirement OR allow demo mode
   if (!isConnected || !address) {
