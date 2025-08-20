@@ -49,7 +49,7 @@ const MainMenu = () => {
           <div>
             <DogeFoodLogo 
               size="hero" 
-              showText={true} 
+              showText={false} 
               showBeta={true}
               className="animate-fade-in mb-4"
             />
