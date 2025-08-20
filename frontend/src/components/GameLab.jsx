@@ -373,7 +373,7 @@ const GameLab = () => {
       });
 
       // Refresh active treats
-      loadActiveTreats();
+      loadTreats();
 
     } catch (error) {
       console.error('Enhanced mixing completion failed:', error);
