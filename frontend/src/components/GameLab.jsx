@@ -276,6 +276,7 @@ const ThreeDMixingStation = ({ isActive, ingredients, onMix, timeRemaining }) =>
 };
 
 const GameLab = () => {
+  // 🔥 CRITICAL: ALL HOOKS MUST BE AT THE TOP LEVEL - NO CONDITIONAL HOOKS
   const { isConnected, address } = useAccount();
   const {
     currentLevel,
@@ -293,21 +294,22 @@ const GameLab = () => {
   } = useGame();
   
   const web3Game = useWeb3Game();
+  const { toast } = useToast();
   
+  // ALL STATE HOOKS AT TOP LEVEL - NEVER CONDITIONAL
   const [selectedIngredients, setSelectedIngredients] = useState([]);
   const [mixingProgress, setMixingProgress] = useState(0);
   const [webGLSupported, setWebGLSupported] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState(null);
-  const [activeTreats, setActiveTreats] = useState([]); // For timer management
-  const [mixingInterval, setMixingInterval] = useState(null); // Store interval for cleanup
-  const [showActiveTreats, setShowActiveTreats] = useState(false); // Toggle view
-  const [demoMode, setDemoMode] = useState(false); // Demo mode state
-  const { toast } = useToast();
+  const [activeTreats, setActiveTreats] = useState([]);
+  const [mixingInterval, setMixingInterval] = useState(null);
+  const [showActiveTreats, setShowActiveTreats] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
 
-  // Initialize treat tracker (always call hook, handle demo mode inside)
-  const treatTracker = useTreatTracker(address, demoMode);
+  // ALWAYS CALL HOOKS - HANDLE CONDITIONS INSIDE THE HOOK OR EFFECTS
+  const treatTracker = useTreatTracker(address || null); // Always call hook
 
-  // Cleanup interval on component unmount or mixing state change
+  // ALL EFFECTS AT TOP LEVEL - NEVER CONDITIONAL
   useEffect(() => {
     return () => {
       if (mixingInterval) {
@@ -315,6 +317,12 @@ const GameLab = () => {
       }
     };
   }, [mixingInterval]);
+
+  useEffect(() => {
+    setWebGLSupported(isWebGLAvailable());
+  }, []);
+
+  // 🔥 CRITICAL FIX: MOVE CONDITIONS INSIDE FUNCTIONS, NOT IN HOOK CALLS
 
   // Timer calculation based on level (1 hour base, increases with level)
   const calculateTreatTimer = (level) => {
