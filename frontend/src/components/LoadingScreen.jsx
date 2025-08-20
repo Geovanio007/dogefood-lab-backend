@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DogeFoodLogo from './DogeFoodLogo';
 
 const LoadingScreen = ({ onLoadingComplete }) => {
   const [progress, setProgress] = useState(0);
