@@ -39,14 +39,16 @@ const LoadingScreen = ({ onLoadingComplete }) => {
 
       {/* Main Content */}
       <div className="loading-content">
-        {/* Logo */}
-        <div className="loading-logo">
-          <h1 className="loading-title">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-500">
-              DogeFood Lab
-            </span>
-            <span className="loading-emoji">🧪</span>
-          </h1>
+        {/* New Logo */}
+        <div className="loading-logo flex justify-center mb-8">
+          <DogeFoodLogo 
+            size="large" 
+            showText={true} 
+            showBeta={false}
+            className="animate-pulse"
+            textClassName="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-500"
+          />
+        </div>
           <p className="loading-subtitle">
             Preparing your laboratory... 🔬
           </p>
