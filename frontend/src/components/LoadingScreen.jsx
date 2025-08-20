@@ -49,6 +49,8 @@ const LoadingScreen = ({ onLoadingComplete }) => {
             textClassName="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-500"
           />
         </div>
+        
+        <div>
           <p className="loading-subtitle">
             Preparing your laboratory... 🔬
           </p>
