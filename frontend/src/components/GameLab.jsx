@@ -14,6 +14,7 @@ import { useToast } from './ui/use-toast';
 import { useTreatTracker } from '../hooks/useTreatTracker';
 import ActiveTreats from './ActiveTreats';
 import TreatNotifications from './TreatNotifications';
+import Lab3D from './Lab3D';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
