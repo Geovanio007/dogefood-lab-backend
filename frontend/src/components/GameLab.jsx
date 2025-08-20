@@ -57,6 +57,7 @@ const GameLab = () => {
   const [activeTreats, setActiveTreats] = useState([]);
   const [showActiveTreats, setShowActiveTreats] = useState(false);
   const [mixingInterval, setMixingInterval] = useState(null);
+  const [demoMode, setDemoMode] = useState(false);
 
   // Effects
   useEffect(() => {
