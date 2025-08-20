@@ -43,10 +43,9 @@ const LoadingScreen = ({ onLoadingComplete }) => {
         <div className="loading-logo flex justify-center mb-8">
           <DogeFoodLogo 
             size="large" 
-            showText={true} 
+            showText={false} 
             showBeta={false}
             className="animate-pulse"
-            textClassName="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-500"
           />
         </div>
         
