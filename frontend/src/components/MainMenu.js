@@ -46,12 +46,13 @@ const MainMenu = () => {
       <div className="relative z-10 max-w-6xl mx-auto">
         {/* Header with New Logo */}
         <div className="flex justify-between items-center mb-12">
-          <DogeFoodLogo 
-            size="hero" 
-            showText={true} 
-            showBeta={true}
-            className="animate-fade-in"
-          />
+          <div>
+            <DogeFoodLogo 
+              size="hero" 
+              showText={true} 
+              showBeta={true}
+              className="animate-fade-in mb-4"
+            />
             <p className="text-2xl text-yellow-500 font-bold playful-text bubble-text drop-shadow-lg">
               Mix, Test & Upgrade Your Way to the Top! 🚀
             </p>
