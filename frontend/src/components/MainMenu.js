@@ -44,6 +44,18 @@ const MainMenu = () => {
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto">
+        
+        {/* Shiba Pouring Cereal - Right Side Fixed */}
+        <div className="fixed right-0 top-1/2 transform -translate-y-1/2 z-20">
+          <img
+            src="/shiba-pouring-cereal.png"
+            alt="Shiba Inu Pouring Cereal"
+            className="w-80 h-auto object-contain drop-shadow-2xl animate-bounce-slow"
+            style={{
+              filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.3))'
+            }}
+          />
+        </div>
         {/* Header with New Logo */}
         <div className="flex justify-between items-center mb-12">
           <div>
