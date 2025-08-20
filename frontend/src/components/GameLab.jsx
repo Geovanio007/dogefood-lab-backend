@@ -384,7 +384,7 @@ const GameLab = () => {
   const [demoMode, setDemoMode] = useState(false);
 
   // ALWAYS CALL HOOKS - HANDLE CONDITIONS INSIDE THE HOOK OR EFFECTS
-  const treatTracker = useTreatTracker(address || null); // Always call hook
+  const treatTracker = useTreatTracker(address || null, demoMode); // Always call hook
 
   // ALL EFFECTS AT TOP LEVEL - NEVER CONDITIONAL
   useEffect(() => {
