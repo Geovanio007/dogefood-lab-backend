@@ -196,7 +196,7 @@ const GameLab = () => {
   
   const web3Game = useWeb3Game();
   const { toast } = useToast();
-  const { activeTreats, loadActiveTreats, handleTreatComplete } = useTreatTracker();
+  const { activeTreats, loadTreats, handleTreatComplete } = useTreatTracker(address || 'demo_player', demoMode);
   
   // State management
   const [selectedIngredients, setSelectedIngredients] = useState([]);
