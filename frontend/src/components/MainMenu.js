@@ -8,6 +8,7 @@ import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
 import { useNFTVerification } from '../hooks/useNFTVerification';
 import ThemeToggle from './ThemeToggle';
+import DogeFoodLogo from './DogeFoodLogo';
 import { Beaker, Trophy, Settings, Palette } from 'lucide-react';
 
 const MainMenu = () => {
