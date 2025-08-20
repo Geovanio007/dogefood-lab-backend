@@ -20,15 +20,16 @@ const WelcomeScreen = ({ onPlayNow }) => {
       {/* Main Content Container */}
       <div className="welcome-content relative z-10 text-center max-w-4xl mx-auto px-8">
         
-        {/* Title Section */}
+        {/* Title Section with Logo Only */}
         <div className="mb-12 animate-bounce-slow">
-          <h1 className={`welcome-title text-8xl md:text-9xl font-black mb-6 ${
-            isDarkMode 
-              ? 'text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500' 
-              : 'text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-500 to-red-600'
-          }`}>
-            DogeFood Lab
-          </h1>
+          <div className="flex justify-center mb-6">
+            <DogeFoodLogo 
+              size="hero" 
+              showText={false} 
+              showBeta={false}
+              className="animate-pulse"
+            />
+          </div>
           
           <div className="flex items-center justify-center gap-4 mb-8">
             <div className="text-6xl animate-spin-slow">🧪</div>
