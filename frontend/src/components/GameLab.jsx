@@ -4,32 +4,180 @@ import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
-import { ArrowLeft, Wallet, Timer } from 'lucide-react';
+import { ArrowLeft, Zap, Star, Sparkles, Clock, Target, Crown, ChefHat } from 'lucide-react';
 import { useGame } from '../contexts/GameContext';
 import { useWeb3Game } from '../hooks/useWeb3Game';
+import { XPProgressBar, LevelUpNotification, IngredientSack } from './game/ProgressSystem';
+import { getTierInfo } from '../config/gameConfig';
 import { gameConfig } from '../config/gameConfig';
 import TreatTimer from './TreatTimer';
 import { useToast } from './ui/use-toast';
 import { useTreatTracker } from '../hooks/useTreatTracker';
 import ActiveTreats from './ActiveTreats';
 import TreatNotifications from './TreatNotifications';
-import Lab3D from './Lab3D';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // WebGL Detection
 const isWebGLAvailable = () => {
   try {
     const canvas = document.createElement('canvas');
-    return !!(canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
-  } catch {
+    return !!(window.WebGLRenderingContext && 
+      (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+  } catch (e) {
     return false;
   }
 };
 
+// Fallback 2D Mixing Station Component - Original Design
+const FallbackMixingStation = ({ isActive, ingredients, onMix, timeRemaining }) => {
+  return (
+    <div className="relative w-full h-80 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl overflow-hidden border-4 border-yellow-300">
+      {/* Background Lab Scene */}
+      <div className="absolute inset-0">
+        <img 
+          src="https://images.unsplash.com/photo-1579154341184-22069e4614d2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHw0fHxsYWJvcmF0b3J5JTIwZXF1aXBtZW50JTIwY29sb3JmdWx8ZW58MHx8fHwxNzU0OTQ2OTAwfDA&ixlib=rb-4.1.0&q=85"
+          alt="Mixing Station"
+          className="w-full h-full object-cover opacity-20"
+        />
+      </div>
+      
+      {/* Time Limit Indicator */}
+      {timeRemaining !== null && (
+        <div className="absolute top-4 left-4 z-30">
+          <div className={`px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 ${
+            timeRemaining <= 5 ? 'bg-red-500 text-white animate-pulse' : 
+            timeRemaining <= 10 ? 'bg-orange-500 text-white' : 'bg-blue-500 text-white'
+          }`}>
+            <Clock className="w-4 h-4" />
+            {timeRemaining}s
+          </div>
+        </div>
+      )}
+      
+      {/* Main Character - YOU as the Creator */}
+      <div className="absolute inset-0 flex items-center justify-center z-10">
+        <div className="relative">
+          {/* Character Image - MAXIMUM PROMINENCE */}
+          <img 
+            src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+            alt="You - The Ultimate DogeFood Creator"
+            className={`w-60 h-60 object-contain transition-all duration-500 drop-shadow-2xl ${
+              isActive ? 'animate-bounce scale-125 brightness-110' : 'hover:scale-110 hover:brightness-105'
+            }`}
+            style={{
+              filter: 'drop-shadow(0 10px 20px rgba(255, 215, 0, 0.3))'
+            }}
+          />
+          
+          {/* Character Glow Effect */}
+          <div className={`absolute inset-0 rounded-full bg-gradient-to-r from-yellow-400/20 to-orange-400/20 blur-xl transition-all duration-500 ${
+            isActive ? 'scale-150 opacity-100' : 'scale-100 opacity-60'
+          }`} />
+          
+          {/* Master Creator Badge */}
+          <div className="absolute -top-16 left-1/2 transform -translate-x-1/2">
+            <div className="bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-500 px-6 py-3 rounded-full shadow-2xl border-3 border-white">
+              <div className="text-lg font-bold text-white text-center flex items-center gap-2">
+                <span className="text-2xl">👑</span>
+                <span>MASTER CREATOR</span>
+                <span className="text-2xl">👑</span>
+              </div>
+            </div>
+            {/* Badge pointer */}
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent border-t-yellow-400"></div>
+          </div>
+          
+          {/* Mixing Beaker in Character's Control */}
+          <div 
+            onClick={onMix}
+            className={`absolute -bottom-12 left-1/2 transform -translate-x-1/2 
+              w-24 h-32 bg-gradient-to-b from-transparent via-yellow-300 to-yellow-600 
+              border-4 border-yellow-800 rounded-full rounded-t-none cursor-pointer 
+              transition-all duration-300 hover:scale-110 shadow-xl ${isActive ? 'animate-pulse scale-110' : ''}`}
+            style={{
+              boxShadow: '0 10px 30px rgba(255, 215, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3)'
+            }}
+          >
+            {/* Bubbles when mixing */}
+            {isActive && ingredients.length > 0 && (
+              <div className="relative w-full h-full overflow-hidden">
+                <div className="absolute top-3 left-3 w-3 h-3 bg-white rounded-full opacity-90 bubble-animation"></div>
+                <div className="absolute top-6 right-4 w-2.5 h-2.5 bg-green-300 rounded-full opacity-80 bubble-animation" style={{animationDelay: '0.3s'}}></div>
+                <div className="absolute top-9 left-5 w-2 h-2 bg-blue-300 rounded-full opacity-70 bubble-animation" style={{animationDelay: '0.6s'}}></div>
+                <div className="absolute top-5 right-2 w-1.5 h-1.5 bg-pink-300 rounded-full opacity-60 bubble-animation" style={{animationDelay: '0.9s'}}></div>
+              </div>
+            )}
+            
+            {/* Mixing indicator */}
+            <div className="flex items-center justify-center h-full">
+              <span className="text-2xl drop-shadow-lg">🧪</span>
+            </div>
+          </div>
+          
+          {/* Dynamic Character Speech Bubble */}
+          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
+            <div className={`bg-white/95 backdrop-blur-sm px-6 py-3 rounded-2xl shadow-2xl border-3 transition-all duration-300 ${
+              isActive ? 'border-green-400 bg-green-50/95' : 'border-yellow-400 bg-yellow-50/95'
+            }`}>
+              <div className="text-base font-bold text-gray-800 text-center">
+                {isActive ? "🔥 CREATING LEGENDARY TREATS! 🔥" : "💪 READY TO CREATE MAGIC! 🌟"}
+              </div>
+            </div>
+            {/* Speech bubble pointer */}
+            <div className={`absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-6 border-transparent transition-colors ${
+              isActive ? 'border-t-green-50/95' : 'border-t-yellow-50/95'
+            }`}></div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Ingredient Visual Effects Around Character */}
+      {ingredients.length > 0 && (
+        <div className="absolute inset-0 pointer-events-none z-5">
+          {ingredients.map((_, index) => (
+            <div
+              key={index}
+              className="absolute w-8 h-8 bg-yellow-400 rounded-full opacity-60 animate-ping"
+              style={{
+                left: `${20 + index * 25}%`,
+                top: `${30 + index * 15}%`,
+                animationDelay: `${index * 0.5}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+      
+      {/* Your Lab - Personal Touch */}
+      <div className="absolute top-4 left-4 z-20">
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-400 px-3 py-1 rounded-full text-white font-bold text-sm shadow-lg">
+          Your Lab 🏆
+        </div>
+      </div>
+      
+      {/* Active Status Indicator */}
+      <div className="absolute top-4 right-4 z-20">
+        <div className={`px-3 py-1 rounded-full text-sm font-medium shadow-lg transition-all ${
+          isActive 
+            ? 'bg-green-400 text-white animate-pulse' 
+            : 'bg-blue-400 text-white hover:bg-blue-500'
+        }`}>
+          {isActive ? 'Mixing... 🔥' : 'Ready! 💪'}
+        </div>
+      </div>
+      
+      {/* Click instruction - more prominent */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full text-white font-medium text-sm shadow-xl">
+          Click your character to mix! 👆
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const GameLab = () => {
-  // All hooks at top level - proper React hooks usage
   const { isConnected, address } = useAccount();
   const {
     currentLevel,
@@ -48,53 +196,26 @@ const GameLab = () => {
   
   const web3Game = useWeb3Game();
   const { toast } = useToast();
-  const treatTracker = useTreatTracker(address);
-
+  const { activeTreats, loadActiveTreats, handleTreatComplete } = useTreatTracker();
+  
   // State management
   const [selectedIngredients, setSelectedIngredients] = useState([]);
   const [mixingProgress, setMixingProgress] = useState(0);
   const [webGLSupported, setWebGLSupported] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState(null);
-  const [activeTreats, setActiveTreats] = useState([]);
   const [showActiveTreats, setShowActiveTreats] = useState(false);
   const [mixingInterval, setMixingInterval] = useState(null);
   const [demoMode, setDemoMode] = useState(false);
 
-  // Effects
   useEffect(() => {
+    // Check WebGL support on component mount
     setWebGLSupported(isWebGLAvailable());
   }, []);
 
   useEffect(() => {
-    return () => {
-      if (mixingInterval) {
-        clearInterval(mixingInterval);
-      }
-    };
-  }, [mixingInterval]);
-
-  // Reset mixing state when component receives a completed mixing result
-  useEffect(() => {
-    if (mixing.result && !mixing.active) {
-      // DON'T reset mixing immediately - let timer run
-      const timer = setTimeout(() => {
-        // Only reset if no active treats are brewing
-        if (activeTreats.length === 0) {
-          dispatch({ type: 'RESET_MIXING' });
-        }
-      }, 30000); // Wait 30 seconds before resetting
-      
-      return () => clearTimeout(timer);
-    }
-  }, [mixing.result, mixing.active, dispatch, activeTreats.length]);
-
-  // Timer calculation based on level (1 hour base, increases with level)
-  const calculateTreatTimer = (level) => {
-    const baseTimeHours = 1; // 1 hour base
-    const additionalTimePerLevel = 0.5; // 30 minutes per level
-    const totalHours = baseTimeHours + (level - 1) * additionalTimePerLevel;
-    return Math.floor(totalHours * 60 * 60 * 1000); // Convert to milliseconds
-  };
+    // Load active treats when component mounts
+    loadActiveTreats();
+  }, [loadActiveTreats]);
 
   // Show wallet connection requirement OR allow demo mode
   if (!isConnected || !address) {
@@ -120,7 +241,7 @@ const GameLab = () => {
             <Card className="game-card max-w-2xl mx-auto">
               <CardHeader className="text-center">
                 <div className="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-6 shadow-xl">
-                  <Wallet size={48} className="text-white drop-shadow-lg" />
+                  <Sparkles size={48} className="text-white drop-shadow-lg" />
                 </div>
                 <CardTitle className="playful-title text-white text-4xl mb-4">
                   🔗 Connect Your Wallet to Start Creating!
@@ -181,62 +302,47 @@ const GameLab = () => {
     }
   }
 
-  // Enhanced treat completion with NFT minting transaction
+  // Enhanced mixing completion with transaction
   const handleEnhancedMixCompletion = async () => {
     try {
-      console.log('🧪 Starting enhanced treat creation with NFT minting...', {
-        address,
+      // Step 1: Create treat in backend using enhanced API
+      const treatData = {
         ingredients: selectedIngredients,
-        level: currentLevel
-      });
+        main_ingredient: selectedIngredients[0] || 'chicken',
+        player_address: address || 'demo_player',
+        player_level: currentLevel
+      };
 
-      // Step 1: Create treat in backend to get metadata
-      const backendResponse = await fetch(`${BACKEND_URL}/api/treats/enhanced`, {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/treats/enhanced`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          creator_address: address,
-          ingredients: selectedIngredients,
-          player_level: currentLevel
-        })
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(treatData)
       });
 
-      if (!backendResponse.ok) {
-        const errorData = await backendResponse.json();
-        throw new Error(errorData.detail || 'Failed to create treat');
+      if (!response.ok) {
+        throw new Error(`Backend error: ${response.status}`);
       }
 
-      const treatResult = await backendResponse.json();
-      console.log('✅ Backend treat created:', treatResult);
+      const treatResult = await response.json();
 
-      // Step 2: Trigger NFT minting transaction
-      if (web3Game && typeof web3Game.mintTreatNFT === 'function') {
-        console.log('🎨 Starting NFT minting transaction...');
-        
-        toast({
-          title: "Confirm Transaction 🔗",
-          description: "Please confirm the transaction in your wallet to mint your NFT treat!",
-          className: "bg-blue-100 border-blue-400"
-        });
-
+      // Step 2: Trigger NFT minting transaction (skip in demo mode)
+      if (!demoMode && web3Game && typeof web3Game.mintTreatNFT === 'function') {
         try {
           const mintResult = await web3Game.mintTreatNFT();
-
-          if (mintResult && mintResult.success) {
-            console.log('✅ NFT minted successfully!', mintResult);
-            
-            toast({
-              title: `${treatResult.outcome.rarity} NFT Treat Minted! 🎉`,
-              description: `Transaction confirmed! Your ${treatResult.outcome.rarity.toLowerCase()} treat NFT is brewing for ${treatResult.outcome.timer_duration_hours} hours.`,
-              className: "bg-green-100 border-green-400"
-            });
-          }
-        } catch (nftError) {
-          console.warn('⚠️ NFT minting failed, but treat is still created:', nftError.message);
+          
           toast({
-            title: `${treatResult.outcome.rarity} Treat Created! ⚠️`,
-            description: `NFT minting failed, but your treat is brewing for ${treatResult.outcome.timer_duration_hours} hours. You can try minting later.`,
-            className: "bg-yellow-100 border-yellow-400"
+            title: `${treatResult.outcome.rarity} Treat Created! 🎉`,
+            description: `Blockchain transaction confirmed! Your ${treatResult.outcome.rarity.toLowerCase()} treat is brewing for ${treatResult.outcome.timer_duration_hours} hours.`,
+            className: "bg-green-100 border-green-400"
+          });
+        } catch (web3Error) {
+          console.warn('Web3 minting failed, but treat created in backend:', web3Error);
+          toast({
+            title: `${treatResult.outcome.rarity} Treat Created! 🧪`,
+            description: `Your ${treatResult.outcome.rarity.toLowerCase()} treat is brewing! Blockchain minting may retry automatically.`,
+            className: "bg-blue-100 border-blue-400"
           });
         }
       } else if (demoMode) {
@@ -247,99 +353,112 @@ const GameLab = () => {
         });
       } else {
         toast({
-          title: `${treatResult.outcome.rarity} Treat Created! 🎉`,
-          description: `Your ${treatResult.outcome.rarity.toLowerCase()} treat is brewing for ${treatResult.outcome.timer_duration_hours} hours.`,
-          className: "bg-green-100 border-green-400"
+          title: "Web3 Connection Error",
+          description: "Treat created but blockchain integration unavailable.",
+          variant: "destructive"
         });
       }
 
-      // Step 3: Create active treat with timer (DO NOT RESET MIXING STATE)
-      const treatData = {
-        id: treatResult.treat.id,
-        name: treatResult.treat.name,
-        rarity: treatResult.outcome.rarity,
-        ingredients: treatResult.outcome.ingredients_used,
-        created_at: new Date().toISOString(),
-        ready_at: new Date(Date.now() + treatResult.outcome.timer_duration_seconds * 1000).toISOString(),
-        timer_duration: treatResult.outcome.timer_duration_seconds,
-        brewing_status: 'brewing',
-        image: treatResult.outcome.rarity === 'Legendary' ? '🌟' : 
-               treatResult.outcome.rarity === 'Epic' ? '⭐' :
-               treatResult.outcome.rarity === 'Rare' ? '✨' : '🍪'
-      };
-
-      // Add to active treats for persistent display
-      setActiveTreats(prev => [...prev, treatData]);
-      treatTracker.addTreat(treatData);
-
-      // Update game state with treat result (KEEP MIXING STATE ACTIVE)
-      dispatch({ 
-        type: 'COMPLETE_MIXING', 
+      // Step 3: Update mixing state with persistent result
+      dispatch({
+        type: 'COMPLETE_MIXING',
         payload: {
-          name: treatResult.treat.name,
+          name: treatResult.outcome.name,
           rarity: treatResult.outcome.rarity,
-          flavor: treatResult.outcome.ingredients_used.join(' & '),
-          image: treatData.image,
+          image: treatResult.outcome.image || '🍪',
+          readyAt: treatResult.treat.ready_at,
           treatId: treatResult.treat.id,
-          timerDuration: treatResult.outcome.timer_duration_seconds,
-          readyAt: treatData.ready_at
+          timerDuration: treatResult.outcome.timer_duration_hours
         }
       });
 
-      // Award XP and points
-      const baseXP = gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient;
-      const xpGained = Math.floor(baseXP * currentDifficulty);
-      const pointsGained = Math.floor(xpGained * 0.5);
-      
-      dispatch({ type: 'GAIN_XP', payload: xpGained });
-      dispatch({ type: 'ADD_POINTS', payload: pointsGained });
-
-      // Clear selected ingredients but KEEP mixing state for timer display
-      setSelectedIngredients([]);
+      // Refresh active treats
+      loadActiveTreats();
 
     } catch (error) {
-      console.error('❌ Enhanced treat creation failed:', error);
+      console.error('Enhanced mixing completion failed:', error);
       toast({
-        title: "Treat Creation Failed",
-        description: error.message || "Something went wrong. Please try again.",
+        title: "Mixing Failed",
+        description: error.message || "Something went wrong during treat creation",
         variant: "destructive"
       });
-      
-      // Reset mixing state only on error
-      dispatch({ type: 'RESET_MIXING' });
     }
   };
 
-  // Start mixing with progress animation and proper NFT flow
+  // Reset mixing state when component receives a completed mixing result
+  useEffect(() => {
+    if (mixing.result && !mixing.active) {
+      // Clear the mixing result after showing completion
+      const timer = setTimeout(() => {
+        dispatch({ type: 'RESET_MIXING' });
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [mixing.result, mixing.active, dispatch]);
+
+  // Handle time limit countdown
+  useEffect(() => {
+    if (mixing.active && mixing.timeRemaining !== null) {
+      setTimeRemaining(mixing.timeRemaining);
+      const interval = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            // Time's up - auto complete mixing with penalty
+            toast({
+              title: "Time's Up! ⏰",
+              description: "Mixing completed with time penalty.",
+              variant: "destructive"
+            });
+            setTimeout(() => {
+              handleEnhancedMixCompletion();
+              setSelectedIngredients([]);
+              setMixingProgress(0);
+            }, 500);
+            return 0;
+          }
+          dispatch({ type: 'UPDATE_TIME_REMAINING', payload: prev - 1 });
+          return prev - 1;
+        });
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    } else {
+      setTimeRemaining(null);
+    }
+  }, [mixing.active, mixing.timeRemaining, dispatch, toast]);
+
+  const handleIngredientSelect = (ingredientId) => {
+    if (mixing.active) return;
+    
+    if (selectedIngredients.includes(ingredientId)) {
+      setSelectedIngredients(selectedIngredients.filter(id => id !== ingredientId));
+    } else if (selectedIngredients.length < 3) {
+      setSelectedIngredients([...selectedIngredients, ingredientId]);
+    } else {
+      toast({
+        title: "Ingredient Limit Reached!",
+        description: "You can only mix 3 ingredients at a time.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleStartMixing = () => {
     if (selectedIngredients.length < 2) {
       toast({
         title: "Need More Ingredients!",
-        description: "Please select at least 2 ingredients to start mixing.",
+        description: "Please select at least 2 ingredients to start mixing and earn XP.",
         variant: "destructive"
       });
       return;
     }
 
-    if (mixingInterval) {
-      clearInterval(mixingInterval);
-    }
-
-    // Start mixing in game context
     startMixing(selectedIngredients);
     setMixingProgress(0);
 
-    const timerDuration = calculateTreatTimer(currentLevel);
-    const hours = Math.floor(timerDuration / (1000 * 60 * 60));
-    const minutes = Math.floor((timerDuration % (1000 * 60 * 60)) / (1000 * 60));
-    
-    toast({
-      title: "Mixing Started! 🧪",
-      description: `Creating your treat... It will be ready in ${hours}h ${minutes}m after completion!`,
-      className: "bg-blue-100 border-blue-400"
-    });
-
-    // Progress animation (3 second mixing process)
+    // Simulate mixing progress
     const interval = setInterval(() => {
       setMixingProgress(prev => {
         const newProgress = prev + 10;
@@ -347,195 +466,333 @@ const GameLab = () => {
         
         if (newProgress >= 100) {
           clearInterval(interval);
-          setMixingInterval(null);
-          
-          // Complete mixing and start NFT minting process
           setTimeout(() => {
             handleEnhancedMixCompletion();
+            
+            // Reset selected ingredients AFTER mixing completes
+            setTimeout(() => {
+              setSelectedIngredients([]);
+              setMixingProgress(0);
+            }, 100);
           }, 500);
         }
         return newProgress;
       });
-    }, 300); // 300ms * 10 steps = 3 seconds
+    }, 300);
     
     setMixingInterval(interval);
   };
 
-  // Ingredient selection
-  const handleIngredientSelect = (ingredientId) => {
-    if (mixing.active && !mixing.result) return; // Block during active mixing, but allow after completion
-    
-    if (selectedIngredients.includes(ingredientId)) {
-      setSelectedIngredients(prev => prev.filter(id => id !== ingredientId));
-    } else if (selectedIngredients.length < 8) {
-      setSelectedIngredients(prev => [...prev, ingredientId]);
+  const getIngredientEmoji = (type) => {
+    switch (type) {
+      case 'legendary': return '💎';
+      case 'special': return '🌟';
+      case 'flavor': return '🎨';
+      default: return '🥣';
     }
   };
 
-  // Handle treat completion when timer expires
-  const handleTreatComplete = (treatId) => {
-    console.log('🎉 Treat completed:', treatId);
-    
-    // Remove from active treats
-    setActiveTreats(prev => prev.filter(treat => treat.id !== treatId));
-    
-    // Show completion notification
-    toast({
-      title: "Treat Ready! 🎉",
-      description: "Your treat has finished brewing and is ready to collect!",
-      className: "bg-green-100 border-green-400"
-    });
-
-    // Reset mixing state if this was the last active treat
-    setTimeout(() => {
-      if (activeTreats.length === 1) { // Will be 0 after filter above
-        dispatch({ type: 'RESET_MIXING' });
-      }
-    }, 1000);
+  const getRarityColor = (rarity) => {
+    switch (rarity) {
+      case 'Legendary': return 'bg-purple-500';
+      case 'Epic': return 'bg-pink-500';
+      case 'Rare': return 'bg-blue-500';
+      default: return 'bg-green-500';
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="container mx-auto max-w-6xl">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <Link to="/" className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors">
-            <ArrowLeft size={20} />
-            <span className="font-bold">Back to Menu</span>
-          </Link>
-          
-          <h1 className="text-4xl font-bold playful-title text-blue-800">
-            🧪 {demoMode ? 'Demo Lab' : 'DogeFood Lab'}
-          </h1>
+    <div className="lab-container min-h-screen p-6">
+      {/* Level Up Notification */}
+      <LevelUpNotification />
 
-          <div className="flex items-center gap-4">
-            {demoMode && (
-              <Badge className="bg-purple-500 text-white px-3 py-2">
-                Demo Mode Active
-              </Badge>
-            )}
-            <div className="text-right">
-              <div className="font-bold text-blue-800">Level {currentLevel}</div>
-              <div className="text-sm text-blue-600">{points} Points</div>
-              {isNFTHolder && (
-                <Badge className="bg-yellow-500 text-white text-xs px-2 py-1">
-                  VIP Scientist 👨‍🔬
-                </Badge>
-              )}
+      {/* Treat Notifications */}
+      <TreatNotifications />
+      
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center gap-4">
+          <Link to="/">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Menu
+            </Button>
+          </Link>
+          <div className="flex items-center gap-3">
+            <img 
+              src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+              alt="Your Avatar"
+              className="w-10 h-10 object-contain"
+            />
+            <div className="lab-level-indicator">
+              Your Level {currentLevel} Lab
             </div>
           </div>
-        </div>
+          {isNFTHolder && (
+            <Badge className="vip-badge">VIP Scientist</Badge>
+          )}
+          
+          {/* Difficulty Indicator */}
+          <Badge className="bg-purple-500 text-white">
+            <Target className="w-4 h-4 mr-1" />
+            Difficulty: {currentDifficulty}x
+          </Badge>
 
-        {/* Toggle Active Treats */}
-        <div className="flex justify-center mb-6">
-          <button
-            onClick={() => setShowActiveTreats(!showActiveTreats)}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-bold transition-all duration-200 flex items-center gap-2 shadow-lg"
-          >
-            <Timer size={20} />
-            {showActiveTreats ? '🧪 Back to Lab' : `📦 View Active Treats (${activeTreats.length})`}
-          </button>
+          {demoMode && (
+            <Badge className="bg-purple-500 text-white px-3 py-2">
+              Demo Mode Active
+            </Badge>
+          )}
         </div>
-
-        {/* Main Content */}
-        {showActiveTreats ? (
-          <div>
-            <h2 className="text-3xl font-bold text-center text-blue-800 mb-8">🧪 Active Treats</h2>
-            
-            {activeTreats.length === 0 ? (
-              <Card className="game-card max-w-2xl mx-auto">
-                <CardContent className="text-center py-12">
-                  <div className="text-6xl mb-4">🧪</div>
-                  <h3 className="text-2xl font-bold text-white mb-4">No Active Treats</h3>
-                  <p className="text-white/80 mb-6">Create some treats to see them brewing here!</p>
-                  <Button onClick={() => setShowActiveTreats(false)} className="doge-button">
-                    Start Creating Treats
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {activeTreats.map((treat) => (
-                  <TreatTimer
-                    key={treat.id}
-                    treat={treat}
-                    onComplete={() => handleTreatComplete(treat.id)}
-                    size="large"
-                  />
-                ))}
-              </div>
-            )}
+        
+        <div className="flex items-center gap-4">
+          <div className="glass-panel p-3">
+            <div className="text-sm text-gray-600">Your Points</div>
+            <div className="font-bold text-xl text-yellow-600">{points}</div>
           </div>
-        ) : (
-          <Card className="game-card">
+          <div className="glass-panel p-3">
+            <div className="text-sm text-gray-600">Your Creations</div>
+            <div className="font-bold text-xl text-purple-600">{createdTreats.length}</div>
+          </div>
+          <div className="glass-panel p-3">
+            <div className="text-sm text-gray-600">Active Treats</div>
+            <div className="font-bold text-xl text-green-600">{activeTreats.length}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* XP Progress Bar */}
+      <XPProgressBar />
+
+      {/* Active Treats Toggle */}
+      <div className="mb-6 flex justify-center">
+        <Button
+          onClick={() => setShowActiveTreats(!showActiveTreats)}
+          className={`px-6 py-3 rounded-xl font-bold transition-all ${
+            showActiveTreats 
+              ? 'bg-green-500 hover:bg-green-600 text-white' 
+              : 'bg-blue-500 hover:bg-blue-600 text-white'
+          }`}
+        >
+          {showActiveTreats ? '🧪 Back to Lab' : `⏰ View Active Treats (${activeTreats.length})`}
+        </Button>
+      </div>
+
+      {/* Active Treats View */}
+      {showActiveTreats ? (
+        <div className="max-w-6xl mx-auto">
+          <ActiveTreats />
+          {activeTreats.length === 0 && (
+            <Card className="game-card max-w-2xl mx-auto text-center">
+              <CardContent className="py-12">
+                <div className="text-6xl mb-4">🧪</div>
+                <h3 className="text-2xl font-bold text-white mb-4">No Active Treats</h3>
+                <p className="text-white/80 mb-6">Create some treats to see them brewing here!</p>
+                <Button onClick={() => setShowActiveTreats(false)} className="doge-button">
+                  Start Creating Treats
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Left Sidebar - Ingredients */}
+          <Card className="glass-panel">
             <CardHeader>
-              <CardTitle className="playful-title text-white text-center text-3xl">
-                🧪 Scientist's Laboratory
+              <CardTitle className="flex items-center gap-2">
+                <ChefHat className="w-5 h-5" />
+                Ingredient Shelf
+                <Badge className="text-xs bg-blue-100 text-blue-800 ml-2">
+                  Need 2+ for XP
+                </Badge>
               </CardTitle>
+              <div className="text-sm text-gray-600">
+                Level {currentLevel} • {ingredients.length}/25 ingredients unlocked
+              </div>
             </CardHeader>
-            <CardContent className="p-8">
-              
-              {/* 3D Laboratory or Original Shiba Inu Scientist */}
-              {webGLSupported ? (
-                <div className="mb-8">
-                  <Suspense fallback={
-                    <div className="w-full h-96 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="text-6xl mb-4">🧪</div>
-                        <p className="text-gray-600">Loading 3D Laboratory...</p>
+            <CardContent>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {ingredients.map((ingredient) => {
+                  const tierInfo = getTierInfo(ingredient.tier);
+                  
+                  return (
+                    <div
+                      key={ingredient.id}
+                      onClick={() => handleIngredientSelect(ingredient.id)}
+                      className={`
+                        ingredient-slot p-3 rounded-lg border-2 cursor-pointer transition-all
+                        ${selectedIngredients.includes(ingredient.id) ? 'border-yellow-400 bg-yellow-100 scale-105' : 'border-gray-300'}
+                        ${!mixing.active ? 'hover:border-yellow-400 hover:bg-yellow-50 hover:scale-102' : ''}
+                      `}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{ingredient.image}</span>
+                        <div className="flex-1">
+                          <div className="font-medium">{ingredient.name}</div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <Badge className={`text-xs ${tierInfo.color} border`}>
+                              Tier {ingredient.tier} • {tierInfo.name}
+                            </Badge>
+                            <Badge className="text-xs bg-gray-100 text-gray-600 capitalize">
+                              {ingredient.rarity}
+                            </Badge>
+                          </div>
+                          {ingredient.rarity !== 'common' && (
+                            <div className="text-xs text-green-600 mt-1">
+                              +{gameConfig.ingredients.rarityMultiplier[ingredient.rarity]}x XP multiplier
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Unlock level indicator */}
+                        <div className="text-xs text-right">
+                          <div className="text-gray-500">Unlocked</div>
+                          <div className="font-bold text-green-600">Level {ingredient.unlockLevel}</div>
+                        </div>
                       </div>
                     </div>
-                  }>
-                    <Lab3D
-                      ingredients={ingredients.slice(0, Math.min(currentLevel + 5, ingredients.length))}
-                      selectedIngredients={selectedIngredients}
-                      mixing={mixing.active}
-                      onIngredientSelect={handleIngredientSelect}
-                      className="shadow-2xl border-4 border-white/30"
-                    />
-                  </Suspense>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-6 p-3 bg-blue-50 rounded-lg">
+                <div className="text-sm font-medium mb-2">Selected Ingredients:</div>
+                <div className="flex flex-wrap gap-2 min-h-[24px]">
+                  {selectedIngredients.length > 0 ? (
+                    selectedIngredients.map((id) => {
+                      const ingredient = ingredients.find(ing => ing.id === id);
+                      const tierInfo = ingredient ? getTierInfo(ingredient.tier) : null;
+                      
+                      return (
+                        <Badge key={id} className={`text-xs ${tierInfo?.color || 'bg-gray-100 text-gray-800'} border`}>
+                          {ingredient?.image} {ingredient?.name}
+                        </Badge>
+                      );
+                    })
+                  ) : (
+                    <span className="text-xs text-gray-500">None selected</span>
+                  )}
                 </div>
-              ) : (
-                <div className="flex justify-center mb-8">
-                  <div className="relative">
-                    <img
-                      src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
-                      alt="Shiba Inu Scientist"
-                      className="w-48 h-48 object-contain drop-shadow-xl animate-bounce-slow"
-                    />
-                    <div className="absolute -top-4 -right-4 text-2xl animate-bounce">
-                      {mixing.active ? '🧪' : '⚗️'}
-                    </div>
+                {selectedIngredients.length >= 2 && (
+                  <div className="text-xs text-green-600 mt-2 font-medium flex items-center gap-1">
+                    <Star className="w-3 h-3" />
+                    Ready for XP! (+{gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient} base XP × {currentDifficulty}x difficulty)
+                  </div>
+                )}
+              </div>
+              
+              {/* Progress to next ingredient unlock */}
+              {currentLevel < 25 && (
+                <div className="mt-4 p-3 bg-purple-50 rounded-lg">
+                  <div className="text-sm font-medium text-purple-800 mb-2">Next Unlock:</div>
+                  <div className="text-xs text-purple-600">
+                    Level up to unlock more amazing ingredients!
+                    <br />
+                    <span className="font-medium">
+                      {Math.max(0, gameConfig.xp.xpCapPerLevel - xpProgress)} XP to Level {currentLevel + 1}
+                    </span>
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
 
-              {/* Mixing Status Display */}
-              {mixing.active && (
-                <div className="text-center mb-8 p-6 bg-white/20 rounded-xl border-2 border-white/30">
-                  <h3 className="text-2xl font-bold text-white mb-4 playful-title">
-                    You're creating magic... 🧪
-                  </h3>
-                  
-                  <div className="w-full bg-white/30 rounded-full h-6 overflow-hidden mb-4">
-                    <div 
-                      className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-300 rounded-full flex items-center justify-center"
-                      style={{ width: `${mixingProgress}%` }}
-                    >
-                      <span className="text-white text-sm font-bold">{mixingProgress}%</span>
+          {/* Center - Mixing Station */}
+          <Card className="glass-panel">
+            <CardHeader>
+              <CardTitle className="text-center flex items-center justify-center gap-2">
+                <Zap className="w-5 h-5" />
+                Your Mixing Station
+              </CardTitle>
+              <div className="text-center text-sm text-gray-600">
+                You are the master creator! 🎯
+              </div>
+            </CardHeader>
+            <CardContent>
+              {/* Character Avatar Header */}
+              <div className="flex items-center justify-center mb-4">
+                <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-100 to-orange-100 px-4 py-2 rounded-full border-2 border-yellow-300">
+                  <img 
+                    src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                    alt="Your Avatar"
+                    className="w-8 h-8 object-contain"
+                  />
+                  <span className="font-bold text-gray-800">Creator Mode Active</span>
+                  <span className="text-xl">🔬</span>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <FallbackMixingStation
+                  isActive={mixing.active}
+                  ingredients={selectedIngredients}
+                  onMix={handleStartMixing}
+                  timeRemaining={timeRemaining}
+                />
+              </div>
+              
+              {mixing.active ? (
+                <div className="text-center">
+                  <div className="mb-4">
+                    <div className="flex items-center justify-center gap-2 text-lg font-bold text-yellow-600 mb-2">
+                      <img 
+                        src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                        alt="You"
+                        className="w-6 h-6 object-contain animate-spin"
+                      />
+                      You're creating magic... 🧪
                     </div>
+                    <Progress value={mixingProgress} className="h-3" />
                   </div>
-                  
-                  <p className="text-white/90 text-lg">
-                    Mixing {selectedIngredients.length} ingredients...
-                  </p>
+                  <div className="text-sm text-gray-600">
+                    Your legendary creation is coming together! ✨
+                  </div>
+                  {timeRemaining !== null && (
+                    <div className={`text-sm font-bold mt-2 ${
+                      timeRemaining <= 5 ? 'text-red-600' : timeRemaining <= 10 ? 'text-orange-600' : 'text-blue-600'
+                    }`}>
+                      Time Remaining: {timeRemaining}s
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center">
+                  <Button
+                    onClick={handleStartMixing}
+                    className="doge-button w-full text-lg py-3"
+                    disabled={selectedIngredients.length < 2}
+                  >
+                    {selectedIngredients.length < 2 ? (
+                      <>
+                        <img 
+                          src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                          alt="You"
+                          className="w-5 h-5 object-contain mr-2"
+                        />
+                        Need 2+ Ingredients for XP
+                      </>
+                    ) : (
+                      <>
+                        <img 
+                          src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                          alt="You"
+                          className="w-5 h-5 object-contain mr-2"
+                        />
+                        Create with {selectedIngredients.length} Ingredients{demoMode ? ' (Demo)' : ''}! (+{Math.floor((gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient) * currentDifficulty)} XP)
+                      </>
+                    )}
+                  </Button>
+                  <div className="text-sm text-gray-500 mt-2">
+                    You are the master creator - mix 2+ ingredients to earn XP! 🎨
+                  </div>
                 </div>
               )}
 
               {/* Treat Result Display (Persistent Timer) */}
               {mixing.result && (
-                <div className="text-center mb-8 p-6 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-xl border-2 border-green-400/50">
+                <div className="text-center mt-8 p-6 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-xl border-2 border-green-400/50">
                   <div className="text-6xl mb-4">{mixing.result.image}</div>
                   <h3 className="text-2xl font-bold text-white mb-2 playful-title">
                     {mixing.result.name}
@@ -568,102 +825,66 @@ const GameLab = () => {
                       />
                     </div>
                   )}
-                  
-                  <p className="text-white/80 text-sm">
-                    Your treat is brewing! Come back when the timer reaches zero to collect it.
-                  </p>
                 </div>
               )}
-
-              {/* Ingredient Shelf */}
-              <div className="mb-8">
-                <h3 className="text-2xl font-bold text-white mb-4 playful-title">
-                  🧪 Ingredient Shelf
-                </h3>
-                <p className="text-white/80 mb-4 text-center">
-                  Level {currentLevel} • {ingredients.length}/25 ingredients unlocked
-                </p>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {ingredients.slice(0, Math.min(currentLevel + 5, ingredients.length)).map((ingredient) => (
-                    <button
-                      key={ingredient.id}
-                      onClick={() => handleIngredientSelect(ingredient.id)}
-                      disabled={mixing.active && !mixing.result}
-                      className={`
-                        p-4 rounded-xl border-2 transition-all duration-200 
-                        ${selectedIngredients.includes(ingredient.id)
-                          ? 'bg-yellow-400 border-yellow-600 shadow-lg transform scale-105'
-                          : 'bg-white/90 border-gray-300 hover:border-blue-400 hover:shadow-md'
-                        }
-                        ${(mixing.active && !mixing.result) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}
-                      `}
-                    >
-                      <div className="text-3xl mb-2">{ingredient.emoji}</div>
-                      <div className="text-sm font-bold text-gray-800">{ingredient.name}</div>
-                      <div className="text-xs text-gray-600">Unlock Lv.{ingredient.unlock_level || 1}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Selected Ingredients */}
-              {selectedIngredients.length > 0 && (
-                <div className="mb-6 p-4 bg-white/20 rounded-xl">
-                  <h4 className="text-white font-bold mb-2">Selected Ingredients ({selectedIngredients.length}):</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedIngredients.map((ingredientId, index) => {
-                      const ingredient = ingredients.find(ing => ing.id === ingredientId);
-                      return (
-                        <span key={index} className="bg-yellow-400 px-3 py-1 rounded-full text-sm font-bold text-gray-800">
-                          {ingredient?.emoji} {ingredient?.name}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Mixing Controls */}
-              <div className="text-center mb-8">
-                {!mixing.active ? (
-                  <Button
-                    onClick={handleStartMixing}
-                    disabled={selectedIngredients.length < 2}
-                    className="doge-button text-2xl px-8 py-4"
-                  >
-                    {selectedIngredients.length < 2 
-                      ? 'Select 2+ Ingredients First'
-                      : `Create with ${selectedIngredients.length} Ingredients${demoMode ? ' (Demo)' : ''}`
-                    }
-                  </Button>
-                ) : mixing.result ? (
-                  <Button
-                    onClick={() => {
-                      setSelectedIngredients([]);
-                      // Allow new mixing while previous treat is brewing
-                    }}
-                    className="doge-button text-xl px-6 py-3"
-                  >
-                    Create Another Treat
-                  </Button>
-                ) : null}
-                
-                {selectedIngredients.length >= 2 && !mixing.active && (
-                  <p className="text-white/80 mt-4">
-                    Earn {gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient * currentDifficulty} XP + 
-                    {Math.floor((gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient * currentDifficulty) * 0.5)} Points
-                  </p>
-                )}
-              </div>
-
             </CardContent>
           </Card>
-        )}
 
-        {/* Real-time Treat Notifications */}
-        <TreatNotifications playerAddress={address} />
-      </div>
+          {/* Right Sidebar - Ingredient Sack */}
+          <IngredientSack />
+        </div>
+      )}
+
+      {/* Tips Section - Personalized */}
+      <Card className="glass-panel mt-8">
+        <CardHeader>
+          <div className="flex items-center justify-center gap-3">
+            <img 
+              src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+              alt="Your Avatar"
+              className="w-12 h-12 object-contain"
+            />
+            <h3 className="text-xl font-bold doge-gradient">
+              {demoMode ? 'Demo Mode Tips' : 'Your XP & Progress Tips'}
+            </h3>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            <div>
+              <div className="text-2xl mb-2">⚡</div>
+              <h4 className="font-bold mb-1">Mix for XP</h4>
+              <p className="text-sm text-gray-600">Use 2+ ingredients to earn {gameConfig.xp.baseXpPerCombo}+ XP per mix!</p>
+            </div>
+            <div>
+              <div className="text-2xl mb-2">📈</div>
+              <h4 className="font-bold mb-1">Level Up Fast</h4>
+              <p className="text-sm text-gray-600">Each level increases difficulty by {gameConfig.difficulty.scalingFactor}x for bonus rewards!</p>
+            </div>
+            <div>
+              <div className="text-2xl mb-2">🎒</div>
+              <h4 className="font-bold mb-1">Fill Your Sack</h4>
+              <p className="text-sm text-gray-600">Complete {gameConfig.sack.completionThreshold} mixes for +{gameConfig.sack.bonusXpPerCompletion} bonus XP!</p>
+            </div>
+          </div>
+          <div className="text-center mt-6">
+            <div className="bg-gradient-to-r from-yellow-100 to-orange-100 px-4 py-2 rounded-full inline-flex items-center gap-2">
+              <img 
+                src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                alt="Your Avatar"
+                className="w-6 h-6 object-contain"
+              />
+              <span className="font-medium text-gray-800">
+                {demoMode 
+                  ? 'Demo Progress: Try different ingredient combinations!' 
+                  : `Current Progress: ${Math.floor(xpProgress)} / ${gameConfig.xp.xpCapPerLevel} XP to Level ${currentLevel + 1}`
+                }
+              </span>
+              <span className="text-lg">🌟</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
