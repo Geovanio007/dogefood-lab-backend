@@ -97,7 +97,16 @@ const MyTreats = () => {
         <Card className="glass-panel">
           <CardContent className="text-center p-6">
             <div className="text-3xl font-bold text-green-600">{points}</div>
-            <div className="text-sm text-gray-600">Total Points</div>
+            <div className="text-sm text-gray-600 mb-3">Total Points</div>
+            <Button 
+              disabled 
+              size="sm" 
+              className="bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300 text-xs"
+              title="Points conversion available at season end"
+            >
+              Convert to $LAB
+            </Button>
+            <p className="text-xs text-gray-400 mt-1">Season End Only</p>
           </CardContent>
         </Card>
         
