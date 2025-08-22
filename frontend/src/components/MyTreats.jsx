@@ -106,14 +106,14 @@ const MyTreats = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card className="glass-panel">
           <CardContent className="text-center p-6">
-            <div className="text-3xl font-bold doge-gradient">{totalTreatsCreated}</div>
+            <div className="text-3xl font-bold doge-gradient">{treats.length}</div>
             <div className="text-sm text-gray-600">Total Treats Created</div>
           </CardContent>
         </Card>
         
         <Card className="glass-panel">
           <CardContent className="text-center p-6">
-            <div className="text-3xl font-bold text-purple-600">{web3Profile?.nftBalance || 0}</div>
+            <div className="text-3xl font-bold text-purple-600">{isNFTHolder ? '1+' : '0'}</div>
             <div className="text-sm text-gray-600">DogeFood NFTs</div>
           </CardContent>
         </Card>
