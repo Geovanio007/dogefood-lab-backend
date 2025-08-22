@@ -27,10 +27,13 @@ const MainMenu = () => {
           nftBalance
         } 
       });
+      
+      // Load player data from backend
+      loadPlayerData(address);
     } else if (!isConnected) {
       dispatch({ type: 'SET_USER', payload: null });
     }
-  }, [isConnected, address, isNFTHolder, nftBalance, nftLoading, dispatch]);
+  }, [isConnected, address, isNFTHolder, nftBalance, nftLoading, dispatch, loadPlayerData]);
 
   return (
     <div className="lab-container min-h-screen p-8">
