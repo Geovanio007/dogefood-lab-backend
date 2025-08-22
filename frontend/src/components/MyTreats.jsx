@@ -186,7 +186,26 @@ const MyTreats = () => {
       </div>
 
       {/* Treats Collection */}
-      {filteredTreats.length === 0 ? (
+      {loading ? (
+        <Card className="glass-panel">
+          <CardContent className="text-center p-12">
+            <div className="text-6xl mb-4">🔄</div>
+            <h3 className="text-2xl font-bold text-gray-600 mb-2">Loading your treats...</h3>
+            <p className="text-gray-500">Fetching your magical creations from the lab!</p>
+          </CardContent>
+        </Card>
+      ) : error ? (
+        <Card className="glass-panel">
+          <CardContent className="text-center p-12">
+            <div className="text-6xl mb-4">❌</div>
+            <h3 className="text-2xl font-bold text-red-600 mb-2">Error loading treats</h3>
+            <p className="text-gray-500 mb-6">{error}</p>
+            <Button onClick={() => window.location.reload()} className="doge-button">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      ) : filteredTreats.length === 0 ? (
         <Card className="glass-panel">
           <CardContent className="text-center p-12">
             <div className="text-6xl mb-4">🥺</div>
