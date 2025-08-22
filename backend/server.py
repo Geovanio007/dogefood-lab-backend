@@ -646,16 +646,16 @@ async def convert_points_to_lab_tokens(player_address: str, points_to_convert: i
 @api_router.get("/season/current")
 async def get_current_season_info():
     """Get current season information"""
-    current_season = await season_manager.get_current_season()
+    current_season = season_manager.get_season_info()
     
     return {
-        "season_id": current_season.get("season_id", 1),
-        "name": current_season.get("name", "Season 1 - Offchain Launch"),
-        "status": current_season.get("status", "active"),
-        "is_offchain_only": current_season.get("season_id", 1) == 1,
+        "season_id": current_season.season_id,
+        "name": current_season.name,
+        "status": current_season.status.value,
+        "is_offchain_only": current_season.season_id == 1,
         "features": {
-            "nft_minting": current_season.get("season_id", 1) > 1,
-            "points_conversion": current_season.get("status", "active") == "completed",
+            "nft_minting": current_season.season_id > 1,
+            "points_conversion": current_season.status.value == "completed",
             "treat_creation": True,
             "leaderboards": True
         },
