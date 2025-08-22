@@ -544,8 +544,8 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         )
         
         # Get current season info
-        current_season = await season_manager.get_current_season()
-        season_id = current_season.get("season_id", 1)
+        current_season = season_manager.get_season_info()
+        season_id = current_season.season_id
         
         # Create treat with enhanced data and NFT-ready metadata
         treat = DogeTreat(
