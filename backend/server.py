@@ -606,10 +606,10 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         )
         
         return {
-            "treat": treat.dict(),
+            "treat": treat_dict,
             "outcome": treat_outcome,
             "validation": validation,
-            "message": f"{treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']} hours."
+            "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']} hours. {'(Offchain storage)' if season_id == 1 else ''}"
         }
         
     except Exception as e:
