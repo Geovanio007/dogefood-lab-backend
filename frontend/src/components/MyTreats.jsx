@@ -143,7 +143,7 @@ const MyTreats = () => {
       </div>
 
       {/* Web3 Status */}
-      {isConnected && web3Profile && (
+      {isConnected && address && (
         <Card className="glass-panel mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -159,8 +159,8 @@ const MyTreats = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">NFT Holder Status:</p>
-                <Badge className={web3Profile.isNftHolder ? "bg-purple-500 text-white" : "bg-gray-500 text-white"}>
-                  {web3Profile.isNftHolder ? "VIP Scientist 👨‍🔬" : "Regular User"}
+                <Badge className={isNFTHolder ? "bg-purple-500 text-white" : "bg-gray-500 text-white"}>
+                  {isNFTHolder ? "VIP Scientist 👨‍🔬" : "Regular User"}
                 </Badge>
               </div>
             </div>
