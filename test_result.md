@@ -336,11 +336,13 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Critical React Hooks Error Fix - Start Mixing Button Not Working"
-  stuck_tasks:
-    - "Critical React Hooks Error Fix - Start Mixing Button Not Working"
+    - "Season 1 Announcement Banner"
+    - "Season 1 Lab Functionality with Offchain Badge"
+    - "Season 1 MyTreats Page with Disabled Features"
+    - "Season 1 Complete User Experience Flow"
+  stuck_tasks: []
   test_all: false
-  test_priority: "critical_first"
+  test_priority: "season1_first"
 
   - task: "Wallet Gate for GameLab Access"
     implemented: true
