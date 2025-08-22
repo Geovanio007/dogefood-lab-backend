@@ -1481,6 +1481,210 @@ class DogeLabAPITester:
             "persistence_verified": True
         }
 
+    def test_specific_wallet_treat_timing(self, wallet_address="0x033CD94d0020B397393bF1deA4920Be0d4723DCB"):
+        """Test treat status and timing for a specific wallet address as requested"""
+        print(f"\n🎯 TESTING TREAT STATUS AND TIMING FOR WALLET: {wallet_address}")
+        print("=" * 80)
+        print("Focus: Check active treats, timing, and player stats for specific wallet")
+        
+        all_success = True
+        results = {}
+        
+        # 1. GET /api/treats/{address}/brewing - Get all brewing treats
+        print(f"\n🔍 Step 1: Getting Active Brewing Treats")
+        success, brewing_response = self.run_test(
+            "Get Active Brewing Treats", 
+            "GET", 
+            f"treats/{wallet_address}/brewing", 
+            200
+        )
+        
+        if success:
+            brewing_treats = brewing_response if isinstance(brewing_response, list) else []
+            results['active_treats'] = brewing_treats
+            print(f"   ✅ Found {len(brewing_treats)} active brewing treats")
+            
+            if brewing_treats:
+                for i, treat in enumerate(brewing_treats):
+                    treat_id = treat.get('id', 'unknown')
+                    rarity = treat.get('rarity', 'unknown')
+                    brewing_status = treat.get('brewing_status', 'unknown')
+                    ready_at = treat.get('ready_at', 'unknown')
+                    print(f"   🍖 Treat {i+1}: ID={treat_id[:12]}..., Rarity={rarity}, Status={brewing_status}")
+                    print(f"      Ready at: {ready_at}")
+            else:
+                print(f"   ℹ️  No active brewing treats found for this wallet")
+        else:
+            print(f"   ❌ Failed to get brewing treats")
+            all_success = False
+        
+        # 2. Check timer for each active treat using POST /api/treats/{treat_id}/check-timer
+        print(f"\n⏰ Step 2: Checking Timer Status for Each Active Treat")
+        treat_timers = []
+        
+        if success and brewing_treats:
+            for i, treat in enumerate(brewing_treats):
+                treat_id = treat.get('id')
+                if treat_id:
+                    timer_success, timer_response = self.run_test(
+                        f"Check Timer for Treat {i+1}", 
+                        "POST", 
+                        f"treats/{treat_id}/check-timer", 
+                        200
+                    )
+                    
+                    if timer_success and timer_response:
+                        status = timer_response.get('status', 'unknown')
+                        remaining_seconds = timer_response.get('remaining_seconds', 0)
+                        message = timer_response.get('message', '')
+                        
+                        # Convert seconds to hours/minutes for readability
+                        if remaining_seconds > 0:
+                            hours = remaining_seconds // 3600
+                            minutes = (remaining_seconds % 3600) // 60
+                            time_display = f"{hours}h {minutes}m"
+                        else:
+                            time_display = "Ready now!"
+                        
+                        treat_timers.append({
+                            'treat_id': treat_id,
+                            'status': status,
+                            'remaining_seconds': remaining_seconds,
+                            'time_remaining': time_display,
+                            'message': message
+                        })
+                        
+                        print(f"   🕐 Treat {treat_id[:12]}...: {status} - {time_display}")
+                        print(f"      Message: {message}")
+                    else:
+                        print(f"   ❌ Failed to check timer for treat {treat_id[:12]}...")
+                        all_success = False
+        else:
+            print(f"   ℹ️  No active treats to check timers for")
+        
+        results['treat_timers'] = treat_timers
+        
+        # 3. GET /api/treats/{address} - Get complete treat history
+        print(f"\n📚 Step 3: Getting Complete Treat History")
+        success, all_treats_response = self.run_test(
+            "Get Complete Treat History", 
+            "GET", 
+            f"treats/{wallet_address}", 
+            200
+        )
+        
+        if success:
+            all_treats = all_treats_response if isinstance(all_treats_response, list) else []
+            results['all_treats'] = all_treats
+            print(f"   ✅ Found {len(all_treats)} total treats in history")
+            
+            # Categorize treats by status
+            brewing_count = sum(1 for treat in all_treats if treat.get('brewing_status') == 'brewing')
+            ready_count = sum(1 for treat in all_treats if treat.get('brewing_status') == 'ready')
+            
+            print(f"   📊 Treat Status Breakdown:")
+            print(f"      🔄 Brewing: {brewing_count}")
+            print(f"      ✅ Ready: {ready_count}")
+            
+            # Show recent treats (last 5)
+            if all_treats:
+                print(f"   📋 Recent Treats (last 5):")
+                recent_treats = sorted(all_treats, key=lambda x: x.get('created_at', ''), reverse=True)[:5]
+                for i, treat in enumerate(recent_treats):
+                    name = treat.get('name', 'Unknown')
+                    rarity = treat.get('rarity', 'unknown')
+                    status = treat.get('brewing_status', 'unknown')
+                    created_at = treat.get('created_at', 'unknown')
+                    print(f"      {i+1}. {name} ({rarity}) - {status} - Created: {created_at}")
+        else:
+            print(f"   ❌ Failed to get complete treat history")
+            all_success = False
+        
+        # 4. GET /api/player/{address} - Get player stats
+        print(f"\n👤 Step 4: Getting Player Stats")
+        success, player_response = self.run_test(
+            "Get Player Stats", 
+            "GET", 
+            f"player/{wallet_address}", 
+            200
+        )
+        
+        if success and player_response:
+            results['player_stats'] = player_response
+            
+            # Extract key player information
+            level = player_response.get('level', 0)
+            experience = player_response.get('experience', 0)
+            points = player_response.get('points', 0)
+            is_nft_holder = player_response.get('is_nft_holder', False)
+            nickname = player_response.get('nickname', 'No nickname')
+            created_treats_count = len(player_response.get('created_treats', []))
+            
+            print(f"   ✅ Player Information:")
+            print(f"      🏷️  Nickname: {nickname}")
+            print(f"      📊 Level: {level}")
+            print(f"      ⭐ Experience: {experience}")
+            print(f"      🎯 Points: {points}")
+            print(f"      🎨 NFT Holder: {is_nft_holder}")
+            print(f"      🍖 Total Treats Created: {created_treats_count}")
+        else:
+            # Player might not exist, try to create one for testing
+            print(f"   ⚠️  Player not found, attempting to create player for testing...")
+            create_success, create_response = self.run_test(
+                "Create Test Player", 
+                "POST", 
+                "player", 
+                200, 
+                data={
+                    "address": wallet_address,
+                    "nickname": "TestPlayer",
+                    "is_nft_holder": False
+                }
+            )
+            
+            if create_success:
+                print(f"   ✅ Test player created successfully")
+                results['player_stats'] = create_response
+            else:
+                print(f"   ❌ Failed to create test player")
+                all_success = False
+        
+        # 5. Summary and Recommendations
+        print(f"\n📋 SUMMARY FOR WALLET {wallet_address}")
+        print("=" * 80)
+        
+        active_treats_count = len(results.get('active_treats', []))
+        total_treats_count = len(results.get('all_treats', []))
+        player_level = results.get('player_stats', {}).get('level', 0)
+        
+        print(f"🎯 TREAT STATUS OVERVIEW:")
+        print(f"   • Active brewing treats: {active_treats_count}")
+        print(f"   • Total treats created: {total_treats_count}")
+        print(f"   • Player level: {player_level}")
+        
+        if treat_timers:
+            print(f"\n⏰ TIMING INFORMATION:")
+            for timer in treat_timers:
+                print(f"   • Treat {timer['treat_id'][:12]}...: {timer['time_remaining']} ({timer['status']})")
+        else:
+            print(f"\n⏰ TIMING INFORMATION:")
+            print(f"   • No active treats with timers")
+        
+        # Provide user-friendly recommendations
+        print(f"\n💡 RECOMMENDATIONS:")
+        if active_treats_count > 0:
+            ready_treats = [t for t in treat_timers if t['status'] == 'ready']
+            if ready_treats:
+                print(f"   🎉 You have {len(ready_treats)} treats ready for collection!")
+            else:
+                next_ready = min(treat_timers, key=lambda x: x['remaining_seconds']) if treat_timers else None
+                if next_ready and next_ready['remaining_seconds'] > 0:
+                    print(f"   ⏳ Next treat ready in: {next_ready['time_remaining']}")
+        else:
+            print(f"   🍖 No active treats brewing. Consider creating new treats!")
+        
+        return all_success, results
+
 def main():
     print("🐕 Starting DogeFood Lab Season 1 Offchain Implementation Test 🧪")
     print("Testing Season 1 Offchain Implementation with NFT-Ready Metadata")
