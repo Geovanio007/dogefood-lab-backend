@@ -1482,15 +1482,15 @@ class DogeLabAPITester:
         }
 
 def main():
-    print("🐕 Starting DogeFood Lab Complete Functional Game System Test 🧪")
-    print("Testing Complete Functional DogeFood Lab Game System with Real Progress Tracking")
+    print("🐕 Starting DogeFood Lab Season 1 Offchain Implementation Test 🧪")
+    print("Testing Season 1 Offchain Implementation with NFT-Ready Metadata")
     print("=" * 80)
     
     tester = DogeLabAPITester()
     
-    # Focus on Complete Functional Game System Testing
-    print("\n🎯 PRIMARY FOCUS: Complete Functional DogeFood Lab Game System")
-    print("Testing enhanced treat creation flow, data persistence, timer system, and progress tracking")
+    # Focus on Season 1 Offchain Implementation Testing
+    print("\n🎯 PRIMARY FOCUS: Season 1 Offchain Implementation")
+    print("Testing enhanced treat creation, season info, points conversion, and NFT-ready metadata")
     
     # Essential setup tests
     setup_tests = [
@@ -1507,17 +1507,29 @@ def main():
         except Exception as e:
             print(f"❌ Setup {test_name} failed: {str(e)}")
     
-    # Main comprehensive game system test
-    print(f"\n🚀 RUNNING PRIMARY TEST: Complete Functional Game System")
+    # Main Season 1 offchain implementation test
+    print(f"\n🚀 RUNNING PRIMARY TEST: Season 1 Offchain Implementation")
     try:
-        success, results = tester.test_comprehensive_dogefood_lab_game_system()
+        success, results = tester.test_season_1_offchain_implementation()
         if success:
+            print(f"\n✅ SEASON 1 OFFCHAIN IMPLEMENTATION: PASSED")
+        else:
+            print(f"\n❌ SEASON 1 OFFCHAIN IMPLEMENTATION: FAILED")
+    except Exception as e:
+        print(f"❌ Season 1 offchain test failed with exception: {str(e)}")
+        success = False
+    
+    # Additional comprehensive game system test
+    print(f"\n🚀 RUNNING SECONDARY TEST: Complete Functional Game System")
+    try:
+        success2, results2 = tester.test_comprehensive_dogefood_lab_game_system()
+        if success2:
             print(f"\n✅ COMPLETE FUNCTIONAL GAME SYSTEM: PASSED")
         else:
             print(f"\n❌ COMPLETE FUNCTIONAL GAME SYSTEM: FAILED")
     except Exception as e:
         print(f"❌ Complete game system test failed with exception: {str(e)}")
-        success = False
+        success2 = False
     
     # Additional critical verification tests
     critical_tests = [
