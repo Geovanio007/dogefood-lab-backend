@@ -583,8 +583,8 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             "migration_ready": True  # Flags this treat as ready for future onchain migration
         })
         
-        # Save to database
-        await db.treats.insert_one(treat.dict())
+        # Save to database with enhanced metadata
+        await db.treats.insert_one(treat_dict)
         
         # Update player's created treats
         await db.players.update_one(
