@@ -147,7 +147,7 @@ class SeasonManager:
     def _generate_season_names(self) -> Dict[int, str]:
         """Generate themed names for seasons"""
         season_themes = [
-            "Winter Treats Festival",
+            "Season 1 - Offchain Launch",  # Season 1 specific
             "Spring Awakening",
             "Summer Flavor Explosion", 
             "Autumn Harvest Celebration",
