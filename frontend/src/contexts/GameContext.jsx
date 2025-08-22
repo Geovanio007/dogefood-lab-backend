@@ -488,6 +488,7 @@ export function GameProvider({ children }) {
       completeMixing,
       acknowledgeLevelUp,
       updatePlayerProgress,
+      loadPlayerData,
       gameConfig
     }}>
       {children}
