@@ -243,28 +243,33 @@ const MyTreats = () => {
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm font-semibold text-gray-600">Flavor Profile:</p>
-                    <p className="text-sm">{treat.flavor}</p>
+                    <p className="text-sm">{treat.flavor || 'Enhanced'}</p>
                   </div>
                   
                   <div>
                     <p className="text-sm font-semibold text-gray-600">Ingredients Used:</p>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {treat.ingredients && treat.ingredients.map((ingredientId, idx) => (
+                      {treat.ingredients && Array.isArray(treat.ingredients) ? treat.ingredients.map((ingredient, idx) => (
                         <Badge key={idx} variant="outline" className="text-xs">
-                          Ingredient #{ingredientId}
+                          {ingredient}
                         </Badge>
-                      ))}
+                      )) : (
+                        <Badge variant="outline" className="text-xs">
+                          {treat.main_ingredient || 'Unknown'}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   
                   <div className="flex justify-between items-center text-sm text-gray-500">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      {treat.createdAt ? new Date(treat.createdAt).toLocaleDateString() : 'Unknown'}
+                      {treat.created_at ? new Date(treat.created_at).toLocaleDateString() : 'Recently'}
                     </div>
-                    {treat.level && (
-                      <div>Lab Level {treat.level}</div>
-                    )}
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4" />
+                      Status: {treat.brewing_status || 'ready'}
+                    </div>
                   </div>
                   
                   {/* Season 1: Mint Button (Coming Soon) */}
