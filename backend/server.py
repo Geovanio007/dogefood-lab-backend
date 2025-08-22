@@ -629,7 +629,7 @@ async def convert_points_to_lab_tokens(conversion_request: PointsConversionReque
     season_id = current_season.season_id
     season_status = current_season.status.value
     
-    if season_id == 1 and season_status == "active":
+    if season_id == 1:  # Season 1 always blocks conversion regardless of status
         raise HTTPException(
             status_code=423,  # Locked
             detail="Points conversion is not available during Season 1. Conversion will be enabled at the end of the season."
