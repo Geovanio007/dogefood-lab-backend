@@ -621,9 +621,9 @@ async def convert_points_to_lab_tokens(player_address: str, points_to_convert: i
     """Convert points to LAB tokens - Only available at season end"""
     
     # Check if current season allows conversion
-    current_season = await season_manager.get_current_season()
-    season_id = current_season.get("season_id", 1)
-    season_status = current_season.get("status", "active")
+    current_season = season_manager.get_season_info()
+    season_id = current_season.season_id
+    season_status = current_season.status.value
     
     if season_id == 1 and season_status == "active":
         raise HTTPException(
