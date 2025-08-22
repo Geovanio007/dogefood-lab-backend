@@ -282,7 +282,7 @@ class SeasonManager:
         Returns:
             Dictionary with season statistics
         """
-        if not self.db:
+        if self.db is None:
             # Return mock stats if no DB
             return {
                 "season_id": season_id,
