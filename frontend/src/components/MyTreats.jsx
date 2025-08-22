@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAccount } from 'wagmi';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
+import { ArrowLeft, Calendar, Trophy, Target, Sparkles, Star } from 'lucide-react';
 import { useGame } from '../contexts/GameContext';
-import { useWeb3Game } from '../hooks/useWeb3Game';
-import { useWeb3 } from '../hooks/useWeb3';
-import { ArrowLeft, Star, Sparkles, ExternalLink, Calendar, Crown } from 'lucide-react';
 
 const MyTreats = () => {
   const { createdTreats, totalTreatsCreated, points, isNFTHolder } = useGame();
