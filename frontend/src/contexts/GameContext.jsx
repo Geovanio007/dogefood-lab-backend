@@ -412,6 +412,53 @@ export function GameProvider({ children }) {
     dispatch({ type: 'ACKNOWLEDGE_LEVEL_UP' });
   };
 
+  // Load player data from backend when wallet connects
+  const loadPlayerData = async (address) => {
+    if (!address) return;
+    
+    try {
+      console.log(`🔄 Loading player data for address: ${address}`);
+      
+      // 1. Load player info
+      const playerResponse = await fetch(`${API}/player/${address}`);
+      if (playerResponse.ok) {
+        const playerData = await playerResponse.json();
+        
+        // Update game state with backend data
+        dispatch({
+          type: 'LOAD_PLAYER_DATA',
+          payload: {
+            level: playerData.level || 1,
+            experience: playerData.experience || 0,
+            points: playerData.points || 0,
+            createdTreats: playerData.created_treats || []
+          }
+        });
+        
+        console.log(`✅ Player data loaded: Level ${playerData.level}, ${playerData.points} points`);
+      } else {
+        console.log(`ℹ️ Player not found, will be created on first treat creation`);
+      }
+      
+      // 2. Load all treats for this player
+      const treatsResponse = await fetch(`${API}/treats/${address}`);
+      if (treatsResponse.ok) {
+        const treatsData = await treatsResponse.json();
+        const treats = Array.isArray(treatsData) ? treatsData : treatsData.treats || [];
+        
+        dispatch({
+          type: 'LOAD_TREATS_DATA', 
+          payload: treats
+        });
+        
+        console.log(`✅ Loaded ${treats.length} treats from backend`);
+      }
+      
+    } catch (error) {
+      console.error('Error loading player data:', error);
+    }
+  };
+
   return (
     <GameContext.Provider value={{
       ...state,
