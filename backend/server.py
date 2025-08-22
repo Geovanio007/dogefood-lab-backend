@@ -543,7 +543,11 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             treat_data.ingredients, treat_data.player_level, treat_data.creator_address
         )
         
-        # Create treat with enhanced data
+        # Get current season info
+        current_season = await season_manager.get_current_season()
+        season_id = current_season.get("season_id", 1)
+        
+        # Create treat with enhanced data and NFT-ready metadata
         treat = DogeTreat(
             name=f"Level {treat_data.player_level} {treat_outcome['rarity']} Treat",
             creator_address=treat_data.creator_address,
@@ -556,6 +560,28 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             ready_at=datetime.fromtimestamp(treat_outcome["ready_at"]),
             image="🍖"  # Default for now
         )
+        
+        # Add Season 1 specific metadata for future NFT compatibility
+        treat_dict = treat.dict()
+        treat_dict.update({
+            "season_id": season_id,
+            "created_at": datetime.utcnow(),
+            "is_offchain": season_id == 1,  # Season 1 is offchain only
+            "nft_metadata": {
+                "name": f"{treat_outcome['rarity']} DogeFood Treat",
+                "description": f"A {treat_outcome['rarity'].lower()} treat created in Season {season_id} of DogeFood Lab",
+                "image": "🍖",  # Will be updated with actual image URL later
+                "attributes": [
+                    {"trait_type": "Rarity", "value": treat_outcome['rarity']},
+                    {"trait_type": "Season", "value": season_id},
+                    {"trait_type": "Creator Level", "value": treat_data.player_level},
+                    {"trait_type": "Ingredients Count", "value": len(treat_outcome["ingredients_used"])},
+                    {"trait_type": "Timer Duration (hours)", "value": treat_outcome["timer_duration_hours"]},
+                    {"trait_type": "Secret Combo", "value": treat_outcome.get("secret_combo", False)}
+                ]
+            },
+            "migration_ready": True  # Flags this treat as ready for future onchain migration
+        })
         
         # Save to database
         await db.treats.insert_one(treat.dict())
