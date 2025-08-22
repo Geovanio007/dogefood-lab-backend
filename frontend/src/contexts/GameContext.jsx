@@ -251,6 +251,22 @@ function gameReducer(state, action) {
         nftBalance: action.payload,
         isNFTHolder: action.payload > 0,
       };
+
+    case 'LOAD_PLAYER_DATA':
+      return {
+        ...state,
+        currentLevel: action.payload.level || 1,
+        experience: action.payload.experience || 0,
+        points: action.payload.points || 0,
+        ingredients: getUnlockedIngredients(action.payload.level || 1)
+      };
+
+    case 'LOAD_TREATS_DATA':
+      return {
+        ...state,
+        createdTreats: action.payload || [],
+        totalTreatsCreated: (action.payload || []).length
+      };
       
     default:
       return state;
