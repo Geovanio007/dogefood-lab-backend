@@ -9,7 +9,10 @@ import MainMenu from './components/MainMenu';
 import GameLab from './components/GameLab';
 import MyTreats from './components/MyTreats';
 import Leaderboard from './components/Leaderboard';
+import Settings from './components/Settings';
 import AdminDashboard from './components/AdminDashboard';
+import ActiveTreatsStatus from './components/ActiveTreatsStatus';
+import TreatNotifications from './components/TreatNotifications';
 // import PointsToBlockchain from './components/PointsToBlockchain';
 import './App.css';
 
