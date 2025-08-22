@@ -220,15 +220,16 @@ const GameLab = () => {
 
   // Main render - always return JSX, never early return after hooks
 
-  // Enhanced mixing completion with transaction
+  // Enhanced mixing completion - Season 1 Offchain Only
   const handleEnhancedMixCompletion = async () => {
     try {
-      // Step 1: Create treat in backend using enhanced API
+      // Step 1: Create treat in backend using enhanced API (offchain storage)
       const treatData = {
         ingredients: selectedIngredients,
         main_ingredient: selectedIngredients[0] || 'chicken',
         player_address: address || 'demo_player',
-        player_level: currentLevel
+        player_level: currentLevel,
+        season: 1  // Season 1 - Offchain only
       };
 
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/treats/enhanced`, {
@@ -245,39 +246,14 @@ const GameLab = () => {
 
       const treatResult = await response.json();
 
-      // Step 2: Trigger NFT minting transaction (skip in demo mode)
-      if (!demoMode && web3Game && typeof web3Game.mintTreatNFT === 'function') {
-        try {
-          const mintResult = await web3Game.mintTreatNFT();
-          
-          toast({
-            title: `${treatResult.outcome.rarity} Treat Created! 🎉`,
-            description: `Blockchain transaction confirmed! Your ${treatResult.outcome.rarity.toLowerCase()} treat is brewing for ${treatResult.outcome.timer_duration_hours} hours.`,
-            className: "bg-green-100 border-green-400"
-          });
-        } catch (web3Error) {
-          console.warn('Web3 minting failed, but treat created in backend:', web3Error);
-          toast({
-            title: `${treatResult.outcome.rarity} Treat Created! 🧪`,
-            description: `Your ${treatResult.outcome.rarity.toLowerCase()} treat is brewing! Blockchain minting may retry automatically.`,
-            className: "bg-blue-100 border-blue-400"
-          });
-        }
-      } else if (demoMode) {
-        toast({
-          title: `${treatResult.outcome.rarity} Demo Treat Created! 🧪`,
-          description: `Your ${treatResult.outcome.rarity.toLowerCase()} treat is brewing for ${treatResult.outcome.timer_duration_hours} hours. (Demo mode - no NFT minted)`,
-          className: "bg-purple-100 border-purple-400"
-        });
-      } else {
-        toast({
-          title: "Web3 Connection Error",
-          description: "Treat created but blockchain integration unavailable.",
-          variant: "destructive"
-        });
-      }
+      // Season 1: No blockchain transactions - all offchain
+      toast({
+        title: `${treatResult.outcome.rarity} Treat Created! 🎉`,
+        description: `Your ${treatResult.outcome.rarity.toLowerCase()} treat is brewing for ${treatResult.outcome.timer_duration_hours} hours. Stored offchain for Season 1.`,
+        className: "bg-green-100 border-green-400"
+      });
 
-      // Step 3: Update mixing state with persistent result
+      // Step 2: Update mixing state with persistent result
       dispatch({
         type: 'COMPLETE_MIXING',
         payload: {
@@ -286,7 +262,9 @@ const GameLab = () => {
           image: treatResult.outcome.image || '🍪',
           readyAt: treatResult.treat.ready_at,
           treatId: treatResult.treat.id,
-          timerDuration: treatResult.outcome.timer_duration_hours
+          timerDuration: treatResult.outcome.timer_duration_hours,
+          season: 1,  // Mark as Season 1 treat
+          isOffchain: true  // Explicitly mark as offchain
         }
       });
 
