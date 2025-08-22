@@ -179,22 +179,9 @@ const MyTreats = () => {
               size="sm"
               onClick={() => setSelectedRarity(rarity)}
             >
-              {rarity}
+              {rarity.charAt(0).toUpperCase() + rarity.slice(1)}
             </Button>
           ))}
-        </div>
-        
-        <div className="flex gap-2">
-          <span className="text-sm font-semibold text-gray-600 my-auto">Sort by:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="px-3 py-1 rounded border bg-white"
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="rarity">Rarity</option>
-          </select>
         </div>
       </div>
 
