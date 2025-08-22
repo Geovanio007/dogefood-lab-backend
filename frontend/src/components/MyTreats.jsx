@@ -136,9 +136,7 @@ const MyTreats = () => {
         
         <Card className="glass-panel">
           <CardContent className="text-center p-6">
-            <div className="text-3xl font-bold text-yellow-600">
-              {web3Profile?.labBalance ? parseFloat(web3Profile.labBalance).toFixed(2) : '0.00'}
-            </div>
+            <div className="text-3xl font-bold text-yellow-600">0.00</div>
             <div className="text-sm text-gray-600">$LAB Tokens</div>
           </CardContent>
         </Card>
