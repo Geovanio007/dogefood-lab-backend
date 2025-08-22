@@ -588,7 +588,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         })
         
         # Save to database with enhanced metadata
-        await db.treats.insert_one(treat_dict)
+        result = await db.treats.insert_one(treat_dict)
         
         # Update player's created treats
         await db.players.update_one(
@@ -605,12 +605,19 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 "ingredients": treat_outcome["ingredients_used"],
                 "level": treat_data.player_level,
                 "secret_combo": treat_outcome["secret_combo"],
-                "season_id": treat_outcome["season_id"]
+                "season_id": season_id
             }
         )
         
+        # Convert treat_dict to JSON-serializable format
+        treat_response = treat_dict.copy()
+        if 'created_at' in treat_response:
+            treat_response['created_at'] = treat_response['created_at'].isoformat()
+        if 'ready_at' in treat_response and treat_response['ready_at']:
+            treat_response['ready_at'] = treat_response['ready_at'].isoformat()
+        
         return {
-            "treat": treat_dict,
+            "treat": treat_response,
             "outcome": treat_outcome,
             "validation": validation,
             "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']} hours. {'(Offchain storage)' if season_id == 1 else ''}"
