@@ -581,7 +581,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                     {"trait_type": "Creator Level", "value": treat_data.player_level},
                     {"trait_type": "Ingredients Count", "value": len(treat_outcome["ingredients_used"])},
                     {"trait_type": "Timer Duration (hours)", "value": treat_outcome["timer_duration_hours"]},
-                    {"trait_type": "Secret Combo", "value": treat_outcome.get("secret_combo", False)}
+                    {"trait_type": "Secret Combo", "value": treat_outcome.get("secret_combo", {}).get("is_secret_combo", False)}
                 ]
             },
             "migration_ready": True  # Flags this treat as ready for future onchain migration
@@ -604,7 +604,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 "rarity": treat_outcome["rarity"],
                 "ingredients": treat_outcome["ingredients_used"],
                 "level": treat_data.player_level,
-                "secret_combo": treat_outcome["secret_combo"],
+                "secret_combo": treat_outcome.get("secret_combo", {}),
                 "season_id": season_id
             }
         )
