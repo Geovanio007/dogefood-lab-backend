@@ -615,6 +615,33 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating enhanced treat: {str(e)}")
 
+# Season 1: Points to LAB Token Conversion (Placeholder - Not Active)
+@api_router.post("/points/convert")
+async def convert_points_to_lab_tokens(player_address: str, points_to_convert: int):
+    """Convert points to LAB tokens - Only available at season end"""
+    
+    # Check if current season allows conversion
+    current_season = await season_manager.get_current_season()
+    season_id = current_season.get("season_id", 1)
+    season_status = current_season.get("status", "active")
+    
+    if season_id == 1 and season_status == "active":
+        raise HTTPException(
+            status_code=423,  # Locked
+            detail="Points conversion is not available during Season 1. Conversion will be enabled at the end of the season."
+        )
+    
+    # Future seasons logic would go here
+    # For now, just return the conversion preview
+    return {
+        "message": "Conversion not available in Season 1",
+        "season_id": season_id,
+        "points_to_convert": points_to_convert,  
+        "estimated_lab_tokens": points_to_convert // 1000,  # 1000 points = 1 LAB token
+        "conversion_available": False,
+        "reason": "Season 1 active - conversion available at season end only"
+    }
+
 # Ingredient System Endpoints
 @api_router.get("/ingredients")
 async def get_ingredients(level: int = 1):
