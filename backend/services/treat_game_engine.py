@@ -304,18 +304,22 @@ class TreatGameEngine:
         Returns:
             Current season ID (starting from 1)
         """
-        # Use a fixed start date (e.g., January 1, 2024)
-        start_date = datetime(2024, 1, 1)
-        current_date = datetime.now()
+        # For Season 1 offchain testing, always return Season 1
+        return 1
         
-        # Calculate months elapsed
-        months_elapsed = (
-            (current_date.year - start_date.year) * 12 + 
-            current_date.month - start_date.month
-        )
-        
-        # Season ID = (months // 3) + 1
-        return (months_elapsed // self.season_duration_months) + 1
+        # Original logic (commented out for testing)
+        # # Use a fixed start date (e.g., January 1, 2024)
+        # start_date = datetime(2024, 1, 1)
+        # current_date = datetime.now()
+        # 
+        # # Calculate months elapsed
+        # months_elapsed = (
+        #     (current_date.year - start_date.year) * 12 + 
+        #     current_date.month - start_date.month
+        # )
+        # 
+        # # Season ID = (months // 3) + 1
+        # return (months_elapsed // self.season_duration_months) + 1
     
     def get_season_info(self, season_id: int = None) -> Dict:
         """
