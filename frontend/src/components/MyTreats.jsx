@@ -229,6 +229,21 @@ const MyTreats = () => {
                       <div>Lab Level {treat.level}</div>
                     )}
                   </div>
+                  
+                  {/* Season 1: Mint Button (Coming Soon) */}
+                  <div className="pt-3 border-t border-gray-200">
+                    <Button 
+                      disabled 
+                      className="w-full bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300"
+                      title="Minting will be available in future seasons"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Mint NFT - Coming Soon!
+                    </Button>
+                    <p className="text-xs text-gray-400 text-center mt-1">
+                      Available in Season 2
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
