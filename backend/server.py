@@ -621,7 +621,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
 
 # Season 1: Points to LAB Token Conversion (Placeholder - Not Active)
 @api_router.post("/points/convert")
-async def convert_points_to_lab_tokens(player_address: str, points_to_convert: int):
+async def convert_points_to_lab_tokens(conversion_request: PointsConversionRequest):
     """Convert points to LAB tokens - Only available at season end"""
     
     # Check if current season allows conversion
@@ -640,8 +640,8 @@ async def convert_points_to_lab_tokens(player_address: str, points_to_convert: i
     return {
         "message": "Conversion not available in Season 1",
         "season_id": season_id,
-        "points_to_convert": points_to_convert,  
-        "estimated_lab_tokens": points_to_convert // 1000,  # 1000 points = 1 LAB token
+        "points_to_convert": conversion_request.points_to_convert,  
+        "estimated_lab_tokens": conversion_request.points_to_convert // 1000,  # 1000 points = 1 LAB token
         "conversion_available": False,
         "reason": "Season 1 active - conversion available at season end only"
     }
