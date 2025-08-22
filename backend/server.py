@@ -611,10 +611,21 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         
         # Convert treat_dict to JSON-serializable format
         treat_response = treat_dict.copy()
+        
+        # Convert ObjectId to string if present
+        if '_id' in treat_response:
+            treat_response['_id'] = str(treat_response['_id'])
+        if 'id' in treat_response:
+            treat_response['id'] = str(treat_response['id'])
+            
+        # Convert datetime objects to ISO format strings
         if 'created_at' in treat_response:
             treat_response['created_at'] = treat_response['created_at'].isoformat()
         if 'ready_at' in treat_response and treat_response['ready_at']:
             treat_response['ready_at'] = treat_response['ready_at'].isoformat()
+        
+        # Set the MongoDB inserted ID as the treat ID
+        treat_response['id'] = str(result.inserted_id)
         
         return {
             "treat": treat_response,
