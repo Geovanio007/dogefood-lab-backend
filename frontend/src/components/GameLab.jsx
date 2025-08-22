@@ -519,6 +519,11 @@ const GameLab = () => {
                   Demo Mode Active
                 </Badge>
               )}
+              
+              {/* Season 1 Indicator */}
+              <Badge className="bg-orange-500 text-white px-3 py-2">
+                Season 1 - Offchain
+              </Badge>
             </div>
             
             <div className="flex items-center gap-4">
