@@ -191,14 +191,14 @@ const MyTreats = () => {
           <CardContent className="text-center p-12">
             <div className="text-6xl mb-4">🥺</div>
             <h3 className="text-2xl font-bold text-gray-600 mb-2">
-              {createdTreats.length === 0 ? "No treats yet!" : "No treats match your filter"}
+              {treats.length === 0 ? "No treats yet!" : "No treats match your filter"}
             </h3>
             <p className="text-gray-500 mb-6">
-              {createdTreats.length === 0 
+              {treats.length === 0 
                 ? "Head to the Lab and start creating some magical Dogetreats!" 
                 : "Try adjusting your filters to see more treats."}
             </p>
-            {createdTreats.length === 0 && (
+            {treats.length === 0 && (
               <Link to="/lab">
                 <Button className="doge-button">
                   Start Creating Treats 🧪
