@@ -196,7 +196,6 @@ const GameLab = () => {
   
   const web3Game = useWeb3Game();
   const { toast } = useToast();
-  const { activeTreats, loadTreats, handleTreatComplete } = useTreatTracker(address || 'demo_player', demoMode);
   
   // State management
   const [selectedIngredients, setSelectedIngredients] = useState([]);
@@ -206,6 +205,8 @@ const GameLab = () => {
   const [showActiveTreats, setShowActiveTreats] = useState(false);
   const [mixingInterval, setMixingInterval] = useState(null);
   const [demoMode, setDemoMode] = useState(false);
+  
+  const { activeTreats, loadTreats, handleTreatComplete } = useTreatTracker(address || 'demo_player', demoMode);
 
   useEffect(() => {
     // Check WebGL support on component mount
