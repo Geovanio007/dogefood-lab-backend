@@ -1038,7 +1038,7 @@ class DogeLabAPITester:
         print("Focus: Season 1 offchain functionality with NFT-ready metadata")
         
         # Use demo_player as specified in review request
-        demo_player = "demo_player"
+        demo_player = "demo_player_season1_test"  # Use unique address to avoid anti-cheat
         demo_level = 1
         demo_ingredients = ["chicken", "bones"]
         
