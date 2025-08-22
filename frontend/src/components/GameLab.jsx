@@ -761,7 +761,7 @@ const GameLab = () => {
                               alt="You"
                               className="w-5 h-5 object-contain mr-2"
                             />
-                            Create with {selectedIngredients.length} Ingredients{demoMode ? ' (Demo)' : ''}! (+{Math.floor((gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient) * currentDifficulty)} XP)
+                            Create Season 1 Treat with {selectedIngredients.length} Ingredients{demoMode ? ' (Demo)' : ''}! (+{Math.floor((gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient) * currentDifficulty)} XP)
                           </>
                         )}
                       </Button>
