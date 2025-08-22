@@ -14,7 +14,7 @@ import { Beaker, Trophy, Settings, Palette } from 'lucide-react';
 const MainMenu = () => {
   const { address, isConnected } = useAccount();
   const { nftBalance, isNFTHolder, loading: nftLoading } = useNFTVerification();
-  const { user, currentLevel, points, dispatch } = useGame();
+  const { user, currentLevel, points, dispatch, loadPlayerData } = useGame();
 
   // Update game state when wallet connects and NFT status is determined
   useEffect(() => {
