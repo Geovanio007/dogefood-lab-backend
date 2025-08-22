@@ -193,7 +193,7 @@ class SeasonManager:
         Returns:
             List of leaderboard entries for the season
         """
-        if not self.db:
+        if self.db is None:
             return []  # Mock data if no DB connection
         
         # Get season date range
