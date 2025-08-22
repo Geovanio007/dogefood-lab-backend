@@ -642,6 +642,26 @@ async def convert_points_to_lab_tokens(player_address: str, points_to_convert: i
         "reason": "Season 1 active - conversion available at season end only"
     }
 
+# Season Information API
+@api_router.get("/season/current")
+async def get_current_season_info():
+    """Get current season information"""
+    current_season = await season_manager.get_current_season()
+    
+    return {
+        "season_id": current_season.get("season_id", 1),
+        "name": current_season.get("name", "Season 1 - Offchain Launch"),
+        "status": current_season.get("status", "active"),
+        "is_offchain_only": current_season.get("season_id", 1) == 1,
+        "features": {
+            "nft_minting": current_season.get("season_id", 1) > 1,
+            "points_conversion": current_season.get("status", "active") == "completed",
+            "treat_creation": True,
+            "leaderboards": True
+        },
+        "description": "Season 1 focuses on offchain gameplay. NFT minting and points conversion will be available in future seasons."
+    }
+
 # Ingredient System Endpoints
 @api_router.get("/ingredients")
 async def get_ingredients(level: int = 1):
