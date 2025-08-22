@@ -64,11 +64,15 @@ function App() {
                   <Route path="/" element={<MainMenu />} />
                   <Route path="/lab" element={<GameLab />} />
                   <Route path="/nfts" element={<MyTreats />} />
+                  <Route path="/dashboard" element={<ActiveTreatsStatus />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/admin" element={<AdminDashboard />} />
                   {/* <Route path="/convert" element={<PointsToBlockchain />} /> */}
                 </Routes>
+                
+                {/* Global Treat Notifications */}
+                <TreatNotifications />
               </Router>
             )}
           </div>
