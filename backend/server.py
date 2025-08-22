@@ -589,7 +589,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         # Update player's created treats
         await db.players.update_one(
             {"address": treat_data.creator_address},
-            {"$push": {"created_treats": treat.id}}
+            {"$push": {"created_treats": treat_dict["id"]}}
         )
         
         # Award points in background
