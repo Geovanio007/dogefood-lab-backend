@@ -562,7 +562,7 @@ const GameLab = () => {
           {/* Active Treats View */}
           {showActiveTreats ? (
             <div className="max-w-6xl mx-auto">
-              <ActiveTreats />
+              <ActiveTreats playerAddress={address || 'demo_player'} />
               {activeTreats.length === 0 && (
                 <Card className="game-card max-w-2xl mx-auto text-center">
                   <CardContent className="py-12">
