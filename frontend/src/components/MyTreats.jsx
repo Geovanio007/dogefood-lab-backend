@@ -8,15 +8,52 @@ import { ArrowLeft, Calendar, Trophy, Target, Sparkles, Star } from 'lucide-reac
 import { useGame } from '../contexts/GameContext';
 
 const MyTreats = () => {
-  const { createdTreats, totalTreatsCreated, points, isNFTHolder } = useGame();
-  const { web3Profile, loading: web3Loading } = useWeb3Game();
-  const { address, isConnected } = useWeb3();
+  const { isConnected, address } = useAccount();
+  const { user, points, currentLevel, isNFTHolder } = useGame();
+  const [selectedRarity, setSelectedRarity] = useState('all');
+  const [treats, setTreats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  const [selectedRarity, setSelectedRarity] = useState('All');
-  const [sortBy, setSortBy] = useState('newest');
-
-  // Filter and sort treats
-  const filteredTreats = createdTreats
+  // Fetch treats from backend API when component mounts or address changes
+  useEffect(() => {
+    const fetchTreats = async () => {
+      if (!address && !isConnected) {
+        setTreats([]);
+        setLoading(false);
+        return;
+      }
+      
+      const playerAddress = address || 'demo_player';
+      
+      try {
+        setLoading(true);
+        console.log(`🔄 Fetching treats for ${playerAddress}...`);
+        
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/treats/${playerAddress}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          const treatsArray = Array.isArray(data) ? data : data.treats || [];
+          setTreats(treatsArray);
+          console.log(`✅ Loaded ${treatsArray.length} treats from backend`);
+        } else {
+          console.log(`ℹ️ No treats found for ${playerAddress} (${response.status})`);
+          setTreats([]);
+        }
+      } catch (err) {
+        console.error('Error fetching treats:', err);
+        setError('Failed to load treats');
+        setTreats([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTreats();
+  }, [address, isConnected]);
+  
+  const filteredTreats = treats
     .filter(treat => selectedRarity === 'All' || treat.rarity === selectedRarity)
     .sort((a, b) => {
       switch (sortBy) {
