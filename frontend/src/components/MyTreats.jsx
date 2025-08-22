@@ -75,7 +75,7 @@ const MyTreats = () => {
     }
   };
 
-  const rarities = ['All', 'Legendary', 'Epic', 'Rare', 'Common'];
+  const rarities = ['all', 'legendary', 'epic', 'rare', 'common'];
 
   return (
     <div className="min-h-screen p-6">
