@@ -117,6 +117,10 @@ class EnhancedTreatCreate(BaseModel):
     ingredients: List[str]
     player_level: int
 
+class PointsConversionRequest(BaseModel):
+    player_address: str
+    points_to_convert: int
+
 class IngredientAnalysisRequest(BaseModel):
     ingredient_ids: List[str]
 
