@@ -45,12 +45,16 @@ class SeasonManager:
         
     def get_current_season_id(self) -> int:
         """Calculate current season ID based on start date and 3-month cycles"""
-        current_date = datetime.now()
-        months_elapsed = (
-            (current_date.year - self.start_date.year) * 12 + 
-            current_date.month - self.start_date.month
-        )
-        return (months_elapsed // self.season_duration_months) + 1
+        # For Season 1 offchain testing, always return Season 1
+        return 1
+        
+        # Original logic (commented out for testing)
+        # current_date = datetime.now()
+        # months_elapsed = (
+        #     (current_date.year - self.start_date.year) * 12 + 
+        #     current_date.month - self.start_date.month
+        # )
+        # return (months_elapsed // self.season_duration_months) + 1
     
     def get_season_dates(self, season_id: int) -> tuple[datetime, datetime]:
         """Get start and end dates for a specific season"""
