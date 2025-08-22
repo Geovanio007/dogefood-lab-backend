@@ -421,388 +421,470 @@ const GameLab = () => {
 
   return (
     <div className="lab-container min-h-screen p-6">
-      {/* Level Up Notification */}
-      <LevelUpNotification />
-
-      {/* Treat Notifications */}
-      <TreatNotifications />
-      
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-4">
-          <Link to="/">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Menu
-            </Button>
-          </Link>
-          <div className="flex items-center gap-3">
-            <img 
-              src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
-              alt="Your Avatar"
-              className="w-10 h-10 object-contain"
-            />
-            <div className="lab-level-indicator">
-              Your Level {currentLevel} Lab
+      {/* Conditional rendering without early returns */}
+      {(!isConnected && !address && !demoMode) ? (
+        // Wallet Connection Gate
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+          <div className="container mx-auto max-w-4xl">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <Link to="/" className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors">
+                <ArrowLeft size={20} />
+                <span className="font-bold">Back to Menu</span>
+              </Link>
+              <h1 className="text-4xl font-bold playful-title text-blue-800">
+                🧪 DogeFood Lab
+              </h1>
             </div>
-          </div>
-          {isNFTHolder && (
-            <Badge className="vip-badge">VIP Scientist</Badge>
-          )}
-          
-          {/* Difficulty Indicator */}
-          <Badge className="bg-purple-500 text-white">
-            <Target className="w-4 h-4 mr-1" />
-            Difficulty: {currentDifficulty}x
-          </Badge>
 
-          {demoMode && (
-            <Badge className="bg-purple-500 text-white px-3 py-2">
-              Demo Mode Active
-            </Badge>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="glass-panel p-3">
-            <div className="text-sm text-gray-600">Your Points</div>
-            <div className="font-bold text-xl text-yellow-600">{points}</div>
-          </div>
-          <div className="glass-panel p-3">
-            <div className="text-sm text-gray-600">Your Creations</div>
-            <div className="font-bold text-xl text-purple-600">{createdTreats.length}</div>
-          </div>
-          <div className="glass-panel p-3">
-            <div className="text-sm text-gray-600">Active Treats</div>
-            <div className="font-bold text-xl text-green-600">{activeTreats.length}</div>
-          </div>
-        </div>
-      </div>
+            {/* Wallet Connection Gate */}
+            <Card className="game-card max-w-2xl mx-auto">
+              <CardHeader className="text-center">
+                <div className="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-6 shadow-xl">
+                  <Sparkles size={48} className="text-white drop-shadow-lg" />
+                </div>
+                <CardTitle className="playful-title text-white text-4xl mb-4">
+                  🔗 Connect Your Wallet to Start Creating!
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-8">
+                <p className="text-white/90 playful-text text-xl leading-relaxed">
+                  Welcome to the DogeFood Lab! Connect your wallet to unlock the full laboratory experience and start minting NFT treats.
+                </p>
+                
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="text-center p-4 bg-gradient-to-br from-green-400/30 to-blue-500/20 rounded-2xl border-2 border-green-300/50">
+                    <div className="text-3xl mb-2">🧪</div>
+                    <h4 className="font-bold text-white text-lg mb-2 playful-title">Create NFT Treats</h4>
+                    <p className="text-white/80 playful-text text-sm">Mix ingredients to mint unique NFT treats!</p>
+                  </div>
+                  
+                  <div className="text-center p-4 bg-gradient-to-br from-yellow-400/30 to-orange-500/20 rounded-2xl border-2 border-yellow-300/50">
+                    <div className="text-3xl mb-2">⏰</div>
+                    <h4 className="font-bold text-white text-lg mb-2 playful-title">Real Timers</h4>
+                    <p className="text-white/80 playful-text text-sm">Wait for treats to complete brewing!</p>
+                  </div>
+                  
+                  <div className="text-center p-4 bg-gradient-to-br from-purple-400/30 to-pink-500/20 rounded-2xl border-2 border-purple-300/50">
+                    <div className="text-3xl mb-2">🏆</div>
+                    <h4 className="font-bold text-white text-lg mb-2 playful-title">Compete & Earn</h4>
+                    <p className="text-white/80 playful-text text-sm">Earn XP and compete on leaderboards!</p>
+                  </div>
+                  
+                  <div className="text-center p-4 bg-gradient-to-br from-indigo-400/30 to-blue-500/20 rounded-2xl border-2 border-indigo-300/50">
+                    <div className="text-3xl mb-2">👑</div>
+                    <h4 className="font-bold text-white text-lg mb-2 playful-title">VIP Benefits</h4>
+                    <p className="text-white/80 playful-text text-sm">NFT holders get bonus XP!</p>
+                  </div>
+                </div>
 
-      {/* XP Progress Bar */}
-      <XPProgressBar />
-
-      {/* Active Treats Toggle */}
-      <div className="mb-6 flex justify-center">
-        <Button
-          onClick={() => setShowActiveTreats(!showActiveTreats)}
-          className={`px-6 py-3 rounded-xl font-bold transition-all ${
-            showActiveTreats 
-              ? 'bg-green-500 hover:bg-green-600 text-white' 
-              : 'bg-blue-500 hover:bg-blue-600 text-white'
-          }`}
-        >
-          {showActiveTreats ? '🧪 Back to Lab' : `⏰ View Active Treats (${activeTreats.length})`}
-        </Button>
-      </div>
-
-      {/* Active Treats View */}
-      {showActiveTreats ? (
-        <div className="max-w-6xl mx-auto">
-          <ActiveTreats />
-          {activeTreats.length === 0 && (
-            <Card className="game-card max-w-2xl mx-auto text-center">
-              <CardContent className="py-12">
-                <div className="text-6xl mb-4">🧪</div>
-                <h3 className="text-2xl font-bold text-white mb-4">No Active Treats</h3>
-                <p className="text-white/80 mb-6">Create some treats to see them brewing here!</p>
-                <Button onClick={() => setShowActiveTreats(false)} className="doge-button">
-                  Start Creating Treats
-                </Button>
+                <div className="space-y-4">
+                  <ConnectButton />
+                  
+                  <div className="text-white/60 text-sm">or</div>
+                  
+                  <Button 
+                    onClick={() => setDemoMode(true)}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition hover:scale-105"
+                  >
+                    🧪 Try Demo Mode (No Wallet Required)
+                  </Button>
+                  
+                  <p className="text-white/60 text-xs">
+                    Demo mode lets you explore the lab without connecting a wallet or minting NFTs
+                  </p>
+                </div>
               </CardContent>
             </Card>
-          )}
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        // Main Lab Interface (when wallet connected OR demo mode active)
+        <>
+          {/* Level Up Notification */}
+          <LevelUpNotification />
+
+          {/* Treat Notifications */}
+          <TreatNotifications />
           
-          {/* Left Sidebar - Ingredients */}
-          <Card className="glass-panel">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ChefHat className="w-5 h-5" />
-                Ingredient Shelf
-                <Badge className="text-xs bg-blue-100 text-blue-800 ml-2">
-                  Need 2+ for XP
-                </Badge>
-              </CardTitle>
-              <div className="text-sm text-gray-600">
-                Level {currentLevel} • {ingredients.length}/25 ingredients unlocked
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div className="flex items-center gap-4">
+              <Link to="/">
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Menu
+                </Button>
+              </Link>
+              <div className="flex items-center gap-3">
+                <img 
+                  src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                  alt="Your Avatar"
+                  className="w-10 h-10 object-contain"
+                />
+                <div className="lab-level-indicator">
+                  Your Level {currentLevel} Lab
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {ingredients.map((ingredient) => {
-                  const tierInfo = getTierInfo(ingredient.tier);
-                  
-                  return (
-                    <div
-                      key={ingredient.id}
-                      onClick={() => handleIngredientSelect(ingredient.id)}
-                      className={`
-                        ingredient-slot p-3 rounded-lg border-2 cursor-pointer transition-all
-                        ${selectedIngredients.includes(ingredient.id) ? 'border-yellow-400 bg-yellow-100 scale-105' : 'border-gray-300'}
-                        ${!mixing.active ? 'hover:border-yellow-400 hover:bg-yellow-50 hover:scale-102' : ''}
-                      `}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{ingredient.image}</span>
-                        <div className="flex-1">
-                          <div className="font-medium">{ingredient.name}</div>
-                          <div className="flex items-center gap-2 text-xs">
-                            <Badge className={`text-xs ${tierInfo.color} border`}>
-                              Tier {ingredient.tier} • {tierInfo.name}
-                            </Badge>
-                            <Badge className="text-xs bg-gray-100 text-gray-600 capitalize">
-                              {ingredient.rarity}
-                            </Badge>
-                          </div>
-                          {ingredient.rarity !== 'common' && (
-                            <div className="text-xs text-green-600 mt-1">
-                              +{gameConfig.ingredients.rarityMultiplier[ingredient.rarity]}x XP multiplier
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Unlock level indicator */}
-                        <div className="text-xs text-right">
-                          <div className="text-gray-500">Unlocked</div>
-                          <div className="font-bold text-green-600">Level {ingredient.unlockLevel}</div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              {isNFTHolder && (
+                <Badge className="vip-badge">VIP Scientist</Badge>
+              )}
               
-              <div className="mt-6 p-3 bg-blue-50 rounded-lg">
-                <div className="text-sm font-medium mb-2">Selected Ingredients:</div>
-                <div className="flex flex-wrap gap-2 min-h-[24px]">
-                  {selectedIngredients.length > 0 ? (
-                    selectedIngredients.map((id) => {
-                      const ingredient = ingredients.find(ing => ing.id === id);
-                      const tierInfo = ingredient ? getTierInfo(ingredient.tier) : null;
+              {/* Difficulty Indicator */}
+              <Badge className="bg-purple-500 text-white">
+                <Target className="w-4 h-4 mr-1" />
+                Difficulty: {currentDifficulty}x
+              </Badge>
+
+              {demoMode && (
+                <Badge className="bg-purple-500 text-white px-3 py-2">
+                  Demo Mode Active
+                </Badge>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="glass-panel p-3">
+                <div className="text-sm text-gray-600">Your Points</div>
+                <div className="font-bold text-xl text-yellow-600">{points}</div>
+              </div>
+              <div className="glass-panel p-3">
+                <div className="text-sm text-gray-600">Your Creations</div>
+                <div className="font-bold text-xl text-purple-600">{createdTreats.length}</div>
+              </div>
+              <div className="glass-panel p-3">
+                <div className="text-sm text-gray-600">Active Treats</div>
+                <div className="font-bold text-xl text-green-600">{activeTreats.length}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* XP Progress Bar */}
+          <XPProgressBar />
+
+          {/* Active Treats Toggle */}
+          <div className="mb-6 flex justify-center">
+            <Button
+              onClick={() => setShowActiveTreats(!showActiveTreats)}
+              className={`px-6 py-3 rounded-xl font-bold transition-all ${
+                showActiveTreats 
+                  ? 'bg-green-500 hover:bg-green-600 text-white' 
+                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+              }`}
+            >
+              {showActiveTreats ? '🧪 Back to Lab' : `⏰ View Active Treats (${activeTreats.length})`}
+            </Button>
+          </div>
+
+          {/* Active Treats View */}
+          {showActiveTreats ? (
+            <div className="max-w-6xl mx-auto">
+              <ActiveTreats />
+              {activeTreats.length === 0 && (
+                <Card className="game-card max-w-2xl mx-auto text-center">
+                  <CardContent className="py-12">
+                    <div className="text-6xl mb-4">🧪</div>
+                    <h3 className="text-2xl font-bold text-white mb-4">No Active Treats</h3>
+                    <p className="text-white/80 mb-6">Create some treats to see them brewing here!</p>
+                    <Button onClick={() => setShowActiveTreats(false)} className="doge-button">
+                      Start Creating Treats
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              
+              {/* Left Sidebar - Ingredients */}
+              <Card className="glass-panel">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ChefHat className="w-5 h-5" />
+                    Ingredient Shelf
+                    <Badge className="text-xs bg-blue-100 text-blue-800 ml-2">
+                      Need 2+ for XP
+                    </Badge>
+                  </CardTitle>
+                  <div className="text-sm text-gray-600">
+                    Level {currentLevel} • {ingredients.length}/25 ingredients unlocked
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {ingredients.map((ingredient) => {
+                      const tierInfo = getTierInfo(ingredient.tier);
                       
                       return (
-                        <Badge key={id} className={`text-xs ${tierInfo?.color || 'bg-gray-100 text-gray-800'} border`}>
-                          {ingredient?.image} {ingredient?.name}
-                        </Badge>
+                        <div
+                          key={ingredient.id}
+                          onClick={() => handleIngredientSelect(ingredient.id)}
+                          className={`
+                            ingredient-slot p-3 rounded-lg border-2 cursor-pointer transition-all
+                            ${selectedIngredients.includes(ingredient.id) ? 'border-yellow-400 bg-yellow-100 scale-105' : 'border-gray-300'}
+                            ${!mixing.active ? 'hover:border-yellow-400 hover:bg-yellow-50 hover:scale-102' : ''}
+                          `}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{ingredient.image}</span>
+                            <div className="flex-1">
+                              <div className="font-medium">{ingredient.name}</div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <Badge className={`text-xs ${tierInfo.color} border`}>
+                                  Tier {ingredient.tier} • {tierInfo.name}
+                                </Badge>
+                                <Badge className="text-xs bg-gray-100 text-gray-600 capitalize">
+                                  {ingredient.rarity}
+                                </Badge>
+                              </div>
+                              {ingredient.rarity !== 'common' && (
+                                <div className="text-xs text-green-600 mt-1">
+                                  +{gameConfig.ingredients.rarityMultiplier[ingredient.rarity]}x XP multiplier
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Unlock level indicator */}
+                            <div className="text-xs text-right">
+                              <div className="text-gray-500">Unlocked</div>
+                              <div className="font-bold text-green-600">Level {ingredient.unlockLevel}</div>
+                            </div>
+                          </div>
+                        </div>
                       );
-                    })
-                  ) : (
-                    <span className="text-xs text-gray-500">None selected</span>
+                    })}
+                  </div>
+                  
+                  <div className="mt-6 p-3 bg-blue-50 rounded-lg">
+                    <div className="text-sm font-medium mb-2">Selected Ingredients:</div>
+                    <div className="flex flex-wrap gap-2 min-h-[24px]">
+                      {selectedIngredients.length > 0 ? (
+                        selectedIngredients.map((id) => {
+                          const ingredient = ingredients.find(ing => ing.id === id);
+                          const tierInfo = ingredient ? getTierInfo(ingredient.tier) : null;
+                          
+                          return (
+                            <Badge key={id} className={`text-xs ${tierInfo?.color || 'bg-gray-100 text-gray-800'} border`}>
+                              {ingredient?.image} {ingredient?.name}
+                            </Badge>
+                          );
+                        })
+                      ) : (
+                        <span className="text-xs text-gray-500">None selected</span>
+                      )}
+                    </div>
+                    {selectedIngredients.length >= 2 && (
+                      <div className="text-xs text-green-600 mt-2 font-medium flex items-center gap-1">
+                        <Star className="w-3 h-3" />
+                        Ready for XP! (+{gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient} base XP × {currentDifficulty}x difficulty)
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Progress to next ingredient unlock */}
+                  {currentLevel < 25 && (
+                    <div className="mt-4 p-3 bg-purple-50 rounded-lg">
+                      <div className="text-sm font-medium text-purple-800 mb-2">Next Unlock:</div>
+                      <div className="text-xs text-purple-600">
+                        Level up to unlock more amazing ingredients!
+                        <br />
+                        <span className="font-medium">
+                          {Math.max(0, gameConfig.xp.xpCapPerLevel - xpProgress)} XP to Level {currentLevel + 1}
+                        </span>
+                      </div>
+                    </div>
                   )}
-                </div>
-                {selectedIngredients.length >= 2 && (
-                  <div className="text-xs text-green-600 mt-2 font-medium flex items-center gap-1">
-                    <Star className="w-3 h-3" />
-                    Ready for XP! (+{gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient} base XP × {currentDifficulty}x difficulty)
-                  </div>
-                )}
-              </div>
-              
-              {/* Progress to next ingredient unlock */}
-              {currentLevel < 25 && (
-                <div className="mt-4 p-3 bg-purple-50 rounded-lg">
-                  <div className="text-sm font-medium text-purple-800 mb-2">Next Unlock:</div>
-                  <div className="text-xs text-purple-600">
-                    Level up to unlock more amazing ingredients!
-                    <br />
-                    <span className="font-medium">
-                      {Math.max(0, gameConfig.xp.xpCapPerLevel - xpProgress)} XP to Level {currentLevel + 1}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          {/* Center - Mixing Station */}
-          <Card className="glass-panel">
+              {/* Center - Mixing Station */}
+              <Card className="glass-panel">
+                <CardHeader>
+                  <CardTitle className="text-center flex items-center justify-center gap-2">
+                    <Zap className="w-5 h-5" />
+                    Your Mixing Station
+                  </CardTitle>
+                  <div className="text-center text-sm text-gray-600">
+                    You are the master creator! 🎯
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {/* Character Avatar Header */}
+                  <div className="flex items-center justify-center mb-4">
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-100 to-orange-100 px-4 py-2 rounded-full border-2 border-yellow-300">
+                      <img 
+                        src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                        alt="Your Avatar"
+                        className="w-8 h-8 object-contain"
+                      />
+                      <span className="font-bold text-gray-800">Creator Mode Active</span>
+                      <span className="text-xl">🔬</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-6">
+                    <FallbackMixingStation
+                      isActive={mixing.active}
+                      ingredients={selectedIngredients}
+                      onMix={handleStartMixing}
+                      timeRemaining={timeRemaining}
+                    />
+                  </div>
+                  
+                  {mixing.active ? (
+                    <div className="text-center">
+                      <div className="mb-4">
+                        <div className="flex items-center justify-center gap-2 text-lg font-bold text-yellow-600 mb-2">
+                          <img 
+                            src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                            alt="You"
+                            className="w-6 h-6 object-contain animate-spin"
+                          />
+                          You're creating magic... 🧪
+                        </div>
+                        <Progress value={mixingProgress} className="h-3" />
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Your legendary creation is coming together! ✨
+                      </div>
+                      {timeRemaining !== null && (
+                        <div className={`text-sm font-bold mt-2 ${
+                          timeRemaining <= 5 ? 'text-red-600' : timeRemaining <= 10 ? 'text-orange-600' : 'text-blue-600'
+                        }`}>
+                          Time Remaining: {timeRemaining}s
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <Button
+                        onClick={handleStartMixing}
+                        className="doge-button w-full text-lg py-3"
+                        disabled={selectedIngredients.length < 2}
+                      >
+                        {selectedIngredients.length < 2 ? (
+                          <>
+                            <img 
+                              src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                              alt="You"
+                              className="w-5 h-5 object-contain mr-2"
+                            />
+                            Need 2+ Ingredients for XP
+                          </>
+                        ) : (
+                          <>
+                            <img 
+                              src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                              alt="You"
+                              className="w-5 h-5 object-contain mr-2"
+                            />
+                            Create with {selectedIngredients.length} Ingredients{demoMode ? ' (Demo)' : ''}! (+{Math.floor((gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient) * currentDifficulty)} XP)
+                          </>
+                        )}
+                      </Button>
+                      <div className="text-sm text-gray-500 mt-2">
+                        You are the master creator - mix 2+ ingredients to earn XP! 🎨
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Treat Result Display (Persistent Timer) */}
+                  {mixing.result && (
+                    <div className="text-center mt-8 p-6 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-xl border-2 border-green-400/50">
+                      <div className="text-6xl mb-4">{mixing.result.image}</div>
+                      <h3 className="text-2xl font-bold text-white mb-2 playful-title">
+                        {mixing.result.name}
+                      </h3>
+                      <Badge className={`mb-4 text-lg px-4 py-2 ${
+                        mixing.result.rarity === 'Legendary' ? 'bg-yellow-500' :
+                        mixing.result.rarity === 'Epic' ? 'bg-purple-500' :
+                        mixing.result.rarity === 'Rare' ? 'bg-blue-500' : 'bg-gray-500'
+                      }`}>
+                        {mixing.result.rarity}
+                      </Badge>
+                      
+                      <p className="text-white text-lg mb-4">
+                        <strong>Brewing for:</strong> Level {currentLevel} timing
+                      </p>
+
+                      {/* Persistent Timer Display */}
+                      {mixing.result.readyAt && (
+                        <div className="bg-white/10 rounded-lg p-4 mb-4">
+                          <TreatTimer
+                            treat={{
+                              id: mixing.result.treatId,
+                              name: mixing.result.name,
+                              rarity: mixing.result.rarity,
+                              ready_at: mixing.result.readyAt,
+                              image: mixing.result.image
+                            }}
+                            onComplete={() => handleTreatComplete(mixing.result.treatId)}
+                            size="normal"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Right Sidebar - Ingredient Sack */}
+              <IngredientSack />
+            </div>
+          )}
+
+          {/* Tips Section - Personalized */}
+          <Card className="glass-panel mt-8">
             <CardHeader>
-              <CardTitle className="text-center flex items-center justify-center gap-2">
-                <Zap className="w-5 h-5" />
-                Your Mixing Station
-              </CardTitle>
-              <div className="text-center text-sm text-gray-600">
-                You are the master creator! 🎯
+              <div className="flex items-center justify-center gap-3">
+                <img 
+                  src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
+                  alt="Your Avatar"
+                  className="w-12 h-12 object-contain"
+                />
+                <h3 className="text-xl font-bold doge-gradient">
+                  {demoMode ? 'Demo Mode Tips' : 'Your XP & Progress Tips'}
+                </h3>
               </div>
             </CardHeader>
-            <CardContent>
-              {/* Character Avatar Header */}
-              <div className="flex items-center justify-center mb-4">
-                <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-100 to-orange-100 px-4 py-2 rounded-full border-2 border-yellow-300">
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <div>
+                  <div className="text-2xl mb-2">⚡</div>
+                  <h4 className="font-bold mb-1">Mix for XP</h4>
+                  <p className="text-sm text-gray-600">Use 2+ ingredients to earn {gameConfig.xp.baseXpPerCombo}+ XP per mix!</p>
+                </div>
+                <div>
+                  <div className="text-2xl mb-2">📈</div>
+                  <h4 className="font-bold mb-1">Level Up Fast</h4>
+                  <p className="text-sm text-gray-600">Each level increases difficulty by {gameConfig.difficulty.scalingFactor}x for bonus rewards!</p>
+                </div>
+                <div>
+                  <div className="text-2xl mb-2">🎒</div>
+                  <h4 className="font-bold mb-1">Fill Your Sack</h4>
+                  <p className="text-sm text-gray-600">Complete {gameConfig.sack.completionThreshold} mixes for +{gameConfig.sack.bonusXpPerCompletion} bonus XP!</p>
+                </div>
+              </div>
+              <div className="text-center mt-6">
+                <div className="bg-gradient-to-r from-yellow-100 to-orange-100 px-4 py-2 rounded-full inline-flex items-center gap-2">
                   <img 
                     src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
                     alt="Your Avatar"
-                    className="w-8 h-8 object-contain"
+                    className="w-6 h-6 object-contain"
                   />
-                  <span className="font-bold text-gray-800">Creator Mode Active</span>
-                  <span className="text-xl">🔬</span>
+                  <span className="font-medium text-gray-800">
+                    {demoMode 
+                      ? 'Demo Progress: Try different ingredient combinations!' 
+                      : `Current Progress: ${Math.floor(xpProgress)} / ${gameConfig.xp.xpCapPerLevel} XP to Level ${currentLevel + 1}`
+                    }
+                  </span>
+                  <span className="text-lg">🌟</span>
                 </div>
               </div>
-              
-              <div className="mb-6">
-                <FallbackMixingStation
-                  isActive={mixing.active}
-                  ingredients={selectedIngredients}
-                  onMix={handleStartMixing}
-                  timeRemaining={timeRemaining}
-                />
-              </div>
-              
-              {mixing.active ? (
-                <div className="text-center">
-                  <div className="mb-4">
-                    <div className="flex items-center justify-center gap-2 text-lg font-bold text-yellow-600 mb-2">
-                      <img 
-                        src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
-                        alt="You"
-                        className="w-6 h-6 object-contain animate-spin"
-                      />
-                      You're creating magic... 🧪
-                    </div>
-                    <Progress value={mixingProgress} className="h-3" />
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    Your legendary creation is coming together! ✨
-                  </div>
-                  {timeRemaining !== null && (
-                    <div className={`text-sm font-bold mt-2 ${
-                      timeRemaining <= 5 ? 'text-red-600' : timeRemaining <= 10 ? 'text-orange-600' : 'text-blue-600'
-                    }`}>
-                      Time Remaining: {timeRemaining}s
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center">
-                  <Button
-                    onClick={handleStartMixing}
-                    className="doge-button w-full text-lg py-3"
-                    disabled={selectedIngredients.length < 2}
-                  >
-                    {selectedIngredients.length < 2 ? (
-                      <>
-                        <img 
-                          src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
-                          alt="You"
-                          className="w-5 h-5 object-contain mr-2"
-                        />
-                        Need 2+ Ingredients for XP
-                      </>
-                    ) : (
-                      <>
-                        <img 
-                          src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
-                          alt="You"
-                          className="w-5 h-5 object-contain mr-2"
-                        />
-                        Create with {selectedIngredients.length} Ingredients{demoMode ? ' (Demo)' : ''}! (+{Math.floor((gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient) * currentDifficulty)} XP)
-                      </>
-                    )}
-                  </Button>
-                  <div className="text-sm text-gray-500 mt-2">
-                    You are the master creator - mix 2+ ingredients to earn XP! 🎨
-                  </div>
-                </div>
-              )}
-
-              {/* Treat Result Display (Persistent Timer) */}
-              {mixing.result && (
-                <div className="text-center mt-8 p-6 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-xl border-2 border-green-400/50">
-                  <div className="text-6xl mb-4">{mixing.result.image}</div>
-                  <h3 className="text-2xl font-bold text-white mb-2 playful-title">
-                    {mixing.result.name}
-                  </h3>
-                  <Badge className={`mb-4 text-lg px-4 py-2 ${
-                    mixing.result.rarity === 'Legendary' ? 'bg-yellow-500' :
-                    mixing.result.rarity === 'Epic' ? 'bg-purple-500' :
-                    mixing.result.rarity === 'Rare' ? 'bg-blue-500' : 'bg-gray-500'
-                  }`}>
-                    {mixing.result.rarity}
-                  </Badge>
-                  
-                  <p className="text-white text-lg mb-4">
-                    <strong>Brewing for:</strong> Level {currentLevel} timing
-                  </p>
-
-                  {/* Persistent Timer Display */}
-                  {mixing.result.readyAt && (
-                    <div className="bg-white/10 rounded-lg p-4 mb-4">
-                      <TreatTimer
-                        treat={{
-                          id: mixing.result.treatId,
-                          name: mixing.result.name,
-                          rarity: mixing.result.rarity,
-                          ready_at: mixing.result.readyAt,
-                          image: mixing.result.image
-                        }}
-                        onComplete={() => handleTreatComplete(mixing.result.treatId)}
-                        size="normal"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
             </CardContent>
           </Card>
-
-          {/* Right Sidebar - Ingredient Sack */}
-          <IngredientSack />
-        </div>
+        </>
       )}
-
-      {/* Tips Section - Personalized */}
-      <Card className="glass-panel mt-8">
-        <CardHeader>
-          <div className="flex items-center justify-center gap-3">
-            <img 
-              src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
-              alt="Your Avatar"
-              className="w-12 h-12 object-contain"
-            />
-            <h3 className="text-xl font-bold doge-gradient">
-              {demoMode ? 'Demo Mode Tips' : 'Your XP & Progress Tips'}
-            </h3>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-            <div>
-              <div className="text-2xl mb-2">⚡</div>
-              <h4 className="font-bold mb-1">Mix for XP</h4>
-              <p className="text-sm text-gray-600">Use 2+ ingredients to earn {gameConfig.xp.baseXpPerCombo}+ XP per mix!</p>
-            </div>
-            <div>
-              <div className="text-2xl mb-2">📈</div>
-              <h4 className="font-bold mb-1">Level Up Fast</h4>
-              <p className="text-sm text-gray-600">Each level increases difficulty by {gameConfig.difficulty.scalingFactor}x for bonus rewards!</p>
-            </div>
-            <div>
-              <div className="text-2xl mb-2">🎒</div>
-              <h4 className="font-bold mb-1">Fill Your Sack</h4>
-              <p className="text-sm text-gray-600">Complete {gameConfig.sack.completionThreshold} mixes for +{gameConfig.sack.bonusXpPerCompletion} bonus XP!</p>
-            </div>
-          </div>
-          <div className="text-center mt-6">
-            <div className="bg-gradient-to-r from-yellow-100 to-orange-100 px-4 py-2 rounded-full inline-flex items-center gap-2">
-              <img 
-                src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
-                alt="Your Avatar"
-                className="w-6 h-6 object-contain"
-              />
-              <span className="font-medium text-gray-800">
-                {demoMode 
-                  ? 'Demo Progress: Try different ingredient combinations!' 
-                  : `Current Progress: ${Math.floor(xpProgress)} / ${gameConfig.xp.xpCapPerLevel} XP to Level ${currentLevel + 1}`
-                }
-              </span>
-              <span className="text-lg">🌟</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
