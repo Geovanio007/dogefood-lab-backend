@@ -231,13 +231,25 @@ const MyTreats = () => {
           {filteredTreats.map((treat, index) => (
             <Card key={treat.id || index} className="glass-panel hover:scale-105 transition-all duration-300">
               <CardHeader>
-                <div className="flex justify-between items-start mb-2">
-                  <div className="text-4xl">{treat.image || getRarityIcon(treat.rarity)}</div>
-                  <Badge className={`${getRarityColor(treat.rarity)} text-white`}>
-                    {treat.rarity}
+                <div className="text-center mb-4">
+                  <div className="text-4xl mb-2">{treat.image || '🍖'}</div>
+                  <h3 className="font-bold text-lg mb-1">{treat.name || 'Mysterious Treat'}</h3>
+                  <Badge 
+                    className={`${
+                      treat.rarity === 'Legendary' ? 'bg-yellow-500 text-white' :
+                      treat.rarity === 'Epic' ? 'bg-purple-500 text-white' :
+                      treat.rarity === 'Rare' ? 'bg-blue-500 text-white' :
+                      'bg-gray-500 text-white'
+                    } font-bold px-3 py-1`}
+                  >
+                    {treat.rarity || 'Common'}
                   </Badge>
+                  {treat.season_id && (
+                    <Badge className="ml-2 bg-orange-500 text-white text-xs">
+                      Season {treat.season_id}
+                    </Badge>
+                  )}
                 </div>
-                <CardTitle className="text-lg">{treat.name}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
