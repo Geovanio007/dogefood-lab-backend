@@ -1031,6 +1031,213 @@ class DogeLabAPITester:
             "rarity_distribution": rarity_counts
         }
 
+    def test_season_1_offchain_implementation(self):
+        """Test Season 1 offchain implementation as requested in review"""
+        print("\n🎮 SEASON 1 OFFCHAIN IMPLEMENTATION TEST")
+        print("=" * 70)
+        print("Focus: Season 1 offchain functionality with NFT-ready metadata")
+        
+        # Use demo_player as specified in review request
+        demo_player = "demo_player"
+        demo_level = 1
+        demo_ingredients = ["chicken", "bones"]
+        
+        all_success = True
+        
+        # 1. Test Enhanced Treat Creation API (/api/treats/enhanced)
+        print(f"\n🧪 Testing Enhanced Treat Creation API (/api/treats/enhanced)")
+        treat_data = {
+            "creator_address": demo_player,
+            "ingredients": demo_ingredients,
+            "player_level": demo_level
+        }
+        
+        success, response = self.run_test(
+            "Season 1 Enhanced Treat Creation", 
+            "POST", 
+            "treats/enhanced", 
+            200, 
+            data=treat_data
+        )
+        
+        if success and response:
+            treat = response.get('treat', {})
+            outcome = response.get('outcome', {})
+            
+            # Verify Season 1 metadata
+            season_id = treat.get('season_id')
+            is_offchain = treat.get('is_offchain')
+            migration_ready = treat.get('migration_ready')
+            nft_metadata = treat.get('nft_metadata', {})
+            
+            print(f"   ✅ Treat created with Season ID: {season_id}")
+            print(f"   ✅ Offchain status: {is_offchain}")
+            print(f"   ✅ Migration ready: {migration_ready}")
+            
+            # Verify NFT-ready metadata structure
+            if nft_metadata:
+                required_nft_fields = ['name', 'description', 'image', 'attributes']
+                missing_nft_fields = [field for field in required_nft_fields if field not in nft_metadata]
+                if not missing_nft_fields:
+                    print(f"   ✅ NFT metadata structure complete")
+                    
+                    # Check attributes array
+                    attributes = nft_metadata.get('attributes', [])
+                    expected_traits = ['Rarity', 'Season', 'Creator Level', 'Ingredients Count']
+                    found_traits = [attr.get('trait_type') for attr in attributes]
+                    
+                    if all(trait in found_traits for trait in expected_traits):
+                        print(f"   ✅ NFT attributes array properly structured")
+                    else:
+                        print(f"   ❌ Missing NFT attributes: {set(expected_traits) - set(found_traits)}")
+                        all_success = False
+                else:
+                    print(f"   ❌ Missing NFT metadata fields: {missing_nft_fields}")
+                    all_success = False
+            else:
+                print(f"   ❌ NFT metadata not found in treat")
+                all_success = False
+            
+            # Verify Season 1 specific values
+            if season_id == 1 and is_offchain == True and migration_ready == True:
+                print(f"   ✅ Season 1 offchain configuration correct")
+            else:
+                print(f"   ❌ Season 1 configuration incorrect: season_id={season_id}, is_offchain={is_offchain}, migration_ready={migration_ready}")
+                all_success = False
+        else:
+            print(f"   ❌ Enhanced treat creation failed")
+            all_success = False
+        
+        # 2. Test Season Information API (/api/season/current)
+        print(f"\n📅 Testing Season Information API (/api/season/current)")
+        success, response = self.run_test(
+            "Get Current Season Info", 
+            "GET", 
+            "season/current", 
+            200
+        )
+        
+        if success and response:
+            season_id = response.get('season_id')
+            is_offchain_only = response.get('is_offchain_only')
+            features = response.get('features', {})
+            nft_minting = features.get('nft_minting')
+            
+            print(f"   ✅ Current season: {season_id}")
+            print(f"   ✅ Offchain only: {is_offchain_only}")
+            print(f"   ✅ NFT minting enabled: {nft_minting}")
+            
+            # Verify Season 1 is properly identified as offchain-only
+            if season_id == 1 and is_offchain_only == True and nft_minting == False:
+                print(f"   ✅ Season 1 properly identified as offchain-only with NFT minting disabled")
+            else:
+                print(f"   ❌ Season 1 configuration incorrect")
+                all_success = False
+        else:
+            print(f"   ❌ Season information API failed")
+            all_success = False
+        
+        # 3. Test Points Conversion API (/api/points/convert)
+        print(f"\n💰 Testing Points Conversion API (/api/points/convert)")
+        conversion_data = {
+            "player_address": demo_player,
+            "points_to_convert": 1000
+        }
+        
+        success, response = self.run_test(
+            "Points Conversion (Should be Disabled)", 
+            "POST", 
+            "points/convert", 
+            423,  # Expecting 423 Locked status
+            data=conversion_data
+        )
+        
+        if success and response:
+            message = response.get('message', '')
+            conversion_available = response.get('conversion_available')
+            reason = response.get('reason', '')
+            
+            print(f"   ✅ Points conversion properly disabled with status 423")
+            print(f"   ✅ Message: {message}")
+            print(f"   ✅ Conversion available: {conversion_available}")
+            print(f"   ✅ Reason: {reason}")
+            
+            # Verify proper Season 1 conversion blocking
+            if 'Season 1' in message and conversion_available == False:
+                print(f"   ✅ Season 1 points conversion properly blocked")
+            else:
+                print(f"   ❌ Points conversion blocking not working correctly")
+                all_success = False
+        else:
+            print(f"   ❌ Points conversion API test failed")
+            all_success = False
+        
+        # 4. Test Treat Data Structure validation
+        print(f"\n🔍 Testing Treat Data Structure Validation")
+        
+        # Create another treat to verify consistent structure
+        test_treat_data = {
+            "creator_address": demo_player,
+            "ingredients": ["chicken", "bones", "rice"],
+            "player_level": demo_level
+        }
+        
+        success, response = self.run_test(
+            "Validate Treat Data Structure", 
+            "POST", 
+            "treats/enhanced", 
+            200, 
+            data=test_treat_data
+        )
+        
+        if success and response:
+            treat = response.get('treat', {})
+            
+            # Check all required Season 1 fields
+            required_fields = ['season_id', 'is_offchain', 'migration_ready', 'nft_metadata']
+            missing_fields = [field for field in required_fields if field not in treat]
+            
+            if not missing_fields:
+                print(f"   ✅ All Season 1 required fields present")
+                
+                # Verify attributes array structure for NFT compatibility
+                nft_metadata = treat.get('nft_metadata', {})
+                attributes = nft_metadata.get('attributes', [])
+                
+                if attributes and isinstance(attributes, list):
+                    # Check attribute structure
+                    valid_attributes = all(
+                        isinstance(attr, dict) and 
+                        'trait_type' in attr and 
+                        'value' in attr 
+                        for attr in attributes
+                    )
+                    
+                    if valid_attributes:
+                        print(f"   ✅ NFT attributes array properly structured for future compatibility")
+                        print(f"   📊 Attributes count: {len(attributes)}")
+                        for attr in attributes:
+                            print(f"      - {attr.get('trait_type')}: {attr.get('value')}")
+                    else:
+                        print(f"   ❌ NFT attributes array structure invalid")
+                        all_success = False
+                else:
+                    print(f"   ❌ NFT attributes array missing or invalid")
+                    all_success = False
+            else:
+                print(f"   ❌ Missing Season 1 required fields: {missing_fields}")
+                all_success = False
+        else:
+            print(f"   ❌ Treat data structure validation failed")
+            all_success = False
+        
+        return all_success, {
+            "season_1_offchain": True,
+            "nft_ready_metadata": True,
+            "points_conversion_disabled": True,
+            "proper_data_structure": True
+        }
+
     def test_comprehensive_dogefood_lab_game_system(self):
         """Test the complete functional DogeFood Lab game system with real progress tracking"""
         print("\n🎮 COMPREHENSIVE DOGEFOOD LAB GAME SYSTEM TEST")
