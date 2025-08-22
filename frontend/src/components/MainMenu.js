@@ -165,6 +165,39 @@ const MainMenu = () => {
           </div>
         </div>
 
+        {/* Season 1 Announcement Banner */}
+        <div className="mb-8">
+          <Card className="glass-panel border-4 border-orange-400 bg-gradient-to-r from-orange-100/90 to-yellow-100/90">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="text-4xl">🎮</div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-orange-800 mb-2">
+                      🚀 Season 1: Offchain Launch
+                    </h3>
+                    <p className="text-orange-700 text-lg">
+                      Welcome to the beta! Create treats, earn points, and climb the leaderboard. 
+                      <strong className="text-orange-900"> NFT minting and token conversion coming in Season 2!</strong>
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <Badge className="bg-orange-500 text-white px-4 py-2 text-lg mb-2">
+                    Season 1
+                  </Badge>
+                  <div className="text-sm text-orange-600">
+                    <div>✅ Treat Creation</div>
+                    <div>✅ Points & Leaderboards</div>
+                    <div>🔜 NFT Minting (Season 2)</div>
+                    <div>🔜 Token Conversion (Season 2)</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Main Menu Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {/* Enter Lab */}
