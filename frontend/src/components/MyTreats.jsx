@@ -53,21 +53,9 @@ const MyTreats = () => {
     fetchTreats();
   }, [address, isConnected]);
   
-  const filteredTreats = treats
-    .filter(treat => selectedRarity === 'All' || treat.rarity === selectedRarity)
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'newest':
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        case 'oldest':
-          return new Date(a.createdAt) - new Date(b.createdAt);
-        case 'rarity':
-          const rarityOrder = { 'Legendary': 4, 'Epic': 3, 'Rare': 2, 'Common': 1 };
-          return rarityOrder[b.rarity] - rarityOrder[a.rarity];
-        default:
-          return 0;
-      }
-    });
+  const filteredTreats = treats.filter(treat => 
+    selectedRarity === 'all' || treat.rarity?.toLowerCase() === selectedRarity.toLowerCase()
+  );
 
   const getRarityColor = (rarity) => {
     switch (rarity) {
