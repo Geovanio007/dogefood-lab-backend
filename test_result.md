@@ -730,6 +730,18 @@ test_plan:
           agent: "testing"
           comment: "✅ TREATNOTIFICATIONS GLOBAL SYSTEM FULLY WORKING! Comprehensive testing completed across all pages: 1) GLOBAL LOADING: TreatNotifications component loaded globally in App.js and persists across all page navigation (/, /dashboard, /nfts, /lab, /leaderboard). 2) NOTIFICATION LOGIC: Checks /api/treats/{address}/brewing endpoint every 30 seconds for completed treats. 3) TOAST NOTIFICATIONS: Uses useToast hook with Sonner library to display '🎉 Treat Ready!' notifications with treat name and rarity. 4) NOTIFICATION PERSISTENCE: Tracks checkedTreats state to prevent duplicate notifications for same treat. 5) AUDIO SUPPORT: Attempts to play notification sound (optional feature). 6) ERROR HANDLING: Proper try-catch blocks for API calls and audio playback. EXPECTED WITH WALLET 0x033CD94d0020B397393bF1deA4920Be0d4723DCB: Would show toast notifications when any of the 3 brewing treats complete their timers, with persistent tracking across page navigation. Global notification system is production-ready!"
 
+  - task: "Critical DogeFood Lab Bug Fixes Verification"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "🔧 CRITICAL BUG FIXES VERIFICATION COMPLETED! ✅ ALL MAJOR FIXES VERIFIED: 1) SACK SYSTEM FIXED: POST /api/treats/enhanced working correctly with sack progress tracking (1/5→2/5→3/5→4/5→0/5 with +50 XP bonus). Target wallet 0x033CD94d0020B397393bF1deA4920Be0d4723DCB shows correct 3/5 progress with 15 total treats. 2) LEADERBOARD FIXED: GET /api/leaderboard includes ALL players (7 entries: 2 NFT holders, 5 non-NFT holders). GET /api/points/leaderboard also includes all players by default. 3) DATA CONSISTENCY FIXED: GET /api/player/{address} returns clean state (Level 1, proper data types, no mock data). 4) REAL-TIME UPDATES WORKING: Treat creation updates sack progress, points accumulation, leaderboard updates all working. All critical bug fixes are PRODUCTION-READY!"
+
   - task: "Complete DogeFood Lab Treat Notification and Dashboard System"
     implemented: true
     working: true
