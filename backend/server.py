@@ -346,8 +346,8 @@ async def get_game_stats():
 
 # Phase 2: Enhanced Points System Routes
 @api_router.get("/points/leaderboard")
-async def get_points_leaderboard(limit: int = 50, nft_holders_only: bool = True):
-    """Get enhanced points-based leaderboard"""
+async def get_points_leaderboard(limit: int = 50, nft_holders_only: bool = False):
+    """Get enhanced points-based leaderboard - now includes all players by default"""
     leaderboard = await points_system.get_points_leaderboard(limit=limit, nft_holders_only=nft_holders_only)
     return {"leaderboard": leaderboard, "generated_at": datetime.utcnow()}
 
