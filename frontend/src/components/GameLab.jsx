@@ -249,9 +249,21 @@ const GameLab = () => {
       // Season 1: No blockchain transactions - all offchain
       toast({
         title: `${treatResult.outcome.rarity} Treat Created! 🎉`,
-        description: `Your ${treatResult.outcome.rarity.toLowerCase()} treat is brewing for ${treatResult.outcome.timer_duration_hours} hours. Stored offchain for Season 1.`,
+        description: `Your ${treatResult.outcome.rarity.toLowerCase()} treat is brewing for ${treatResult.outcome.timer_duration_hours} hours. Stored offchain for Season 1.${treatResult.sack_progress?.just_completed ? ' 🎉 Sack completed! +50 XP bonus!' : ''}`,
         className: "bg-green-100 border-green-400"
       });
+
+      // Show sack progress update
+      if (treatResult.sack_progress) {
+        const sackInfo = treatResult.sack_progress;
+        setTimeout(() => {
+          toast({
+            title: `🎒 Sack Progress Updated!`,
+            description: `Progress: ${sackInfo.current_progress}/${sackInfo.completion_threshold} treats ${sackInfo.just_completed ? '(Sack completed! +50 XP)' : ''}`,
+            className: sackInfo.just_completed ? "bg-purple-100 border-purple-400" : "bg-blue-100 border-blue-400"
+          });
+        }, 1500);
+      }
 
       // Step 2: Update mixing state with persistent result
       dispatch({
