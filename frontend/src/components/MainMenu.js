@@ -33,7 +33,7 @@ const MainMenu = () => {
     } else if (!isConnected) {
       dispatch({ type: 'SET_USER', payload: null });
     }
-  }, [isConnected, address, isNFTHolder, nftBalance, nftLoading, dispatch, loadPlayerData]);
+  }, [isConnected, address, isNFTHolder, nftBalance, nftLoading, dispatch]);
 
   return (
     <div className="lab-container min-h-screen p-8">
