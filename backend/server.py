@@ -562,7 +562,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             timer_duration=treat_outcome["timer_duration_seconds"],
             brewing_status="brewing",
             ready_at=datetime.fromtimestamp(treat_outcome["ready_at"]),
-            image="🍖"  # Default for now
+            image="https://customer-assets.emergentagent.com/job_shibalab/artifacts/l9ufequf_20250720_2152_Shiba_Pouring_Cereal_remix_01k0mp753tfzxs9v4dqxhtp2ng-removebg-preview.png"  # New Shiba treat image
         )
         
         # Add Season 1 specific metadata for future NFT compatibility
