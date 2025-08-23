@@ -55,7 +55,9 @@ function App() {
             )}
 
             {/* Loading Screen - After clicking Play Now */}
-            {!showWelcome && isLoading && <LoadingScreen />}
+            {!showWelcome && isLoading && (
+              <LoadingScreen onLoadingComplete={() => setIsLoading(false)} />
+            )}
 
             {/* Main Application - After loading */}
             {!showWelcome && !isLoading && (
