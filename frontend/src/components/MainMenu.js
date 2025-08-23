@@ -9,7 +9,7 @@ import { useGame } from '../contexts/GameContext';
 import { useNFTVerification } from '../hooks/useNFTVerification';
 import ThemeToggle from './ThemeToggle';
 import DogeFoodLogo from './DogeFoodLogo';
-import { Beaker, Trophy, Settings, Palette } from 'lucide-react';
+import { Beaker, Trophy, Settings, Palette, Clock } from 'lucide-react';
 
 const MainMenu = () => {
   const { address, isConnected } = useAccount();
