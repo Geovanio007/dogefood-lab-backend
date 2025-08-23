@@ -716,8 +716,8 @@ const GameLab = () => {
                   
                   {mixing.active ? (
                     <div className="text-center">
-                      <div className="mb-4">
-                        <div className="flex items-center justify-center gap-2 text-lg font-bold text-yellow-600 mb-2">
+                      <div className="mb-6">
+                        <div className="flex items-center justify-center gap-2 text-lg font-bold text-yellow-600 mb-4">
                           <img 
                             src="https://i.ibb.co/nSyTZHR/1000025490-removebg-preview.png"
                             alt="You"
@@ -725,18 +725,32 @@ const GameLab = () => {
                           />
                           You're creating magic... 🧪
                         </div>
-                        <Progress value={mixingProgress} className="h-3" />
+                        
+                        {/* Enhanced Mixing Progress Display */}
+                        <div className="bg-white/10 rounded-xl p-4 border-2 border-yellow-400/50">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-yellow-700">Mixing Progress</span>
+                            <span className="text-sm font-bold text-yellow-600">{mixingProgress}%</span>
+                          </div>
+                          <Progress value={mixingProgress} className="h-4 mb-3 bg-gray-200" />
+                          
+                          {timeRemaining !== null && (
+                            <div className="flex items-center justify-center gap-2">
+                              <Clock className="w-4 h-4 text-blue-600" />
+                              <span className={`font-bold ${
+                                timeRemaining <= 5 ? 'text-red-600 animate-pulse' : 
+                                timeRemaining <= 10 ? 'text-orange-600' : 'text-blue-600'
+                              }`}>
+                                {timeRemaining}s remaining
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      
                       <div className="text-sm text-gray-600">
                         Your legendary creation is coming together! ✨
                       </div>
-                      {timeRemaining !== null && (
-                        <div className={`text-sm font-bold mt-2 ${
-                          timeRemaining <= 5 ? 'text-red-600' : timeRemaining <= 10 ? 'text-orange-600' : 'text-blue-600'
-                        }`}>
-                          Time Remaining: {timeRemaining}s
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <div className="text-center">
