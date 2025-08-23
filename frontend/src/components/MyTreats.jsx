@@ -232,7 +232,16 @@ const MyTreats = () => {
             <Card key={treat.id || index} className="glass-panel hover:scale-105 transition-all duration-300">
               <CardHeader>
                 <div className="text-center mb-4">
-                  <div className="text-4xl mb-2">{treat.image || '🍖'}</div>
+                  <div className="mb-2">
+                    <img 
+                      src={treat.image || "https://customer-assets.emergentagent.com/job_shibalab/artifacts/l9ufequf_20250720_2152_Shiba_Pouring_Cereal_remix_01k0mp753tfzxs9v4dqxhtp2ng-removebg-preview.png"}
+                      alt={treat.name || 'DogeFood Treat'}
+                      className="w-16 h-16 object-contain mx-auto"
+                      onError={(e) => {
+                        e.target.src = "https://customer-assets.emergentagent.com/job_shibalab/artifacts/l9ufequf_20250720_2152_Shiba_Pouring_Cereal_remix_01k0mp753tfzxs9v4dqxhtp2ng-removebg-preview.png";
+                      }}
+                    />
+                  </div>
                   <h3 className="font-bold text-lg mb-1">{treat.name || 'Mysterious Treat'}</h3>
                   <Badge 
                     className={`${
