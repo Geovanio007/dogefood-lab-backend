@@ -344,7 +344,7 @@ test_plan:
   current_focus: []
   stuck_tasks: []
   test_all: false
-  test_priority: "season1_completed"
+  test_priority: "critical_bug_fixes_completed"
 
   - task: "Wallet Gate for GameLab Access"
     implemented: true
