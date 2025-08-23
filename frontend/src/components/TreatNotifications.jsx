@@ -57,7 +57,7 @@ const TreatNotifications = () => {
     const interval = setInterval(checkTreats, 30000);
     
     return () => clearInterval(interval);
-  }, [address, isConnected, toast, checkedTreats]);
+  }, [address, isConnected, toast]);
   
   // This component doesn't render anything - it just handles notifications
   return null;
