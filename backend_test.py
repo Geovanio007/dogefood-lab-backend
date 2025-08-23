@@ -1685,6 +1685,306 @@ class DogeLabAPITester:
         
         return all_success, results
 
+    def test_critical_bugs_investigation(self):
+        """Investigate critical bugs for wallet address 0x033CD94d0020B397393bF1deA4920Be0d4723DCB"""
+        print("\n🚨 CRITICAL BUGS INVESTIGATION FOR WALLET 0x033CD94d0020B397393bF1deA4920Be0d4723DCB")
+        print("=" * 80)
+        
+        target_address = "0x033CD94d0020B397393bF1deA4920Be0d4723DCB"
+        all_success = True
+        investigation_results = {}
+        
+        # 1. SACK SYSTEM BUG INVESTIGATION
+        print(f"\n🎒 1. SACK SYSTEM BUG INVESTIGATION")
+        print("-" * 50)
+        
+        # Check current player data
+        success, player_data = self.run_test(
+            "Get Player Data for Sack Investigation", 
+            "GET", 
+            f"player/{target_address}", 
+            200
+        )
+        
+        if success and player_data:
+            print(f"   📊 Player Level: {player_data.get('level', 'Unknown')}")
+            print(f"   📊 Player XP: {player_data.get('experience', 'Unknown')}")
+            print(f"   📊 Player Points: {player_data.get('points', 'Unknown')}")
+            print(f"   📊 NFT Holder: {player_data.get('is_nft_holder', 'Unknown')}")
+            print(f"   📊 Created Treats: {len(player_data.get('created_treats', []))}")
+            
+            investigation_results['player_level'] = player_data.get('level', 0)
+            investigation_results['player_xp'] = player_data.get('experience', 0)
+            investigation_results['player_points'] = player_data.get('points', 0)
+            investigation_results['is_nft_holder'] = player_data.get('is_nft_holder', False)
+        else:
+            print(f"   ❌ Failed to retrieve player data - player may not exist")
+            investigation_results['player_exists'] = False
+            all_success = False
+        
+        # Test treat creation to check if sack progress updates
+        print(f"\n   🧪 Testing Treat Creation for Sack Progress")
+        treat_data = {
+            "creator_address": target_address,
+            "ingredients": ["chicken", "bones", "rice"],
+            "player_level": investigation_results.get('player_level', 1)
+        }
+        
+        success, treat_response = self.run_test(
+            "Create Treat to Test Sack Progress", 
+            "POST", 
+            "treats/enhanced", 
+            200, 
+            data=treat_data
+        )
+        
+        if success and treat_response:
+            outcome = treat_response.get('outcome', {})
+            print(f"   ✅ Treat created successfully")
+            print(f"   📊 Rarity: {outcome.get('rarity', 'Unknown')}")
+            print(f"   📊 XP Bonus: {outcome.get('xp_bonus', 'Not specified')}")
+            investigation_results['treat_creation_works'] = True
+        else:
+            print(f"   ❌ Treat creation failed - sack system may be broken")
+            investigation_results['treat_creation_works'] = False
+            all_success = False
+        
+        # 2. LEADERBOARD DATA BUG INVESTIGATION
+        print(f"\n🏆 2. LEADERBOARD DATA BUG INVESTIGATION")
+        print("-" * 50)
+        
+        # Test regular leaderboard
+        success, leaderboard_data = self.run_test(
+            "Check Regular Leaderboard", 
+            "GET", 
+            "leaderboard", 
+            200,
+            params={"limit": 50}
+        )
+        
+        player_in_leaderboard = False
+        if success and leaderboard_data:
+            print(f"   📊 Total leaderboard entries: {len(leaderboard_data)}")
+            for entry in leaderboard_data:
+                if entry.get('address', '').lower() == target_address.lower():
+                    player_in_leaderboard = True
+                    print(f"   ✅ Player found in leaderboard:")
+                    print(f"      - Rank: {entry.get('rank', 'Unknown')}")
+                    print(f"      - Points: {entry.get('points', 'Unknown')}")
+                    print(f"      - Level: {entry.get('level', 'Unknown')}")
+                    print(f"      - NFT Holder: {entry.get('is_nft_holder', 'Unknown')}")
+                    break
+            
+            if not player_in_leaderboard:
+                print(f"   ❌ Player NOT found in regular leaderboard")
+                print(f"   🔍 Checking if player has points > 0 and is NFT holder...")
+        
+        investigation_results['in_regular_leaderboard'] = player_in_leaderboard
+        
+        # Test points-based leaderboard
+        success, points_leaderboard = self.run_test(
+            "Check Points Leaderboard", 
+            "GET", 
+            "points/leaderboard", 
+            200,
+            params={"limit": 50}
+        )
+        
+        player_in_points_leaderboard = False
+        if success and points_leaderboard:
+            leaderboard_entries = points_leaderboard.get('leaderboard', [])
+            print(f"   📊 Total points leaderboard entries: {len(leaderboard_entries)}")
+            
+            for entry in leaderboard_entries:
+                if entry.get('address', '').lower() == target_address.lower():
+                    player_in_points_leaderboard = True
+                    print(f"   ✅ Player found in points leaderboard:")
+                    print(f"      - Rank: {entry.get('rank', 'Unknown')}")
+                    print(f"      - Points: {entry.get('points', 'Unknown')}")
+                    print(f"      - Weekly Points: {entry.get('weekly_points', 'Unknown')}")
+                    print(f"      - Activity Score: {entry.get('activity_score', 'Unknown')}")
+                    break
+            
+            if not player_in_points_leaderboard:
+                print(f"   ❌ Player NOT found in points leaderboard")
+        
+        investigation_results['in_points_leaderboard'] = player_in_points_leaderboard
+        
+        # 3. LEVEL INCONSISTENCY BUG INVESTIGATION
+        print(f"\n📊 3. LEVEL INCONSISTENCY BUG INVESTIGATION")
+        print("-" * 50)
+        
+        # Get all player treats to check level consistency
+        success, player_treats = self.run_test(
+            "Get All Player Treats for Level Check", 
+            "GET", 
+            f"treats/{target_address}", 
+            200
+        )
+        
+        level_inconsistencies = []
+        if success and player_treats:
+            print(f"   📊 Total treats found: {len(player_treats)}")
+            player_level = investigation_results.get('player_level', 1)
+            
+            for i, treat in enumerate(player_treats):
+                treat_name = treat.get('name', f'Treat {i+1}')
+                
+                # Check if treat name contains level information
+                if 'Level' in treat_name:
+                    import re
+                    level_match = re.search(r'Level (\d+)', treat_name)
+                    if level_match:
+                        treat_level = int(level_match.group(1))
+                        if treat_level != player_level:
+                            level_inconsistencies.append({
+                                'treat_name': treat_name,
+                                'treat_level': treat_level,
+                                'player_level': player_level,
+                                'created_at': treat.get('created_at', 'Unknown')
+                            })
+                            print(f"   ⚠️  INCONSISTENCY: {treat_name} (treat level {treat_level} vs player level {player_level})")
+                
+                # Check treat metadata for level information
+                nft_metadata = treat.get('nft_metadata', {})
+                if nft_metadata:
+                    attributes = nft_metadata.get('attributes', [])
+                    for attr in attributes:
+                        if attr.get('trait_type') == 'Creator Level':
+                            treat_creator_level = attr.get('value', 0)
+                            if treat_creator_level != player_level and treat_creator_level > player_level:
+                                level_inconsistencies.append({
+                                    'treat_name': treat_name,
+                                    'treat_creator_level': treat_creator_level,
+                                    'player_level': player_level,
+                                    'source': 'nft_metadata'
+                                })
+                                print(f"   ⚠️  METADATA INCONSISTENCY: {treat_name} created at level {treat_creator_level} but player is level {player_level}")
+            
+            if level_inconsistencies:
+                print(f"   🚨 FOUND {len(level_inconsistencies)} LEVEL INCONSISTENCIES!")
+                investigation_results['level_inconsistencies'] = level_inconsistencies
+                all_success = False
+            else:
+                print(f"   ✅ No level inconsistencies found")
+                investigation_results['level_inconsistencies'] = []
+        else:
+            print(f"   ❌ Failed to retrieve player treats")
+            all_success = False
+        
+        # 4. DATA INTEGRITY ISSUES INVESTIGATION
+        print(f"\n🔍 4. DATA INTEGRITY ISSUES INVESTIGATION")
+        print("-" * 50)
+        
+        # Check for mock data patterns
+        mock_data_indicators = []
+        
+        if success and player_treats:
+            for treat in player_treats:
+                # Check for mock/test data patterns
+                treat_name = treat.get('name', '')
+                ingredients = treat.get('ingredients', [])
+                
+                # Look for test/mock patterns
+                if any(keyword in treat_name.lower() for keyword in ['test', 'mock', 'demo', 'sample']):
+                    mock_data_indicators.append(f"Mock name pattern: {treat_name}")
+                
+                if any(keyword in str(ingredients).lower() for keyword in ['test', 'mock', 'demo']):
+                    mock_data_indicators.append(f"Mock ingredients: {ingredients}")
+                
+                # Check for unrealistic ingredient combinations
+                if len(ingredients) > 10:  # Unrealistically high ingredient count
+                    mock_data_indicators.append(f"Unrealistic ingredient count: {len(ingredients)} in {treat_name}")
+            
+            if mock_data_indicators:
+                print(f"   🚨 FOUND MOCK DATA INDICATORS:")
+                for indicator in mock_data_indicators:
+                    print(f"      - {indicator}")
+                investigation_results['mock_data_found'] = True
+                all_success = False
+            else:
+                print(f"   ✅ No obvious mock data patterns found")
+                investigation_results['mock_data_found'] = False
+        
+        # Check player stats for consistency
+        if investigation_results.get('player_exists', True):
+            success, player_stats = self.run_test(
+                "Get Player Points Stats for Integrity Check", 
+                "GET", 
+                f"points/{target_address}/stats", 
+                200
+            )
+            
+            if success and player_stats:
+                player_info = player_stats.get('player', {})
+                activity_info = player_stats.get('activity', {})
+                points_breakdown = player_stats.get('points_breakdown', {})
+                
+                print(f"   📊 Player Stats Integrity Check:")
+                print(f"      - Total Points: {player_info.get('total_points', 0)}")
+                print(f"      - Activity Score: {activity_info.get('activity_score', 0)}")
+                print(f"      - Login Streak: {activity_info.get('login_streak', 0)}")
+                print(f"      - Treat Creation Streak: {activity_info.get('treat_creation_streak', 0)}")
+                print(f"      - Points Sources: {list(points_breakdown.keys())}")
+                
+                # Check for data consistency
+                total_points_calc = sum(points_breakdown.values()) if points_breakdown else 0
+                reported_total = player_info.get('total_points', 0)
+                
+                if abs(total_points_calc - reported_total) > 1:  # Allow small rounding differences
+                    print(f"   ⚠️  POINTS CALCULATION INCONSISTENCY: Calculated {total_points_calc} vs Reported {reported_total}")
+                    investigation_results['points_inconsistency'] = True
+                    all_success = False
+                else:
+                    print(f"   ✅ Points calculation consistent")
+                    investigation_results['points_inconsistency'] = False
+        
+        # FINAL INVESTIGATION SUMMARY
+        print(f"\n📋 CRITICAL BUGS INVESTIGATION SUMMARY")
+        print("=" * 60)
+        
+        print(f"🎯 TARGET WALLET: {target_address}")
+        print(f"📊 INVESTIGATION RESULTS:")
+        
+        # Sack System
+        if investigation_results.get('treat_creation_works', False):
+            print(f"   ✅ Sack System: Treat creation working")
+        else:
+            print(f"   ❌ Sack System: CRITICAL BUG - Treat creation failing")
+        
+        # Leaderboard
+        if investigation_results.get('in_regular_leaderboard', False) or investigation_results.get('in_points_leaderboard', False):
+            print(f"   ✅ Leaderboard: Player appears in at least one leaderboard")
+        else:
+            print(f"   ❌ Leaderboard: CRITICAL BUG - Player missing from leaderboards despite having data")
+        
+        # Level Consistency
+        inconsistency_count = len(investigation_results.get('level_inconsistencies', []))
+        if inconsistency_count == 0:
+            print(f"   ✅ Level Consistency: No inconsistencies found")
+        else:
+            print(f"   ❌ Level Consistency: CRITICAL BUG - {inconsistency_count} inconsistencies found")
+        
+        # Data Integrity
+        if not investigation_results.get('mock_data_found', True) and not investigation_results.get('points_inconsistency', True):
+            print(f"   ✅ Data Integrity: No major issues found")
+        else:
+            print(f"   ❌ Data Integrity: CRITICAL BUG - Mock data or calculation inconsistencies found")
+        
+        print(f"\n🔧 RECOMMENDED ACTIONS:")
+        if not investigation_results.get('treat_creation_works', False):
+            print(f"   1. Fix sack system - treat creation endpoint failing")
+        if not investigation_results.get('in_regular_leaderboard', False) and not investigation_results.get('in_points_leaderboard', False):
+            print(f"   2. Fix leaderboard data - player not appearing despite having points/treats")
+        if inconsistency_count > 0:
+            print(f"   3. Fix level inconsistency - {inconsistency_count} treats have wrong level data")
+        if investigation_results.get('mock_data_found', False):
+            print(f"   4. Clean up mock/test data contamination")
+        if investigation_results.get('points_inconsistency', False):
+            print(f"   5. Fix points calculation inconsistencies")
+        
+        return all_success, investigation_results
+
 def main():
     print("🐕 Starting DogeFood Lab Season 1 Offchain Implementation Test 🧪")
     print("Testing Season 1 Offchain Implementation with NFT-Ready Metadata")
