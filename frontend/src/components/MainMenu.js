@@ -202,7 +202,7 @@ const MainMenu = () => {
         </div>
 
         {/* Main Menu Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           {/* Enter Lab */}
           <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
             <Link to="/lab">
@@ -218,6 +218,26 @@ const MainMenu = () => {
                 </p>
                 <Button className="doge-button w-full text-lg">
                   Start Mixing 🧪
+                </Button>
+              </CardContent>
+            </Link>
+          </Card>
+
+          {/* Active Treats Dashboard */}
+          <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
+            <Link to="/dashboard">
+              <CardHeader className="text-center">
+                <div className="mx-auto w-24 h-24 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full flex items-center justify-center mb-4 shadow-xl">
+                  <Clock size={48} className="text-white drop-shadow-lg" />
+                </div>
+                <CardTitle className="text-3xl playful-title bubble-text text-white">⏰ Active Treats</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <p className="text-white/90 mb-6 playful-text text-lg bubble-text">
+                  Check your brewing treats and collect ready ones!
+                </p>
+                <Button className="doge-button w-full text-lg">
+                  View Dashboard ⏰
                 </Button>
               </CardContent>
             </Link>
