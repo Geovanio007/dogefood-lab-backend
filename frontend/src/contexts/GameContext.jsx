@@ -429,7 +429,7 @@ export function GameProvider({ children }) {
   };
 
   // Load player data from backend when wallet connects
-  const loadPlayerData = async (address) => {
+  const loadPlayerData = useCallback(async (address) => {
     if (!address) return;
     
     try {
@@ -473,7 +473,7 @@ export function GameProvider({ children }) {
     } catch (error) {
       console.error('Error loading player data:', error);
     }
-  };
+  }, [dispatch]);
 
   return (
     <GameContext.Provider value={{
