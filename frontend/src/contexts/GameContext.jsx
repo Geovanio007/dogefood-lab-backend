@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { gameConfig, calculateDifficulty, calculateXP, getUnlockedIngredients, getIngredientsUnlockedAtLevel } from '../config/gameConfig';
 
