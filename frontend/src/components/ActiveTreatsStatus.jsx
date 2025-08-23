@@ -174,7 +174,14 @@ const ActiveTreatsStatus = () => {
                 <div key={treat.id} className="bg-white/50 rounded-lg p-4 border">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl">{treat.image || '🍖'}</span>
+                      <img 
+                        src={treat.image || "https://customer-assets.emergentagent.com/job_shibalab/artifacts/l9ufequf_20250720_2152_Shiba_Pouring_Cereal_remix_01k0mp753tfzxs9v4dqxhtp2ng-removebg-preview.png"}
+                        alt={treat.name || 'DogeFood Treat'}
+                        className="w-8 h-8 object-contain"
+                        onError={(e) => {
+                          e.target.src = "https://customer-assets.emergentagent.com/job_shibalab/artifacts/l9ufequf_20250720_2152_Shiba_Pouring_Cereal_remix_01k0mp753tfzxs9v4dqxhtp2ng-removebg-preview.png";
+                        }}
+                      />
                       <div>
                         <div className="font-medium">{treat.name}</div>
                         <Badge className={`text-xs ${
