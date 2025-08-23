@@ -590,10 +590,54 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         # Save to database with enhanced metadata
         result = await db.treats.insert_one(treat_dict)
         
-        # Update player's created treats using the inserted document ID
+        # Update player's created treats and sack progress
+        player = await db.players.find_one({"address": treat_data.creator_address})
+        if not player:
+            # Create player if doesn't exist
+            player = {
+                "address": treat_data.creator_address,
+                "level": 1,
+                "experience": 0,
+                "points": 0,
+                "created_treats": [],
+                "sack_progress": 0,
+                "sack_completed_count": 0,
+                "total_treats_created": 0,
+                "nickname": "Player",
+                "is_nft_holder": False,
+                "leaderboard_eligible": True,
+                "last_activity": datetime.utcnow()
+            }
+            await db.players.insert_one(player)
+        
+        # Update treat count and sack progress
+        current_treats_count = len(player.get('created_treats', []))
+        new_treats_count = current_treats_count + 1
+        
+        # Sack system: every 5 treats = 1 sack completion
+        sack_completion_threshold = 5
+        sack_progress = new_treats_count % sack_completion_threshold
+        sack_completed_count = new_treats_count // sack_completion_threshold
+        
+        # Calculate if sack was just completed
+        previous_completions = current_treats_count // sack_completion_threshold
+        sack_just_completed = sack_completed_count > previous_completions
+        sack_bonus_xp = 50 if sack_just_completed else 0  # 50 XP bonus per sack completion
+        
         await db.players.update_one(
             {"address": treat_data.creator_address},
-            {"$push": {"created_treats": str(result.inserted_id)}}
+            {
+                "$push": {"created_treats": str(result.inserted_id)},
+                "$set": {
+                    "sack_progress": sack_progress,
+                    "sack_completed_count": sack_completed_count, 
+                    "total_treats_created": new_treats_count,
+                    "last_activity": datetime.utcnow()
+                },
+                "$inc": {
+                    "experience": sack_bonus_xp  # Award sack completion XP
+                }
+            }
         )
         
         # Award points in background
