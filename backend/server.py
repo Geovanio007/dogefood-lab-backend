@@ -675,7 +675,15 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             "treat": treat_response,
             "outcome": treat_outcome,
             "validation": validation,
-            "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']} hours. {'(Offchain storage)' if season_id == 1 else ''}"
+            "sack_progress": {
+                "current_progress": sack_progress,
+                "completion_threshold": sack_completion_threshold,
+                "completed_count": sack_completed_count,
+                "just_completed": sack_just_completed,
+                "bonus_xp_awarded": sack_bonus_xp,
+                "total_treats": new_treats_count
+            },
+            "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']} hours. {'(Offchain storage)' if season_id == 1 else ''}{' 🎉 Sack completed! +50 XP bonus!' if sack_just_completed else ''}"
         }
         
     except Exception as e:
