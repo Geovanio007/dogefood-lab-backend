@@ -574,7 +574,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             "nft_metadata": {
                 "name": f"{treat_outcome['rarity']} DogeFood Treat",
                 "description": f"A {treat_outcome['rarity'].lower()} treat created in Season {season_id} of DogeFood Lab",
-                "image": "🍖",  # Will be updated with actual image URL later
+                "image": "https://customer-assets.emergentagent.com/job_shibalab/artifacts/l9ufequf_20250720_2152_Shiba_Pouring_Cereal_remix_01k0mp753tfzxs9v4dqxhtp2ng-removebg-preview.png",
                 "attributes": [
                     {"trait_type": "Rarity", "value": treat_outcome['rarity']},
                     {"trait_type": "Season", "value": season_id},
