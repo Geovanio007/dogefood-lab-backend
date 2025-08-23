@@ -291,9 +291,9 @@ async def get_brewing_treats(address: str):
 # Leaderboard Routes
 @api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
 async def get_leaderboard(limit: int = 50):
-    # Get top players by points (NFT holders only)
+    # Get top players by points (all players, not just NFT holders)
     pipeline = [
-        {"$match": {"is_nft_holder": True, "points": {"$gt": 0}}},
+        {"$match": {"points": {"$gt": 0}}},  # Any player with points
         {"$sort": {"points": -1, "level": -1}},
         {"$limit": limit}
     ]
@@ -304,10 +304,10 @@ async def get_leaderboard(limit: int = 50):
     for rank, player in enumerate(top_players, 1):
         leaderboard.append(LeaderboardEntry(
             address=player["address"],
-            nickname=player.get("nickname"),  # Enhanced: Include nickname
+            nickname=player.get("nickname", "Player"),  # Default nickname
             points=player["points"],
             level=player["level"],
-            is_nft_holder=player["is_nft_holder"],
+            is_nft_holder=player.get("is_nft_holder", False),
             rank=rank
         ))
     
