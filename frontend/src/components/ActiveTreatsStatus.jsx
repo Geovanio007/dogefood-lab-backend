@@ -139,7 +139,16 @@ const ActiveTreatsStatus = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {readyTreats.slice(0, 8).map(treat => (
                   <div key={treat.id} className="bg-white/80 rounded-lg p-2 text-center">
-                    <div className="text-2xl mb-1">{treat.image || '🍖'}</div>
+                    <div className="mb-1">
+                      <img 
+                        src={treat.image || "https://customer-assets.emergentagent.com/job_shibalab/artifacts/l9ufequf_20250720_2152_Shiba_Pouring_Cereal_remix_01k0mp753tfzxs9v4dqxhtp2ng-removebg-preview.png"}
+                        alt={treat.name || 'DogeFood Treat'}
+                        className="w-8 h-8 object-contain mx-auto"
+                        onError={(e) => {
+                          e.target.src = "https://customer-assets.emergentagent.com/job_shibalab/artifacts/l9ufequf_20250720_2152_Shiba_Pouring_Cereal_remix_01k0mp753tfzxs9v4dqxhtp2ng-removebg-preview.png";
+                        }}
+                      />
+                    </div>
                     <div className="text-xs font-medium">{treat.rarity}</div>
                     <Badge className="text-xs bg-green-500 text-white">Ready!</Badge>
                   </div>
