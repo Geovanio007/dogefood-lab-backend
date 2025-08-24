@@ -2596,81 +2596,55 @@ def main():
     
     tester = DogeLabAPITester()
     
-    # Focus on Season 1 Offchain Implementation Testing
-    print("\n🎯 PRIMARY FOCUS: Season 1 Offchain Implementation")
-    print("Testing enhanced treat creation, season info, points conversion, and NFT-ready metadata")
+    # CRITICAL BUG INVESTIGATION (Priority 1)
+    print("\n🎯 PRIMARY FOCUS: CRITICAL BUG INVESTIGATION")
+    print("Testing mock data, mixing timer bug, database state for wallet 0x033CD94d0020B397393bF1deA4920Be0d4723DCB")
     
-    # Essential setup tests
-    setup_tests = [
-        ("Health Check", tester.test_health_check),
-        ("Create Player with Nickname", tester.test_create_player_with_nickname),
-        ("Verify NFT", tester.test_verify_nft),
-    ]
-    
-    print(f"\n📋 Running {len(setup_tests)} setup tests...")
-    for test_name, test_func in setup_tests:
-        try:
-            print(f"\n🔧 Setup: {test_name}")
-            test_func()
-        except Exception as e:
-            print(f"❌ Setup {test_name} failed: {str(e)}")
-    
-    # Main Season 1 offchain implementation test
-    print(f"\n🚀 RUNNING PRIMARY TEST: Season 1 Offchain Implementation")
+    # Run the critical bug investigation
+    print(f"\n🚀 RUNNING CRITICAL BUG INVESTIGATION")
     try:
-        success, results = tester.test_season_1_offchain_implementation()
+        success, findings = tester.test_critical_dogefood_lab_bugs()
         if success:
-            print(f"\n✅ SEASON 1 OFFCHAIN IMPLEMENTATION: PASSED")
+            print(f"\n✅ CRITICAL BUG INVESTIGATION: NO MAJOR ISSUES FOUND")
         else:
-            print(f"\n❌ SEASON 1 OFFCHAIN IMPLEMENTATION: FAILED")
+            print(f"\n❌ CRITICAL BUG INVESTIGATION: ISSUES DETECTED")
     except Exception as e:
-        print(f"❌ Season 1 offchain test failed with exception: {str(e)}")
+        print(f"❌ Critical bug investigation failed with exception: {str(e)}")
         success = False
     
-    # Additional comprehensive game system test
-    print(f"\n🚀 RUNNING SECONDARY TEST: Complete Functional Game System")
-    try:
-        success2, results2 = tester.test_comprehensive_dogefood_lab_game_system()
-        if success2:
-            print(f"\n✅ COMPLETE FUNCTIONAL GAME SYSTEM: PASSED")
-        else:
-            print(f"\n❌ COMPLETE FUNCTIONAL GAME SYSTEM: FAILED")
-    except Exception as e:
-        print(f"❌ Complete game system test failed with exception: {str(e)}")
-        success2 = False
-    
-    # Additional critical verification tests
-    critical_tests = [
-        ("Enhanced Treat Creation Endpoint", tester.test_enhanced_treat_creation_endpoint),
-        ("Timer Progression System", tester.test_timer_progression_system),
-        ("Ingredient System Endpoints", tester.test_ingredient_system_endpoints),
-        ("Season Management System", tester.test_season_management_system),
+    # Additional specific tests from review request
+    specific_tests = [
+        ("Health Check", tester.test_health_check),
+        ("Get All Players", lambda: tester.run_test("Get All Players", "GET", "players", 200)),
+        ("Get All Treats", lambda: tester.run_test("Get All Treats", "GET", "treats", 200, params={"limit": 100})),
+        ("Get Leaderboard", lambda: tester.run_test("Get Leaderboard", "GET", "leaderboard", 200, params={"limit": 50})),
+        ("Enhanced Treat Creation Test", tester.test_enhanced_treat_creation_endpoint),
     ]
     
-    print(f"\n📋 Running {len(critical_tests)} critical verification tests...")
-    for test_name, test_func in critical_tests:
+    print(f"\n📋 Running {len(specific_tests)} specific tests from review request...")
+    for test_name, test_func in specific_tests:
         try:
-            print(f"\n🔍 Critical Test: {test_name}")
+            print(f"\n🔍 Specific Test: {test_name}")
             test_func()
         except Exception as e:
-            print(f"❌ Critical test {test_name} failed: {str(e)}")
+            print(f"❌ Specific test {test_name} failed: {str(e)}")
     
     # Print comprehensive results
     print("\n" + "=" * 80)
-    print(f"📊 SEASON 1 OFFCHAIN IMPLEMENTATION RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
+    print(f"📊 CRITICAL BUG INVESTIGATION RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
     print("=" * 80)
     
     # Categorize results
     success_rate = (tester.tests_passed / tester.tests_run) * 100 if tester.tests_run > 0 else 0
     
     if success_rate >= 90:
-        print("🎉 EXCELLENT: Season 1 offchain implementation is working perfectly!")
+        print("🎉 EXCELLENT: No critical bugs detected!")
     elif success_rate >= 75:
-        print("✅ GOOD: Season 1 implementation is mostly functional with minor issues")
+        print("✅ GOOD: Minor issues detected, mostly functional")
     elif success_rate >= 50:
-        print("⚠️  MODERATE: Season 1 implementation has significant issues requiring attention")
+        print("⚠️  MODERATE: Significant issues requiring attention")
     else:
-        print("❌ CRITICAL: Season 1 implementation has major failures requiring immediate fixes")
+        print("❌ CRITICAL: Major failures requiring immediate fixes")
     
     # Report missing features
     if tester.missing_features:
@@ -2680,20 +2654,19 @@ def main():
             print(f"   ❌ {feature}")
         print(f"\nTotal missing features: {len(set(tester.missing_features))}")
     else:
-        print("\n✅ All Season 1 offchain features appear to be implemented correctly!")
+        print("\n✅ All expected features appear to be implemented correctly!")
     
-    # Final assessment focused on Season 1 offchain functionality
+    # Final assessment focused on critical bugs
     if success and success_rate >= 80:
-        print("\n🚀 SEASON 1 OFFCHAIN IMPLEMENTATION: SUCCESS!")
-        print("✅ Enhanced treat creation with Season 1 metadata working")
-        print("✅ NFT-ready metadata structure properly implemented")
-        print("✅ Season 1 identified as offchain-only with NFT minting disabled")
-        print("✅ Points conversion properly disabled for Season 1")
-        print("✅ Treat data structure includes season_id, is_offchain, migration_ready fields")
+        print("\n🚀 CRITICAL BUG INVESTIGATION: SUCCESS!")
+        print("✅ No mock data contamination detected")
+        print("✅ Mixing timer system appears to be working")
+        print("✅ Database state appears consistent")
+        print("✅ Target player data looks clean")
         return 0
     else:
-        print(f"\n🔧 SEASON 1 OFFCHAIN IMPLEMENTATION: NEEDS ATTENTION")
-        print("❌ Some issues detected with Season 1 offchain functionality")
+        print(f"\n🔧 CRITICAL BUG INVESTIGATION: ISSUES DETECTED")
+        print("❌ Some critical bugs or issues found")
         print("🔍 Review test results above for specific problems")
         return 1
 
