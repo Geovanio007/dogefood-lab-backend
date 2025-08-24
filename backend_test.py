@@ -2216,9 +2216,382 @@ class DogeLabAPITester:
             "sack_test_results": sack_test_results
         }
 
+    def test_critical_dogefood_lab_bugs(self):
+        """Test critical bugs as specified in review request"""
+        print("\n🚨 CRITICAL DOGEFOOD LAB BUG INVESTIGATION")
+        print("=" * 70)
+        print("Focus: Mock data, mixing timer bug, database state investigation")
+        
+        all_success = True
+        findings = {
+            "mock_data_found": [],
+            "mixing_timer_issues": [],
+            "database_inconsistencies": [],
+            "target_player_status": {}
+        }
+        
+        # Target player from review request
+        target_player = "0x033CD94d0020B397393bF1deA4920Be0d4723DCB"
+        
+        # 1. MOCK DATA INVESTIGATION
+        print(f"\n🔍 1. MOCK DATA INVESTIGATION")
+        print("=" * 40)
+        
+        # Test GET /api/players (check for mock data)
+        print(f"\n📋 Testing GET /api/players for mock data...")
+        success, response = self.run_test("Get All Players", "GET", "players", 200)
+        
+        if success and response:
+            players = response if isinstance(response, list) else []
+            print(f"   📊 Total players found: {len(players)}")
+            
+            # Check for mock/test data patterns
+            mock_patterns = ["test", "demo", "mock", "0x123", "0xtest", "0xdemo"]
+            for player in players:
+                address = player.get('address', '').lower()
+                nickname = player.get('nickname', '').lower()
+                
+                for pattern in mock_patterns:
+                    if pattern in address or pattern in nickname:
+                        findings["mock_data_found"].append({
+                            "type": "player",
+                            "address": player.get('address'),
+                            "nickname": player.get('nickname'),
+                            "pattern": pattern
+                        })
+                        print(f"   🚨 MOCK DATA FOUND: Player {address} (nickname: {nickname}) contains '{pattern}'")
+        else:
+            print(f"   ❌ Failed to retrieve players list")
+            all_success = False
+        
+        # Test GET /api/treats (check for test data)
+        print(f"\n🧪 Testing GET /api/treats for mock data...")
+        success, response = self.run_test("Get All Treats", "GET", "treats", 200, params={"limit": 100})
+        
+        if success and response:
+            treats = response if isinstance(response, list) else []
+            print(f"   📊 Total treats found: {len(treats)}")
+            
+            # Check for mock/test data in treats
+            for treat in treats:
+                name = treat.get('name', '').lower()
+                creator = treat.get('creator_address', '').lower()
+                
+                for pattern in mock_patterns:
+                    if pattern in name or pattern in creator:
+                        findings["mock_data_found"].append({
+                            "type": "treat",
+                            "name": treat.get('name'),
+                            "creator": treat.get('creator_address'),
+                            "pattern": pattern
+                        })
+                        print(f"   🚨 MOCK DATA FOUND: Treat '{name}' by {creator} contains '{pattern}'")
+        else:
+            print(f"   ❌ Failed to retrieve treats list")
+            all_success = False
+        
+        # Test GET /api/leaderboard (check for mock entries)
+        print(f"\n🏆 Testing GET /api/leaderboard for mock data...")
+        success, response = self.run_test("Get Leaderboard", "GET", "leaderboard", 200, params={"limit": 50})
+        
+        if success and response:
+            leaderboard = response if isinstance(response, list) else []
+            print(f"   📊 Total leaderboard entries: {len(leaderboard)}")
+            
+            # Check for mock data in leaderboard
+            for entry in leaderboard:
+                address = entry.get('address', '').lower()
+                nickname = entry.get('nickname', '').lower() if entry.get('nickname') else ''
+                
+                for pattern in mock_patterns:
+                    if pattern in address or pattern in nickname:
+                        findings["mock_data_found"].append({
+                            "type": "leaderboard",
+                            "address": entry.get('address'),
+                            "nickname": entry.get('nickname'),
+                            "points": entry.get('points'),
+                            "pattern": pattern
+                        })
+                        print(f"   🚨 MOCK DATA FOUND: Leaderboard entry {address} (nickname: {nickname}) contains '{pattern}'")
+        else:
+            print(f"   ❌ Failed to retrieve leaderboard")
+            all_success = False
+        
+        # 2. TARGET PLAYER INVESTIGATION
+        print(f"\n🎯 2. TARGET PLAYER INVESTIGATION: {target_player}")
+        print("=" * 40)
+        
+        # Check target player data
+        success, response = self.run_test(f"Get Target Player {target_player}", "GET", f"player/{target_player}", 200)
+        
+        if success and response:
+            findings["target_player_status"] = response
+            print(f"   ✅ Target player found:")
+            print(f"      Address: {response.get('address')}")
+            print(f"      Nickname: {response.get('nickname', 'None')}")
+            print(f"      Level: {response.get('level')}")
+            print(f"      Experience: {response.get('experience')}")
+            print(f"      Points: {response.get('points')}")
+            print(f"      NFT Holder: {response.get('is_nft_holder')}")
+            print(f"      Created Treats: {len(response.get('created_treats', []))}")
+            
+            # Check if data looks clean (no mock patterns)
+            address = response.get('address', '').lower()
+            nickname = response.get('nickname', '').lower() if response.get('nickname') else ''
+            
+            is_clean = True
+            mock_patterns = ["test", "demo", "mock", "0x123", "0xtest", "0xdemo"]
+            for pattern in mock_patterns:
+                if pattern in address or pattern in nickname:
+                    print(f"   🚨 Target player contains mock pattern: '{pattern}'")
+                    is_clean = False
+            
+            if is_clean:
+                print(f"   ✅ Target player data appears clean (no mock patterns)")
+        else:
+            print(f"   ❌ Target player not found or error retrieving data")
+            findings["target_player_status"] = {"error": "Player not found"}
+        
+        # Get target player's treats
+        success, response = self.run_test(f"Get Target Player Treats", "GET", f"treats/{target_player}", 200)
+        
+        if success and response:
+            treats = response if isinstance(response, list) else []
+            print(f"   📊 Target player treats: {len(treats)}")
+            
+            # Analyze treat data for inconsistencies
+            brewing_count = 0
+            ready_count = 0
+            for treat in treats:
+                status = treat.get('brewing_status', 'unknown')
+                if status == 'brewing':
+                    brewing_count += 1
+                elif status == 'ready':
+                    ready_count += 1
+            
+            print(f"      Brewing treats: {brewing_count}")
+            print(f"      Ready treats: {ready_count}")
+            
+            findings["target_player_status"]["treats_count"] = len(treats)
+            findings["target_player_status"]["brewing_treats"] = brewing_count
+            findings["target_player_status"]["ready_treats"] = ready_count
+        
+        # 3. MIXING TIMER BUG INVESTIGATION
+        print(f"\n⏰ 3. MIXING TIMER BUG INVESTIGATION (0% progress)")
+        print("=" * 40)
+        
+        # Test POST /api/treats/enhanced with real data
+        print(f"\n🧪 Testing POST /api/treats/enhanced with real data...")
+        
+        # Use realistic test data
+        test_treat_data = {
+            "creator_address": "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54",  # Different from target to avoid conflicts
+            "ingredients": ["chicken", "beef", "cheese", "herbs"],
+            "player_level": 10
+        }
+        
+        # Measure response time
+        import time
+        start_time = time.time()
+        
+        success, response = self.run_test("Enhanced Treat Creation - Timer Test", "POST", "treats/enhanced", 200, data=test_treat_data)
+        
+        end_time = time.time()
+        response_time = end_time - start_time
+        
+        print(f"   ⏱️  API Response Time: {response_time:.2f} seconds")
+        
+        if success and response:
+            treat = response.get('treat', {})
+            outcome = response.get('outcome', {})
+            
+            # Check if mixing API completed properly
+            if 'id' in treat and 'rarity' in outcome:
+                print(f"   ✅ Mixing API completed successfully")
+                print(f"      Treat ID: {treat.get('id')}")
+                print(f"      Rarity: {outcome.get('rarity')}")
+                print(f"      Timer Duration: {outcome.get('timer_duration_hours', 0)}h")
+                print(f"      Brewing Status: {treat.get('brewing_status')}")
+                
+                # Check if ready_at timestamp is set
+                ready_at = treat.get('ready_at')
+                if ready_at:
+                    print(f"      Ready At: {ready_at}")
+                    print(f"   ✅ Timer system appears to be working")
+                else:
+                    print(f"   🚨 TIMER BUG: ready_at timestamp not set")
+                    findings["mixing_timer_issues"].append("ready_at timestamp not set")
+                    all_success = False
+                
+                # Test timer checking
+                treat_id = treat.get('id')
+                if treat_id:
+                    success2, timer_response = self.run_test("Check Timer Status", "POST", f"treats/{treat_id}/check-timer", 200)
+                    
+                    if success2 and timer_response:
+                        status = timer_response.get('status')
+                        remaining = timer_response.get('remaining_seconds', 0)
+                        print(f"      Timer Status: {status}")
+                        print(f"      Remaining: {remaining} seconds")
+                        
+                        if status == 'brewing' and remaining > 0:
+                            print(f"   ✅ Timer system functioning correctly")
+                        else:
+                            print(f"   🚨 TIMER BUG: Unexpected timer status or remaining time")
+                            findings["mixing_timer_issues"].append(f"Unexpected timer status: {status}, remaining: {remaining}")
+                    else:
+                        print(f"   🚨 TIMER BUG: Timer check endpoint failed")
+                        findings["mixing_timer_issues"].append("Timer check endpoint failed")
+                        all_success = False
+            else:
+                print(f"   🚨 MIXING BUG: API response incomplete")
+                findings["mixing_timer_issues"].append("API response incomplete - missing treat ID or rarity")
+                all_success = False
+        else:
+            print(f"   🚨 MIXING BUG: Enhanced treat creation failed completely")
+            findings["mixing_timer_issues"].append("Enhanced treat creation API failed")
+            all_success = False
+        
+        # Test with different response time scenarios
+        if response_time > 5.0:
+            print(f"   ⚠️  SLOW RESPONSE: API took {response_time:.2f}s (>5s threshold)")
+            findings["mixing_timer_issues"].append(f"Slow API response: {response_time:.2f}s")
+        elif response_time > 2.0:
+            print(f"   ⚠️  MODERATE DELAY: API took {response_time:.2f}s (>2s threshold)")
+        else:
+            print(f"   ✅ Response time acceptable: {response_time:.2f}s")
+        
+        # 4. DATABASE STATE INVESTIGATION
+        print(f"\n🗄️  4. DATABASE STATE INVESTIGATION")
+        print("=" * 40)
+        
+        # Get current state of players collection
+        success, response = self.run_test("Game Stats", "GET", "stats", 200)
+        
+        if success and response:
+            total_players = response.get('total_players', 0)
+            nft_holders = response.get('nft_holders', 0)
+            total_treats = response.get('total_treats', 0)
+            active_today = response.get('active_today', 0)
+            
+            print(f"   📊 Database State Summary:")
+            print(f"      Total Players: {total_players}")
+            print(f"      NFT Holders: {nft_holders}")
+            print(f"      Total Treats: {total_treats}")
+            print(f"      Active Today: {active_today}")
+            
+            # Check for reasonable ratios
+            if total_players > 0:
+                nft_ratio = (nft_holders / total_players) * 100
+                treats_per_player = total_treats / total_players
+                
+                print(f"      NFT Holder Ratio: {nft_ratio:.1f}%")
+                print(f"      Treats per Player: {treats_per_player:.1f}")
+                
+                # Flag unusual ratios that might indicate test data
+                if nft_ratio > 80:
+                    print(f"   ⚠️  HIGH NFT RATIO: {nft_ratio:.1f}% (may indicate test data)")
+                    findings["database_inconsistencies"].append(f"Unusually high NFT holder ratio: {nft_ratio:.1f}%")
+                
+                if treats_per_player > 50:
+                    print(f"   ⚠️  HIGH TREATS/PLAYER: {treats_per_player:.1f} (may indicate test data)")
+                    findings["database_inconsistencies"].append(f"Unusually high treats per player: {treats_per_player:.1f}")
+        else:
+            print(f"   ❌ Failed to get database stats")
+            all_success = False
+        
+        # Check for data consistency in treats collection
+        success, response = self.run_test("Sample Treats Analysis", "GET", "treats", 200, params={"limit": 20})
+        
+        if success and response:
+            treats = response if isinstance(response, list) else []
+            print(f"   🔍 Analyzing {len(treats)} sample treats for inconsistencies...")
+            
+            inconsistencies = 0
+            for treat in treats:
+                # Check for required fields
+                required_fields = ['id', 'name', 'creator_address', 'ingredients', 'rarity']
+                missing_fields = [field for field in required_fields if field not in treat or not treat[field]]
+                
+                if missing_fields:
+                    print(f"      🚨 Treat {treat.get('id', 'unknown')[:8]}... missing fields: {missing_fields}")
+                    inconsistencies += 1
+                
+                # Check for valid rarity values
+                rarity = treat.get('rarity', '').lower()
+                valid_rarities = ['common', 'rare', 'epic', 'legendary']
+                if rarity not in valid_rarities:
+                    print(f"      🚨 Treat {treat.get('id', 'unknown')[:8]}... invalid rarity: {rarity}")
+                    inconsistencies += 1
+                
+                # Check ingredients array
+                ingredients = treat.get('ingredients', [])
+                if not isinstance(ingredients, list) or len(ingredients) == 0:
+                    print(f"      🚨 Treat {treat.get('id', 'unknown')[:8]}... invalid ingredients: {ingredients}")
+                    inconsistencies += 1
+            
+            if inconsistencies == 0:
+                print(f"   ✅ No data inconsistencies found in sample treats")
+            else:
+                print(f"   🚨 Found {inconsistencies} data inconsistencies")
+                findings["database_inconsistencies"].append(f"{inconsistencies} treats with data inconsistencies")
+        
+        # FINAL SUMMARY
+        print(f"\n📋 CRITICAL BUG INVESTIGATION SUMMARY")
+        print("=" * 50)
+        
+        print(f"\n🔍 MOCK DATA FINDINGS:")
+        if findings["mock_data_found"]:
+            print(f"   🚨 {len(findings['mock_data_found'])} mock data entries found:")
+            for item in findings["mock_data_found"]:
+                print(f"      - {item['type']}: {item.get('address', item.get('name', 'unknown'))} (pattern: {item['pattern']})")
+        else:
+            print(f"   ✅ No mock data patterns detected")
+        
+        print(f"\n⏰ MIXING TIMER FINDINGS:")
+        if findings["mixing_timer_issues"]:
+            print(f"   🚨 {len(findings['mixing_timer_issues'])} timer issues found:")
+            for issue in findings["mixing_timer_issues"]:
+                print(f"      - {issue}")
+        else:
+            print(f"   ✅ Mixing timer system appears to be working correctly")
+        
+        print(f"\n🗄️  DATABASE STATE FINDINGS:")
+        if findings["database_inconsistencies"]:
+            print(f"   🚨 {len(findings['database_inconsistencies'])} database issues found:")
+            for issue in findings["database_inconsistencies"]:
+                print(f"      - {issue}")
+        else:
+            print(f"   ✅ Database state appears consistent")
+        
+        print(f"\n🎯 TARGET PLAYER STATUS ({target_player}):")
+        target_status = findings["target_player_status"]
+        if target_status and "error" not in target_status:
+            print(f"   ✅ Player found with clean data")
+            print(f"      Level: {target_status.get('level', 'unknown')}")
+            print(f"      Total Treats: {target_status.get('treats_count', 0)}")
+            print(f"      Brewing: {target_status.get('brewing_treats', 0)}")
+            print(f"      Ready: {target_status.get('ready_treats', 0)}")
+        else:
+            print(f"   🚨 Target player not found or has issues")
+        
+        # Overall assessment
+        total_issues = len(findings["mock_data_found"]) + len(findings["mixing_timer_issues"]) + len(findings["database_inconsistencies"])
+        
+        if total_issues == 0:
+            print(f"\n🎉 OVERALL ASSESSMENT: No critical bugs detected!")
+            print(f"   ✅ Database appears clean")
+            print(f"   ✅ Mixing timer system working")
+            print(f"   ✅ No mock data contamination")
+        else:
+            print(f"\n🚨 OVERALL ASSESSMENT: {total_issues} issues require attention")
+            all_success = False
+        
+        return all_success, findings
+
 def main():
-    print("🐕 Starting DogeFood Lab Season 1 Offchain Implementation Test 🧪")
-    print("Testing Season 1 Offchain Implementation with NFT-Ready Metadata")
+    print("🐕 Starting DogeFood Lab Critical Bug Investigation 🧪")
+    print("Testing Critical Bugs: Mock Data, Mixing Timer, Database State")
     print("=" * 80)
     
     tester = DogeLabAPITester()
