@@ -246,10 +246,10 @@ const GameLab = () => {
 
       const treatResult = await response.json();
 
-      // Season 1: No blockchain transactions - all offchain
+      // Season 1: No blockchain transactions
       toast({
         title: `${treatResult.outcome.rarity} Treat Created! 🎉`,
-        description: `Your ${treatResult.outcome.rarity.toLowerCase()} treat is brewing for ${treatResult.outcome.timer_duration_hours} hours. Stored offchain for Season 1.${treatResult.sack_progress?.just_completed ? ' 🎉 Sack completed! +50 XP bonus!' : ''}`,
+        description: `Your ${treatResult.outcome.rarity.toLowerCase()} treat is brewing for ${treatResult.outcome.timer_duration_hours} hours.${treatResult.sack_progress?.just_completed ? ' 🎉 Sack completed! +50 XP bonus!' : ''}`,
         className: "bg-green-100 border-green-400"
       });
 
