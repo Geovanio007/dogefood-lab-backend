@@ -363,17 +363,31 @@ const GameLab = () => {
       return;
     }
 
+    // Clear any existing interval
+    if (mixingInterval) {
+      clearInterval(mixingInterval);
+    }
+
+    // Start mixing and reset progress
     startMixing(selectedIngredients);
     setMixingProgress(0);
 
-    // Simulate mixing progress
+    console.log("🧪 Starting mixing progress simulation...");
+
+    // Simulate mixing progress with more frequent updates
     const interval = setInterval(() => {
       setMixingProgress(prev => {
-        const newProgress = prev + 10;
+        const newProgress = prev + 5; // Smaller increments for smoother progress
+        console.log(`⏳ Mixing progress: ${newProgress}%`);
+        
+        // Update both local and global state
         dispatch({ type: 'UPDATE_MIXING_PROGRESS', payload: newProgress });
         
         if (newProgress >= 100) {
+          console.log("✅ Mixing complete! Starting backend creation...");
           clearInterval(interval);
+          setMixingInterval(null);
+          
           setTimeout(() => {
             handleEnhancedMixCompletion();
             
@@ -381,12 +395,12 @@ const GameLab = () => {
             setTimeout(() => {
               setSelectedIngredients([]);
               setMixingProgress(0);
-            }, 100);
+            }, 1000);
           }, 500);
         }
         return newProgress;
       });
-    }, 300);
+    }, 150); // Faster updates (150ms instead of 300ms)
     
     setMixingInterval(interval);
   };
