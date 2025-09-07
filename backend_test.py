@@ -2589,6 +2589,396 @@ class DogeLabAPITester:
         
         return all_success, findings
 
+    def test_user_registration_api(self):
+        """Test user registration system backend API endpoint /api/players/register"""
+        print("\n🔐 TESTING USER REGISTRATION SYSTEM")
+        print("=" * 60)
+        
+        # Test data as specified in review request
+        test_wallet = "0x1234567890123456789012345678901234567890"
+        test_username = "TestDogeScientist"
+        mock_signature = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234"
+        mock_message = "Register for DogeFood Lab with username: TestDogeScientist"
+        
+        all_success = True
+        
+        # 1. Test valid registration
+        print(f"\n🧪 Testing Valid Registration")
+        registration_data = {
+            "address": test_wallet,
+            "username": test_username,
+            "signature": mock_signature,
+            "message": mock_message
+        }
+        
+        success, response = self.run_test(
+            "Valid User Registration", 
+            "POST", 
+            "players/register", 
+            200, 
+            data=registration_data
+        )
+        
+        if success and response:
+            # Verify response contains expected fields
+            expected_fields = ['message', 'player_id', 'address', 'username', 'registered_at']
+            missing_fields = [field for field in expected_fields if field not in response]
+            if not missing_fields:
+                print(f"   ✅ Registration successful with all required fields")
+                print(f"   📝 Username: {response.get('username')}")
+                print(f"   📍 Address: {response.get('address')}")
+                print(f"   🆔 Player ID: {response.get('player_id', 'N/A')[:8]}...")
+            else:
+                print(f"   ❌ Missing response fields: {missing_fields}")
+                all_success = False
+        else:
+            print(f"   ❌ Valid registration failed")
+            all_success = False
+        
+        # 2. Test username validation - too short
+        print(f"\n🧪 Testing Username Validation - Too Short")
+        short_username_data = {
+            "address": "0x1234567890123456789012345678901234567891",
+            "username": "ab",  # Too short (< 3 characters)
+            "signature": mock_signature,
+            "message": mock_message
+        }
+        
+        success, response = self.run_test(
+            "Username Too Short", 
+            "POST", 
+            "players/register", 
+            400, 
+            data=short_username_data
+        )
+        
+        if success:
+            print(f"   ✅ Short username properly rejected")
+        else:
+            print(f"   ❌ Short username validation failed")
+            all_success = False
+        
+        # 3. Test username validation - too long
+        print(f"\n🧪 Testing Username Validation - Too Long")
+        long_username_data = {
+            "address": "0x1234567890123456789012345678901234567892",
+            "username": "ThisUsernameIsWayTooLongForTheSystem",  # Too long (> 20 characters)
+            "signature": mock_signature,
+            "message": mock_message
+        }
+        
+        success, response = self.run_test(
+            "Username Too Long", 
+            "POST", 
+            "players/register", 
+            400, 
+            data=long_username_data
+        )
+        
+        if success:
+            print(f"   ✅ Long username properly rejected")
+        else:
+            print(f"   ❌ Long username validation failed")
+            all_success = False
+        
+        # 4. Test username validation - invalid characters
+        print(f"\n🧪 Testing Username Validation - Invalid Characters")
+        invalid_chars_data = {
+            "address": "0x1234567890123456789012345678901234567893",
+            "username": "Test@User!",  # Contains invalid characters
+            "signature": mock_signature,
+            "message": mock_message
+        }
+        
+        success, response = self.run_test(
+            "Username Invalid Characters", 
+            "POST", 
+            "players/register", 
+            400, 
+            data=invalid_chars_data
+        )
+        
+        if success:
+            print(f"   ✅ Invalid characters properly rejected")
+        else:
+            print(f"   ❌ Invalid character validation failed")
+            all_success = False
+        
+        # 5. Test duplicate username prevention
+        print(f"\n🧪 Testing Duplicate Username Prevention")
+        duplicate_username_data = {
+            "address": "0x1234567890123456789012345678901234567894",
+            "username": test_username,  # Same username as first registration
+            "signature": mock_signature,
+            "message": mock_message
+        }
+        
+        success, response = self.run_test(
+            "Duplicate Username", 
+            "POST", 
+            "players/register", 
+            409, 
+            data=duplicate_username_data
+        )
+        
+        if success:
+            print(f"   ✅ Duplicate username properly rejected")
+        else:
+            print(f"   ❌ Duplicate username prevention failed")
+            all_success = False
+        
+        # 6. Test duplicate wallet address prevention
+        print(f"\n🧪 Testing Duplicate Wallet Address Prevention")
+        duplicate_wallet_data = {
+            "address": test_wallet,  # Same wallet as first registration
+            "username": "AnotherUsername",
+            "signature": mock_signature,
+            "message": mock_message
+        }
+        
+        success, response = self.run_test(
+            "Duplicate Wallet Address", 
+            "POST", 
+            "players/register", 
+            409, 
+            data=duplicate_wallet_data
+        )
+        
+        if success:
+            print(f"   ✅ Duplicate wallet address properly rejected")
+        else:
+            print(f"   ❌ Duplicate wallet prevention failed")
+            all_success = False
+        
+        # 7. Test missing required fields
+        print(f"\n🧪 Testing Missing Required Fields")
+        missing_fields_data = {
+            "address": "0x1234567890123456789012345678901234567895",
+            "username": "ValidUser"
+            # Missing signature and message
+        }
+        
+        success, response = self.run_test(
+            "Missing Required Fields", 
+            "POST", 
+            "players/register", 
+            400, 
+            data=missing_fields_data
+        )
+        
+        if success:
+            print(f"   ✅ Missing fields properly rejected")
+        else:
+            print(f"   ❌ Missing fields validation failed")
+            all_success = False
+        
+        return all_success, {"test_wallet": test_wallet, "test_username": test_username}
+
+    def test_player_retrieval_after_registration(self):
+        """Test GET /api/player/{address} to verify newly registered players"""
+        print("\n👤 TESTING PLAYER RETRIEVAL AFTER REGISTRATION")
+        print("=" * 60)
+        
+        # Use the test wallet from registration
+        test_wallet = "0x1234567890123456789012345678901234567890"
+        
+        all_success = True
+        
+        # 1. Test retrieving registered player
+        print(f"\n🧪 Testing Player Retrieval")
+        success, response = self.run_test(
+            "Get Registered Player", 
+            "GET", 
+            f"player/{test_wallet}", 
+            200
+        )
+        
+        if success and response:
+            # Verify player data includes nickname field
+            expected_fields = ['address', 'nickname', 'level', 'experience', 'points', 'is_nft_holder']
+            missing_fields = [field for field in expected_fields if field not in response]
+            if not missing_fields:
+                print(f"   ✅ Player retrieved with all required fields")
+                print(f"   📝 Nickname: {response.get('nickname')}")
+                print(f"   📍 Address: {response.get('address')}")
+                print(f"   🎯 Level: {response.get('level')}")
+                print(f"   ⭐ Experience: {response.get('experience')}")
+                print(f"   🏆 Points: {response.get('points')}")
+                
+                # Verify nickname field specifically
+                if response.get('nickname') == "TestDogeScientist":
+                    print(f"   ✅ Nickname field properly stored and retrieved")
+                else:
+                    print(f"   ❌ Nickname field mismatch: expected 'TestDogeScientist', got '{response.get('nickname')}'")
+                    all_success = False
+            else:
+                print(f"   ❌ Missing player fields: {missing_fields}")
+                all_success = False
+        else:
+            print(f"   ❌ Player retrieval failed")
+            all_success = False
+        
+        # 2. Test error handling for non-existent player
+        print(f"\n🧪 Testing Non-Existent Player Error Handling")
+        non_existent_wallet = "0x9999999999999999999999999999999999999999"
+        
+        success, response = self.run_test(
+            "Get Non-Existent Player", 
+            "GET", 
+            f"player/{non_existent_wallet}", 
+            404
+        )
+        
+        if success:
+            print(f"   ✅ Non-existent player properly returns 404")
+        else:
+            print(f"   ❌ Non-existent player error handling failed")
+            all_success = False
+        
+        return all_success, {}
+
+    def test_registration_integration_flow(self):
+        """Test complete registration flow integration"""
+        print("\n🔄 TESTING COMPLETE REGISTRATION INTEGRATION FLOW")
+        print("=" * 60)
+        
+        # Test with multiple realistic scenarios
+        test_scenarios = [
+            {
+                "name": "NFT Holder Registration",
+                "address": "0x2234567890123456789012345678901234567890",
+                "username": "NFTDogeScientist",
+                "is_nft_holder": True
+            },
+            {
+                "name": "Regular Player Registration", 
+                "address": "0x3234567890123456789012345678901234567890",
+                "username": "RegularDogePlayer",
+                "is_nft_holder": False
+            },
+            {
+                "name": "Underscore Username",
+                "address": "0x4234567890123456789012345678901234567890", 
+                "username": "Doge_Scientist_2024",
+                "is_nft_holder": False
+            }
+        ]
+        
+        all_success = True
+        registered_players = []
+        
+        # 1. Register multiple players
+        print(f"\n🧪 Testing Multiple Player Registrations")
+        for scenario in test_scenarios:
+            registration_data = {
+                "address": scenario["address"],
+                "username": scenario["username"],
+                "signature": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234",
+                "message": f"Register for DogeFood Lab with username: {scenario['username']}"
+            }
+            
+            success, response = self.run_test(
+                scenario["name"], 
+                "POST", 
+                "players/register", 
+                200, 
+                data=registration_data
+            )
+            
+            if success and response:
+                print(f"   ✅ {scenario['name']}: Registration successful")
+                registered_players.append(scenario)
+            else:
+                print(f"   ❌ {scenario['name']}: Registration failed")
+                all_success = False
+        
+        # 2. Verify all players appear in leaderboard
+        print(f"\n🧪 Testing Players Appear in Leaderboard")
+        success, response = self.run_test(
+            "Get Leaderboard After Registration", 
+            "GET", 
+            "leaderboard", 
+            200, 
+            params={"limit": 20}
+        )
+        
+        if success and response:
+            leaderboard_addresses = [entry.get('address') for entry in response]
+            registered_addresses = [player['address'] for player in registered_players]
+            
+            # Check if registered players appear in leaderboard
+            found_players = 0
+            for address in registered_addresses:
+                if address in leaderboard_addresses:
+                    found_players += 1
+                    print(f"   ✅ Player {address[:10]}... found in leaderboard")
+                else:
+                    print(f"   ⚠️  Player {address[:10]}... not found in leaderboard (may need points)")
+            
+            if found_players > 0:
+                print(f"   ✅ {found_players}/{len(registered_addresses)} registered players found in leaderboard")
+            else:
+                print(f"   ⚠️  No registered players found in leaderboard (expected for new players with 0 points)")
+        else:
+            print(f"   ❌ Leaderboard retrieval failed")
+            all_success = False
+        
+        # 3. Test player data consistency
+        print(f"\n🧪 Testing Player Data Consistency")
+        for player in registered_players:
+            success, response = self.run_test(
+                f"Verify {player['username']}", 
+                "GET", 
+                f"player/{player['address']}", 
+                200
+            )
+            
+            if success and response:
+                # Verify data consistency
+                if (response.get('address') == player['address'] and 
+                    response.get('nickname') == player['username']):
+                    print(f"   ✅ {player['username']}: Data consistency verified")
+                else:
+                    print(f"   ❌ {player['username']}: Data inconsistency detected")
+                    all_success = False
+            else:
+                print(f"   ❌ {player['username']}: Verification failed")
+                all_success = False
+        
+        # 4. Test treat creation with registered players
+        print(f"\n🧪 Testing Treat Creation with Registered Players")
+        if registered_players:
+            test_player = registered_players[0]
+            treat_data = {
+                "creator_address": test_player["address"],
+                "ingredients": ["bacon", "cheese", "herbs"],
+                "player_level": 1
+            }
+            
+            success, response = self.run_test(
+                "Create Treat with Registered Player", 
+                "POST", 
+                "treats/enhanced", 
+                200, 
+                data=treat_data
+            )
+            
+            if success and response:
+                print(f"   ✅ Treat creation successful with registered player")
+                
+                # Verify treat is associated with correct player
+                treat = response.get('treat', {})
+                if treat.get('creator_address') == test_player['address']:
+                    print(f"   ✅ Treat properly associated with registered player")
+                else:
+                    print(f"   ❌ Treat association failed")
+                    all_success = False
+            else:
+                print(f"   ❌ Treat creation failed with registered player")
+                all_success = False
+        
+        return all_success, {"registered_players": len(registered_players)}
+
 def main():
     print("🐕 Starting DogeFood Lab Critical Bug Investigation 🧪")
     print("Testing Critical Bugs: Mock Data, Mixing Timer, Database State")
