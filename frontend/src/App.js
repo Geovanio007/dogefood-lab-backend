@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import { GameProvider } from './contexts/GameContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { TelegramProvider, useTelegram } from './contexts/TelegramContext';
 import { Web3Provider } from './components/Web3Provider';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
@@ -17,6 +18,7 @@ import AdminDashboard from './components/AdminDashboard';
 import ActiveTreatsStatus from './components/ActiveTreatsStatus';
 import TreatNotifications from './components/TreatNotifications';
 import UserRegistration from './components/UserRegistration';
+import TelegramAuth from './components/TelegramAuth';
 // import PointsToBlockchain from './components/PointsToBlockchain';
 import './App.css';
 
