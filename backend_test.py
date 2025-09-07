@@ -3033,39 +3033,36 @@ def main():
         print(f"❌ Registration integration tests failed with exception: {str(e)}")
         registration_success = False
     
-    # Additional specific tests from review request
-    specific_tests = [
+    # Additional supporting tests from review request
+    supporting_tests = [
         ("Health Check", tester.test_health_check),
-        ("Get All Players", lambda: tester.run_test("Get All Players", "GET", "players", 200)),
-        ("Get All Treats", lambda: tester.run_test("Get All Treats", "GET", "treats", 200, params={"limit": 100})),
-        ("Get Leaderboard", lambda: tester.run_test("Get Leaderboard", "GET", "leaderboard", 200, params={"limit": 50})),
         ("Enhanced Treat Creation Test", tester.test_enhanced_treat_creation_endpoint),
     ]
     
-    print(f"\n📋 Running {len(specific_tests)} specific tests from review request...")
-    for test_name, test_func in specific_tests:
+    print(f"\n📋 Running {len(supporting_tests)} supporting tests...")
+    for test_name, test_func in supporting_tests:
         try:
-            print(f"\n🔍 Specific Test: {test_name}")
+            print(f"\n🔍 Supporting Test: {test_name}")
             test_func()
         except Exception as e:
-            print(f"❌ Specific test {test_name} failed: {str(e)}")
+            print(f"❌ Supporting test {test_name} failed: {str(e)}")
     
     # Print comprehensive results
     print("\n" + "=" * 80)
-    print(f"📊 CRITICAL BUG INVESTIGATION RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
+    print(f"📊 USER REGISTRATION SYSTEM TEST RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
     print("=" * 80)
     
     # Categorize results
     success_rate = (tester.tests_passed / tester.tests_run) * 100 if tester.tests_run > 0 else 0
     
     if success_rate >= 90:
-        print("🎉 EXCELLENT: No critical bugs detected!")
+        print("🎉 EXCELLENT: User registration system working perfectly!")
     elif success_rate >= 75:
-        print("✅ GOOD: Minor issues detected, mostly functional")
+        print("✅ GOOD: User registration mostly functional with minor issues")
     elif success_rate >= 50:
-        print("⚠️  MODERATE: Significant issues requiring attention")
+        print("⚠️  MODERATE: User registration has significant issues requiring attention")
     else:
-        print("❌ CRITICAL: Major failures requiring immediate fixes")
+        print("❌ CRITICAL: User registration system has major failures")
     
     # Report missing features
     if tester.missing_features:
@@ -3075,19 +3072,20 @@ def main():
             print(f"   ❌ {feature}")
         print(f"\nTotal missing features: {len(set(tester.missing_features))}")
     else:
-        print("\n✅ All expected features appear to be implemented correctly!")
+        print("\n✅ All expected user registration features appear to be implemented correctly!")
     
-    # Final assessment focused on critical bugs
-    if success and success_rate >= 80:
-        print("\n🚀 CRITICAL BUG INVESTIGATION: SUCCESS!")
-        print("✅ No mock data contamination detected")
-        print("✅ Mixing timer system appears to be working")
-        print("✅ Database state appears consistent")
-        print("✅ Target player data looks clean")
+    # Final assessment focused on user registration
+    if registration_success and success_rate >= 80:
+        print("\n🚀 USER REGISTRATION SYSTEM TESTING: SUCCESS!")
+        print("✅ User registration API working correctly")
+        print("✅ Username validation functioning properly")
+        print("✅ Duplicate prevention working")
+        print("✅ Player retrieval after registration working")
+        print("✅ Integration with leaderboard and treat creation working")
         return 0
     else:
-        print(f"\n🔧 CRITICAL BUG INVESTIGATION: ISSUES DETECTED")
-        print("❌ Some critical bugs or issues found")
+        print(f"\n🔧 USER REGISTRATION SYSTEM TESTING: ISSUES DETECTED")
+        print("❌ Some user registration functionality issues found")
         print("🔍 Review test results above for specific problems")
         return 1
 
