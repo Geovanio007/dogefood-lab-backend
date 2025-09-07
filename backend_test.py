@@ -3330,63 +3330,39 @@ class DogeLabAPITester:
         return all_success, {"registered_players": len(registered_players)}
 
 def main():
-    print("🐕 Starting DogeFood Lab User Registration System Testing 🧪")
-    print("Testing User Registration API: /api/players/register")
+    print("📱 Starting DogeFood Lab Telegram Mini App Authentication Testing 🧪")
+    print("Testing Telegram Authentication Endpoints")
     print("=" * 80)
     
     tester = DogeLabAPITester()
     
-    # USER REGISTRATION SYSTEM TESTING (Priority 1)
-    print("\n🎯 PRIMARY FOCUS: USER REGISTRATION SYSTEM TESTING")
-    print("Testing /api/players/register endpoint with validation, duplicate prevention, and integration")
+    # TELEGRAM AUTHENTICATION SYSTEM TESTING (Priority 1)
+    print("\n🎯 PRIMARY FOCUS: TELEGRAM MINI APP AUTHENTICATION TESTING")
+    print("Testing Telegram user registration, player retrieval, and wallet linking endpoints")
     
-    # Run the user registration tests
-    print(f"\n🚀 RUNNING USER REGISTRATION TESTS")
-    registration_success = True
-    
-    try:
-        # 1. Test User Registration API
-        print(f"\n📝 1. TESTING USER REGISTRATION API")
-        success, results = tester.test_user_registration_api()
-        if success:
-            print(f"✅ User Registration API: ALL TESTS PASSED")
-        else:
-            print(f"❌ User Registration API: SOME TESTS FAILED")
-            registration_success = False
-    except Exception as e:
-        print(f"❌ User registration API tests failed with exception: {str(e)}")
-        registration_success = False
+    # Run the Telegram authentication tests
+    print(f"\n🚀 RUNNING TELEGRAM AUTHENTICATION TESTS")
+    telegram_success = True
     
     try:
-        # 2. Test Player Retrieval After Registration
-        print(f"\n👤 2. TESTING PLAYER RETRIEVAL AFTER REGISTRATION")
-        success, results = tester.test_player_retrieval_after_registration()
+        # 1. Test Telegram Authentication System Comprehensively
+        print(f"\n📱 1. TESTING TELEGRAM AUTHENTICATION SYSTEM")
+        success, results = tester.test_telegram_authentication_comprehensive()
         if success:
-            print(f"✅ Player Retrieval: ALL TESTS PASSED")
+            print(f"✅ Telegram Authentication System: ALL TESTS PASSED")
         else:
-            print(f"❌ Player Retrieval: SOME TESTS FAILED")
-            registration_success = False
+            print(f"❌ Telegram Authentication System: SOME TESTS FAILED")
+            telegram_success = False
     except Exception as e:
-        print(f"❌ Player retrieval tests failed with exception: {str(e)}")
-        registration_success = False
-    
-    try:
-        # 3. Test Registration Integration Flow
-        print(f"\n🔄 3. TESTING REGISTRATION INTEGRATION FLOW")
-        success, results = tester.test_registration_integration_flow()
-        if success:
-            print(f"✅ Registration Integration: ALL TESTS PASSED")
-        else:
-            print(f"❌ Registration Integration: SOME TESTS FAILED")
-            registration_success = False
-    except Exception as e:
-        print(f"❌ Registration integration tests failed with exception: {str(e)}")
-        registration_success = False
+        print(f"❌ Telegram authentication tests failed with exception: {str(e)}")
+        telegram_success = False
     
     # Additional supporting tests from review request
     supporting_tests = [
         ("Health Check", tester.test_health_check),
         ("Enhanced Treat Creation Test", tester.test_enhanced_treat_creation_endpoint),
+        ("Game Stats", tester.test_get_game_stats),
+        ("Leaderboard", tester.test_get_leaderboard),
     ]
     
     print(f"\n📋 Running {len(supporting_tests)} supporting tests...")
@@ -3399,20 +3375,20 @@ def main():
     
     # Print comprehensive results
     print("\n" + "=" * 80)
-    print(f"📊 USER REGISTRATION SYSTEM TEST RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
+    print(f"📊 TELEGRAM AUTHENTICATION SYSTEM TEST RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
     print("=" * 80)
     
     # Categorize results
     success_rate = (tester.tests_passed / tester.tests_run) * 100 if tester.tests_run > 0 else 0
     
     if success_rate >= 90:
-        print("🎉 EXCELLENT: User registration system working perfectly!")
+        print("🎉 EXCELLENT: Telegram authentication system working perfectly!")
     elif success_rate >= 75:
-        print("✅ GOOD: User registration mostly functional with minor issues")
+        print("✅ GOOD: Telegram authentication mostly functional with minor issues")
     elif success_rate >= 50:
-        print("⚠️  MODERATE: User registration has significant issues requiring attention")
+        print("⚠️  MODERATE: Telegram authentication has significant issues requiring attention")
     else:
-        print("❌ CRITICAL: User registration system has major failures")
+        print("❌ CRITICAL: Telegram authentication system has major failures")
     
     # Report missing features
     if tester.missing_features:
@@ -3422,20 +3398,20 @@ def main():
             print(f"   ❌ {feature}")
         print(f"\nTotal missing features: {len(set(tester.missing_features))}")
     else:
-        print("\n✅ All expected user registration features appear to be implemented correctly!")
+        print("\n✅ All expected Telegram authentication features appear to be implemented correctly!")
     
-    # Final assessment focused on user registration
-    if registration_success and success_rate >= 80:
-        print("\n🚀 USER REGISTRATION SYSTEM TESTING: SUCCESS!")
-        print("✅ User registration API working correctly")
-        print("✅ Username validation functioning properly")
-        print("✅ Duplicate prevention working")
-        print("✅ Player retrieval after registration working")
-        print("✅ Integration with leaderboard and treat creation working")
+    # Final assessment focused on Telegram authentication
+    if telegram_success and success_rate >= 80:
+        print("\n🚀 TELEGRAM AUTHENTICATION SYSTEM TESTING: SUCCESS!")
+        print("✅ POST /api/players/telegram-register working correctly")
+        print("✅ GET /api/player/telegram/{telegram_id} working correctly")
+        print("✅ POST /api/players/link-wallet working correctly")
+        print("✅ Integration with existing game system working")
+        print("✅ Error handling and validation working")
         return 0
     else:
-        print(f"\n🔧 USER REGISTRATION SYSTEM TESTING: ISSUES DETECTED")
-        print("❌ Some user registration functionality issues found")
+        print(f"\n🔧 TELEGRAM AUTHENTICATION SYSTEM TESTING: ISSUES DETECTED")
+        print("❌ Some Telegram authentication functionality issues found")
         print("🔍 Review test results above for specific problems")
         return 1
 
