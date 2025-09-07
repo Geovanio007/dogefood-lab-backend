@@ -20,7 +20,9 @@ import UserRegistration from './components/UserRegistration';
 // import PointsToBlockchain from './components/PointsToBlockchain';
 import './App.css';
 
-function App() {
+// Inner App component that has access to wagmi hooks
+const InnerApp = () => {
+  const { address, isConnected } = useAccount();
   const [showWelcome, setShowWelcome] = useState(() => {
     // Only show welcome screen if user is on the home page
     return window.location.pathname === '/';
@@ -28,6 +30,57 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
   const [userRegistered, setUserRegistered] = useState(false);
+  const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
+
+  // Check registration status when wallet connects
+  useEffect(() => {
+    const checkRegistrationStatus = async () => {
+      if (!address || !isConnected) {
+        setUserRegistered(false);
+        setShowRegistration(false);
+        return;
+      }
+
+      setIsCheckingRegistration(true);
+      
+      try {
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/player/${address}`);
+        
+        if (response.ok) {
+          const playerData = await response.json();
+          if (playerData && playerData.nickname) {
+            // User is already registered
+            setUserRegistered(true);
+            setShowRegistration(false);
+            console.log("✅ User already registered:", playerData.nickname);
+          } else {
+            // User exists but no nickname - needs registration
+            setUserRegistered(false);
+            setShowRegistration(true);
+          }
+        } else if (response.status === 404) {
+          // User doesn't exist - needs registration
+          setUserRegistered(false);
+          setShowRegistration(true);
+        } else {
+          console.error("Error checking registration status:", response.status);
+          setUserRegistered(false);
+          setShowRegistration(false);
+        }
+      } catch (error) {
+        console.error("Error checking registration status:", error);
+        setUserRegistered(false);
+        setShowRegistration(false);
+      } finally {
+        setIsCheckingRegistration(false);
+      }
+    };
+
+    // Only check registration after welcome and loading screens
+    if (!showWelcome && !isLoading) {
+      checkRegistrationStatus();
+    }
+  }, [address, isConnected, showWelcome, isLoading]);
 
   const handlePlayNow = () => {
     setShowWelcome(false);
