@@ -2980,27 +2980,58 @@ class DogeLabAPITester:
         return all_success, {"registered_players": len(registered_players)}
 
 def main():
-    print("🐕 Starting DogeFood Lab Critical Bug Investigation 🧪")
-    print("Testing Critical Bugs: Mock Data, Mixing Timer, Database State")
+    print("🐕 Starting DogeFood Lab User Registration System Testing 🧪")
+    print("Testing User Registration API: /api/players/register")
     print("=" * 80)
     
     tester = DogeLabAPITester()
     
-    # CRITICAL BUG INVESTIGATION (Priority 1)
-    print("\n🎯 PRIMARY FOCUS: CRITICAL BUG INVESTIGATION")
-    print("Testing mock data, mixing timer bug, database state for wallet 0x033CD94d0020B397393bF1deA4920Be0d4723DCB")
+    # USER REGISTRATION SYSTEM TESTING (Priority 1)
+    print("\n🎯 PRIMARY FOCUS: USER REGISTRATION SYSTEM TESTING")
+    print("Testing /api/players/register endpoint with validation, duplicate prevention, and integration")
     
-    # Run the critical bug investigation
-    print(f"\n🚀 RUNNING CRITICAL BUG INVESTIGATION")
+    # Run the user registration tests
+    print(f"\n🚀 RUNNING USER REGISTRATION TESTS")
+    registration_success = True
+    
     try:
-        success, findings = tester.test_critical_dogefood_lab_bugs()
+        # 1. Test User Registration API
+        print(f"\n📝 1. TESTING USER REGISTRATION API")
+        success, results = tester.test_user_registration_api()
         if success:
-            print(f"\n✅ CRITICAL BUG INVESTIGATION: NO MAJOR ISSUES FOUND")
+            print(f"✅ User Registration API: ALL TESTS PASSED")
         else:
-            print(f"\n❌ CRITICAL BUG INVESTIGATION: ISSUES DETECTED")
+            print(f"❌ User Registration API: SOME TESTS FAILED")
+            registration_success = False
     except Exception as e:
-        print(f"❌ Critical bug investigation failed with exception: {str(e)}")
-        success = False
+        print(f"❌ User registration API tests failed with exception: {str(e)}")
+        registration_success = False
+    
+    try:
+        # 2. Test Player Retrieval After Registration
+        print(f"\n👤 2. TESTING PLAYER RETRIEVAL AFTER REGISTRATION")
+        success, results = tester.test_player_retrieval_after_registration()
+        if success:
+            print(f"✅ Player Retrieval: ALL TESTS PASSED")
+        else:
+            print(f"❌ Player Retrieval: SOME TESTS FAILED")
+            registration_success = False
+    except Exception as e:
+        print(f"❌ Player retrieval tests failed with exception: {str(e)}")
+        registration_success = False
+    
+    try:
+        # 3. Test Registration Integration Flow
+        print(f"\n🔄 3. TESTING REGISTRATION INTEGRATION FLOW")
+        success, results = tester.test_registration_integration_flow()
+        if success:
+            print(f"✅ Registration Integration: ALL TESTS PASSED")
+        else:
+            print(f"❌ Registration Integration: SOME TESTS FAILED")
+            registration_success = False
+    except Exception as e:
+        print(f"❌ Registration integration tests failed with exception: {str(e)}")
+        registration_success = False
     
     # Additional specific tests from review request
     specific_tests = [
