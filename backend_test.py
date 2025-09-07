@@ -14,6 +14,7 @@ class DogeLabAPITester:
         self.test_player_address_2 = "0x8ba1f109551bD432803012645Hac136c0c6160"
         self.test_player_address_3 = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
         self.test_treat_id = None
+        self.test_telegram_id = None  # For Telegram authentication testing
         self.missing_features = []
         self.season_id = 1
 
