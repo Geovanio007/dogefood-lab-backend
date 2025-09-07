@@ -792,6 +792,196 @@ async def register_player(registration_data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
+# Telegram Authentication Functions
+def validate_telegram_data(init_data: str) -> dict:
+    """Validate Telegram Mini App init data"""
+    try:
+        # Parse the init_data
+        data = dict(urllib.parse.parse_qsl(init_data))
+        
+        # Extract hash and create data string for validation
+        hash_value = data.pop('hash', '')
+        auth_date = data.get('auth_date', '')
+        
+        # Check if auth_date is not too old (optional, but recommended)
+        # auth_timestamp = int(auth_date)
+        # current_timestamp = int(datetime.utcnow().timestamp())
+        # if current_timestamp - auth_timestamp > 86400:  # 24 hours
+        #     raise ValueError("Data is too old")
+        
+        # Create data string for validation
+        data_check_string = '\n'.join([f'{k}={v}' for k, v in sorted(data.items())])
+        
+        # Get bot token and create secret key
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+        secret_key = hmac.new("WebAppData".encode(), bot_token.encode(), hashlib.sha256).digest()
+        
+        # Calculate expected hash
+        expected_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+        
+        # Verify hash
+        if hash_value != expected_hash:
+            raise ValueError("Invalid hash")
+        
+        # Parse user data if present
+        if 'user' in data:
+            user_data = json.loads(data['user'])
+            return user_data
+        
+        return {}
+        
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Telegram data: {str(e)}")
+
+# Telegram User Registration API
+@api_router.post("/players/telegram-register")
+async def register_telegram_player(request: Request):
+    """Register a new player using Telegram authentication"""
+    
+    try:
+        body = await request.json()
+        init_data = body.get("initData")
+        
+        if not init_data:
+            raise HTTPException(status_code=400, detail="Missing Telegram init data")
+        
+        # Validate Telegram data
+        user_data = validate_telegram_data(init_data)
+        
+        if not user_data:
+            raise HTTPException(status_code=400, detail="Invalid user data")
+        
+        telegram_id = user_data.get("id")
+        telegram_username = user_data.get("username", "")
+        telegram_first_name = user_data.get("first_name", "")
+        telegram_last_name = user_data.get("last_name", "")
+        
+        if not telegram_id:
+            raise HTTPException(status_code=400, detail="Missing Telegram user ID")
+        
+        # Check if Telegram user already registered
+        existing_player = await db.players.find_one({"telegram_id": telegram_id})
+        if existing_player:
+            # Return existing player data
+            return {
+                "message": "Player already registered",
+                "player_id": existing_player.get("id"),
+                "telegram_id": telegram_id,
+                "username": telegram_username,
+                "first_name": telegram_first_name,
+                "auth_type": "telegram",
+                "registered_at": existing_player.get("registered_at", datetime.utcnow()).isoformat()
+            }
+        
+        # Create new Telegram player
+        player_data = {
+            "id": str(uuid.uuid4()),
+            "address": None,  # No wallet address for Telegram users initially
+            "nickname": telegram_first_name or telegram_username,  # Use Telegram name as nickname
+            "telegram_id": telegram_id,
+            "telegram_username": telegram_username,
+            "telegram_first_name": telegram_first_name,
+            "telegram_last_name": telegram_last_name,
+            "auth_type": "telegram",
+            "level": 1,
+            "experience": 0,
+            "points": 0,
+            "created_treats": [],
+            "sack_progress": 0,
+            "sack_completed_count": 0,
+            "total_treats_created": 0,
+            "is_nft_holder": False,
+            "leaderboard_eligible": True,
+            "registered_at": datetime.utcnow(),
+            "last_activity": datetime.utcnow()
+        }
+        
+        result = await db.players.insert_one(player_data)
+        
+        return {
+            "message": f"Telegram player registered successfully: {telegram_first_name or telegram_username}",
+            "player_id": player_data["id"],
+            "telegram_id": telegram_id,
+            "username": telegram_username,
+            "first_name": telegram_first_name,
+            "auth_type": "telegram",
+            "registered_at": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Telegram registration failed: {str(e)}")
+
+# Link Telegram Account to Wallet
+@api_router.post("/players/link-wallet")
+async def link_wallet_to_telegram(request: Request):
+    """Link a wallet address to an existing Telegram user"""
+    
+    try:
+        body = await request.json()
+        init_data = body.get("initData")
+        wallet_address = body.get("address")
+        signature = body.get("signature")
+        message = body.get("message")
+        
+        if not all([init_data, wallet_address, signature, message]):
+            raise HTTPException(status_code=400, detail="Missing required fields")
+        
+        # Validate Telegram data
+        user_data = validate_telegram_data(init_data)
+        telegram_id = user_data.get("id")
+        
+        if not telegram_id:
+            raise HTTPException(status_code=401, detail="Invalid Telegram authentication")
+        
+        # Find existing Telegram user
+        telegram_player = await db.players.find_one({"telegram_id": telegram_id})
+        if not telegram_player:
+            raise HTTPException(status_code=404, detail="Telegram user not found")
+        
+        # Check if wallet is already linked to another user
+        wallet_player = await db.players.find_one({"address": wallet_address})
+        if wallet_player and wallet_player.get("telegram_id") != telegram_id:
+            raise HTTPException(status_code=409, detail="Wallet already linked to another account")
+        
+        # Update player with wallet information
+        update_data = {
+            "address": wallet_address,
+            "auth_type": "linked",
+            "last_activity": datetime.utcnow(),
+            "wallet_signature": signature,
+            "wallet_message": message,
+            "wallet_linked_at": datetime.utcnow()
+        }
+        
+        await db.players.update_one(
+            {"telegram_id": telegram_id},
+            {"$set": update_data}
+        )
+        
+        return {
+            "message": "Wallet successfully linked to Telegram account",
+            "telegram_id": telegram_id,
+            "address": wallet_address,
+            "auth_type": "linked",
+            "linked_at": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Wallet linking failed: {str(e)}")
+
+# Get Player by Telegram ID
+@api_router.get("/player/telegram/{telegram_id}")
+async def get_player_by_telegram_id(telegram_id: int):
+    """Get player by Telegram ID"""
+    player = await db.players.find_one({"telegram_id": telegram_id})
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    return Player(**player)
+
 # Season Information API
 @api_router.get("/season/current")
 async def get_current_season_info():
