@@ -115,21 +115,27 @@ class SeasonManager:
         if season_id is None:
             season_id = self.get_current_season_id()
         
-        start_date, end_date = self.get_season_dates(season_id)
-        current_date = datetime.now()
-        
-        # Determine season status
-        if current_date < start_date:
-            status = SeasonStatus.UPCOMING
-        elif current_date <= end_date:
+        # For Season 1, force it to be active for the beta launch
+        if season_id == 1:
+            start_date = datetime(2024, 1, 1)
+            end_date = datetime(2025, 12, 31)  # Extended for beta
             status = SeasonStatus.ACTIVE
         else:
-            # Check if it's recently completed or archived
-            days_since_end = (current_date - end_date).days
-            if days_since_end <= 30:  # 30 days grace period
-                status = SeasonStatus.COMPLETED
+            start_date, end_date = self.get_season_dates(season_id)
+            current_date = datetime.now()
+            
+            # Determine season status
+            if current_date < start_date:
+                status = SeasonStatus.UPCOMING
+            elif current_date <= end_date:
+                status = SeasonStatus.ACTIVE
             else:
-                status = SeasonStatus.ARCHIVED
+                # Check if it's recently completed or archived
+                days_since_end = (current_date - end_date).days
+                if days_since_end <= 30:  # 30 days grace period
+                    status = SeasonStatus.COMPLETED
+                else:
+                    status = SeasonStatus.ARCHIVED
         
         # Generate season name
         season_names = self._generate_season_names()
