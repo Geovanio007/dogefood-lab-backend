@@ -206,6 +206,17 @@ const InnerApp = () => {
       </div>
     </GameProvider>
   );
-}
+};
+
+// Main App component that wraps with providers
+function App() {
+  return (
+    <ThemeProvider>
+      <Web3Provider>
+        <InnerApp />
+      </Web3Provider>
+    </ThemeProvider>
+  );
+};
 
 export default App;
