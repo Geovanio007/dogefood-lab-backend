@@ -716,6 +716,71 @@ async def convert_points_to_lab_tokens(conversion_request: PointsConversionReque
         "reason": "Season 1 active - conversion available at season end only"
     }
 
+# User Registration API
+@api_router.post("/players/register")
+async def register_player(registration_data: dict):
+    """Register a new player with username and wallet signature"""
+    
+    try:
+        address = registration_data.get("address")
+        username = registration_data.get("username") 
+        signature = registration_data.get("signature")
+        message = registration_data.get("message")
+        
+        if not all([address, username, signature, message]):
+            raise HTTPException(status_code=400, detail="Missing required fields")
+        
+        # Validate username
+        if len(username) < 3 or len(username) > 20:
+            raise HTTPException(status_code=400, detail="Username must be between 3-20 characters")
+        
+        if not username.replace("_", "").isalnum():
+            raise HTTPException(status_code=400, detail="Username can only contain letters, numbers, and underscores")
+        
+        # Check if username already taken
+        existing_username = await db.players.find_one({"nickname": username})
+        if existing_username:
+            raise HTTPException(status_code=409, detail="Username already taken")
+        
+        # Check if wallet already registered
+        existing_player = await db.players.find_one({"address": address})
+        if existing_player:
+            raise HTTPException(status_code=409, detail="Wallet already registered")
+        
+        # Create new player with registration data
+        player_data = {
+            "address": address,
+            "nickname": username,
+            "level": 1,
+            "experience": 0,
+            "points": 0,
+            "created_treats": [],
+            "sack_progress": 0,
+            "sack_completed_count": 0,
+            "total_treats_created": 0,
+            "is_nft_holder": False,
+            "leaderboard_eligible": True,
+            "registration_signature": signature,
+            "registration_message": message,
+            "registered_at": datetime.utcnow(),
+            "last_activity": datetime.utcnow()
+        }
+        
+        result = await db.players.insert_one(player_data)
+        
+        return {
+            "message": f"Player registered successfully with username: {username}",
+            "player_id": str(result.inserted_id),
+            "address": address,
+            "username": username,
+            "registered_at": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
 # Season Information API
 @api_router.get("/season/current")
 async def get_current_season_info():
