@@ -276,7 +276,7 @@ const GameLab = () => {
           treatId: treatResult.treat.id,
           timerDuration: treatResult.outcome.timer_duration_hours,
           season: 1,  // Mark as Season 1 treat
-          isOffchain: true  // Explicitly mark as offchain
+          isBeta: true  // Mark as beta feature
         }
       });
 
