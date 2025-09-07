@@ -40,11 +40,35 @@ export const getTelegramInitData = () => {
   }
 };
 
-// Expand Telegram WebApp to full height
+// Expand Telegram WebApp to full height and optimize viewport
 export const expandTelegramWebApp = () => {
   if (isTelegramWebApp()) {
     try {
-      window.Telegram.WebApp.expand();
+      const webApp = window.Telegram.WebApp;
+      
+      // Expand to full height
+      webApp.expand();
+      
+      // Enable viewport fit for better mobile experience
+      webApp.enableClosingConfirmation();
+      
+      // Set proper viewport for mobile
+      const viewport = document.querySelector('meta[name="viewport"]');
+      if (viewport) {
+        viewport.setAttribute('content', 
+          'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'
+        );
+      }
+      
+      // Add telegram-webapp class to body for styling
+      document.body.classList.add('telegram-webapp');
+      
+      // Optimize for mobile touch
+      document.body.style.touchAction = 'manipulation';
+      document.body.style.userSelect = 'none';
+      document.body.style.webkitUserSelect = 'none';
+      
+      console.log('✅ Telegram WebApp expanded and optimized for mobile');
     } catch (error) {
       console.error('Error expanding Telegram WebApp:', error);
     }
