@@ -4017,7 +4017,7 @@ def main():
     try:
         # 1. Test Telegram Authentication System Comprehensively
         print(f"\n📱 1. TESTING TELEGRAM AUTHENTICATION SYSTEM")
-        success, results = tester.test_telegram_authentication_comprehensive()
+        success, results = tester.test_telegram_mini_app_comprehensive()
         if success:
             print(f"✅ Telegram Authentication System: ALL TESTS PASSED")
         else:
