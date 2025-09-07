@@ -60,8 +60,14 @@ api_router = APIRouter(prefix="/api")
 # Game Models
 class Player(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    address: str
+    address: Optional[str] = None  # Wallet address (optional for Telegram users)
     nickname: Optional[str] = None  # Enhanced: Add nickname support
+    # Telegram user fields
+    telegram_id: Optional[int] = None  # Telegram user ID
+    telegram_username: Optional[str] = None  # Telegram @username
+    telegram_first_name: Optional[str] = None  # Telegram first name
+    telegram_last_name: Optional[str] = None  # Telegram last name
+    auth_type: str = "wallet"  # "wallet", "telegram", or "linked"
     is_nft_holder: bool = False
     level: int = 1
     experience: int = 0
