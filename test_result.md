@@ -379,9 +379,9 @@ metadata:
 
 test_plan:
   current_focus: 
-    - "Telegram Mini App Authentication System"
-    - "User Registration System Completion"
-    - "Offchain UI Text Removal"
+    - "Telegram Mini App Final Production Testing"
+    - "Complete End-to-End User Experience Verification"
+    - "Mobile Optimization and Performance Testing"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
