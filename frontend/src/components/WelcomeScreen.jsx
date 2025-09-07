@@ -52,34 +52,23 @@ const WelcomeScreen = ({ onPlayNow }) => {
           <p className="text-xl opacity-80">Ready to become the ultimate treat creator?</p>
         </div>
 
-        {/* Play Now Button */}
-        <div className="welcome-button-container">
+        {/* Play Now Button - Simplified for debugging */}
+        <div className="welcome-button-container mb-8">
           <button
             onClick={() => {
               console.log('PLAY NOW button clicked!');
               onPlayNow();
             }}
-            className="play-now-button group relative inline-flex items-center justify-center cursor-pointer"
-            style={{ zIndex: 50 }}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-2xl font-bold py-4 px-8 rounded-lg shadow-lg transition-all duration-300 hover:scale-105"
+            style={{ 
+              zIndex: 999,
+              display: 'inline-block',
+              minHeight: '60px',
+              minWidth: '200px'
+            }}
           >
-            {/* Button Background with Glow - Sky Blue Theme */}
-            <div className="absolute inset-0 rounded-full transition-all duration-300 group-hover:scale-110 bg-gradient-to-r from-sky-400 via-sky-500 to-sky-600 shadow-2xl shadow-sky-500/50"></div>
-            
-            {/* Button Content */}
-            <div className="relative z-10 px-16 py-6 flex items-center gap-4">
-              <div className="text-6xl">🚀</div>
-              <span className="text-4xl md:text-5xl font-black text-yellow-400">
-                PLAY NOW
-              </span>
-              <div className="text-6xl animate-pulse">✨</div>
-            </div>
-
-            {/* Hover Effect Ring - Sky Blue */}
-            <div className="absolute inset-0 rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover:scale-125 border-4 border-sky-300 shadow-lg shadow-sky-300/30"></div>
+            🚀 PLAY NOW ✨
           </button>
-
-          {/* Pulsing Effect - Sky Blue */}
-          <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-sky-400" style={{ animationDuration: '2s' }}></div>
         </div>
 
         {/* Bottom Tagline */}
