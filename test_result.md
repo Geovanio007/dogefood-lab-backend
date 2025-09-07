@@ -379,6 +379,7 @@ metadata:
 
 test_plan:
   current_focus: 
+    - "Telegram Mini App Authentication System"
     - "User Registration System Completion"
     - "Offchain UI Text Removal"
   stuck_tasks: []
