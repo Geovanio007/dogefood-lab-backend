@@ -1987,7 +1987,24 @@ body {
    MOBILE & TELEGRAM MINI APP OPTIMIZATIONS
    ================================ */
 
-/* Mobile Font Override - Remove Comic Sans on mobile */
+/* Ensure PLAY NOW button is always visible */
+.play-now-button {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 999 !important;
+}
+
+.welcome-button-container {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 998 !important;
+}
+
+/* Mobile Font Override - Remove Comic Sans on mobile but keep button visible */
 @media (max-width: 768px) {
   /* Override all cursive fonts on mobile */
   *, *::before, *::after {
