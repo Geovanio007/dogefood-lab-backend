@@ -23,6 +23,8 @@ function App() {
     return window.location.pathname === '/';
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [userRegistered, setUserRegistered] = useState(false);
 
   const handlePlayNow = () => {
     setShowWelcome(false);
