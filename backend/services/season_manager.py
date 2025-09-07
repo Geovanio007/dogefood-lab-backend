@@ -4,7 +4,7 @@ Handles 3-month seasons, player progress tracking, and season transitions
 for the DogeFood Lab game.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from enum import Enum
