@@ -3999,6 +3999,10 @@ class DogeLabAPITester:
         
         return all_success, {"registered_players": len(registered_players)}
 
+    def test_get_current_season(self):
+        """Test getting current season information"""
+        return self.run_test("Get Current Season", "GET", "seasons/current", 200)
+
     def test_final_production_readiness(self):
         """🚀 FINAL PRODUCTION READINESS VERIFICATION for Telegram Mini App"""
         print("\n" + "="*80)
