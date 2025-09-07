@@ -38,55 +38,81 @@ const InnerApp = () => {
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
   const [authType, setAuthType] = useState(null); // 'wallet', 'telegram', or 'linked'
 
-  // Check registration status when wallet connects
+  // Check registration status for both wallet and Telegram authentication
   useEffect(() => {
     const checkRegistrationStatus = async () => {
-      if (!address || !isConnected) {
-        setUserRegistered(false);
-        setShowRegistration(false);
+      // Skip if still loading Telegram or showing welcome/loading screens
+      if (isTelegramLoading || showWelcome || isLoading) {
         return;
       }
 
       setIsCheckingRegistration(true);
       
       try {
-        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/player/${address}`);
-        
-        if (response.ok) {
-          const playerData = await response.json();
-          if (playerData && playerData.nickname) {
-            // User is already registered
+        if (isTelegram && isTelegramAuthenticated && telegramUser) {
+          // Telegram authentication flow
+          console.log("🤖 Checking Telegram user registration");
+          
+          const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/player/telegram/${telegramUser.id}`);
+          
+          if (response.ok) {
+            const playerData = await response.json();
             setUserRegistered(true);
-            setShowRegistration(false);
-            console.log("✅ User already registered:", playerData.nickname);
-          } else {
-            // User exists but no nickname - needs registration
+            setAuthType(playerData.auth_type || 'telegram');
+            setShowTelegramAuth(false);
+            console.log("✅ Telegram user already registered:", playerData.nickname);
+          } else if (response.status === 404) {
+            // Telegram user not registered - show Telegram auth
+            setUserRegistered(false);  
+            setShowTelegramAuth(true);
+            setAuthType('telegram');
+            console.log("📝 Telegram user needs registration");
+          }
+          
+        } else if (!isTelegram && address && isConnected) {
+          // Wallet authentication flow (existing logic)
+          console.log("💳 Checking wallet user registration");
+          
+          const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/player/${address}`);
+          
+          if (response.ok) {
+            const playerData = await response.json();
+            if (playerData && playerData.nickname) {
+              setUserRegistered(true);
+              setAuthType(playerData.auth_type || 'wallet');
+              setShowRegistration(false);
+              console.log("✅ Wallet user already registered:", playerData.nickname);
+            } else {
+              setUserRegistered(false);
+              setShowRegistration(true);
+              setAuthType('wallet');
+            }
+          } else if (response.status === 404) {
             setUserRegistered(false);
             setShowRegistration(true);
+            setAuthType('wallet');
           }
-        } else if (response.status === 404) {
-          // User doesn't exist - needs registration
-          setUserRegistered(false);
-          setShowRegistration(true);
+          
         } else {
-          console.error("Error checking registration status:", response.status);
+          // No authentication available
           setUserRegistered(false);
           setShowRegistration(false);
+          setShowTelegramAuth(false);
+          setAuthType(null);
         }
+        
       } catch (error) {
         console.error("Error checking registration status:", error);
         setUserRegistered(false);
         setShowRegistration(false);
+        setShowTelegramAuth(false);
       } finally {
         setIsCheckingRegistration(false);
       }
     };
 
-    // Only check registration after welcome and loading screens
-    if (!showWelcome && !isLoading) {
-      checkRegistrationStatus();
-    }
-  }, [address, isConnected, showWelcome, isLoading]);
+    checkRegistrationStatus();
+  }, [address, isConnected, isTelegram, isTelegramAuthenticated, telegramUser, isTelegramLoading, showWelcome, isLoading]);
 
   const handlePlayNow = () => {
     setShowWelcome(false);
