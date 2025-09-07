@@ -223,7 +223,7 @@ const GameLab = () => {
   // Enhanced mixing completion - Season 1
   const handleEnhancedMixCompletion = async () => {
     try {
-      // Step 1: Create treat in backend using enhanced API (offchain storage)
+      // Step 1: Create treat in backend using enhanced API
       const treatData = {
         ingredients: selectedIngredients,
         main_ingredient: selectedIngredients[0] || 'chicken',
