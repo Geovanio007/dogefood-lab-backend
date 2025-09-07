@@ -2042,7 +2042,13 @@ body {
   .points-text,
   .timer-text,
   .notification-text {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
+  }
+  
+  /* Override any Comic Sans usage */
+  *[style*="Comic Sans"], 
+  *[style*="cursive"] {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
   }
   
   /* Welcome screen mobile responsiveness */
