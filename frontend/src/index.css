@@ -1983,30 +1983,216 @@ body {
   animation: spin-slow 8s linear infinite;
 }
 
-/* Welcome screen mobile responsiveness */
+/* ================================
+   MOBILE & TELEGRAM MINI APP OPTIMIZATIONS
+   ================================ */
+
+/* Mobile Font Override - Remove Comic Sans on mobile */
 @media (max-width: 768px) {
+  /* Override all cursive fonts on mobile */
+  *, *::before, *::after {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
+  }
+  
+  /* Specific overrides for elements that use cursive fonts */
+  .playful-title,
+  .game-title,
+  .welcome-title,
+  .welcome-subtitle,
+  .welcome-description,
+  .play-now-button,
+  .playful-subtitle,
+  .floating-text,
+  .game-button,
+  .card-title,
+  .menu-item,
+  .stats-label,
+  .ingredient-name,
+  .treat-name,
+  .rarity-text,
+  .level-text,
+  .points-text,
+  .timer-text,
+  .notification-text {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  }
+  
+  /* Welcome screen mobile responsiveness */
   .welcome-title {
-    font-size: 4rem !important;
+    font-size: 3.5rem !important;
+    line-height: 1.1 !important;
   }
   
   .welcome-subtitle {
-    font-size: 2.5rem !important;
+    font-size: 2rem !important;
+    line-height: 1.2 !important;
   }
   
   .welcome-description {
-    font-size: 1.5rem !important;
+    font-size: 1.25rem !important;
     padding: 0 1rem;
+    line-height: 1.4 !important;
   }
   
   .play-now-button span {
-    font-size: 2.5rem !important;
+    font-size: 2rem !important;
   }
   
   .play-now-button div {
-    font-size: 3rem !important;
+    font-size: 2.5rem !important;
   }
   
   .floating-elements {
     display: none; /* Hide floating elements on mobile for cleaner look */
+  }
+}
+
+/* ================================
+   TELEGRAM MINI APP SPECIFIC STYLES
+   ================================ */
+
+/* Detect Telegram WebApp environment */
+.telegram-webapp {
+  /* Ensure full viewport usage in Telegram */
+  min-height: 100vh !important;
+  height: 100vh !important;
+  overflow-x: hidden;
+  
+  /* Remove any margins that might cause issues in Telegram */
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Mobile-specific scaling for Telegram */
+@media (max-width: 480px) {
+  /* Extra small screens (Telegram mobile) */
+  body {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  .glass-panel {
+    margin: 0.5rem !important;
+    padding: 1rem !important;
+  }
+  
+  .card {
+    margin: 0.25rem !important;
+    border-radius: 0.75rem !important;
+  }
+  
+  /* Button optimizations for touch */
+  button {
+    min-height: 44px !important; /* Apple's recommended touch target size */
+    min-width: 44px !important;
+    padding: 0.75rem 1rem !important;
+  }
+  
+  /* Input optimizations */
+  input, textarea, select {
+    font-size: 16px !important; /* Prevent zoom on iOS */
+    padding: 0.75rem !important;
+  }
+  
+  /* Game lab optimizations */
+  .ingredient-card {
+    flex: 1 1 calc(50% - 0.5rem) !important; /* 2 columns on mobile */
+    min-width: 140px !important;
+  }
+  
+  .sack-container {
+    margin: 1rem 0.5rem !important;
+  }
+  
+  /* Treat cards optimization */
+  .treat-card {
+    margin: 0.25rem !important;
+    padding: 0.75rem !important;
+  }
+  
+  /* Navigation optimization */
+  .nav-button {
+    padding: 0.5rem !important;
+    font-size: 0.875rem !important;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 768px) and (orientation: landscape) {
+  .welcome-screen {
+    padding: 1rem !important;
+  }
+  
+  .welcome-title {
+    font-size: 2.5rem !important;
+  }
+  
+  .welcome-subtitle {
+    font-size: 1.5rem !important;
+  }
+}
+
+/* ================================
+   TELEGRAM THEME INTEGRATION
+   ================================ */
+
+/* Telegram's theme integration */
+@media (prefers-color-scheme: dark) {
+  /* Match Telegram's dark theme */
+  :root {
+    --tg-bg-color: var(--tg-theme-bg-color, #212121);
+    --tg-text-color: var(--tg-theme-text-color, #ffffff);
+    --tg-hint-color: var(--tg-theme-hint-color, #aaaaaa);
+    --tg-link-color: var(--tg-theme-link-color, #62bcf9);
+    --tg-button-color: var(--tg-theme-button-color, #62bcf9);
+    --tg-button-text-color: var(--tg-theme-button-text-color, #ffffff);
+  }
+}
+
+/* ================================
+   PERFORMANCE OPTIMIZATIONS FOR MOBILE
+   ================================ */
+
+/* Reduce animations on mobile for better performance */
+@media (max-width: 768px) {
+  /* Disable complex animations on mobile */
+  .animate-bounce,
+  .animate-pulse,
+  .animate-spin {
+    animation: none !important;
+  }
+  
+  /* Reduce transform effects */
+  .transform {
+    will-change: auto !important;
+  }
+  
+  /* Optimize scrolling */
+  .overflow-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ================================
+   ACCESSIBILITY IMPROVEMENTS
+   ================================ */
+
+/* Improve contrast for mobile */
+@media (max-width: 768px) {
+  .text-white\/90 {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+  
+  .text-white\/80 {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+  
+  /* Ensure buttons are easily tappable */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
