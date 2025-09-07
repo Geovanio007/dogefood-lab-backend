@@ -2051,12 +2051,25 @@ body {
     line-height: 1.4 !important;
   }
   
+  /* Ensure button is always visible on mobile */
+  .play-now-button,
+  .welcome-button-container {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 999 !important;
+  }
+  
   .play-now-button span {
     font-size: 2rem !important;
+    color: #facc15 !important;
+    display: inline !important;
   }
   
   .play-now-button div {
     font-size: 2.5rem !important;
+    display: inline !important;
   }
   
   .floating-elements {
