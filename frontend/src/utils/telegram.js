@@ -148,3 +148,66 @@ export const getTelegramTheme = () => {
     return null;
   }
 };
+
+// Detect if running on Telegram mobile app
+export const isTelegramMobile = () => {
+  if (!isTelegramWebApp()) return false;
+  
+  try {
+    const webApp = window.Telegram.WebApp;
+    const platform = webApp.platform;
+    return platform === 'ios' || platform === 'android' || 
+           window.innerWidth <= 768 || 
+           /Mobi|Android/i.test(navigator.userAgent);
+  } catch (error) {
+    console.error('Error detecting Telegram mobile:', error);
+    return window.innerWidth <= 768;
+  }
+};
+
+// Optimize for Telegram platform
+export const optimizeForTelegramPlatform = () => {
+  if (!isTelegramWebApp()) return;
+  
+  try {
+    const webApp = window.Telegram.WebApp;
+    const isMobile = isTelegramMobile();
+    
+    if (isMobile) {
+      // Mobile-specific optimizations
+      document.body.style.fontSize = '14px';
+      document.documentElement.style.fontSize = '14px';
+      
+      // Add mobile-specific class
+      document.body.classList.add('telegram-mobile');
+      
+      // Disable pull-to-refresh on mobile
+      document.body.style.overscrollBehavior = 'none';
+      
+      console.log('📱 Optimized for Telegram mobile');
+    } else {
+      // Desktop-specific optimizations
+      document.body.classList.add('telegram-desktop');
+      console.log('🖥️ Optimized for Telegram desktop');
+    }
+    
+    // Set theme colors based on Telegram theme
+    const themeParams = getTelegramTheme();
+    if (themeParams) {
+      // Apply Telegram theme colors
+      const root = document.documentElement;
+      if (themeParams.bg_color) {
+        root.style.setProperty('--tg-bg-color', themeParams.bg_color);
+      }
+      if (themeParams.text_color) {
+        root.style.setProperty('--tg-text-color', themeParams.text_color);
+      }
+      if (themeParams.button_color) {
+        root.style.setProperty('--tg-button-color', themeParams.button_color);
+      }
+    }
+    
+  } catch (error) {
+    console.error('Error optimizing for Telegram platform:', error);
+  }
+};
