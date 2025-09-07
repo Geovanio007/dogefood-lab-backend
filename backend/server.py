@@ -365,10 +365,38 @@ async def get_points_leaderboard(limit: int = 50, nft_holders_only: bool = False
 @api_router.get("/points/{address}/stats")
 async def get_player_points_stats(address: str):
     """Get detailed player points statistics"""
-    stats = await points_system.get_player_stats(address)
-    if not stats:
-        raise HTTPException(status_code=404, detail="Player not found")
-    return stats
+    try:
+        stats = await points_system.get_player_stats(address)
+        if not stats:
+            raise HTTPException(status_code=404, detail="Player not found")
+        return stats
+    except Exception as e:
+        logger.error(f"Error getting player stats for {address}: {str(e)}")
+        # Return basic stats if detailed stats fail
+        try:
+            player = await db.players.find_one({"address": address})
+            if not player:
+                raise HTTPException(status_code=404, detail="Player not found")
+            return {
+                "player": {
+                    "address": player["address"],
+                    "nickname": player.get("nickname"),
+                    "level": player["level"],
+                    "total_points": player["points"],
+                    "is_nft_holder": player["is_nft_holder"],
+                    "last_active": player["last_active"]
+                },
+                "activity": {
+                    "treats_created": 0,
+                    "login_streak": 0,
+                    "treat_creation_streak": 0,
+                    "recent_transactions": 0
+                },
+                "points_breakdown": {}
+            }
+        except Exception as fallback_error:
+            logger.error(f"Fallback stats failed for {address}: {str(fallback_error)}")
+            raise HTTPException(status_code=500, detail="Unable to retrieve player statistics")
 
 @api_router.get("/points/{address}/history")
 async def get_player_points_history(address: str, days: int = 30):
