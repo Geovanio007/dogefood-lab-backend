@@ -55,8 +55,9 @@ export const TelegramProvider = ({ children }) => {
           // Configure Telegram WebApp
           expandTelegramWebApp();
           setTelegramHeaderColor('#1f2937'); // Dark header for game theme
+          optimizeForTelegramPlatform(); // Platform-specific optimizations
           
-          console.log('✅ Telegram WebApp initialized');
+          console.log('✅ Telegram WebApp initialized and optimized');
         } else {
           console.log('🌐 Running in regular browser');
         }
