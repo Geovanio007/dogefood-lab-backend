@@ -177,7 +177,7 @@ const MainMenu = () => {
                   <div className="text-4xl">🎮</div>
                   <div>
                     <h3 className="text-2xl font-bold text-orange-800 mb-2">
-                      🚀 Season 1: Offchain Launch
+                      🚀 Season 1: Beta Launch
                     </h3>
                     <p className="text-orange-700 text-lg">
                       Welcome to the beta! Create treats, earn points, and climb the leaderboard. 
