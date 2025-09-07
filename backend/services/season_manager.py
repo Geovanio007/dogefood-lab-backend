@@ -451,7 +451,7 @@ def test_season_manager():
     
     # List seasons
     seasons = manager.list_seasons()
-    print(f"\nAvailable seasons:")
+    print("\nAvailable seasons:")
     for season in seasons:
         print(f"  {season.season_id}: {season.name} ({season.status.value})")
 
