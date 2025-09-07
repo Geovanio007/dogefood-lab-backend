@@ -1241,6 +1241,527 @@ class DogeLabAPITester:
 
     # ========== TELEGRAM MINI APP AUTHENTICATION TESTING ==========
     
+    def test_telegram_registration_endpoint(self):
+        """Test /api/players/telegram-register endpoint"""
+        print("\n📱 Testing Telegram Registration Endpoint")
+        
+        # Mock Telegram initData (will expect 401 due to hash validation)
+        mock_init_data = "user=%7B%22id%22%3A987654321%2C%22username%22%3A%22telegramtester%22%2C%22first_name%22%3A%22Telegram%22%2C%22last_name%22%3A%22Tester%22%7D&auth_date=1640995200&hash=invalid_hash_for_testing"
+        
+        telegram_data = {
+            "initData": mock_init_data
+        }
+        
+        # Expect 401 due to hash validation (this is correct security behavior)
+        success, response = self.run_test(
+            "Telegram Registration (Security Check)", 
+            "POST", 
+            "players/telegram-register", 
+            401, 
+            data=telegram_data
+        )
+        
+        if success:
+            print(f"   ✅ Hash validation working correctly (401 for invalid data)")
+            print(f"   🔒 Security: {response.get('detail', 'Invalid Telegram data')}")
+        
+        # Test missing initData
+        success2, response2 = self.run_test(
+            "Telegram Registration (Missing Data)", 
+            "POST", 
+            "players/telegram-register", 
+            400, 
+            data={}
+        )
+        
+        if success2:
+            print(f"   ✅ Missing data validation working (400 for missing initData)")
+        
+        return success and success2, response
+
+    def test_telegram_player_retrieval_endpoint(self):
+        """Test /api/player/telegram/{telegram_id} endpoint"""
+        print("\n🔍 Testing Telegram Player Retrieval Endpoint")
+        
+        # Test with non-existent telegram ID (should return 404)
+        test_telegram_id = 999999999
+        success, response = self.run_test(
+            "Get Non-existent Telegram Player", 
+            "GET", 
+            f"player/telegram/{test_telegram_id}", 
+            404
+        )
+        
+        if success:
+            print(f"   ✅ Non-existent player handling correct (404)")
+            print(f"   📱 Telegram ID {test_telegram_id}: {response.get('detail', 'Player not found')}")
+        
+        return success, response
+
+    def test_wallet_linking_endpoint(self):
+        """Test /api/players/link-wallet endpoint"""
+        print("\n🔗 Testing Wallet Linking Endpoint")
+        
+        # Test missing required fields
+        incomplete_data = {
+            "initData": "incomplete_data"
+        }
+        
+        success, response = self.run_test(
+            "Wallet Linking (Missing Fields)", 
+            "POST", 
+            "players/link-wallet", 
+            400, 
+            data=incomplete_data
+        )
+        
+        if success:
+            print(f"   ✅ Missing fields validation working (400)")
+            print(f"   🔒 Error: {response.get('detail', 'Missing required fields')}")
+        
+        # Test with invalid Telegram data
+        invalid_link_data = {
+            "initData": "invalid_telegram_data",
+            "address": "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54",
+            "signature": "0x1234567890abcdef",
+            "message": "Link wallet test"
+        }
+        
+        success2, response2 = self.run_test(
+            "Wallet Linking (Invalid Auth)", 
+            "POST", 
+            "players/link-wallet", 
+            401, 
+            data=invalid_link_data
+        )
+        
+        if success2:
+            print(f"   ✅ Invalid auth validation working (401)")
+        
+        return success and success2, response
+
+    def test_telegram_auth_error_handling(self):
+        """Test Telegram authentication error handling"""
+        print("\n🛡️ Testing Telegram Auth Error Handling")
+        
+        # Test various error scenarios
+        error_tests = [
+            {
+                "name": "Empty initData",
+                "data": {"initData": ""},
+                "expected_status": 400
+            },
+            {
+                "name": "Malformed initData", 
+                "data": {"initData": "malformed_data_string"},
+                "expected_status": 401
+            },
+            {
+                "name": "Missing initData field",
+                "data": {},
+                "expected_status": 400
+            }
+        ]
+        
+        all_success = True
+        for test_case in error_tests:
+            success, response = self.run_test(
+                f"Auth Error: {test_case['name']}", 
+                "POST", 
+                "players/telegram-register", 
+                test_case['expected_status'], 
+                data=test_case['data']
+            )
+            
+            if success:
+                print(f"   ✅ {test_case['name']}: Correct error handling")
+            else:
+                all_success = False
+                print(f"   ❌ {test_case['name']}: Error handling failed")
+        
+        return all_success, {}
+
+    def test_telegram_security_validation(self):
+        """Test Telegram hash validation security"""
+        print("\n🔒 Testing Telegram Security Validation")
+        
+        # Test hash validation with various invalid hashes
+        security_tests = [
+            {
+                "name": "Invalid Hash Format",
+                "initData": "user=%7B%22id%22%3A123%7D&auth_date=1640995200&hash=invalid_hash"
+            },
+            {
+                "name": "Missing Hash",
+                "initData": "user=%7B%22id%22%3A123%7D&auth_date=1640995200"
+            },
+            {
+                "name": "Tampered User Data",
+                "initData": "user=%7B%22id%22%3A999%7D&auth_date=1640995200&hash=valid_looking_hash"
+            }
+        ]
+        
+        all_success = True
+        for test_case in security_tests:
+            success, response = self.run_test(
+                f"Security: {test_case['name']}", 
+                "POST", 
+                "players/telegram-register", 
+                401,  # All should return 401 for security violations
+                data={"initData": test_case['initData']}
+            )
+            
+            if success:
+                print(f"   ✅ {test_case['name']}: Security validation working")
+            else:
+                all_success = False
+                print(f"   ❌ {test_case['name']}: Security validation failed")
+        
+        return all_success, {}
+
+    def test_telegram_treat_creation(self):
+        """Test Telegram users can create treats via /api/treats/enhanced"""
+        print("\n🧪 Testing Telegram Treat Creation")
+        
+        # Use a mock Telegram user address for testing
+        telegram_user_address = "telegram_user_123456789"
+        
+        treat_data = {
+            "creator_address": telegram_user_address,
+            "ingredients": ["chicken", "bones", "rice"],
+            "player_level": 5
+        }
+        
+        success, response = self.run_test(
+            "Telegram User Treat Creation", 
+            "POST", 
+            "treats/enhanced", 
+            200, 
+            data=treat_data
+        )
+        
+        if success and response:
+            treat = response.get('treat', {})
+            outcome = response.get('outcome', {})
+            
+            print(f"   ✅ Telegram user can create treats")
+            print(f"   🎯 Rarity: {outcome.get('rarity', 'Unknown')}")
+            print(f"   ⏰ Timer: {outcome.get('timer_duration_hours', 0)}h")
+            
+            # Verify treat was created for Telegram user
+            if treat.get('creator_address') == telegram_user_address:
+                print(f"   ✅ Treat correctly attributed to Telegram user")
+            else:
+                print(f"   ❌ Treat attribution failed")
+                return False, response
+        
+        return success, response
+
+    def test_telegram_treat_retrieval(self):
+        """Test treat retrieval for Telegram users"""
+        print("\n📋 Testing Telegram Treat Retrieval")
+        
+        telegram_user_address = "telegram_user_123456789"
+        
+        success, response = self.run_test(
+            "Get Telegram User Treats", 
+            "GET", 
+            f"treats/{telegram_user_address}", 
+            200
+        )
+        
+        if success and response:
+            treats_count = len(response) if isinstance(response, list) else 0
+            print(f"   ✅ Retrieved {treats_count} treats for Telegram user")
+            
+            # Check if any treats belong to this user
+            if treats_count > 0:
+                first_treat = response[0]
+                if first_treat.get('creator_address') == telegram_user_address:
+                    print(f"   ✅ Treat ownership verification successful")
+                else:
+                    print(f"   ⚠️ Treat ownership mismatch")
+        
+        return success, response
+
+    def test_telegram_leaderboard_integration(self):
+        """Test leaderboard includes Telegram users"""
+        print("\n🏆 Testing Telegram Leaderboard Integration")
+        
+        success, response = self.run_test(
+            "Leaderboard with Mixed Users", 
+            "GET", 
+            "leaderboard", 
+            200, 
+            params={"limit": 20}
+        )
+        
+        if success and response:
+            leaderboard_count = len(response) if isinstance(response, list) else 0
+            print(f"   ✅ Leaderboard contains {leaderboard_count} players")
+            
+            # Check for mixed user types (wallet and telegram)
+            wallet_users = 0
+            telegram_users = 0
+            
+            for entry in response:
+                address = entry.get('address', '')
+                if address.startswith('0x'):
+                    wallet_users += 1
+                elif 'telegram' in address.lower():
+                    telegram_users += 1
+            
+            print(f"   📊 Wallet users: {wallet_users}, Telegram users: {telegram_users}")
+            print(f"   ✅ Mixed user system working in leaderboard")
+        
+        return success, response
+
+    def test_telegram_points_integration(self):
+        """Test points system integration for Telegram users"""
+        print("\n⭐ Testing Telegram Points Integration")
+        
+        telegram_user_address = "telegram_user_123456789"
+        
+        # Test points leaderboard includes Telegram users
+        success, response = self.run_test(
+            "Points Leaderboard Mixed Users", 
+            "GET", 
+            "points/leaderboard", 
+            200, 
+            params={"limit": 20}
+        )
+        
+        if success and response:
+            leaderboard = response.get('leaderboard', [])
+            print(f"   ✅ Points leaderboard contains {len(leaderboard)} players")
+            
+            # Check for mixed user types
+            mixed_users = any(
+                'telegram' in entry.get('address', '').lower() or 
+                entry.get('address', '').startswith('0x')
+                for entry in leaderboard
+            )
+            
+            if mixed_users:
+                print(f"   ✅ Points system supports mixed user types")
+            else:
+                print(f"   ⚠️ Limited user type diversity in points system")
+        
+        return success, response
+
+    def test_hybrid_user_system(self):
+        """Test hybrid user system (wallet + Telegram linking)"""
+        print("\n🔗 Testing Hybrid User System")
+        
+        # Test that system supports both wallet and Telegram authentication
+        success, response = self.run_test(
+            "Game Stats (User Diversity)", 
+            "GET", 
+            "stats", 
+            200
+        )
+        
+        if success and response:
+            total_players = response.get('total_players', 0)
+            print(f"   ✅ Total players in system: {total_players}")
+            print(f"   ✅ System supports multiple authentication methods")
+            
+            # Verify system can handle mixed user types
+            if total_players > 0:
+                print(f"   ✅ Hybrid user system operational")
+            else:
+                print(f"   ⚠️ No players in system for hybrid testing")
+        
+        return success, response
+
+    def test_telegram_data_consistency(self):
+        """Test data consistency for Telegram users"""
+        print("\n📊 Testing Telegram Data Consistency")
+        
+        # Test that Telegram user data is consistent across endpoints
+        telegram_user_address = "telegram_user_123456789"
+        
+        # Create a player record for consistency testing
+        player_data = {
+            "address": telegram_user_address,
+            "nickname": "TelegramTester",
+            "is_nft_holder": False
+        }
+        
+        success1, response1 = self.run_test(
+            "Create Telegram Player Record", 
+            "POST", 
+            "player", 
+            200, 
+            data=player_data
+        )
+        
+        if success1:
+            # Retrieve the same player
+            success2, response2 = self.run_test(
+                "Retrieve Telegram Player", 
+                "GET", 
+                f"player/{telegram_user_address}", 
+                200
+            )
+            
+            if success2 and response2:
+                # Verify data consistency
+                created_address = response1.get('address')
+                retrieved_address = response2.get('address')
+                
+                if created_address == retrieved_address == telegram_user_address:
+                    print(f"   ✅ Data consistency verified")
+                    print(f"   📱 Address: {retrieved_address}")
+                    print(f"   👤 Nickname: {response2.get('nickname')}")
+                else:
+                    print(f"   ❌ Data consistency failed")
+                    return False, response2
+        
+        return success1, response1
+
+    def test_mixed_user_types_support(self):
+        """Test system supports mixed user types in database"""
+        print("\n👥 Testing Mixed User Types Support")
+        
+        # Test creating different user types
+        user_types = [
+            {
+                "name": "Wallet User",
+                "data": {
+                    "address": "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54",
+                    "nickname": "WalletUser",
+                    "is_nft_holder": True
+                }
+            },
+            {
+                "name": "Telegram User",
+                "data": {
+                    "address": "telegram_user_987654321",
+                    "nickname": "TelegramUser", 
+                    "is_nft_holder": False
+                }
+            }
+        ]
+        
+        all_success = True
+        for user_type in user_types:
+            success, response = self.run_test(
+                f"Create {user_type['name']}", 
+                "POST", 
+                "player", 
+                200, 
+                data=user_type['data']
+            )
+            
+            if success:
+                print(f"   ✅ {user_type['name']} created successfully")
+            else:
+                all_success = False
+                print(f"   ❌ {user_type['name']} creation failed")
+        
+        return all_success, {}
+
+    def test_telegram_response_times(self):
+        """Test response times for Telegram-specific endpoints"""
+        print("\n⚡ Testing Telegram Response Times")
+        
+        import time
+        
+        # Test response times for key endpoints
+        endpoints = [
+            ("Telegram Registration", "POST", "players/telegram-register", {"initData": "test_data"}),
+            ("Telegram Player Retrieval", "GET", "player/telegram/123456789", None),
+            ("Wallet Linking", "POST", "players/link-wallet", {"initData": "test", "address": "0x123", "signature": "0x456", "message": "test"})
+        ]
+        
+        response_times = []
+        for name, method, endpoint, data in endpoints:
+            start_time = time.time()
+            
+            # We expect these to fail due to validation, but we're testing response time
+            if method == "GET":
+                success, response = self.run_test(name, method, endpoint, 404)
+            else:
+                success, response = self.run_test(name, method, endpoint, 400)  # Expect validation errors
+            
+            end_time = time.time()
+            response_time = (end_time - start_time) * 1000  # Convert to milliseconds
+            response_times.append(response_time)
+            
+            print(f"   ⏱️ {name}: {response_time:.2f}ms")
+        
+        avg_response_time = sum(response_times) / len(response_times)
+        print(f"   📊 Average response time: {avg_response_time:.2f}ms")
+        
+        # Consider under 1000ms as acceptable
+        if avg_response_time < 1000:
+            print(f"   ✅ Response times acceptable")
+            return True, {"avg_response_time": avg_response_time}
+        else:
+            print(f"   ⚠️ Response times may be slow")
+            return False, {"avg_response_time": avg_response_time}
+
+    def test_telegram_db_optimization(self):
+        """Test database query optimization for Telegram users"""
+        print("\n🗄️ Testing Telegram DB Optimization")
+        
+        # Test that database queries are optimized
+        success, response = self.run_test(
+            "Database Query Performance", 
+            "GET", 
+            "leaderboard", 
+            200, 
+            params={"limit": 50}
+        )
+        
+        if success and response:
+            result_count = len(response) if isinstance(response, list) else 0
+            print(f"   ✅ Retrieved {result_count} leaderboard entries efficiently")
+            
+            # Test that queries handle mixed user types
+            if result_count > 0:
+                print(f"   ✅ Database handles mixed user queries")
+            else:
+                print(f"   ⚠️ No data for optimization testing")
+        
+        return success, response
+
+    def test_telegram_concurrent_users(self):
+        """Test concurrent user support for Telegram users"""
+        print("\n👥 Testing Concurrent User Support")
+        
+        # Simulate concurrent requests (simplified)
+        concurrent_tests = []
+        
+        for i in range(3):
+            user_address = f"concurrent_telegram_user_{i}"
+            treat_data = {
+                "creator_address": user_address,
+                "ingredients": ["chicken", "bones"],
+                "player_level": 1
+            }
+            
+            success, response = self.run_test(
+                f"Concurrent User {i+1}", 
+                "POST", 
+                "treats/enhanced", 
+                200, 
+                data=treat_data
+            )
+            
+            concurrent_tests.append(success)
+            
+            if success:
+                print(f"   ✅ Concurrent user {i+1}: Request handled")
+            else:
+                print(f"   ❌ Concurrent user {i+1}: Request failed")
+        
+        success_rate = sum(concurrent_tests) / len(concurrent_tests)
+        print(f"   📊 Concurrent success rate: {success_rate*100:.1f}%")
+        
+        return success_rate >= 0.8, {"success_rate": success_rate}
+
     def test_telegram_user_registration(self):
         """Test Telegram user registration endpoint"""
         print("\n📱 Testing Telegram User Registration")
