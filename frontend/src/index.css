@@ -1904,16 +1904,22 @@ body {
 }
 
 .play-now-button {
-  position: relative;
+  position: relative !important;
   font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
   border: none;
   cursor: pointer !important;
   transform: scale(1);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  margin: 20px;
+  margin: 20px !important;
   background: none;
   outline: none;
-  z-index: 50;
+  z-index: 999 !important;
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  /* Force the button to be visible */
+  min-height: 80px !important;
+  min-width: 200px !important;
 }
 
 .play-now-button:hover {
