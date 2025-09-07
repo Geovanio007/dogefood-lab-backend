@@ -13,6 +13,7 @@ import Settings from './components/Settings';
 import AdminDashboard from './components/AdminDashboard';
 import ActiveTreatsStatus from './components/ActiveTreatsStatus';
 import TreatNotifications from './components/TreatNotifications';
+import UserRegistration from './components/UserRegistration';
 // import PointsToBlockchain from './components/PointsToBlockchain';
 import './App.css';
 
