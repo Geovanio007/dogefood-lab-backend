@@ -1798,6 +1798,154 @@ class DogeLabAPITester:
         
         return success, response
 
+    def test_telegram_mini_app_comprehensive(self):
+        """🚀 FINAL TELEGRAM MINI APP BACKEND VERIFICATION - Comprehensive Testing"""
+        print("\n🚀 FINAL TELEGRAM MINI APP BACKEND VERIFICATION")
+        print("=" * 70)
+        print("Testing complete Telegram Mini App backend integration as requested")
+        print("=" * 70)
+        
+        all_tests_passed = True
+        test_results = {}
+        
+        # 1. Authentication Endpoints Verification
+        print("\n📱 1. AUTHENTICATION ENDPOINTS VERIFICATION")
+        print("-" * 50)
+        
+        auth_tests = [
+            ("Telegram Registration", self.test_telegram_registration_endpoint),
+            ("Telegram Player Retrieval", self.test_telegram_player_retrieval_endpoint), 
+            ("Wallet Linking", self.test_wallet_linking_endpoint),
+            ("Authentication Error Handling", self.test_telegram_auth_error_handling),
+            ("Security Validation", self.test_telegram_security_validation)
+        ]
+        
+        auth_passed = 0
+        for test_name, test_func in auth_tests:
+            try:
+                success, result = test_func()
+                if success:
+                    auth_passed += 1
+                    print(f"   ✅ {test_name}: PASSED")
+                else:
+                    print(f"   ❌ {test_name}: FAILED")
+                    all_tests_passed = False
+                test_results[test_name] = success
+            except Exception as e:
+                print(f"   ❌ {test_name}: EXCEPTION - {str(e)}")
+                all_tests_passed = False
+                test_results[test_name] = False
+        
+        print(f"\n📊 Authentication Tests: {auth_passed}/{len(auth_tests)} passed")
+        
+        # 2. Game Integration Testing
+        print("\n🎮 2. GAME INTEGRATION TESTING")
+        print("-" * 50)
+        
+        game_tests = [
+            ("Telegram Treat Creation", self.test_telegram_treat_creation),
+            ("Telegram Treat Retrieval", self.test_telegram_treat_retrieval),
+            ("Telegram Leaderboard Integration", self.test_telegram_leaderboard_integration),
+            ("Points System Integration", self.test_telegram_points_integration)
+        ]
+        
+        game_passed = 0
+        for test_name, test_func in game_tests:
+            try:
+                success, result = test_func()
+                if success:
+                    game_passed += 1
+                    print(f"   ✅ {test_name}: PASSED")
+                else:
+                    print(f"   ❌ {test_name}: FAILED")
+                    all_tests_passed = False
+                test_results[test_name] = success
+            except Exception as e:
+                print(f"   ❌ {test_name}: EXCEPTION - {str(e)}")
+                all_tests_passed = False
+                test_results[test_name] = False
+        
+        print(f"\n📊 Game Integration Tests: {game_passed}/{len(game_tests)} passed")
+        
+        # 3. Database Verification
+        print("\n🗄️ 3. DATABASE VERIFICATION")
+        print("-" * 50)
+        
+        db_tests = [
+            ("Hybrid User System", self.test_hybrid_user_system),
+            ("Data Consistency", self.test_telegram_data_consistency),
+            ("Mixed User Types", self.test_mixed_user_types_support)
+        ]
+        
+        db_passed = 0
+        for test_name, test_func in db_tests:
+            try:
+                success, result = test_func()
+                if success:
+                    db_passed += 1
+                    print(f"   ✅ {test_name}: PASSED")
+                else:
+                    print(f"   ❌ {test_name}: FAILED")
+                    all_tests_passed = False
+                test_results[test_name] = success
+            except Exception as e:
+                print(f"   ❌ {test_name}: EXCEPTION - {str(e)}")
+                all_tests_passed = False
+                test_results[test_name] = False
+        
+        print(f"\n📊 Database Tests: {db_passed}/{len(db_tests)} passed")
+        
+        # 4. API Performance Testing
+        print("\n⚡ 4. API PERFORMANCE TESTING")
+        print("-" * 50)
+        
+        perf_tests = [
+            ("Response Times", self.test_telegram_response_times),
+            ("Database Query Optimization", self.test_telegram_db_optimization),
+            ("Concurrent User Support", self.test_telegram_concurrent_users)
+        ]
+        
+        perf_passed = 0
+        for test_name, test_func in perf_tests:
+            try:
+                success, result = test_func()
+                if success:
+                    perf_passed += 1
+                    print(f"   ✅ {test_name}: PASSED")
+                else:
+                    print(f"   ❌ {test_name}: FAILED")
+                    all_tests_passed = False
+                test_results[test_name] = success
+            except Exception as e:
+                print(f"   ❌ {test_name}: EXCEPTION - {str(e)}")
+                all_tests_passed = False
+                test_results[test_name] = False
+        
+        print(f"\n📊 Performance Tests: {perf_passed}/{len(perf_tests)} passed")
+        
+        # Final Results Summary
+        total_tests = len(auth_tests) + len(game_tests) + len(db_tests) + len(perf_tests)
+        total_passed = auth_passed + game_passed + db_passed + perf_passed
+        
+        print(f"\n🎯 FINAL TELEGRAM MINI APP VERIFICATION RESULTS")
+        print("=" * 70)
+        print(f"📊 Overall Results: {total_passed}/{total_tests} tests passed ({(total_passed/total_tests)*100:.1f}%)")
+        print(f"📱 Authentication: {auth_passed}/{len(auth_tests)} passed")
+        print(f"🎮 Game Integration: {game_passed}/{len(game_tests)} passed") 
+        print(f"🗄️ Database: {db_passed}/{len(db_tests)} passed")
+        print(f"⚡ Performance: {perf_passed}/{len(perf_tests)} passed")
+        
+        if all_tests_passed:
+            print(f"\n🚀 TELEGRAM MINI APP BACKEND IS PRODUCTION-READY!")
+            print(f"✅ All critical systems verified and functional")
+            print(f"✅ Ready for live Telegram Mini App usage")
+        else:
+            print(f"\n⚠️ SOME ISSUES DETECTED - REVIEW REQUIRED")
+            failed_tests = [name for name, passed in test_results.items() if not passed]
+            print(f"❌ Failed tests: {', '.join(failed_tests)}")
+        
+        return all_tests_passed, test_results
+
     def test_telegram_user_registration_with_mock_data(self):
         """Test Telegram user registration with mock Telegram user data"""
         print("\n📱 Testing Telegram Registration with Mock Data")
