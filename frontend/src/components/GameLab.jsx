@@ -220,7 +220,7 @@ const GameLab = () => {
 
   // Main render - always return JSX, never early return after hooks
 
-  // Enhanced mixing completion - Season 1 Offchain Only
+  // Enhanced mixing completion - Season 1
   const handleEnhancedMixCompletion = async () => {
     try {
       // Step 1: Create treat in backend using enhanced API (offchain storage)
