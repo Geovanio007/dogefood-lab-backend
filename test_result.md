@@ -355,15 +355,18 @@ frontend:
 backend:
   - task: "User Registration Backend API"
     implemented: true
-    working: true
+    working: false
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "IMPLEMENTED: User registration API endpoint at /api/players/register with username validation, signature verification, and player creation with nickname support."
+        - working: false
+          agent: "testing"
+          comment: "🔍 USER REGISTRATION SYSTEM TESTING COMPLETED (17/19 tests passed - 89% success rate). ✅ WORKING FEATURES: Username validation (3-20 chars, alphanumeric+underscore), duplicate wallet prevention, missing fields validation, player retrieval (404 for non-existent), multiple registrations, data consistency, treat creation integration. ❌ CRITICAL ISSUES FOUND: 1) Duplicate username prevention NOT working - allows same username for different wallets (expected 409 conflict, got 200 success), 2) Nickname field storage issue - registration API accepts username but GET /api/player/{address} returns nickname as null instead of stored username. 🎯 INTEGRATION TESTING: Successfully registered 3 test players (NFTDogeScientist, RegularDogePlayer, Doge_Scientist_2024), all with proper data consistency. Treat creation works with registered players. Core registration functionality working but duplicate username validation needs immediate fix."
 
 metadata:
   created_by: "main_agent"
