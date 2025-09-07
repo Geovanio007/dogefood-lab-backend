@@ -65,16 +65,54 @@ function App() {
             {/* Main Application - After loading */}
             {!showWelcome && !isLoading && (
               <Router>
-                <Routes>
-                  <Route path="/" element={<MainMenu />} />
-                  <Route path="/lab" element={<GameLab />} />
-                  <Route path="/nfts" element={<MyTreats />} />
-                  <Route path="/dashboard" element={<ActiveTreatsStatus />} />
-                  <Route path="/leaderboard" element={<Leaderboard />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  {/* <Route path="/convert" element={<PointsToBlockchain />} /> */}
-                </Routes>
+                {/* Registration Screen */}
+                {showRegistration && !userRegistered && (
+                  <UserRegistration 
+                    onRegistrationComplete={(registrationData) => {
+                      setUserRegistered(true);
+                      setShowRegistration(false);
+                      console.log("✅ User registered:", registrationData);
+                    }}
+                  />
+                )}
+                
+                {/* Main Game Routes - Only after registration */}
+                {!showRegistration && userRegistered && (
+                  <Routes>
+                    <Route path="/" element={<MainMenu />} />
+                    <Route path="/lab" element={<GameLab />} />
+                    <Route path="/nfts" element={<MyTreats />} />
+                    <Route path="/dashboard" element={<ActiveTreatsStatus />} />
+                    <Route path="/leaderboard" element={<Leaderboard />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/admin" element={<AdminDashboard />} />
+                    {/* <Route path="/convert" element={<PointsToBlockchain />} /> */}
+                  </Routes>
+                )}
+                
+                {/* Show registration prompt if not registered */}
+                {!showRegistration && !userRegistered && !showWelcome && !isLoading && (
+                  <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
+                    <Card className="glass-panel max-w-md mx-auto">
+                      <CardHeader className="text-center">
+                        <CardTitle className="playful-title text-white text-2xl">
+                          🎮 Registration Required
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="text-center space-y-4">
+                        <p className="text-white/90">
+                          To play DogeFood Lab, you need to register your wallet with a username.
+                        </p>
+                        <Button 
+                          onClick={() => setShowRegistration(true)}
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3"
+                        >
+                          Start Registration
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
                 
                 {/* Global Treat Notifications */}
                 <TreatNotifications />
