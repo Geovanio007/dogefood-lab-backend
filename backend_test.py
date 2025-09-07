@@ -4242,89 +4242,66 @@ class DogeLabAPITester:
         }
 
 def main():
-    print("📱 Starting DogeFood Lab Telegram Mini App Authentication Testing 🧪")
-    print("Testing Telegram Authentication Endpoints")
+    print("🚀 DogeFood Lab Telegram Mini App - FINAL PRODUCTION READINESS VERIFICATION 🧪")
+    print("Testing Complete System for Production Deployment")
     print("=" * 80)
     
     tester = DogeLabAPITester()
     
-    # TELEGRAM AUTHENTICATION SYSTEM TESTING (Priority 1)
-    print("\n🎯 PRIMARY FOCUS: TELEGRAM MINI APP AUTHENTICATION TESTING")
-    print("Testing Telegram user registration, player retrieval, and wallet linking endpoints")
-    
-    # Run the Telegram authentication tests
-    print(f"\n🚀 RUNNING TELEGRAM AUTHENTICATION TESTS")
-    telegram_success = True
+    # RUN FINAL PRODUCTION READINESS TEST
+    print("\n🎯 PRIMARY FOCUS: FINAL PRODUCTION READINESS VERIFICATION")
+    print("Comprehensive testing for Telegram Mini App production deployment")
     
     try:
-        # 1. Test Telegram Authentication System Comprehensively
-        print(f"\n📱 1. TESTING TELEGRAM AUTHENTICATION SYSTEM")
-        success, results = tester.test_telegram_mini_app_comprehensive()
-        if success:
-            print(f"✅ Telegram Authentication System: ALL TESTS PASSED")
+        # Run the comprehensive final production readiness test
+        print(f"\n🚀 RUNNING FINAL PRODUCTION READINESS VERIFICATION")
+        production_ready, production_results = tester.test_final_production_readiness()
+        
+        # Print comprehensive results
+        print("\n" + "=" * 80)
+        print(f"📊 FINAL PRODUCTION TEST RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
+        print("=" * 80)
+        
+        # Categorize results
+        success_rate = (tester.tests_passed / tester.tests_run) * 100 if tester.tests_run > 0 else 0
+        overall_score = production_results.get("overall_score", 0)
+        
+        print(f"🎯 PRODUCTION READINESS SCORE: {overall_score:.1f}%")
+        print(f"📊 INDIVIDUAL TEST SUCCESS RATE: {success_rate:.1f}%")
+        
+        # Report missing features
+        if tester.missing_features:
+            print(f"\n🔍 FEATURE ANALYSIS:")
+            print("Missing or incomplete features:")
+            for feature in set(tester.missing_features):
+                print(f"   ❌ {feature}")
+            print(f"\nTotal missing features: {len(set(tester.missing_features))}")
         else:
-            print(f"❌ Telegram Authentication System: SOME TESTS FAILED")
-            telegram_success = False
+            print("\n✅ All expected features appear to be implemented correctly!")
+        
+        # Final assessment for production deployment
+        if production_ready and overall_score >= 85:
+            print("\n🚀 FINAL PRODUCTION READINESS: SUCCESS!")
+            print("✅ Backend System: All core APIs operational")
+            print("✅ Performance: Response times within acceptable limits")
+            print("✅ Security: Telegram authentication and validation working")
+            print("✅ Integration: All game mechanics functioning correctly")
+            print("✅ Production Readiness: System stable and deployment-ready")
+            print("\n🎉 DogeFood Lab Telegram Mini App is PRODUCTION READY!")
+            print("🤖 Bot @Dogefoodlabbot can be safely launched!")
+            return 0
+        else:
+            print(f"\n🔧 FINAL PRODUCTION READINESS: ISSUES DETECTED")
+            print("❌ Some critical systems need attention before production deployment")
+            print("🔍 Review detailed test results above for specific problems")
+            print(f"📊 Production Score: {overall_score:.1f}% (need 85%+ for deployment)")
+            print("\n⚠️ DO NOT DEPLOY until issues are resolved!")
+            return 1
+            
     except Exception as e:
-        print(f"❌ Telegram authentication tests failed with exception: {str(e)}")
-        telegram_success = False
-    
-    # Additional supporting tests from review request
-    supporting_tests = [
-        ("Health Check", tester.test_health_check),
-        ("Enhanced Treat Creation Test", tester.test_enhanced_treat_creation_endpoint),
-        ("Game Stats", tester.test_get_game_stats),
-        ("Leaderboard", tester.test_get_leaderboard),
-    ]
-    
-    print(f"\n📋 Running {len(supporting_tests)} supporting tests...")
-    for test_name, test_func in supporting_tests:
-        try:
-            print(f"\n🔍 Supporting Test: {test_name}")
-            test_func()
-        except Exception as e:
-            print(f"❌ Supporting test {test_name} failed: {str(e)}")
-    
-    # Print comprehensive results
-    print("\n" + "=" * 80)
-    print(f"📊 TELEGRAM AUTHENTICATION SYSTEM TEST RESULTS: {tester.tests_passed}/{tester.tests_run} tests passed")
-    print("=" * 80)
-    
-    # Categorize results
-    success_rate = (tester.tests_passed / tester.tests_run) * 100 if tester.tests_run > 0 else 0
-    
-    if success_rate >= 90:
-        print("🎉 EXCELLENT: Telegram authentication system working perfectly!")
-    elif success_rate >= 75:
-        print("✅ GOOD: Telegram authentication mostly functional with minor issues")
-    elif success_rate >= 50:
-        print("⚠️  MODERATE: Telegram authentication has significant issues requiring attention")
-    else:
-        print("❌ CRITICAL: Telegram authentication system has major failures")
-    
-    # Report missing features
-    if tester.missing_features:
-        print(f"\n🔍 FEATURE ANALYSIS:")
-        print("Missing or incomplete features:")
-        for feature in set(tester.missing_features):
-            print(f"   ❌ {feature}")
-        print(f"\nTotal missing features: {len(set(tester.missing_features))}")
-    else:
-        print("\n✅ All expected Telegram authentication features appear to be implemented correctly!")
-    
-    # Final assessment focused on Telegram authentication
-    if telegram_success and success_rate >= 80:
-        print("\n🚀 TELEGRAM AUTHENTICATION SYSTEM TESTING: SUCCESS!")
-        print("✅ POST /api/players/telegram-register working correctly")
-        print("✅ GET /api/player/telegram/{telegram_id} working correctly")
-        print("✅ POST /api/players/link-wallet working correctly")
-        print("✅ Integration with existing game system working")
-        print("✅ Error handling and validation working")
-        return 0
-    else:
-        print(f"\n🔧 TELEGRAM AUTHENTICATION SYSTEM TESTING: ISSUES DETECTED")
-        print("❌ Some Telegram authentication functionality issues found")
-        print("🔍 Review test results above for specific problems")
+        print(f"❌ Production readiness tests failed with exception: {str(e)}")
+        print("\n🚨 CRITICAL ERROR: Cannot verify production readiness")
+        print("⚠️ DO NOT DEPLOY until testing issues are resolved!")
         return 1
 
 if __name__ == "__main__":
