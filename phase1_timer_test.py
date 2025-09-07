@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class Phase1TimerTester:
-    def __init__(self, base_url="https://shibalab.preview.emergentagent.com"):
+    def __init__(self, base_url="https://dogegamelab.preview.emergentagent.com"):
         self.base_url = base_url
         self.test_player_address = "0xPhase1TestPlayer123456789012345678901234"
         self.test_treat_id = None

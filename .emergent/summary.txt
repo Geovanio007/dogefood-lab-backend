@@ -1,90 +1,70 @@
 <analysis>
-The previous AI engineer successfully brought the DogeFood Lab Game from 0 to 1, establishing core Web3 and UI components. The subsequent work, detailed in the trajectory, focused on enhancing game mechanics and resolving critical functional and UI bugs reported by the user.
+The previous AI engineer successfully initiated the DogeFood Lab Game, building its core Web3 and UI elements. The work then transitioned to addressing multiple critical functional and UI bugs, while also introducing significant game mechanics and features. Challenges included persistent blockchain transaction failures, UI state inconsistencies, and visual requirements (e.g., specific Shiba Inu imagery, 3D vs. 2D lab UI).
 
-Initially, comprehensive game mechanics—including level-based timers, rarity formulas, secret combos, and season management—were implemented in the backend and successfully tested. A new  smart contract was also introduced for treat outcomes.
+Key development phases involved a major refactor of  to re-enable transaction-based NFT minting and persistent timers. A significant pivot occurred when the user requested a return to the original sack UI after a brief implementation of a 3D lab. This led to extensive React state management and hooks debugging, culminating in the complete restoration of the requested UI and resolution of complex React rendering issues.
 
-However, the development faced iterative challenges:
-1.  **Transaction Failure Re-emergence**: A previous fix for blockchain transaction failures involved shifting treat creation off-chain. The user later explicitly requested re-introducing transaction-based NFT minting, leading to a significant refactor to accommodate this.
-2.  **UI State and Display Issues**: Persistent problems with timers, progress bars, and overall UI feedback required extensive debugging of React state management, interval handling, and React Hooks violations. A demo mode was added to facilitate testing without wallet connection.
-3.  **Branding and Visual Consistency**: User requests for logo changes and the addition of a specific Shiba Inu image led to multiple UI adjustments, sometimes introducing new JSX errors that needed immediate resolution.
-
-The most recent work involved a complete rewrite of  to ensure: (1) every mix triggers a Web3 NFT minting transaction, (2) timers are consistently visible and persistent, and (3) the original Shiba Inu scientist UI is maintained, directly addressing the user's latest bug report.
+More recently, the focus shifted to implementing a Season 1: Offchain model, which involved disabling on-chain features, introducing placeholder UI elements, and future-proofing backend data for eventual Web3 migration. The final phase, still in progress, addresses critical data persistence and navigation bugs (due to React infinite loops) and the implementation of a new user registration system, ensuring a robust and stable foundation for the game.
 </analysis>
 
 <product_requirements>
-The DogeFood Lab Game is a Web3-integrated beta for DogeOS devnet, featuring a blockchain/NFT-based system for treat creation, points, leveling, and competition.
-
-**Key Functional & UI Requirements:**
-*   **Treat Creation:** Players mix ingredients. Preparation time scales from a base of 1 hour at Level 1, increasing exponentially or logarithmically with level (e.g., Level 10 → 5.2h, Level 30 → 12h, Level 60 → 6-8h, Level 90 → 10h+).
-*   **Rarity Formula (NFT Outcomes):** Randomized probabilities (10% Legendary, 20% Epic, 30% Rare, 40% Common) are rolled server-side to prevent exploits and are consistent across players. Rarity depends on the number of ingredients used (Common: 2+, Rare: 3+, Epic: 4+, Legendary: 5+ ingredients).
-*   **Ingredient System:** A pool of at least 20 unique ingredients. More unique ingredients increase rarity chances. Secret combos (e.g., 🍫+🍯+🥛+🍓) stored server-side provide a +5-10% boost for Epic/Legendary outcomes.
-*   **NFT Minting:** Each completed treat mints a unique ERC721 NFT (TreatNFT.sol) with metadata (ingredients, rarity, time, season ID, level). The NFT is in progress until completion, then claimable, triggering a transaction confirmation.
-*   **Data Persistence:** Player progress, levels, and treat history are stored in MongoDB.
-*   **Season Management:** Seasons last 3 months, configurable via an admin panel.
-*   **UI/UX:** Clean and modern UI with Dogecoin palette, rounded buttons, playful iconography, and 3D cartoonish cards. Consistent text styling, dark/light mode toggle. A welcome screen with a Play Now button leads to the loading screen. Wallet registration is required for Game Lab access. Leaderboard updates with points. Real-time countdown on mixing page. Notifications for ready treats. The original Shiba Inu scientist UI should be maintained. A new logo and a large Shiba Inu image on the menu page are required.
+The DogeFood Lab Game is a Web3-integrated beta for DogeOS devnet, focused on blockchain/NFT-based treat creation, points, leveling, and competition. Players mix ingredients for treats with level-scaled preparation times and server-side randomized rarity. An ingredient system with secret combos exists. Each completed treat *should* mint an ERC721 NFT, remaining in progress until claimable. Player data is stored in MongoDB, and the game features 3-month seasons configurable via an admin panel. The UI should be clean and modern, featuring a Dogecoin palette, rounded buttons, playful iconography, a welcome/loading flow, wallet registration, leaderboard, real-time mixing timers, and treat notifications. The original Shiba Inu scientist UI and a sack system are explicitly required. For Season 1, the game must be fully offchain, with disabled Mint and Convert buttons as placeholders, but designed for seamless future onchain migration. A new requirement is a mandatory user registration system with a username and wallet signature.
 </product_requirements>
 
 <key_technical_concepts>
--   **Frontend**: React.js, React-scripts, Tailwind CSS, RainbowKit, Wagmi, Viem, Ethers.
+-   **Frontend**: React.js, React-scripts, Tailwind CSS, RainbowKit, Wagmi, Viem.
 -   **Backend**: FastAPI, MongoDB.
--   **Blockchain**: DogeOS Devnet, Solidity, Hardhat, OpenZeppelin Contracts, ERC-20 (LABToken), ERC-721 (DogeFood, TreatNFT), Merkle Proofs.
+-   **Blockchain**: DogeOS Devnet, Solidity, Hardhat, OpenZeppelin (ERC-20, ERC-721).
 -   **Tools**: Yarn, Supervisor.
+-   **State Management**: React Context API, , , .
 </key_technical_concepts>
 
 <code_architecture>
-The application uses a full-stack architecture with a React frontend, FastAPI backend, and MongoDB database. Smart contracts are developed using Solidity and Hardhat.
+The application utilizes a full-stack architecture with a React frontend, FastAPI backend, and MongoDB database, complemented by Solidity smart contracts.
 
 **Directory Structure:**
 
 
 **Key Files and Changes:**
--   ****: Core FastAPI API. Integrated new routes and Pydantic models for , , and  services.
--   ** (new files)**:
-    -   : Implements core game logic, rarity calculations, and time progression.
-    -   : Manages the ingredient pool, unlocking, and secret combinations.
-    -   : Handles season cycles and related data.
--   ****: A *new* ERC721 smart contract specifically for treat NFTs and their metadata.
--   ****: A *new* Hardhat deploy script for the  contract.
--   ****: Main React component managing overall routing and providers (, , ).
--   ****: Underwent significant refactoring. Currently re-implements transaction-based NFT minting for treats, displays persistent timers and progress, and ensures the original Shiba Inu scientist UI is maintained. Integrates , , , and . Includes a  feature.
--   ****: Displays game menu. Updated to integrate ,  (without text), and a large Shiba Inu image on the right side.
--   ****: Animated loading screen. Updated to use  (without text).
--   ****: Enhanced to include UI for season management and game engine configuration.
--   ****: Initial splash screen. Modified to display only the  without text.
--   ****: Manages core game state. Modified to support NFT minting logic and integrate with the new backend game mechanics.
--   ** (new)**: Custom hook for fetching, tracking, and managing active treats and their completion status.
--   ** (new)**: Component responsible for displaying a list of active brewing treats with live countdown timers.
--   ** (new)**: Component for showing toast notifications when a treat is ready to be collected.
--   ** (new)**: Extracted component to handle the UI displayed when a wallet is not connected.
--   ** (new)**: Reusable React component for displaying the DogeFood Lab logo, with options to show/hide text.
+*   ****: The core FastAPI application. It has been extensively modified to:
+    *   Handle  serialization issues.
+    *   Implement Season 1 specific logic for treat creation, storing future-proof NFT metadata (, , , custom image URL).
+    *   Adjust leaderboard queries to include all players, not just NFT holders.
+    *   Add a disabled placeholder endpoint for  and a  endpoint.
+    *   Introduce a new  endpoint for user registration.
+*   ****: A newly created script to ensure a clean database state by removing test/contaminated player data.
+*   ****: The main entry point. It manages global state and routing. Recent changes include:
+    *   Fixing the  transition using .
+    *   Integrating the  component, managing  state, and conditionally rendering the registration flow or the main application.
+*   ****: This component underwent significant refactoring multiple times. It now displays the original sack UI, includes real-time mixing timers with progress bars, and dynamically updates sack progress. It also skips NFT minting in Season 1 and incorporates logic to conditionally render content based on user registration status.
+*   ****: Displays a prominent Season 1: Offchain Launch banner. A new Active Treats card was added for dashboard navigation. Critical  dependencies were fixed, and  is now called upon wallet connection.
+*   ****: Updated for Season 1 to display disabled Mint NFT - Coming Soon buttons and a disabled Convert to  button. It now fetches and displays user treats from the backend API, incorporating the custom Shiba treat image.
+*   ** (New)**: A global component responsible for polling treat status and showing toast notifications when treats are ready. An infinite loop bug in its  was resolved.
+*   ** (New)**: A new component introduced to facilitate user registration, requiring a username and wallet signature.
+*   ****: Central to game state. A  function was added to fetch comprehensive player data from the backend when a wallet connects. This function is now memoized using  to prevent infinite loops.
+*   ****: Corrected to properly receive and utilize the  prop for fetching active treats.
 </code_architecture>
 
 <pending_tasks>
--   **Off-chain Services (Detailed)**: Full implementation of anti-cheat, ranking, Merkle tree generation, and IPFS publishing.
--   **Unclaimed Tokens Policy**: Implementing the logic for returning unclaimed tokens to the treasury after 180 days.
--   **Wallet Cap**: Implementing the optional cap per wallet for rewards.
--   **Points Conversion to Blockchain**: Full implementation of the feature for users to redeem off-chain points for  tokens on-chain.
--   **Full Web3 Integration**: Complete reward claiming functionality beyond contract deployment.
+-   **Off-chain Services (Detailed)**: Full anti-cheat, ranking, Merkle tree generation, IPFS publishing.
+-   **Unclaimed Tokens Policy**: Logic for returning tokens after 180 days.
+-   **Wallet Cap**: Optional reward cap per wallet.
+-   **Points Conversion to Blockchain**: Full implementation of redeeming points for  tokens.
+-   **Full Web3 Integration**: Complete reward claiming functionality.
+-   **User Registration Completion**: Finalize frontend integration of the user registration system.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary request, the previous AI engineer was addressing a critical bug reported by the user: the gameplay was still not functional. Specifically, when Start Mixing was pressed, an outcome snippet flashed briefly and disappeared, with no timer countdown or progress shown. This indicated a fundamental issue blocking proper execution.
+Immediately before this summary request, the previous AI engineer was addressing a user report concerning persistent mock data, a stuck mixing timer, and a new feature request for mandatory user registration.
 
-The user explicitly clarified that:
-1.  **Transaction-based mixing** is required: Every mixture must trigger a blockchain transaction confirmation to mint the treat NFT, which remains in progress until the completion time is reached and then becomes claimable.
-2.  A **consistent and persistent countdown timer** must be visible, showing hours/minutes left until the treat is ready.
-3.  The **original Shiba Inu scientist UI** must always be used as the default lab environment.
+The engineer first tackled the mock data issue by creating and executing a  script to clear contaminated database entries. Simultaneously, the mixing timer bug in  was investigated and fixed, likely by refining state management and  dependencies to ensure the progress bar updates in real-time during mixing.
 
-The AI engineer identified that the previous fix (removing direct Web3 minting for treats) contradicted the user's ultimate desire for transaction-based NFT creation. The flashing UI was due to a premature  call.
-
-To resolve these issues, the engineer undertook a complete rewrite of the  component. This rewrite aimed to:
-*   **Re-enable Web3 NFT Minting**: Integrate  into the mixing flow, ensuring wallet confirmation prompts appear.
-*   **Implement Persistent Timers**: Remove the premature mixing state reset to allow the  component to display the real-time countdown consistently.
-*   **Restore Original UI**: Ensure the Shiba Inu scientist avatar and the original lab environment design are present and functional.
-
-The current state is that  has been refactored to align with these requirements, re-establishing the flow of ingredient selection, mixing animation, backend treat creation, *followed by* blockchain NFT minting, and then persistent display of the treat's timer and progress within the specified UI.
+The primary focus then shifted to implementing the new user registration system:
+1.  A new React component, , was created for the registration UI.
+2.  A corresponding backend endpoint, , was added to  to handle the registration logic (username and wallet signature synchronization).
+3.  The  was updated to conditionally gate access to the lab based on whether a user is registered.
+4.  The  file was in the process of being modified to manage the application-wide  state and to conditionally render the  component or the main game content. This modification of  is the last recorded action. The state of the product is that the registration components and backend endpoint are mostly in place, but the full integration into the  to control access is still ongoing.
 </current_work>
 
 <optional_next_step>
-Test the re-implemented transaction-based NFT minting flow and persistent timer display in  to ensure core gameplay functionality is fully restored.
+Complete the integration of the User Registration component into .
 </optional_next_step>
