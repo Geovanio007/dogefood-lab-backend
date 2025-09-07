@@ -229,7 +229,7 @@ const GameLab = () => {
         main_ingredient: selectedIngredients[0] || 'chicken',
         player_address: address || 'demo_player',
         player_level: currentLevel,
-        season: 1  // Season 1 - Offchain only
+        season: 1  // Season 1
       };
 
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/treats/enhanced`, {
