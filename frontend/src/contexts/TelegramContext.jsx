@@ -5,7 +5,9 @@ import {
   getTelegramInitData, 
   initTelegramWebApp,
   expandTelegramWebApp,
-  setTelegramHeaderColor
+  setTelegramHeaderColor,
+  optimizeForTelegramPlatform,
+  isTelegramMobile
 } from '../utils/telegram';
 
 const TelegramContext = createContext();
