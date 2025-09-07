@@ -163,19 +163,32 @@ const InnerApp = () => {
         {/* Main Application - After loading and registration check */}
         {!showWelcome && !isLoading && !isCheckingRegistration && (
           <Router>
-            {/* Registration Screen */}
-            {showRegistration && !userRegistered && (
+            {/* Telegram Authentication Screen */}
+            {showTelegramAuth && !userRegistered && isTelegram && (
+              <TelegramAuth 
+                onAuthComplete={(authData) => {
+                  setUserRegistered(true);
+                  setShowTelegramAuth(false);
+                  setAuthType('telegram');
+                  console.log("✅ Telegram user authenticated:", authData);
+                }}
+              />
+            )}
+
+            {/* Wallet Registration Screen */}
+            {showRegistration && !userRegistered && !isTelegram && (
               <UserRegistration 
                 onRegistrationComplete={(registrationData) => {
                   setUserRegistered(true);
                   setShowRegistration(false);
-                  console.log("✅ User registered:", registrationData);
+                  setAuthType('wallet');
+                  console.log("✅ Wallet user registered:", registrationData);
                 }}
               />
             )}
             
             {/* Main Game Routes - Only after registration */}
-            {!showRegistration && userRegistered && (
+            {!showRegistration && !showTelegramAuth && userRegistered && (
               <>
                 <Routes>
                   <Route path="/" element={<MainMenu />} />
@@ -192,8 +205,8 @@ const InnerApp = () => {
               </>
             )}
             
-            {/* Show registration prompt if not registered and connected */}
-            {!showRegistration && !userRegistered && isConnected && !isCheckingRegistration && (
+            {/* Show registration prompt for wallet users */}
+            {!showRegistration && !showTelegramAuth && !userRegistered && !isTelegram && isConnected && (
               <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
                 <Card className="glass-panel max-w-md mx-auto">
                   <CardHeader className="text-center">
@@ -216,8 +229,8 @@ const InnerApp = () => {
               </div>
             )}
 
-            {/* Show wallet connection prompt if not connected */}
-            {!isConnected && !isCheckingRegistration && (
+            {/* Show wallet connection prompt for non-Telegram users */}
+            {!isTelegram && !isConnected && (
               <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
                 <Card className="glass-panel max-w-md mx-auto">
                   <CardHeader className="text-center">
@@ -228,6 +241,24 @@ const InnerApp = () => {
                   <CardContent className="text-center space-y-4">
                     <p className="text-white/90">
                       Please connect your wallet to access DogeFood Lab.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Show Telegram authentication error */}
+            {isTelegram && !isTelegramAuthenticated && !isTelegramLoading && (
+              <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 p-4 flex items-center justify-center">
+                <Card className="glass-panel max-w-md mx-auto">
+                  <CardHeader className="text-center">
+                    <CardTitle className="playful-title text-white text-2xl">
+                      🤖 Telegram Error
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center space-y-4">
+                    <p className="text-white/90">
+                      Unable to authenticate with Telegram. Please restart the app from your Telegram bot.
                     </p>
                   </CardContent>
                 </Card>
