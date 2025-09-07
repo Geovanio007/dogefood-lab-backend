@@ -104,80 +104,107 @@ const InnerApp = () => {
   );
 
   return (
-    <ThemeProvider>
-      <Web3Provider>
-        <GameProvider>
-          <div className="App">
-            {/* Welcome Screen - First screen users see */}
-            {showWelcome && (
-              <WelcomeScreen onPlayNow={handlePlayNow} />
-            )}
+    <GameProvider>
+      <div className="App">
+        {/* Welcome Screen - First screen users see */}
+        {showWelcome && (
+          <WelcomeScreen onPlayNow={handlePlayNow} />
+        )}
 
-            {/* Loading Screen - After clicking Play Now */}
-            {!showWelcome && isLoading && (
-              <LoadingScreen onLoadingComplete={() => setIsLoading(false)} />
-            )}
+        {/* Loading Screen - After clicking Play Now */}
+        {!showWelcome && isLoading && (
+          <LoadingScreen onLoadingComplete={() => setIsLoading(false)} />
+        )}
 
-            {/* Main Application - After loading */}
-            {!showWelcome && !isLoading && (
-              <Router>
-                {/* Registration Screen */}
-                {showRegistration && !userRegistered && (
-                  <UserRegistration 
-                    onRegistrationComplete={(registrationData) => {
-                      setUserRegistered(true);
-                      setShowRegistration(false);
-                      console.log("✅ User registered:", registrationData);
-                    }}
-                  />
-                )}
-                
-                {/* Main Game Routes - Only after registration */}
-                {!showRegistration && userRegistered && (
-                  <Routes>
-                    <Route path="/" element={<MainMenu />} />
-                    <Route path="/lab" element={<GameLab />} />
-                    <Route path="/nfts" element={<MyTreats />} />
-                    <Route path="/dashboard" element={<ActiveTreatsStatus />} />
-                    <Route path="/leaderboard" element={<Leaderboard />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/admin" element={<AdminDashboard />} />
-                    {/* <Route path="/convert" element={<PointsToBlockchain />} /> */}
-                  </Routes>
-                )}
-                
-                {/* Show registration prompt if not registered */}
-                {!showRegistration && !userRegistered && !showWelcome && !isLoading && (
-                  <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
-                    <Card className="glass-panel max-w-md mx-auto">
-                      <CardHeader className="text-center">
-                        <CardTitle className="playful-title text-white text-2xl">
-                          🎮 Registration Required
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="text-center space-y-4">
-                        <p className="text-white/90">
-                          To play DogeFood Lab, you need to register your wallet with a username.
-                        </p>
-                        <Button 
-                          onClick={() => setShowRegistration(true)}
-                          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3"
-                        >
-                          Start Registration
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-                
+        {/* Registration Status Checking */}
+        {!showWelcome && !isLoading && isCheckingRegistration && (
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
+            <Card className="glass-panel max-w-md mx-auto">
+              <CardContent className="text-center py-8 space-y-4">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-white/90">Checking registration status...</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Main Application - After loading and registration check */}
+        {!showWelcome && !isLoading && !isCheckingRegistration && (
+          <Router>
+            {/* Registration Screen */}
+            {showRegistration && !userRegistered && (
+              <UserRegistration 
+                onRegistrationComplete={(registrationData) => {
+                  setUserRegistered(true);
+                  setShowRegistration(false);
+                  console.log("✅ User registered:", registrationData);
+                }}
+              />
+            )}
+            
+            {/* Main Game Routes - Only after registration */}
+            {!showRegistration && userRegistered && (
+              <>
+                <Routes>
+                  <Route path="/" element={<MainMenu />} />
+                  <Route path="/lab" element={<GameLab />} />
+                  <Route path="/nfts" element={<MyTreats />} />
+                  <Route path="/dashboard" element={<ActiveTreatsStatus />} />
+                  <Route path="/leaderboard" element={<Leaderboard />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  {/* <Route path="/convert" element={<PointsToBlockchain />} /> */}
+                </Routes>
                 {/* Global Treat Notifications */}
                 <TreatNotifications />
-              </Router>
+              </>
             )}
-          </div>
-        </GameProvider>
-      </Web3Provider>
-    </ThemeProvider>
+            
+            {/* Show registration prompt if not registered and connected */}
+            {!showRegistration && !userRegistered && isConnected && !isCheckingRegistration && (
+              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
+                <Card className="glass-panel max-w-md mx-auto">
+                  <CardHeader className="text-center">
+                    <CardTitle className="playful-title text-white text-2xl">
+                      🎮 Registration Required
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center space-y-4">
+                    <p className="text-white/90">
+                      To play DogeFood Lab, you need to register your wallet with a username.
+                    </p>
+                    <Button 
+                      onClick={() => setShowRegistration(true)}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3"
+                    >
+                      Start Registration
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Show wallet connection prompt if not connected */}
+            {!isConnected && !isCheckingRegistration && (
+              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
+                <Card className="glass-panel max-w-md mx-auto">
+                  <CardHeader className="text-center">
+                    <CardTitle className="playful-title text-white text-2xl">
+                      🔗 Connect Wallet
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center space-y-4">
+                    <p className="text-white/90">
+                      Please connect your wallet to access DogeFood Lab.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </Router>
+        )}
+      </div>
+    </GameProvider>
   );
 }
 
