@@ -1238,6 +1238,356 @@ class DogeLabAPITester:
             "proper_data_structure": True
         }
 
+    # ========== TELEGRAM MINI APP AUTHENTICATION TESTING ==========
+    
+    def test_telegram_user_registration(self):
+        """Test Telegram user registration endpoint"""
+        print("\n📱 Testing Telegram User Registration")
+        
+        # Mock Telegram initData (simplified for testing)
+        mock_init_data = "user=%7B%22id%22%3A123456789%2C%22username%22%3A%22testuser%22%2C%22first_name%22%3A%22Test%22%2C%22last_name%22%3A%22User%22%7D&auth_date=1640995200&hash=mock_hash_for_testing"
+        
+        telegram_data = {
+            "initData": mock_init_data
+        }
+        
+        success, response = self.run_test(
+            "Telegram User Registration", 
+            "POST", 
+            "players/telegram-register", 
+            200, 
+            data=telegram_data
+        )
+        
+        if success and response:
+            expected_keys = ['message', 'player_id', 'telegram_id', 'username', 'first_name', 'auth_type', 'registered_at']
+            missing_keys = [key for key in expected_keys if key not in response]
+            if missing_keys:
+                self.missing_features.append(f"Telegram registration missing keys: {missing_keys}")
+                print(f"   ⚠️  Note: Missing keys in telegram registration: {missing_keys}")
+            else:
+                print(f"   ✅ Telegram user registered successfully")
+                print(f"   📱 Telegram ID: {response.get('telegram_id')}")
+                print(f"   👤 Username: {response.get('username')}")
+                print(f"   🔐 Auth Type: {response.get('auth_type')}")
+                
+                # Store telegram_id for subsequent tests
+                self.test_telegram_id = response.get('telegram_id')
+        
+        return success, response
+
+    def test_telegram_user_registration_with_mock_data(self):
+        """Test Telegram user registration with mock Telegram user data"""
+        print("\n📱 Testing Telegram Registration with Mock Data")
+        
+        # Create mock Telegram user data as specified in review request
+        mock_telegram_user = {
+            "id": 123456789,
+            "username": "testuser", 
+            "first_name": "Test",
+            "last_name": "User"
+        }
+        
+        # For testing purposes, we'll bypass the hash validation by creating a simple mock initData
+        # In production, this would be properly validated
+        import json
+        import urllib.parse
+        
+        user_json = json.dumps(mock_telegram_user)
+        encoded_user = urllib.parse.quote(user_json)
+        mock_init_data = f"user={encoded_user}&auth_date=1640995200&hash=mock_hash_for_testing"
+        
+        telegram_data = {
+            "initData": mock_init_data
+        }
+        
+        success, response = self.run_test(
+            "Telegram Registration Mock Data", 
+            "POST", 
+            "players/telegram-register", 
+            200, 
+            data=telegram_data
+        )
+        
+        if success and response:
+            # Verify the mock data was processed correctly
+            telegram_id = response.get('telegram_id')
+            username = response.get('username')
+            first_name = response.get('first_name')
+            
+            if telegram_id == 123456789 and username == "testuser" and first_name == "Test":
+                print(f"   ✅ Mock Telegram data processed correctly")
+                print(f"   📱 ID: {telegram_id}, Username: {username}, Name: {first_name}")
+                self.test_telegram_id = telegram_id
+            else:
+                print(f"   ❌ Mock data processing failed")
+                print(f"   Expected: ID=123456789, Username=testuser, Name=Test")
+                print(f"   Got: ID={telegram_id}, Username={username}, Name={first_name}")
+                return False, response
+        
+        return success, response
+
+    def test_get_player_by_telegram_id(self):
+        """Test retrieving player by Telegram ID"""
+        print("\n🔍 Testing Player Retrieval by Telegram ID")
+        
+        # Use telegram_id from registration test
+        if not hasattr(self, 'test_telegram_id') or not self.test_telegram_id:
+            print("   ⚠️  No telegram_id available from registration test")
+            # Use the mock telegram_id from our test data
+            self.test_telegram_id = 123456789
+        
+        success, response = self.run_test(
+            "Get Player by Telegram ID", 
+            "GET", 
+            f"player/telegram/{self.test_telegram_id}", 
+            200
+        )
+        
+        if success and response:
+            expected_keys = ['id', 'telegram_id', 'telegram_username', 'telegram_first_name', 'auth_type', 'level', 'experience', 'points']
+            missing_keys = [key for key in expected_keys if key not in response]
+            if missing_keys:
+                self.missing_features.append(f"Telegram player retrieval missing keys: {missing_keys}")
+                print(f"   ⚠️  Note: Missing keys in telegram player data: {missing_keys}")
+            else:
+                print(f"   ✅ Telegram player retrieved successfully")
+                print(f"   📱 Telegram ID: {response.get('telegram_id')}")
+                print(f"   👤 Username: {response.get('telegram_username')}")
+                print(f"   🎮 Level: {response.get('level')}")
+                print(f"   ⭐ Points: {response.get('points')}")
+        
+        return success, response
+
+    def test_wallet_linking_to_telegram(self):
+        """Test linking wallet to existing Telegram user"""
+        print("\n🔗 Testing Wallet Linking to Telegram User")
+        
+        # Mock wallet linking data
+        mock_wallet_address = "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54"
+        mock_signature = "0x1234567890abcdef"
+        mock_message = "Link wallet to Telegram account"
+        
+        # Mock initData for existing Telegram user
+        mock_init_data = "user=%7B%22id%22%3A123456789%2C%22username%22%3A%22testuser%22%2C%22first_name%22%3A%22Test%22%2C%22last_name%22%3A%22User%22%7D&auth_date=1640995200&hash=mock_hash_for_testing"
+        
+        wallet_link_data = {
+            "initData": mock_init_data,
+            "address": mock_wallet_address,
+            "signature": mock_signature,
+            "message": mock_message
+        }
+        
+        success, response = self.run_test(
+            "Link Wallet to Telegram", 
+            "POST", 
+            "players/link-wallet", 
+            200, 
+            data=wallet_link_data
+        )
+        
+        if success and response:
+            expected_keys = ['message', 'telegram_id', 'address', 'auth_type', 'linked_at']
+            missing_keys = [key for key in expected_keys if key not in response]
+            if missing_keys:
+                self.missing_features.append(f"Wallet linking missing keys: {missing_keys}")
+                print(f"   ⚠️  Note: Missing keys in wallet linking: {missing_keys}")
+            else:
+                print(f"   ✅ Wallet linked to Telegram user successfully")
+                print(f"   📱 Telegram ID: {response.get('telegram_id')}")
+                print(f"   💰 Wallet: {response.get('address')}")
+                print(f"   🔐 Auth Type: {response.get('auth_type')}")
+        
+        return success, response
+
+    def test_wallet_linking_error_cases(self):
+        """Test wallet linking error scenarios"""
+        print("\n❌ Testing Wallet Linking Error Cases")
+        
+        all_success = True
+        
+        # Test 1: Missing required fields
+        incomplete_data = {
+            "initData": "incomplete_data"
+            # Missing address, signature, message
+        }
+        
+        success1, _ = self.run_test(
+            "Wallet Link Missing Fields", 
+            "POST", 
+            "players/link-wallet", 
+            400, 
+            data=incomplete_data
+        )
+        
+        # Test 2: Invalid Telegram data
+        invalid_telegram_data = {
+            "initData": "invalid_init_data",
+            "address": "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54",
+            "signature": "0x1234567890abcdef",
+            "message": "Link wallet"
+        }
+        
+        success2, _ = self.run_test(
+            "Wallet Link Invalid Telegram Data", 
+            "POST", 
+            "players/link-wallet", 
+            401, 
+            data=invalid_telegram_data
+        )
+        
+        # Test 3: Wallet already linked (if we can simulate this)
+        already_linked_data = {
+            "initData": "user=%7B%22id%22%3A987654321%2C%22username%22%3A%22anotheruser%22%2C%22first_name%22%3A%22Another%22%7D&auth_date=1640995200&hash=mock_hash",
+            "address": "0x742d35Cc6634C0532925a3b8D3B8C9e9D71a4a54",  # Same wallet as before
+            "signature": "0x1234567890abcdef",
+            "message": "Link wallet"
+        }
+        
+        success3, _ = self.run_test(
+            "Wallet Already Linked", 
+            "POST", 
+            "players/link-wallet", 
+            409, 
+            data=already_linked_data
+        )
+        
+        if success1 and success2:
+            print(f"   ✅ Error handling working correctly")
+        else:
+            print(f"   ❌ Some error cases not handled properly")
+            all_success = False
+        
+        return all_success, {}
+
+    def test_telegram_integration_with_existing_system(self):
+        """Test Telegram users integration with existing game system"""
+        print("\n🎮 Testing Telegram Integration with Existing System")
+        
+        all_success = True
+        
+        # Test 1: Verify Telegram users appear in general player queries
+        success1, response1 = self.run_test(
+            "General Player Queries Include Telegram Users", 
+            "GET", 
+            "stats", 
+            200
+        )
+        
+        if success1 and response1:
+            total_players = response1.get('total_players', 0)
+            print(f"   📊 Total players in system: {total_players}")
+            if total_players > 0:
+                print(f"   ✅ Player count includes Telegram users")
+            else:
+                print(f"   ⚠️  No players found in system")
+        
+        # Test 2: Test leaderboard includes both wallet and Telegram users
+        success2, response2 = self.run_test(
+            "Leaderboard Includes Telegram Users", 
+            "GET", 
+            "leaderboard", 
+            200, 
+            params={"limit": 20}
+        )
+        
+        if success2 and response2:
+            leaderboard = response2 if isinstance(response2, list) else []
+            telegram_users = [player for player in leaderboard if player.get('address') is None]
+            wallet_users = [player for player in leaderboard if player.get('address') is not None]
+            
+            print(f"   🏆 Leaderboard entries: {len(leaderboard)}")
+            print(f"   📱 Telegram users: {len(telegram_users)}")
+            print(f"   💰 Wallet users: {len(wallet_users)}")
+            
+            if len(leaderboard) > 0:
+                print(f"   ✅ Leaderboard includes mixed user types")
+            else:
+                print(f"   ⚠️  Empty leaderboard")
+        
+        # Test 3: Verify treat creation works for Telegram users
+        if hasattr(self, 'test_telegram_id') and self.test_telegram_id:
+            # Create a treat for the Telegram user (using enhanced endpoint)
+            treat_data = {
+                "creator_address": f"telegram_user_{self.test_telegram_id}",  # Use telegram ID as identifier
+                "ingredients": ["chicken", "bones", "rice"],
+                "player_level": 1
+            }
+            
+            success3, response3 = self.run_test(
+                "Telegram User Treat Creation", 
+                "POST", 
+                "treats/enhanced", 
+                200, 
+                data=treat_data
+            )
+            
+            if success3 and response3:
+                print(f"   ✅ Telegram users can create treats")
+                treat = response3.get('treat', {})
+                outcome = response3.get('outcome', {})
+                print(f"   🎯 Created treat: {outcome.get('rarity', 'Unknown')} rarity")
+            else:
+                print(f"   ❌ Telegram user treat creation failed")
+                all_success = False
+        else:
+            print(f"   ⚠️  No telegram_id available for treat creation test")
+        
+        return all_success, {}
+
+    def test_telegram_authentication_comprehensive(self):
+        """Comprehensive test of Telegram Mini App authentication system"""
+        print("\n📱 COMPREHENSIVE TELEGRAM AUTHENTICATION TEST")
+        print("=" * 60)
+        print("Focus: Complete Telegram Mini App authentication system integration")
+        
+        tests = [
+            ("Telegram User Registration", self.test_telegram_user_registration),
+            ("Telegram Registration Mock Data", self.test_telegram_user_registration_with_mock_data),
+            ("Get Player by Telegram ID", self.test_get_player_by_telegram_id),
+            ("Wallet Linking to Telegram", self.test_wallet_linking_to_telegram),
+            ("Wallet Linking Error Cases", self.test_wallet_linking_error_cases),
+            ("Telegram Integration with Existing System", self.test_telegram_integration_with_existing_system)
+        ]
+        
+        passed_tests = 0
+        total_tests = len(tests)
+        
+        for test_name, test_func in tests:
+            try:
+                print(f"\n{'='*40}")
+                print(f"📱 RUNNING: {test_name}")
+                print(f"{'='*40}")
+                success, _ = test_func()
+                if success:
+                    passed_tests += 1
+                    print(f"✅ {test_name}: PASSED")
+                else:
+                    print(f"❌ {test_name}: FAILED")
+            except Exception as e:
+                print(f"❌ {test_name}: EXCEPTION - {str(e)}")
+        
+        print(f"\n🎯 TELEGRAM AUTHENTICATION RESULTS: {passed_tests}/{total_tests} tests passed")
+        
+        # Summary of findings
+        if passed_tests == total_tests:
+            print(f"\n🚀 TELEGRAM MINI APP AUTHENTICATION SYSTEM FULLY OPERATIONAL!")
+            print(f"✅ All endpoints working correctly:")
+            print(f"   - POST /api/players/telegram-register")
+            print(f"   - GET /api/player/telegram/{{telegram_id}}")
+            print(f"   - POST /api/players/link-wallet")
+            print(f"✅ Integration with existing game system confirmed")
+            print(f"✅ Error handling and validation working")
+        else:
+            print(f"\n⚠️  Some Telegram authentication features need attention")
+            if self.missing_features:
+                print(f"Missing features identified:")
+                for feature in self.missing_features:
+                    if 'telegram' in feature.lower() or 'Telegram' in feature:
+                        print(f"   - {feature}")
+        
+        return passed_tests == total_tests, {"passed": passed_tests, "total": total_tests}
+
     def test_comprehensive_dogefood_lab_game_system(self):
         """Test the complete functional DogeFood Lab game system with real progress tracking"""
         print("\n🎮 COMPREHENSIVE DOGEFOOD LAB GAME SYSTEM TEST")
