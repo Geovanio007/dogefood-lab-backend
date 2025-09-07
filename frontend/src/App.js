@@ -275,9 +275,11 @@ const InnerApp = () => {
 function App() {
   return (
     <ThemeProvider>
-      <Web3Provider>
-        <InnerApp />
-      </Web3Provider>
+      <TelegramProvider>
+        <Web3Provider>
+          <InnerApp />
+        </Web3Provider>
+      </TelegramProvider>
     </ThemeProvider>
   );
 };
