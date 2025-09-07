@@ -22,17 +22,21 @@ import TelegramAuth from './components/TelegramAuth';
 // import PointsToBlockchain from './components/PointsToBlockchain';
 import './App.css';
 
-// Inner App component that has access to wagmi hooks
+// Inner App component that has access to wagmi and telegram hooks
 const InnerApp = () => {
   const { address, isConnected } = useAccount();
+  const { isTelegram, telegramUser, isAuthenticated: isTelegramAuthenticated, isLoading: isTelegramLoading } = useTelegram();
+  
   const [showWelcome, setShowWelcome] = useState(() => {
-    // Only show welcome screen if user is on the home page
-    return window.location.pathname === '/';
+    // Show welcome screen for regular browsers, skip for Telegram
+    return !isTelegram && window.location.pathname === '/';
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
+  const [showTelegramAuth, setShowTelegramAuth] = useState(false);
   const [userRegistered, setUserRegistered] = useState(false);
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
+  const [authType, setAuthType] = useState(null); // 'wallet', 'telegram', or 'linked'
 
   // Check registration status when wallet connects
   useEffect(() => {
