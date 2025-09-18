@@ -349,7 +349,7 @@ const MainMenu = () => {
                 className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-bold py-4 px-8 text-xl rounded-xl shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
               >
                 📖 How it Works
-              </button>
+              </Button>
             </CardContent>
           </Card>
         </div>
