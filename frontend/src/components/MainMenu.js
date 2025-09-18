@@ -48,23 +48,7 @@ const MainMenu = () => {
 
       <div className="relative z-10 max-w-6xl mx-auto">
         
-        {/* Shiba Pouring Cereal - Right Side Prominent */}
-        <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-30">
-          <div className="relative">
-            <img
-              src="/shiba-pouring-cereal.png"
-              alt="Shiba Inu Pouring Cereal"
-              className="w-96 h-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-300"
-              style={{
-                filter: 'drop-shadow(0 15px 35px rgba(0,0,0,0.4)) brightness(1.1) contrast(1.1)'
-              }}
-            />
-            {/* Fun floating animation */}
-            <div className="absolute -top-4 -right-4 animate-bounce">
-              <span className="text-3xl">🥣</span>
-            </div>
-          </div>
-        </div>
+        {/* Shiba Inu image removed as requested */}
         {/* Header with New Logo */}
         <div className="flex justify-between items-center mb-12">
           <div>
