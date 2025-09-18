@@ -372,7 +372,7 @@ body {
   }
   
   .playful-text {
-    font-family: 'Comic Sans MS', 'Marker Felt', cursive;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     font-weight: bold;
   }
   
