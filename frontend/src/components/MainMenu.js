@@ -334,6 +334,26 @@ const MainMenu = () => {
           </Card>
         )}
 
+        {/* How it Works Link */}
+        <div className="text-center mt-12 mb-8">
+          <Card className="glass-panel max-w-md mx-auto bg-gradient-to-br from-indigo-600/90 to-purple-600/90 border-indigo-400/50 shadow-2xl">
+            <CardContent className="p-6">
+              <h3 className="text-2xl font-bold text-white mb-4">
+                🧠 Need Help Understanding the Game?
+              </h3>
+              <p className="text-white/90 mb-6 text-lg">
+                Learn all the game mechanics, strategies, and tips!
+              </p>
+              <Button
+                onClick={() => window.open('/game-mechanisms.html', '_blank')}
+                className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-bold py-4 px-8 text-xl rounded-xl shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
+              >
+                📖 How it Works
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Footer */}
         <div className="text-center mt-16">
           <p className="text-yellow-500 text-sm playful-text bubble-text">
