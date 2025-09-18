@@ -49,7 +49,7 @@ body {
 
 /* Force consistent playful titles on all devices with theme support */
 .playful-title {
-  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
   font-weight: bold !important;
   color: var(--text-accent) !important;
   text-shadow: 4px 4px 8px rgba(0,0,0,0.4), 
@@ -60,7 +60,7 @@ body {
 
 /* Ensure bubble text styling is consistent with theme */
 .bubble-text {
-  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
   font-weight: bold !important;
   color: var(--text-primary) !important;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;
