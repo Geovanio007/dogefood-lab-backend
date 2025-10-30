@@ -394,11 +394,13 @@ metadata:
 
 test_plan:
   current_focus: 
-    - "Final Production Readiness Verification Completed"
+    - "Comprehensive Game Lab Features Testing Completed"
     - "Backend System Verification Completed"
     - "Security and Authentication Testing Completed"
   stuck_tasks: 
-    - "Points System Integration (500 errors on stats endpoint)"
+    - "Active Treats Management (Timer check endpoint 404 errors)"
+    - "Character System Integration (Not implemented)"
+    - "Game Simulation API (Parameter validation issues)"
   test_all: false
   test_priority: "high_first"
 
