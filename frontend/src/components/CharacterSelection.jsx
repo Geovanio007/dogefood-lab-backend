@@ -11,7 +11,7 @@ const CharacterSelection = ({ onCharacterSelected }) => {
       name: 'Shiba Scientist Max',
       description: 'The clever and curious one',
       personality: 'Methodical and analytical, Max loves to understand the science behind every reaction.',
-      image: 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/w3y5oh69_assets_task_01k5p6sq20fh68gb4hjbs9271e_1758460753_img_0.webp',
+      image: 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/m1k3hm3c_assets_task_01k5p7arcvf6jt34pk82yke1sh_1758461571_img_0.webp', // Max with glasses
       traits: ['🧠 Analytical', '🔬 Precise', '📚 Studious'],
       bonus: '+10% Experience from treats'
     },
@@ -20,7 +20,7 @@ const CharacterSelection = ({ onCharacterSelected }) => {
       name: 'Shiba Scientist Rex',
       description: 'The mischievous genius',
       personality: 'Bold and experimental, Rex loves to try wild combinations and discover new possibilities.',
-      image: 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/m1k3hm3c_assets_task_01k5p7arcvf6jt34pk82yke1sh_1758461571_img_0.webp',
+      image: 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/w3y5oh69_assets_task_01k5p6sq20fh68gb4hjbs9271e_1758460753_img_0.webp', // Rex the mischievous genius
       traits: ['⚡ Creative', '🎯 Risk-taker', '🎪 Playful'],
       bonus: '+15% Rare treat chance'
     },
@@ -29,7 +29,7 @@ const CharacterSelection = ({ onCharacterSelected }) => {
       name: 'Shiba Scientist Luna',
       description: 'The smart and fearless female scientist',
       personality: 'Confident and innovative, Luna excels at optimization and efficiency in the lab.',
-      image: 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/5thty2tp_20250921_1510_Doge%20Scientist%20Trio_simple_compose_01k5p68s01e1p8f81hk4dvm5tm.png',
+      image: 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/5thty2tp_20250921_1510_Doge%20Scientist%20Trio_simple_compose_01k5p68s01e1p8f81hk4dvm5tm.png', // Luna with pink
       traits: ['💪 Fearless', '⚡ Efficient', '🌟 Innovative'],
       bonus: '+20% Points from treats'
     }
