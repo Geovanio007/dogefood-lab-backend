@@ -67,6 +67,9 @@ class Player(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     address: Optional[str] = None  # Wallet address (optional for Telegram users)
     nickname: Optional[str] = None  # Enhanced: Add nickname support
+    # Character selection
+    selected_character: Optional[str] = None  # Character ID: 'max', 'rex', or 'luna'
+    character_bonuses: Optional[dict] = None  # Character-specific bonuses
     # Telegram user fields
     telegram_id: Optional[int] = None  # Telegram user ID
     telegram_username: Optional[str] = None  # Telegram @username
