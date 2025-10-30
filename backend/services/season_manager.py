@@ -117,8 +117,8 @@ class SeasonManager:
         
         # For Season 1, force it to be active for the beta launch
         if season_id == 1:
-            start_date = datetime(2024, 1, 1)
-            end_date = datetime(2025, 12, 31)  # Extended for beta
+            start_date = datetime(2025, 1, 1)
+            end_date = datetime(2026, 12, 31)  # Extended for beta 2025-2026
             status = SeasonStatus.ACTIVE
         else:
             start_date, end_date = self.get_season_dates(season_id)
