@@ -84,20 +84,25 @@ const GameLabNew = () => {
     try {
       let endpoint;
       if (isTelegram && telegramUser) {
-        endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/active/telegram/${telegramUser.id}`;
+        endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/player/telegram_${telegramUser.id}`;
       } else if (address) {
-        endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/active/${address}`;  
+        endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/player/${address}`;  
       } else {
         return;
       }
 
       const response = await fetch(endpoint);
       if (response.ok) {
-        const treats = await response.json();
-        setActiveTreats(treats || []);
+        const data = await response.json();
+        // Filter for active treats (not ready yet)
+        const activeTreats = data.treats ? data.treats.filter(treat => 
+          new Date(treat.ready_at).getTime() > Date.now()
+        ) : [];
+        setActiveTreats(activeTreats);
       }
     } catch (error) {
       console.error('Error loading active treats:', error);
+      setActiveTreats([]); // Set empty array on error
     }
   };
 
