@@ -160,109 +160,21 @@ const InnerApp = () => {
           </div>
         )}
 
-        {/* Main Application - After loading and registration check */}
+        {/* Main Application - After loading screen, show main menu */}
         {!showWelcome && !isLoading && !isCheckingRegistration && (
           <Router>
-            {/* Telegram Authentication Screen */}
-            {showTelegramAuth && !userRegistered && isTelegram && (
-              <TelegramAuth 
-                onAuthComplete={(authData) => {
-                  setUserRegistered(true);
-                  setShowTelegramAuth(false);
-                  setAuthType('telegram');
-                  console.log("✅ Telegram user authenticated:", authData);
-                }}
-              />
-            )}
-
-            {/* Wallet Registration Screen */}
-            {showRegistration && !userRegistered && !isTelegram && (
-              <UserRegistration 
-                onRegistrationComplete={(registrationData) => {
-                  setUserRegistered(true);
-                  setShowRegistration(false);
-                  setAuthType('wallet');
-                  console.log("✅ Wallet user registered:", registrationData);
-                }}
-              />
-            )}
-            
-            {/* Main Game Routes - Only after registration */}
-            {!showRegistration && !showTelegramAuth && userRegistered && (
-              <>
-                <Routes>
-                  <Route path="/" element={<MainMenu />} />
-                  <Route path="/lab" element={<GameLabNew />} />
-                  <Route path="/nfts" element={<MyTreats />} />
-                  <Route path="/dashboard" element={<ActiveTreatsStatus />} />
-                  <Route path="/leaderboard" element={<Leaderboard />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  {/* <Route path="/convert" element={<PointsToBlockchain />} /> */}
-                </Routes>
-                {/* Global Treat Notifications */}
-                <TreatNotifications />
-              </>
-            )}
-            
-            {/* Show registration prompt for wallet users */}
-            {!showRegistration && !showTelegramAuth && !userRegistered && !isTelegram && isConnected && (
-              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
-                <Card className="glass-panel max-w-md mx-auto">
-                  <CardHeader className="text-center">
-                    <CardTitle className="playful-title text-white text-2xl">
-                      🎮 Registration Required
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center space-y-4">
-                    <p className="text-white/90">
-                      To play DogeFood Lab, you need to register your wallet with a username.
-                    </p>
-                    <Button 
-                      onClick={() => setShowRegistration(true)}
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3"
-                    >
-                      Start Registration
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* For web users without wallet, go directly to character selection/game */}
-            {!isTelegram && !isConnected && !showRegistration && !userRegistered && (
-              <>
-                <Routes>
-                  <Route path="/" element={<MainMenu />} />
-                  <Route path="/lab" element={<GameLabNew />} />
-                  <Route path="/nfts" element={<MyTreats />} />
-                  <Route path="/dashboard" element={<ActiveTreatsStatus />} />
-                  <Route path="/leaderboard" element={<Leaderboard />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                </Routes>
-                {/* Global Treat Notifications */}
-                <TreatNotifications />
-              </>
-            )}
-
-            {/* Show Telegram authentication error */}
-            {isTelegram && !isTelegramAuthenticated && !isTelegramLoading && (
-              <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 p-4 flex items-center justify-center">
-                <Card className="glass-panel max-w-md mx-auto">
-                  <CardHeader className="text-center">
-                    <CardTitle className="playful-title text-white text-2xl">
-                      🤖 Telegram Error
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center space-y-4">
-                    <p className="text-white/90">
-                      Unable to authenticate with Telegram. Please restart the app from your Telegram bot.
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+            {/* Always show main routes after loading - authentication is optional */}
+            <Routes>
+              <Route path="/" element={<MainMenu />} />
+              <Route path="/lab" element={<GameLabNew />} />
+              <Route path="/nfts" element={<MyTreats />} />
+              <Route path="/dashboard" element={<ActiveTreatsStatus />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+            </Routes>
+            {/* Global Treat Notifications */}
+            <TreatNotifications />
           </Router>
         )}
       </div>
