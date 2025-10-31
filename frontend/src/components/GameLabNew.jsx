@@ -190,16 +190,14 @@ const GameLabNew = () => {
   };
 
   if (showCharacterSelection) {
-    const CharacterSelection = React.lazy(() => import('./CharacterSelection'));
     return (
-      <React.Suspense fallback={<div>Loading...</div>}>
-        <CharacterSelection 
-          onCharacterSelected={(character) => {
-            setSelectedCharacter(character);
-            setShowCharacterSelection(false);
-          }}
-        />
-      </React.Suspense>
+      <CharacterSelection 
+        onCharacterSelected={(character) => {
+          setSelectedCharacter(character);
+          setShowCharacterSelection(false);
+          console.log('Character selected:', character);
+        }}
+      />
     );
   }
 
