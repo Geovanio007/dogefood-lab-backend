@@ -6,6 +6,7 @@ import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { useToast } from './ui/use-toast';
 import { useTelegram } from '../contexts/TelegramContext';
+import CharacterSelection from './CharacterSelection';
 
 const GameLabNew = () => {
   const { address } = useAccount();
