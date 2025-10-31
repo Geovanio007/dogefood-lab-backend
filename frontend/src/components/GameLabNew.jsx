@@ -210,12 +210,25 @@ const GameLabNew = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               {selectedCharacter && (
-                <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-yellow-400 shadow-lg">
-                  <img 
-                    src={selectedCharacter.image} 
-                    alt={selectedCharacter.name}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-yellow-400 shadow-lg">
+                    <img 
+                      src={selectedCharacter.image} 
+                      alt={selectedCharacter.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <Button
+                    onClick={() => {
+                      localStorage.removeItem('selectedCharacter');
+                      setSelectedCharacter(null);
+                      setShowCharacterSelection(true);
+                    }}
+                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 text-white text-xs p-0"
+                    title="Change Character"
+                  >
+                    🔄
+                  </Button>
                 </div>
               )}
               <div>
@@ -223,23 +236,39 @@ const GameLabNew = () => {
                   🧪 DogeFood Laboratory
                 </h1>
                 {selectedCharacter && (
-                  <p className="text-xl text-yellow-400">
-                    Scientist: {selectedCharacter.name}
-                  </p>
+                  <div>
+                    <p className="text-xl text-yellow-400">
+                      Scientist: {selectedCharacter.name}
+                    </p>
+                    <p className="text-sm text-green-400">
+                      Bonus: {selectedCharacter.bonus}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
             
-            {playerData && (
-              <div className="text-right">
-                <div className="text-white text-lg">
-                  Level {playerData.level} • {playerData.points} Points
+            <div className="text-right">
+              {playerData && (
+                <div>
+                  <div className="text-white text-lg">
+                    Level {playerData.level} • {playerData.points} Points
+                  </div>
+                  <div className="text-yellow-400">
+                    {playerData.experience} XP
+                  </div>
                 </div>
-                <div className="text-yellow-400">
-                  {playerData.experience} XP
-                </div>
-              </div>
-            )}
+              )}
+              
+              {!selectedCharacter && (
+                <Button
+                  onClick={() => setShowCharacterSelection(true)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  Choose Character
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
