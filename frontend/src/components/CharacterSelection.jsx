@@ -4,6 +4,9 @@ import { Button } from './ui/button';
 
 const CharacterSelection = ({ onCharacterSelected }) => {
   const [selectedCharacter, setSelectedCharacter] = useState(null);
+  
+  // Debug log to confirm component is rendering
+  console.log('CharacterSelection component rendered');
 
   const characters = [
     {
