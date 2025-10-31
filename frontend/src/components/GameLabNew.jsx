@@ -35,12 +35,16 @@ const GameLabNew = () => {
 
   // Load character on component mount
   useEffect(() => {
-    const storedCharacter = localStorage.getItem('selectedCharacter');
-    if (storedCharacter) {
-      setSelectedCharacter(JSON.parse(storedCharacter));
-    } else {
+    const checkCharacterSelection = async () => {
+      // Clear any existing character selection for fresh start
+      localStorage.removeItem('selectedCharacter');
+      
+      // Always show character selection first
       setShowCharacterSelection(true);
-    }
+      setSelectedCharacter(null);
+    };
+    
+    checkCharacterSelection();
   }, []);
 
   // Load player data
