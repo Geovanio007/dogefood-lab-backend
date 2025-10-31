@@ -46,6 +46,7 @@ const CharacterSelection = ({ onCharacterSelected }) => {
     if (selectedCharacter) {
       // Store character selection in localStorage
       localStorage.setItem('selectedCharacter', JSON.stringify(selectedCharacter));
+      console.log('Character confirmed and stored:', selectedCharacter);
       onCharacterSelected(selectedCharacter);
     }
   };
