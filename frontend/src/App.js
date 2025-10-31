@@ -229,22 +229,21 @@ const InnerApp = () => {
               </div>
             )}
 
-            {/* Show wallet connection prompt for non-Telegram users */}
-            {!isTelegram && !isConnected && (
-              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center">
-                <Card className="glass-panel max-w-md mx-auto">
-                  <CardHeader className="text-center">
-                    <CardTitle className="playful-title text-white text-2xl">
-                      🔗 Connect Wallet
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center space-y-4">
-                    <p className="text-white/90">
-                      Please connect your wallet to access DogeFood Lab.
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+            {/* For web users without wallet, go directly to character selection/game */}
+            {!isTelegram && !isConnected && !showRegistration && !userRegistered && (
+              <>
+                <Routes>
+                  <Route path="/" element={<MainMenu />} />
+                  <Route path="/lab" element={<GameLabNew />} />
+                  <Route path="/nfts" element={<MyTreats />} />
+                  <Route path="/dashboard" element={<ActiveTreatsStatus />} />
+                  <Route path="/leaderboard" element={<Leaderboard />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
+                </Routes>
+                {/* Global Treat Notifications */}
+                <TreatNotifications />
+              </>
             )}
 
             {/* Show Telegram authentication error */}
