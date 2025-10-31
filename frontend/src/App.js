@@ -192,7 +192,7 @@ const InnerApp = () => {
               <>
                 <Routes>
                   <Route path="/" element={<MainMenu />} />
-                  <Route path="/lab" element={<GameLab />} />
+                  <Route path="/lab" element={<GameLabNew />} />
                   <Route path="/nfts" element={<MyTreats />} />
                   <Route path="/dashboard" element={<ActiveTreatsStatus />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
