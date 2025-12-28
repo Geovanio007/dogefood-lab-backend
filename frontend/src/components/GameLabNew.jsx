@@ -467,11 +467,11 @@ const GameLabNew = () => {
                 ) : (
                   activeTreats.map((treat, index) => {
                     const isReady = new Date(treat.ready_at).getTime() <= currentTime;
-                    const progress = getProgressPercentage(treat.ready_at);
+                    const progress = getProgressPercentage(treat.ready_at, treat.timer_duration);
                     
                     return (
                       <div
-                        key={index}
+                        key={treat.id || index}
                         className={`p-4 rounded-xl border-2 ${
                           isReady 
                             ? 'bg-green-100 border-green-400'
@@ -497,11 +497,17 @@ const GameLabNew = () => {
                           className="mb-2"
                         />
                         
-                        <div className={`text-center font-bold ${
-                          isReady ? 'text-green-800' : 'text-white'
+                        <div className={`text-center font-bold text-lg ${
+                          isReady ? 'text-green-800' : 'text-yellow-400'
                         }`}>
                           {formatTimeRemaining(treat.ready_at)}
                         </div>
+                        
+                        {!isReady && (
+                          <div className="text-center text-xs text-white/50 mt-1">
+                            Ready at: {new Date(treat.ready_at).toLocaleTimeString()}
+                          </div>
+                        )}
                       </div>
                     );
                   })
