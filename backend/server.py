@@ -589,51 +589,105 @@ async def verify_nft_ownership(address: str, is_holder: bool = False):
     Verify NFT ownership and update player VIP status.
     Frontend should pass is_holder=True if wallet holds the NFT.
     """
-    # Update player NFT status and VIP badge
-    update_data = {"is_nft_holder": is_holder}
-    
-    if is_holder:
-        update_data["is_vip"] = True
-        
-        # Check if player already claimed VIP bonus
+    try:
+        # Check if player exists
         existing_player = await db.players.find_one({"address": address})
-        if existing_player and not existing_player.get("vip_bonus_claimed", False):
-            # Award 500 VIP bonus points
-            update_data["vip_bonus_claimed"] = True
-            update_data["$inc"] = {"points": 500}
-            logger.info(f"🌟 VIP bonus awarded to: {address} - 500 points!")
-            
-            await db.players.update_one(
-                {"address": address},
-                {
-                    "$set": {
-                        "is_nft_holder": is_holder,
+        
+        if is_holder:
+            if existing_player:
+                # Player exists - check if VIP bonus already claimed
+                if not existing_player.get("vip_bonus_claimed", False):
+                    # Award 500 VIP bonus points
+                    await db.players.update_one(
+                        {"address": address},
+                        {
+                            "$set": {
+                                "is_nft_holder": True,
+                                "is_vip": True,
+                                "vip_bonus_claimed": True
+                            },
+                            "$inc": {"points": 500}
+                        }
+                    )
+                    logger.info(f"🌟 VIP bonus awarded to existing player: {address} - 500 points!")
+                    return {
+                        "address": address,
+                        "is_nft_holder": True,
                         "is_vip": True,
-                        "vip_bonus_claimed": True
-                    },
-                    "$inc": {"points": 500}
-                },
-                upsert=True
-            )
+                        "vip_bonus_awarded": True,
+                        "bonus_points": 500,
+                        "contract": DOGEFOOD_NFT_CONTRACT
+                    }
+                else:
+                    # Already claimed bonus - just update NFT status
+                    await db.players.update_one(
+                        {"address": address},
+                        {"$set": {"is_nft_holder": True, "is_vip": True}}
+                    )
+            else:
+                # New player - create with VIP bonus
+                new_player = {
+                    "address": address,
+                    "nickname": None,
+                    "is_nft_holder": True,
+                    "is_vip": True,
+                    "vip_bonus_claimed": True,
+                    "points": 500,
+                    "level": 1,
+                    "experience": 0,
+                    "created_treats": [],
+                    "last_active": datetime.utcnow()
+                }
+                await db.players.insert_one(new_player)
+                logger.info(f"🌟 New VIP player created: {address} - 500 bonus points!")
+                return {
+                    "address": address,
+                    "is_nft_holder": True,
+                    "is_vip": True,
+                    "vip_bonus_awarded": True,
+                    "bonus_points": 500,
+                    "contract": DOGEFOOD_NFT_CONTRACT
+                }
+            
+            return {
+                "address": address,
+                "is_nft_holder": True,
+                "is_vip": True,
+                "vip_bonus_awarded": False,
+                "contract": DOGEFOOD_NFT_CONTRACT
+            }
         else:
-            await db.players.update_one(
-                {"address": address},
-                {"$set": update_data},
-                upsert=True
-            )
-    else:
-        await db.players.update_one(
-            {"address": address},
-            {"$set": update_data},
-            upsert=True
-        )
-    
-    return {
-        "address": address, 
-        "is_nft_holder": is_holder,
-        "is_vip": is_holder,
-        "contract": DOGEFOOD_NFT_CONTRACT
-    }
+            # Not an NFT holder
+            if existing_player:
+                await db.players.update_one(
+                    {"address": address},
+                    {"$set": {"is_nft_holder": False}}
+                )
+            else:
+                # Create new non-VIP player
+                new_player = {
+                    "address": address,
+                    "nickname": None,
+                    "is_nft_holder": False,
+                    "is_vip": False,
+                    "vip_bonus_claimed": False,
+                    "points": 0,
+                    "level": 1,
+                    "experience": 0,
+                    "created_treats": [],
+                    "last_active": datetime.utcnow()
+                }
+                await db.players.insert_one(new_player)
+            
+            return {
+                "address": address,
+                "is_nft_holder": False,
+                "is_vip": False,
+                "contract": DOGEFOOD_NFT_CONTRACT
+            }
+    except Exception as e:
+        logger.error(f"Error in verify-nft: {e}")
+        raise HTTPException(status_code=500, detail=f"Error verifying NFT: {str(e)}")
 
 # Phase 2: Web3 Rewards & Merkle Tree Routes
 @api_router.post("/rewards/generate-season/{season_id}")
