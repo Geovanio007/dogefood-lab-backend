@@ -121,12 +121,14 @@ const GameLabNew = () => {
       const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
-        // Filter for active treats (not ready yet)
+        // Get all treats - both brewing and ready
         const treats = Array.isArray(data) ? data : (data.treats || []);
-        const activeTreats = treats.filter(treat => 
-          treat.ready_at && new Date(treat.ready_at).getTime() > Date.now()
+        // Sort by ready_at time (most recent first)
+        const sortedTreats = treats.sort((a, b) => 
+          new Date(b.ready_at).getTime() - new Date(a.ready_at).getTime()
         );
-        setActiveTreats(activeTreats);
+        // Take the most recent 5 treats to display
+        setActiveTreats(sortedTreats.slice(0, 5));
       }
     } catch (error) {
       console.error('Error loading active treats:', error);
