@@ -230,21 +230,35 @@ const GameLabNew = () => {
   };
 
   const formatTimeRemaining = (readyAt) => {
-    const remaining = new Date(readyAt).getTime() - currentTime;
+    if (!readyAt) return "Unknown";
+    
+    // Parse the date - handle both ISO format and timestamp
+    const readyTime = typeof readyAt === 'number' ? readyAt : new Date(readyAt).getTime();
+    const remaining = readyTime - currentTime;
+    
     if (remaining <= 0) return "Ready! 🎉";
     
     const hours = Math.floor(remaining / (1000 * 60 * 60));
     const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
     
-    return `${hours}h ${minutes}m ${seconds}s`;
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    }
+    return `${seconds}s`;
   };
 
-  const getProgressPercentage = (readyAt) => {
-    const startTime = new Date(readyAt).getTime() - (12 * 60 * 60 * 1000); // Assume 12h max
-    const endTime = new Date(readyAt).getTime();
+  const getProgressPercentage = (readyAt, timerDuration) => {
+    if (!readyAt) return 0;
+    
+    const readyTime = typeof readyAt === 'number' ? readyAt : new Date(readyAt).getTime();
+    // Use timer_duration if available, otherwise assume 1 hour
+    const durationMs = (timerDuration || 3600) * 1000;
+    const startTime = readyTime - durationMs;
     const elapsed = currentTime - startTime;
-    const total = endTime - startTime;
+    const total = durationMs;
     return Math.min(100, Math.max(0, (elapsed / total) * 100));
   };
 
