@@ -141,9 +141,9 @@ const GameLabNew = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          player_address: address || `telegram_${telegramUser?.id}`,
+          creator_address: address || `telegram_${telegramUser?.id}`,
           ingredients: selectedIngredients.map(ing => ing.name),
-          season: 1
+          player_level: playerData?.level || 1
         })
       });
 
