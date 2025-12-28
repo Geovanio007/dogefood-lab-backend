@@ -188,9 +188,23 @@ const GameLabNew = () => {
           className: "bg-green-100 border-green-400"
         });
         
+        // Immediately add the new treat to active treats list
+        const newTreat = {
+          id: result.treat.id,
+          rarity: result.outcome.rarity,
+          ingredients: result.outcome.ingredients_used,
+          ready_at: result.treat.ready_at,
+          created_at: result.treat.created_at,
+          timer_duration: result.treat.timer_duration
+        };
+        setActiveTreats(prev => [...prev, newTreat]);
+        
         setSelectedIngredients([]);
-        loadActiveTreats();
-        loadPlayerData();
+        // Also refresh from API to ensure sync
+        setTimeout(() => {
+          loadActiveTreats();
+          loadPlayerData();
+        }, 1000);
       } else {
         const errorData = await response.json().catch(() => ({}));
         toast({
