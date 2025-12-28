@@ -327,6 +327,14 @@ const GameLabNew = () => {
                   Choose Character
                 </Button>
               )}
+              
+              {/* Return to Menu Button */}
+              <Button
+                onClick={() => navigate('/menu')}
+                className="mt-2 bg-gray-600 hover:bg-gray-700 text-white"
+              >
+                ← Back to Menu
+              </Button>
             </div>
           </div>
         </div>
