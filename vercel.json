@@ -1,16 +1,20 @@
 {
   "name": "dogefood-lab",
+  "version": 2,
   "builds": [
+    {
+      "src": "backend/server.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
+    },
     {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build"
       }
-    },
-    {
-      "src": "backend/server.py",
-      "use": "@vercel/python"
     }
   ],
   "routes": [
@@ -19,19 +23,28 @@
       "dest": "/backend/server.py"
     },
     {
-      "src": "/(.*)",
+      "src": "/game-mechanisms.html",
+      "dest": "/frontend/build/game-mechanisms.html"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|webp))",
       "dest": "/frontend/build/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/build/index.html"
     }
   ],
   "env": {
-    "MONGO_URL": "@mongo_url",
-    "DB_NAME": "dogefood_production",
+    "MONGO_URL": "mongodb+srv://goistheticker_db_user:PTmfplJ3ChiNm1zH@cluster0.px8hllq.mongodb.net/?appName=Cluster0",
+    "DB_NAME": "dogefood_lab_production",
     "CORS_ORIGINS": "*",
-    "TELEGRAM_BOT_TOKEN": "@telegram_bot_token"
+    "TELEGRAM_BOT_TOKEN": "8253212634:AAGZ0Bo0ZD3CcNKyABmMurEMsTclyADCqIE"
   },
   "functions": {
     "backend/server.py": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "memory": 512
     }
   }
 }
