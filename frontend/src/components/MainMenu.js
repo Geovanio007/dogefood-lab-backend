@@ -5,16 +5,78 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
+import { Input } from './ui/input';
 import { useGame } from '../contexts/GameContext';
 import { useNFTVerification } from '../hooks/useNFTVerification';
 import ThemeToggle from './ThemeToggle';
 import DogeFoodLogo from './DogeFoodLogo';
-import { Beaker, Trophy, Settings, Palette, Clock } from 'lucide-react';
+import { Beaker, Trophy, Settings, Palette, Clock, User, Check, Edit2 } from 'lucide-react';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const MainMenu = () => {
   const { address, isConnected } = useAccount();
   const { nftBalance, isNFTHolder, loading: nftLoading } = useNFTVerification();
   const { user, currentLevel, points, dispatch, loadPlayerData } = useGame();
+  
+  // Username state
+  const [username, setUsername] = useState('');
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [usernameInput, setUsernameInput] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [savingUsername, setSavingUsername] = useState(false);
+
+  // Load player profile including username
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (isConnected && address) {
+        try {
+          const response = await fetch(`${BACKEND_URL}/api/player/${address}/profile`);
+          if (response.ok) {
+            const profile = await response.json();
+            setUsername(profile.nickname || '');
+          }
+        } catch (error) {
+          console.error('Error loading profile:', error);
+        }
+      }
+    };
+    loadProfile();
+  }, [isConnected, address]);
+
+  const handleSaveUsername = async () => {
+    if (!usernameInput.trim()) {
+      setUsernameError('Username cannot be empty');
+      return;
+    }
+    
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(usernameInput)) {
+      setUsernameError('3-20 characters, alphanumeric and underscores only');
+      return;
+    }
+    
+    setSavingUsername(true);
+    setUsernameError('');
+    
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/api/player/${address}/update-username?username=${encodeURIComponent(usernameInput)}`,
+        { method: 'POST' }
+      );
+      
+      if (response.ok) {
+        setUsername(usernameInput);
+        setIsEditingUsername(false);
+      } else {
+        const error = await response.json();
+        setUsernameError(error.detail || 'Failed to save username');
+      }
+    } catch (error) {
+      setUsernameError('Failed to save username');
+    } finally {
+      setSavingUsername(false);
+    }
+  };
 
   // Update game state when wallet connects and NFT status is determined
   useEffect(() => {
