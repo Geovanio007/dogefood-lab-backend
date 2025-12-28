@@ -214,50 +214,108 @@ const MainMenu = () => {
           </div>
         </div>
         
-        {/* Username Section - Only show when connected */}
+        {/* Username Section - Modern Design - Only show when connected */}
         {isConnected && (
           <div className="mb-6">
-            <Card className="glass-panel border-2 border-purple-400/50">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
-                      <User className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Your Scientist Name</div>
-                      {!isEditingUsername ? (
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-lg text-purple-700">
-                            {username || 'Set your username'}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setUsernameInput(username);
-                              setIsEditingUsername(true);
-                              setUsernameError('');
-                            }}
-                            className="p-1 h-auto"
-                          >
-                            <Edit2 className="w-4 h-4 text-purple-500" />
-                          </Button>
+            <Card className="overflow-hidden border-0 shadow-xl">
+              {/* Gradient Border */}
+              <div className="relative bg-gradient-to-r from-purple-500 via-pink-500 to-sky-400 p-1">
+                <CardContent className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 rounded-lg p-4 backdrop-blur-sm">
+                  {/* Decorative Elements */}
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-2xl"></div>
+                  
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+                    {/* Left - Profile Section */}
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <div className="w-14 h-14 bg-gradient-to-br from-purple-400 via-pink-500 to-sky-400 rounded-xl flex items-center justify-center shadow-lg">
+                          <User className="w-7 h-7 text-white" />
                         </div>
-                      ) : (
-                        <div className="flex flex-col gap-1">
+                        {isNFTHolder && (
+                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center text-xs">⭐</div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs text-sky-400 font-semibold uppercase tracking-wide">Scientist Profile</div>
+                        {!isEditingUsername ? (
                           <div className="flex items-center gap-2">
-                            <Input
-                              value={usernameInput}
-                              onChange={(e) => setUsernameInput(e.target.value)}
-                              placeholder="Enter username"
-                              className="w-40 h-8 text-sm"
-                              maxLength={20}
-                            />
+                            <span className="font-bold text-lg bg-gradient-to-r from-purple-400 via-pink-400 to-sky-400 bg-clip-text text-transparent">
+                              {username || 'Click to set username'}
+                            </span>
                             <Button
+                              variant="ghost"
                               size="sm"
-                              onClick={handleSaveUsername}
-                              disabled={savingUsername}
+                              onClick={() => {
+                                setUsernameInput(username);
+                                setIsEditingUsername(true);
+                                setUsernameError('');
+                              }}
+                              className="p-1 h-auto hover:bg-white/10"
+                            >
+                              <Edit2 className="w-4 h-4 text-sky-400" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={usernameInput}
+                                onChange={(e) => setUsernameInput(e.target.value)}
+                                placeholder="Enter username"
+                                className="w-36 h-8 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                                maxLength={20}
+                              />
+                              <Button
+                                size="sm"
+                                onClick={handleSaveUsername}
+                                disabled={savingUsername}
+                                className="bg-emerald-500 hover:bg-emerald-600 h-8 px-3"
+                              >
+                                {savingUsername ? '...' : <Check className="w-4 h-4" />}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setIsEditingUsername(false)}
+                                className="h-8 px-2 text-white/70 hover:text-white hover:bg-white/10"
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                            {usernameError && (
+                              <span className="text-xs text-red-400">{usernameError}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Right - Stats & VIP Badge */}
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="flex items-center gap-3 bg-white/5 rounded-lg px-3 py-2">
+                        <div className="text-center">
+                          <div className="text-xs text-white/60">Level</div>
+                          <div className="font-bold text-lg text-white">{currentLevel || 1}</div>
+                        </div>
+                        <div className="w-px h-8 bg-white/20"></div>
+                        <div className="text-center">
+                          <div className="text-xs text-white/60">Points</div>
+                          <div className="font-bold text-lg text-emerald-400">{points || 0}</div>
+                        </div>
+                      </div>
+                      
+                      {isNFTHolder && (
+                        <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1.5 text-sm font-bold shadow-lg border-0">
+                          🌟 VIP Scientist
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </div>
+            </Card>
+          </div>
+        )}
                               className="bg-purple-500 hover:bg-purple-600 h-8"
                             >
                               {savingUsername ? '...' : <Check className="w-4 h-4" />}
