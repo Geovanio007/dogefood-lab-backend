@@ -178,10 +178,24 @@ async def create_player(player_data: PlayerCreate):
     if existing_player:
         return Player(**existing_player)
     
+    # Determine if player is VIP (NFT holder gets 500 bonus points)
+    starting_points = 0
+    is_vip = False
+    vip_bonus_claimed = False
+    
+    if player_data.is_nft_holder:
+        is_vip = True
+        starting_points = 500  # VIP Scientist bonus
+        vip_bonus_claimed = True
+        logger.info(f"🌟 VIP Scientist registered: {player_data.address} - Awarded 500 bonus points!")
+    
     player = Player(
         address=player_data.address,
         nickname=player_data.nickname,  # Enhanced: Store nickname
-        is_nft_holder=player_data.is_nft_holder
+        is_nft_holder=player_data.is_nft_holder,
+        is_vip=is_vip,
+        vip_bonus_claimed=vip_bonus_claimed,
+        points=starting_points
     )
     
     await db.players.insert_one(player.dict())
