@@ -40,6 +40,29 @@ export const getTelegramInitData = () => {
   }
 };
 
+// Update viewport height CSS variable
+const updateViewportHeight = () => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const webApp = window.Telegram?.WebApp;
+    const viewportHeight = webApp?.viewportStableHeight || webApp?.viewportHeight || window.innerHeight;
+    
+    // Set CSS custom property for viewport height
+    document.documentElement.style.setProperty('--tg-viewport-height', `${viewportHeight}px`);
+    document.documentElement.style.setProperty('--app-height', `${viewportHeight}px`);
+    
+    // Also set body height
+    document.body.style.height = `${viewportHeight}px`;
+    document.body.style.minHeight = `${viewportHeight}px`;
+    document.body.style.maxHeight = `${viewportHeight}px`;
+    
+    console.log(`📐 Viewport height set to: ${viewportHeight}px`);
+  } catch (error) {
+    console.error('Error updating viewport height:', error);
+  }
+};
+
 // Expand Telegram WebApp to full height and optimize viewport
 export const expandTelegramWebApp = () => {
   if (isTelegramWebApp()) {
@@ -49,7 +72,7 @@ export const expandTelegramWebApp = () => {
       // Expand to full height
       webApp.expand();
       
-      // Enable viewport fit for better mobile experience
+      // Enable closing confirmation
       webApp.enableClosingConfirmation();
       
       // Set proper viewport for mobile
@@ -60,13 +83,37 @@ export const expandTelegramWebApp = () => {
         );
       }
       
-      // Add telegram-webapp class to body for styling
+      // Add telegram-webapp class to body and html for styling
       document.body.classList.add('telegram-webapp');
+      document.documentElement.classList.add('telegram-webapp');
       
       // Optimize for mobile touch
       document.body.style.touchAction = 'manipulation';
       document.body.style.userSelect = 'none';
       document.body.style.webkitUserSelect = 'none';
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'none';
+      
+      // Handle safe areas for notched devices
+      document.body.style.paddingTop = 'env(safe-area-inset-top)';
+      document.body.style.paddingBottom = 'env(safe-area-inset-bottom)';
+      document.body.style.paddingLeft = 'env(safe-area-inset-left)';
+      document.body.style.paddingRight = 'env(safe-area-inset-right)';
+      
+      // Initial viewport height update
+      updateViewportHeight();
+      
+      // Listen for viewport changes
+      webApp.onEvent('viewportChanged', ({ isStateStable }) => {
+        if (isStateStable) {
+          updateViewportHeight();
+        }
+      });
+      
+      // Also listen to window resize for fallback
+      window.addEventListener('resize', () => {
+        setTimeout(updateViewportHeight, 100);
+      });
       
       console.log('✅ Telegram WebApp expanded and optimized for mobile');
     } catch (error) {
@@ -165,6 +212,36 @@ export const isTelegramMobile = () => {
   }
 };
 
+// Get viewport dimensions
+export const getTelegramViewport = () => {
+  if (!isTelegramWebApp()) {
+    return {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      isExpanded: true,
+      isStable: true
+    };
+  }
+  
+  try {
+    const webApp = window.Telegram.WebApp;
+    return {
+      width: window.innerWidth,
+      height: webApp.viewportHeight || window.innerHeight,
+      stableHeight: webApp.viewportStableHeight || window.innerHeight,
+      isExpanded: webApp.isExpanded,
+      isStable: true
+    };
+  } catch (error) {
+    return {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      isExpanded: true,
+      isStable: true
+    };
+  }
+};
+
 // Optimize for Telegram platform
 export const optimizeForTelegramPlatform = () => {
   if (!isTelegramWebApp()) return;
@@ -175,14 +252,20 @@ export const optimizeForTelegramPlatform = () => {
     
     if (isMobile) {
       // Mobile-specific optimizations
-      document.body.style.fontSize = '14px';
-      document.documentElement.style.fontSize = '14px';
+      document.body.style.fontSize = '16px';
+      document.documentElement.style.fontSize = '16px';
       
       // Add mobile-specific class
       document.body.classList.add('telegram-mobile');
       
       // Disable pull-to-refresh on mobile
       document.body.style.overscrollBehavior = 'none';
+      
+      // Prevent bounce effect on iOS
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = '0';
+      document.body.style.left = '0';
       
       console.log('📱 Optimized for Telegram mobile');
     } else {
@@ -204,6 +287,9 @@ export const optimizeForTelegramPlatform = () => {
       }
       if (themeParams.button_color) {
         root.style.setProperty('--tg-button-color', themeParams.button_color);
+      }
+      if (themeParams.hint_color) {
+        root.style.setProperty('--tg-hint-color', themeParams.hint_color);
       }
     }
     
