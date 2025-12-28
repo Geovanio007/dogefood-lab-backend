@@ -233,6 +233,16 @@ const ActiveTreatsStatus = () => {
           </CardContent>
         </Card>
       )}
+      
+      {/* Return to Menu Button */}
+      <div className="mt-6">
+        <Link to="/">
+          <Button className="w-full bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white py-3">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Menu
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 };
