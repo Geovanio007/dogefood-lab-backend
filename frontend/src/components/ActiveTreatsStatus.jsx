@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { Clock, Trophy, Zap } from 'lucide-react';
+import { Button } from './ui/button';
+import { Clock, Trophy, Zap, ArrowLeft } from 'lucide-react';
 
 const ActiveTreatsStatus = () => {
   const { address, isConnected } = useAccount();
