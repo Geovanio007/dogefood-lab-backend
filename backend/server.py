@@ -1219,9 +1219,40 @@ async def activate_season(season_id: int):
         }
     }
 
-# Health check
-@api_router.get("/")
+# Health check endpoint for Vercel
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Test database connection
+        await client.admin.command('ping')
+        
+        # Test season manager
+        current_season = season_manager.get_current_season_id()
+        
+        return {
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "database": "connected",
+            "current_season": current_season,
+            "environment": "production" if "vercel" in os.getenv("VERCEL_URL", "") else "development"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Service unavailable: {str(e)}")
+
+# Root endpoint
+@app.get("/")
 async def root():
+    return {
+        "message": "🧪 DogeFood Lab API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
+
+# API Health check
+@api_router.get("/")
+async def api_root():
     return {"message": "DogeFood Lab API is running! 🐕🧪"}
 
 # Include the router in the main app
