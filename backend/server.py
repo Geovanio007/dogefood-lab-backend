@@ -409,25 +409,148 @@ async def check_treat_timer(treat_id: str):
 
 @api_router.get("/treats/{address}/brewing")
 async def get_brewing_treats(address: str):
-    """Get all treats currently brewing for a player"""
-    brewing_treats = await db.treats.find({
-        "creator_address": address,
-        "brewing_status": "brewing"
-    }).to_list(100)
-    
-    # Update status for any completed treats
-    updated_treats = []
-    for treat in brewing_treats:
-        if treat.get("ready_at") and datetime.utcnow() >= treat["ready_at"]:
-            # Auto-update to ready
-            await db.treats.update_one(
-                {"id": treat["id"]},
-                {"$set": {"brewing_status": "ready"}}
-            )
-            treat["brewing_status"] = "ready"
-        updated_treats.append(DogeTreat(**treat))
-    
-    return updated_treats
+    """Get all treats currently brewing for a player with real-time timer data"""
+    try:
+        brewing_treats = await db.treats.find({
+            "creator_address": address,
+            "brewing_status": "brewing"
+        }).to_list(100)
+        
+        now = datetime.utcnow()
+        result = []
+        
+        for treat in brewing_treats:
+            ready_at = treat.get("ready_at")
+            if ready_at:
+                # Parse ready_at if it's a string
+                if isinstance(ready_at, str):
+                    ready_at = datetime.fromisoformat(ready_at.replace("Z", "+00:00").replace("+00:00", ""))
+                
+                if now >= ready_at:
+                    # Auto-update to ready
+                    await db.treats.update_one(
+                        {"id": treat["id"]},
+                        {"$set": {"brewing_status": "ready"}}
+                    )
+                    treat["brewing_status"] = "ready"
+                    treat["time_remaining"] = 0
+                else:
+                    # Calculate remaining time
+                    remaining = (ready_at - now).total_seconds()
+                    treat["time_remaining"] = int(remaining)
+                    treat["time_remaining_formatted"] = format_time_remaining(int(remaining))
+            
+            # Remove MongoDB _id field
+            if "_id" in treat:
+                del treat["_id"]
+            result.append(treat)
+        
+        return {
+            "treats": result,
+            "server_time": now.isoformat(),
+            "count": len(result)
+        }
+    except Exception as e:
+        logger.error(f"Error getting brewing treats: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+def format_time_remaining(seconds: int) -> str:
+    """Format seconds into human readable time"""
+    if seconds <= 0:
+        return "Ready!"
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    secs = seconds % 60
+    if hours > 0:
+        return f"{hours}h {minutes}m {secs}s"
+    elif minutes > 0:
+        return f"{minutes}m {secs}s"
+    return f"{secs}s"
+
+@api_router.get("/treats/{address}/active")
+async def get_active_treats_with_timer(address: str):
+    """
+    Get all active treats for a player with real-time countdown timers.
+    This endpoint is optimized for frontend polling.
+    """
+    try:
+        now = datetime.utcnow()
+        
+        # Get all recent treats for this player (last 24 hours or still brewing)
+        cutoff = now - timedelta(hours=24)
+        treats = await db.treats.find({
+            "creator_address": address,
+            "$or": [
+                {"brewing_status": "brewing"},
+                {"created_at": {"$gte": cutoff}}
+            ]
+        }).sort("created_at", -1).limit(10).to_list(10)
+        
+        result = []
+        for treat in treats:
+            ready_at = treat.get("ready_at")
+            created_at = treat.get("created_at")
+            timer_duration = treat.get("timer_duration", 3600)
+            
+            # Parse dates if strings
+            if isinstance(ready_at, str):
+                try:
+                    ready_at = datetime.fromisoformat(ready_at.replace("Z", ""))
+                except:
+                    ready_at = now
+            
+            if isinstance(created_at, str):
+                try:
+                    created_at = datetime.fromisoformat(created_at.replace("Z", ""))
+                except:
+                    created_at = now
+            
+            # Calculate timer status
+            if ready_at:
+                remaining_seconds = max(0, int((ready_at - now).total_seconds()))
+                is_ready = remaining_seconds <= 0
+                
+                # Calculate progress (0-100)
+                total_duration = timer_duration if timer_duration else 3600
+                elapsed = total_duration - remaining_seconds
+                progress = min(100, max(0, (elapsed / total_duration) * 100))
+            else:
+                remaining_seconds = 0
+                is_ready = True
+                progress = 100
+            
+            # Update status if ready
+            if is_ready and treat.get("brewing_status") == "brewing":
+                await db.treats.update_one(
+                    {"id": treat["id"]},
+                    {"$set": {"brewing_status": "ready"}}
+                )
+                treat["brewing_status"] = "ready"
+            
+            # Remove MongoDB _id
+            if "_id" in treat:
+                del treat["_id"]
+            
+            treat_data = {
+                **treat,
+                "timer": {
+                    "remaining_seconds": remaining_seconds,
+                    "remaining_formatted": format_time_remaining(remaining_seconds),
+                    "is_ready": is_ready,
+                    "progress_percent": round(progress, 1),
+                    "total_duration": timer_duration
+                }
+            }
+            result.append(treat_data)
+        
+        return {
+            "treats": result,
+            "server_time": now.isoformat(),
+            "count": len(result)
+        }
+    except Exception as e:
+        logger.error(f"Error getting active treats: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 # Leaderboard Routes
 @api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
