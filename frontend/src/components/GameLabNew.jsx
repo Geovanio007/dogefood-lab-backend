@@ -295,25 +295,30 @@ const GameLabNew = () => {
                     .map((ingredient) => (
                     <div
                       key={ingredient.id}
-                      onClick={() => handleIngredientSelect(ingredient)}
+                      data-ingredient-id={ingredient.id}
+                      data-ingredient-name={ingredient.name}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleIngredientSelect(ingredient);
+                      }}
                       className={`relative p-4 rounded-xl cursor-pointer transition-all duration-300 ${
                         selectedIngredients.find(ing => ing.id === ingredient.id)
                           ? 'bg-yellow-400 text-gray-900 scale-105 shadow-lg'
                           : 'bg-white/20 text-white hover:bg-white/30 hover:scale-105'
                       }`}
                     >
-                      <div className="text-4xl mb-2 text-center">
+                      <div className="text-4xl mb-2 text-center pointer-events-none">
                         {ingredient.emoji}
                       </div>
-                      <div className="text-center font-bold">
+                      <div className="text-center font-bold pointer-events-none">
                         {ingredient.name}
                       </div>
-                      <div className="text-xs text-center mt-1 opacity-80">
+                      <div className="text-xs text-center mt-1 opacity-80 pointer-events-none">
                         Level {ingredient.level}
                       </div>
                       
                       {selectedIngredients.find(ing => ing.id === ingredient.id) && (
-                        <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                        <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center pointer-events-none">
                           ✓
                         </div>
                       )}
