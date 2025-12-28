@@ -20,6 +20,7 @@ const getGuestId = () => {
 };
 
 const GameLabNew = () => {
+  const navigate = useNavigate();
   const { address } = useAccount();
   const { isTelegram, telegramUser } = useTelegram();
   const { toast } = useToast();
