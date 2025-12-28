@@ -147,7 +147,12 @@ class LeaderboardEntry(BaseModel):
     points: int
     level: int
     is_nft_holder: bool
+    is_vip: bool = False  # VIP status
     rank: int
+    selected_character: Optional[str] = None  # Character ID: 'max', 'rex', 'luna'
+    character_name: Optional[str] = None  # Display name of character
+    character_image: Optional[str] = None  # Character image URL
+
 class EnhancedTreatCreate(BaseModel):
     creator_address: str
     ingredients: List[str]
