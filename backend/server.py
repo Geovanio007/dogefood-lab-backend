@@ -28,10 +28,30 @@ from services.season_manager import SeasonManager
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Database connection with Atlas MongoDB
+try:
+    MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://goistheticker_db_user:PTmfplJ3ChiNm1zH@cluster0.px8hllq.mongodb.net/?appName=Cluster0")
+    DB_NAME = os.getenv("DB_NAME", "dogefood_lab_production")
+    
+    # Log connection attempt (without sensitive data)
+    logging.info(f"Connecting to MongoDB database: {DB_NAME}")
+    
+    client = AsyncIOMotorClient(MONGO_URL)
+    db = client[DB_NAME]
+    
+    # Test connection
+    async def test_connection():
+        try:
+            await client.admin.command('ping')
+            logging.info("✅ MongoDB Atlas connection successful")
+            return True
+        except Exception as e:
+            logging.error(f"❌ MongoDB connection failed: {str(e)}")
+            return False
+    
+except Exception as e:
+    logging.error(f"Database initialization error: {str(e)}")
+    raise
 
 # Initialize Phase 2 services
 anti_cheat_system = AntiCheatSystem(db)
