@@ -465,25 +465,61 @@ async def get_flagged_players(risk_level: str = "high"):
     flagged = await anti_cheat_system.get_flagged_players(risk_level)
     return {"flagged_players": flagged, "risk_level": risk_level}
 
-# NFT Verification Route (Mock for prototype)
+# NFT Verification Route
+# DogeFood Lab NFT Contract: 0xA74Dad05f54d32575f82C3e065C4441b8d979a54
+DOGEFOOD_NFT_CONTRACT = "0xA74Dad05f54d32575f82C3e065C4441b8d979a54"
+
 @api_router.post("/verify-nft/{address}")
-async def verify_nft_ownership(address: str):
-    # Mock NFT verification - in production, this would check actual blockchain
-    mock_nft_holders = [
-        "0x1234567890123456789012345678901234567890",
-        "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"
-    ]
+async def verify_nft_ownership(address: str, is_holder: bool = False):
+    """
+    Verify NFT ownership and update player VIP status.
+    Frontend should pass is_holder=True if wallet holds the NFT.
+    """
+    # Update player NFT status and VIP badge
+    update_data = {"is_nft_holder": is_holder}
     
-    is_holder = address.lower() in [addr.lower() for addr in mock_nft_holders]
+    if is_holder:
+        update_data["is_vip"] = True
+        
+        # Check if player already claimed VIP bonus
+        existing_player = await db.players.find_one({"address": address})
+        if existing_player and not existing_player.get("vip_bonus_claimed", False):
+            # Award 500 VIP bonus points
+            update_data["vip_bonus_claimed"] = True
+            update_data["$inc"] = {"points": 500}
+            logger.info(f"🌟 VIP bonus awarded to: {address} - 500 points!")
+            
+            await db.players.update_one(
+                {"address": address},
+                {
+                    "$set": {
+                        "is_nft_holder": is_holder,
+                        "is_vip": True,
+                        "vip_bonus_claimed": True
+                    },
+                    "$inc": {"points": 500}
+                },
+                upsert=True
+            )
+        else:
+            await db.players.update_one(
+                {"address": address},
+                {"$set": update_data},
+                upsert=True
+            )
+    else:
+        await db.players.update_one(
+            {"address": address},
+            {"$set": update_data},
+            upsert=True
+        )
     
-    # Update player NFT status
-    await db.players.update_one(
-        {"address": address},
-        {"$set": {"is_nft_holder": is_holder}},
-        upsert=True
-    )
-    
-    return {"address": address, "is_nft_holder": is_holder}
+    return {
+        "address": address, 
+        "is_nft_holder": is_holder,
+        "is_vip": is_holder,
+        "contract": DOGEFOOD_NFT_CONTRACT
+    }
 
 # Phase 2: Web3 Rewards & Merkle Tree Routes
 @api_router.post("/rewards/generate-season/{season_id}")
