@@ -453,8 +453,11 @@ const GameLabNew = () => {
                   </div>
                 ) : (
                   activeTreats.map((treat, index) => {
-                    const isReady = new Date(treat.ready_at).getTime() <= currentTime;
-                    const progress = getProgressPercentage(treat.ready_at, treat.timer_duration);
+                    // Use server-provided timer data
+                    const timerData = treat.timer || {};
+                    const isReady = timerData.is_ready || false;
+                    const progress = timerData.progress_percent || 0;
+                    const timeRemaining = timerData.remaining_formatted || formatTimeRemaining(treat.ready_at);
                     
                     return (
                       <div
@@ -487,10 +490,10 @@ const GameLabNew = () => {
                         <div className={`text-center font-bold text-lg ${
                           isReady ? 'text-green-800' : 'text-yellow-400'
                         }`}>
-                          {formatTimeRemaining(treat.ready_at)}
+                          {timeRemaining}
                         </div>
                         
-                        {!isReady && (
+                        {!isReady && timerData.remaining_seconds && (
                           <div className="text-center text-xs text-white/50 mt-1">
                             Ready at: {new Date(treat.ready_at).toLocaleTimeString()}
                           </div>
