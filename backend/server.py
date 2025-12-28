@@ -465,8 +465,8 @@ async def get_leaderboard(limit: int = 50):
         leaderboard.append(LeaderboardEntry(
             address=player["address"],
             nickname=player.get("nickname", "Player"),  # Default nickname
-            points=player["points"],
-            level=player["level"],
+            points=player.get("points", 0),
+            level=player.get("level", 1),  # Default to level 1
             is_nft_holder=player.get("is_nft_holder", False),
             is_vip=player.get("is_vip", False),
             rank=rank,
