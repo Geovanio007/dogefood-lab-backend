@@ -1,0 +1,29 @@
+{
+  "name": "dogefood-lab",
+  "version": "1.0.0",
+  "description": "DogeFood Lab - Web3 Treat Creation Game",
+  "main": "backend/server.py",
+  "scripts": {
+    "build": "cd frontend && npm install --legacy-peer-deps && npm run build",
+    "start": "cd backend && python server.py",
+    "dev": "concurrently \"cd backend && python server.py\" \"cd frontend && npm start\"",
+    "install-all": "cd backend && pip install -r requirements.txt && cd ../frontend && npm install --legacy-peer-deps"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/dogefood-lab.git"
+  },
+  "keywords": [
+    "web3",
+    "gaming",
+    "blockchain",
+    "react",
+    "fastapi",
+    "mongodb"
+  ],
+  "author": "DogeFood Lab Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  }
+}
