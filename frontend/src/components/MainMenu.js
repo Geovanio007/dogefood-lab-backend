@@ -152,36 +152,67 @@ const MainMenu = () => {
           </div>
         </div>
 
-        {/* Season 1 Announcement Banner */}
+        {/* Season 1 Announcement Banner - Modern Vibrant Design */}
         <div className="mb-8">
-          <Card className="glass-panel border-4 border-orange-400 bg-gradient-to-r from-orange-100/90 to-yellow-100/90">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl">🎮</div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-orange-800 mb-2">
-                      🚀 Season 1: Beta Launch
-                    </h3>
-                    <p className="text-orange-700 text-lg">
-                      Welcome to the beta! Create treats, earn points, and climb the leaderboard. 
-                      <strong className="text-orange-900"> NFT minting and token conversion coming in Season 2!</strong>
-                    </p>
+          <Card className="overflow-hidden border-0 shadow-2xl">
+            {/* Gradient Background */}
+            <div className="relative bg-gradient-to-r from-sky-400 via-emerald-400 to-yellow-400 p-1">
+              <CardContent className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 dark:from-slate-900/98 dark:via-slate-800/98 dark:to-slate-900/98 rounded-lg p-6 backdrop-blur-sm">
+                {/* Decorative Elements */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-400/20 to-transparent rounded-full blur-2xl"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-sky-400/20 to-transparent rounded-full blur-2xl"></div>
+                
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                  {/* Left Content */}
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="relative">
+                      <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-yellow-400 via-emerald-400 to-sky-400 rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
+                        <span className="text-3xl md:text-4xl">🧪</span>
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
+                        1
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-yellow-400 via-emerald-400 to-sky-400 bg-clip-text text-transparent mb-1">
+                        Season 1: Beta Launch
+                      </h3>
+                      <p className="text-white/90 dark:text-white/90 text-sm md:text-base max-w-md">
+                        Create treats, earn points, and climb the leaderboard!
+                        <span className="block mt-1 text-emerald-400 font-semibold">
+                          NFT minting & token conversion coming in Season 2!
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Right Content - Status Pills */}
+                  <div className="flex flex-col gap-2">
+                    <Badge className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 py-2 text-sm font-bold shadow-lg border-0">
+                      🎮 SEASON 1 ACTIVE
+                    </Badge>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">
+                        <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                        Treat Creation
+                      </div>
+                      <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">
+                        <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                        Leaderboards
+                      </div>
+                      <div className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">
+                        <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
+                        NFT Minting
+                      </div>
+                      <div className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">
+                        <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
+                        Token Convert
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <Badge className="bg-orange-500 text-white px-4 py-2 text-lg mb-2">
-                    Season 1
-                  </Badge>
-                  <div className="text-sm text-orange-600">
-                    <div>✅ Treat Creation</div>
-                    <div>✅ Points & Leaderboards</div>
-                    <div>🔜 NFT Minting (Season 2)</div>
-                    <div>🔜 Token Conversion (Season 2)</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
+              </CardContent>
+            </div>
           </Card>
         </div>
 
