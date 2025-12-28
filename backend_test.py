@@ -5066,7 +5066,7 @@ if __name__ == "__main__":
     print("🎯 ATLAS MONGODB PRODUCTION READINESS TEST")
     print("=" * 80)
     print("Testing DogeFood Lab for production deployment with Atlas MongoDB")
-    print("Backend URL: https://dogefood-lab.vercel.app")
+    print("Backend URL: http://localhost:8001")
     print("=" * 80)
     
     tester = DogeLabAPITester()
