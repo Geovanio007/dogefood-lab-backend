@@ -213,6 +213,93 @@ const MainMenu = () => {
             </div>
           </div>
         </div>
+        
+        {/* Username Section - Only show when connected */}
+        {isConnected && (
+          <div className="mb-6">
+            <Card className="glass-panel border-2 border-purple-400/50">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
+                      <User className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">Your Scientist Name</div>
+                      {!isEditingUsername ? (
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-lg text-purple-700">
+                            {username || 'Set your username'}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setUsernameInput(username);
+                              setIsEditingUsername(true);
+                              setUsernameError('');
+                            }}
+                            className="p-1 h-auto"
+                          >
+                            <Edit2 className="w-4 h-4 text-purple-500" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={usernameInput}
+                              onChange={(e) => setUsernameInput(e.target.value)}
+                              placeholder="Enter username"
+                              className="w-40 h-8 text-sm"
+                              maxLength={20}
+                            />
+                            <Button
+                              size="sm"
+                              onClick={handleSaveUsername}
+                              disabled={savingUsername}
+                              className="bg-purple-500 hover:bg-purple-600 h-8"
+                            >
+                              {savingUsername ? '...' : <Check className="w-4 h-4" />}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setIsEditingUsername(false)}
+                              className="h-8"
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                          {usernameError && (
+                            <span className="text-xs text-red-500">{usernameError}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Player Stats */}
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <div className="text-xs text-gray-500">Level</div>
+                      <div className="font-bold text-purple-700">{currentLevel || 1}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs text-gray-500">Points</div>
+                      <div className="font-bold text-purple-700">{points || 0}</div>
+                    </div>
+                    {isNFTHolder && (
+                      <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                        🌟 VIP Scientist
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Season 1 Announcement Banner - Modern Vibrant Design */}
         <div className="mb-8">
