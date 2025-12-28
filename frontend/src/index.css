@@ -42,9 +42,16 @@ body {
   background: var(--bg-primary);
   min-height: 100vh;
   margin: 0;
-  padding: 20px;
+  padding: 12px;
   color: var(--text-primary);
   transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Remove padding on mobile for better space usage */
+@media (max-width: 768px) {
+  body {
+    padding: 8px !important;
+  }
 }
 
 /* Force consistent playful titles on all devices with theme support */
