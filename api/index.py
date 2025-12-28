@@ -26,7 +26,12 @@ from services.ingredient_system import IngredientSystem
 from services.season_manager import SeasonManager
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+# Try to load .env from current directory or parent
+env_path = ROOT_DIR / '.env'
+if not env_path.exists():
+    env_path = ROOT_DIR.parent / 'backend' / '.env'
+if env_path.exists():
+    load_dotenv(env_path)
 
 # Database connection with Atlas MongoDB
 try:
