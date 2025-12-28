@@ -1,0 +1,32 @@
+# Test files
+tests/
+*_test.py
+test_*.py
+**/__pycache__/
+*.pyc
+
+# Dev tools
+.git/
+.github/
+.ruff_cache/
+.vercel/
+
+# Large directories not needed for deployment
+contracts/node_modules/
+contracts/cache/
+contracts/artifacts/
+node_modules/
+
+# Test and temporary files
+*.log
+*.md
+!README.md
+
+# Backend test files
+backend_test.py
+phase1_timer_test.py
+registration_test.py
+setup_telegram_bot.py
+
+# Frontend backup
+frontend-cra-backup/
