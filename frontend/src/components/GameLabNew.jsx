@@ -8,10 +8,27 @@ import { useToast } from './ui/use-toast';
 import { useTelegram } from '../contexts/TelegramContext';
 import CharacterSelection from './CharacterSelection';
 
+// Helper to get or create a guest ID
+const getGuestId = () => {
+  let guestId = localStorage.getItem('dogefood_guest_id');
+  if (!guestId) {
+    guestId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    localStorage.setItem('dogefood_guest_id', guestId);
+  }
+  return guestId;
+};
+
 const GameLabNew = () => {
   const { address } = useAccount();
   const { isTelegram, telegramUser } = useTelegram();
   const { toast } = useToast();
+  
+  // Get user identifier - wallet address, telegram ID, or guest ID
+  const getUserId = useCallback(() => {
+    if (address) return address;
+    if (isTelegram && telegramUser?.id) return `telegram_${telegramUser.id}`;
+    return getGuestId();
+  }, [address, isTelegram, telegramUser]);
   
   // Character and game state
   const [selectedCharacter, setSelectedCharacter] = useState(null);
