@@ -261,16 +261,16 @@ const GameLabNew = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
         
         {/* Header with Character */}
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 mb-6 border border-white/20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl sm:rounded-3xl p-3 sm:p-6 mb-4 sm:mb-6 border border-white/20">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3 sm:gap-6">
               {selectedCharacter && (
                 <div className="relative">
-                  <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-yellow-400 shadow-lg">
+                  <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full overflow-hidden border-4 border-yellow-400 shadow-lg">
                     <img 
                       src={selectedCharacter.image} 
                       alt={selectedCharacter.name}
@@ -283,7 +283,7 @@ const GameLabNew = () => {
                       setSelectedCharacter(null);
                       setShowCharacterSelection(true);
                     }}
-                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 text-white text-xs p-0"
+                    className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-blue-500 hover:bg-blue-600 text-white text-xs p-0"
                     title="Change Character"
                   >
                     🔄
@@ -291,7 +291,7 @@ const GameLabNew = () => {
                 </div>
               )}
               <div>
-                <h1 className="text-4xl font-bold text-white mb-2">
+                <h1 className="text-xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">
                   🧪 DogeFood Laboratory
                 </h1>
                 {selectedCharacter && (
