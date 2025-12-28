@@ -1307,6 +1307,152 @@ async def root():
 async def api_root():
     return {"message": "DogeFood Lab API is running! 🐕🧪"}
 
+# ============================================
+# SEASON 1 OFFICIAL LAUNCH - ADMIN ENDPOINTS
+# ============================================
+
+# Admin secret key for protected operations
+ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "dogefood_admin_2025")
+
+@api_router.post("/admin/reset-leaderboard")
+async def reset_leaderboard(admin_key: str = None):
+    """
+    Reset the leaderboard by clearing all player points.
+    This marks the official start of Season 1.
+    """
+    if admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="Unauthorized: Invalid admin key")
+    
+    try:
+        # Reset all player points to 0 (except VIP bonus which is recalculated)
+        result = await db.players.update_many(
+            {},
+            {
+                "$set": {
+                    "points": 0,
+                    "experience": 0,
+                    "level": 1,
+                    "vip_bonus_claimed": False
+                }
+            }
+        )
+        
+        # Re-award VIP bonus to NFT holders
+        vip_result = await db.players.update_many(
+            {"is_nft_holder": True},
+            {
+                "$set": {
+                    "points": 500,
+                    "is_vip": True,
+                    "vip_bonus_claimed": True
+                }
+            }
+        )
+        
+        # Clear all existing treats
+        treats_deleted = await db.treats.delete_many({})
+        
+        # Update season start time in database
+        season_doc = {
+            "season_id": 1,
+            "name": "Season 1 - Official Launch",
+            "started_at": datetime.utcnow(),
+            "end_date": datetime(2026, 3, 31, 23, 59, 59),  # Season 1 ends March 31, 2026
+            "status": "active",
+            "reset_at": datetime.utcnow()
+        }
+        
+        await db.seasons.update_one(
+            {"season_id": 1},
+            {"$set": season_doc},
+            upsert=True
+        )
+        
+        logger.info(f"🚀 SEASON 1 OFFICIALLY STARTED! Leaderboard reset. {result.modified_count} players reset, {vip_result.modified_count} VIP bonuses awarded.")
+        
+        return {
+            "success": True,
+            "message": "🚀 Season 1 officially started! Leaderboard has been reset.",
+            "players_reset": result.modified_count,
+            "vip_bonuses_awarded": vip_result.modified_count,
+            "treats_cleared": treats_deleted.deleted_count,
+            "season_started_at": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error resetting leaderboard: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to reset leaderboard: {str(e)}")
+
+@api_router.get("/season/timer")
+async def get_season_timer():
+    """
+    Get real-time season countdown timer.
+    Returns time remaining in the current season.
+    """
+    try:
+        # Check if we have a stored season in database
+        season_doc = await db.seasons.find_one({"season_id": 1}, {"_id": 0})
+        
+        if season_doc and season_doc.get("end_date"):
+            end_date = season_doc["end_date"]
+            if isinstance(end_date, str):
+                end_date = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+        else:
+            # Default Season 1 end date: March 31, 2026
+            end_date = datetime(2026, 3, 31, 23, 59, 59)
+        
+        now = datetime.utcnow()
+        
+        if now >= end_date:
+            return {
+                "season_id": 1,
+                "status": "ended",
+                "message": "Season 1 has ended!",
+                "time_remaining": None
+            }
+        
+        time_diff = end_date - now
+        total_seconds = int(time_diff.total_seconds())
+        
+        days = time_diff.days
+        hours = (total_seconds % 86400) // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        
+        return {
+            "season_id": 1,
+            "season_name": "Season 1 - Official Launch",
+            "status": "active",
+            "end_date": end_date.isoformat(),
+            "server_time": now.isoformat(),
+            "time_remaining": {
+                "total_seconds": total_seconds,
+                "days": days,
+                "hours": hours,
+                "minutes": minutes,
+                "seconds": seconds,
+                "formatted": f"{days}d {hours}h {minutes}m {seconds}s"
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting season timer: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get season timer: {str(e)}")
+
+@api_router.get("/nft/contract")
+async def get_nft_contract_info():
+    """Get DogeFood Lab NFT contract information"""
+    return {
+        "contract_address": DOGEFOOD_NFT_CONTRACT,
+        "network": "DogeOS",
+        "benefits": {
+            "vip_badge": True,
+            "signup_bonus": 500,
+            "daily_bonus_multiplier": 1.5
+        },
+        "description": "DogeFood Lab NFT holders receive VIP Scientist status with 500 bonus points on signup!"
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
