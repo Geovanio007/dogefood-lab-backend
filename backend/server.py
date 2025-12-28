@@ -282,6 +282,92 @@ async def get_player_treats(address: str):
     treats = await db.treats.find({"creator_address": address}).to_list(1000)
     return [DogeTreat(**treat) for treat in treats]
 
+# Player Profile Update Endpoints
+@api_router.post("/player/{address}/update-username")
+async def update_player_username(address: str, username: str):
+    """Update player's username/nickname"""
+    # Check if username is already taken
+    existing = await db.players.find_one({"nickname": username, "address": {"$ne": address}})
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
+    # Validate username (3-20 chars, alphanumeric and underscores only)
+    import re
+    if not re.match(r'^[a-zA-Z0-9_]{3,20}$', username):
+        raise HTTPException(status_code=400, detail="Username must be 3-20 characters, alphanumeric and underscores only")
+    
+    result = await db.players.update_one(
+        {"address": address},
+        {"$set": {"nickname": username}},
+        upsert=True
+    )
+    
+    return {"success": True, "username": username}
+
+@api_router.post("/player/{address}/select-character")
+async def select_player_character(address: str, character_id: str):
+    """
+    Select a character (ONE TIME ONLY).
+    Character IDs: 'max', 'rex', 'luna'
+    """
+    # Validate character ID
+    valid_characters = ['max', 'rex', 'luna']
+    if character_id not in valid_characters:
+        raise HTTPException(status_code=400, detail=f"Invalid character. Must be one of: {valid_characters}")
+    
+    # Check if player already has a character selected
+    player = await db.players.find_one({"address": address}, {"_id": 0})
+    if player and player.get("selected_character"):
+        raise HTTPException(
+            status_code=400, 
+            detail="Character already selected. Character choice is permanent and cannot be changed!"
+        )
+    
+    # Character bonuses
+    character_bonuses = {
+        'max': {'experience_bonus': 0.10, 'description': '+10% Experience from treats'},
+        'rex': {'rare_chance_bonus': 0.15, 'description': '+15% Rare treat chance'},
+        'luna': {'points_bonus': 0.20, 'description': '+20% Points from treats'}
+    }
+    
+    result = await db.players.update_one(
+        {"address": address},
+        {
+            "$set": {
+                "selected_character": character_id,
+                "character_bonuses": character_bonuses.get(character_id, {})
+            }
+        },
+        upsert=True
+    )
+    
+    logger.info(f"🧪 Character selected: {address} chose {character_id}")
+    
+    return {
+        "success": True, 
+        "character_id": character_id,
+        "bonuses": character_bonuses.get(character_id, {}),
+        "message": f"Character {character_id} selected! This choice is permanent."
+    }
+
+@api_router.get("/player/{address}/profile")
+async def get_player_profile(address: str):
+    """Get player profile including character and username"""
+    player = await db.players.find_one({"address": address}, {"_id": 0})
+    
+    if not player:
+        return {
+            "address": address,
+            "nickname": None,
+            "selected_character": None,
+            "character_bonuses": None,
+            "is_vip": False,
+            "points": 0,
+            "level": 1
+        }
+    
+    return player
+
 @api_router.get("/treats", response_model=List[DogeTreat])
 async def get_all_treats(limit: int = 50):
     treats = await db.treats.find().sort("created_at", -1).limit(limit).to_list(limit)
