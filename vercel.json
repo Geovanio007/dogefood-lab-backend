@@ -34,11 +34,5 @@
       "src": "/(.*)",
       "dest": "/frontend/build/index.html"
     }
-  ],
-  "env": {
-    "MONGO_URL": "@mongo_url",
-    "DB_NAME": "@db_name",
-    "CORS_ORIGINS": "*",
-    "TELEGRAM_BOT_TOKEN": "@telegram_bot_token"
-  }
+  ]
 }
