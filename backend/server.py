@@ -97,6 +97,8 @@ class Player(BaseModel):
     telegram_last_name: Optional[str] = None  # Telegram last name
     auth_type: str = "wallet"  # "wallet", "telegram", or "linked"
     is_nft_holder: bool = False
+    is_vip: bool = False  # VIP Scientist badge
+    vip_bonus_claimed: bool = False  # Track if 500 point bonus was claimed
     level: int = 1
     experience: int = 0
     points: int = 0
