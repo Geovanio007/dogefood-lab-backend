@@ -67,10 +67,11 @@ const GameLabNew = () => {
 
   // Load player data
   useEffect(() => {
-    if (address || (isTelegram && telegramUser)) {
+    const userId = getUserId();
+    if (userId) {
       loadPlayerData();
     }
-  }, [address, isTelegram, telegramUser]);
+  }, [address, isTelegram, telegramUser, getUserId]);
 
   // Timer update
   useEffect(() => {
@@ -82,13 +83,17 @@ const GameLabNew = () => {
 
   const loadPlayerData = async () => {
     try {
+      const userId = getUserId();
+      if (!userId) return;
+      
       let endpoint;
       if (isTelegram && telegramUser) {
         endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/player/telegram/${telegramUser.id}`;
       } else if (address) {
         endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/player/${address}`;
       } else {
-        return;
+        // Guest user - use the guest ID
+        endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/player/${userId}`;
       }
 
       const response = await fetch(endpoint);
@@ -96,22 +101,22 @@ const GameLabNew = () => {
         const data = await response.json();
         setPlayerData(data);
         loadActiveTreats();
+      } else {
+        // Player doesn't exist yet - set default data
+        setPlayerData({ level: 1, points: 0, experience: 0 });
       }
     } catch (error) {
       console.error('Error loading player data:', error);
+      setPlayerData({ level: 1, points: 0, experience: 0 });
     }
   };
 
   const loadActiveTreats = async () => {
     try {
-      let endpoint;
-      if (isTelegram && telegramUser) {
-        endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/telegram_${telegramUser.id}`;
-      } else if (address) {
-        endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/${address}`;  
-      } else {
-        return;
-      }
+      const userId = getUserId();
+      if (!userId) return;
+
+      const endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/${userId}`;
 
       const response = await fetch(endpoint);
       if (response.ok) {
