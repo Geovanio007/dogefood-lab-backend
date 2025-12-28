@@ -441,15 +441,38 @@ async def get_leaderboard(limit: int = 50):
     
     top_players = await db.players.aggregate(pipeline).to_list(limit)
     
+    # Character data mapping
+    character_data = {
+        'max': {
+            'name': 'Shiba Scientist Max',
+            'image': 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/5thty2tp_20250921_1510_Doge%20Scientist%20Trio_simple_compose_01k5p68s01e1p8f81hk4dvm5tm.png'
+        },
+        'rex': {
+            'name': 'Shiba Scientist Rex',
+            'image': 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/w3y5oh69_assets_task_01k5p6sq20fh68gb4hjbs9271e_1758460753_img_0.webp'
+        },
+        'luna': {
+            'name': 'Shiba Scientist Luna',
+            'image': 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/m1k3hm3c_assets_task_01k5p7arcvf6jt34pk82yke1sh_1758461571_img_0.webp'
+        }
+    }
+    
     leaderboard = []
     for rank, player in enumerate(top_players, 1):
+        char_id = player.get("selected_character")
+        char_info = character_data.get(char_id, {})
+        
         leaderboard.append(LeaderboardEntry(
             address=player["address"],
             nickname=player.get("nickname", "Player"),  # Default nickname
             points=player["points"],
             level=player["level"],
             is_nft_holder=player.get("is_nft_holder", False),
-            rank=rank
+            is_vip=player.get("is_vip", False),
+            rank=rank,
+            selected_character=char_id,
+            character_name=char_info.get('name'),
+            character_image=char_info.get('image')
         ))
     
     return leaderboard
