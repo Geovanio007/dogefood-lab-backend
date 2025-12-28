@@ -2098,6 +2098,111 @@ body {
    TELEGRAM MINI APP SPECIFIC STYLES
    ================================ */
 
+/* CSS Variables for Telegram viewport */
+:root {
+  --tg-viewport-height: 100vh;
+  --app-height: 100vh;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Telegram WebApp container styles */
+html.telegram-webapp,
+body.telegram-webapp {
+  height: var(--tg-viewport-height, 100vh) !important;
+  min-height: var(--tg-viewport-height, 100vh) !important;
+  max-height: var(--tg-viewport-height, 100vh) !important;
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.telegram-webapp {
+  padding-top: var(--safe-area-top) !important;
+  padding-bottom: var(--safe-area-bottom) !important;
+}
+
+/* Main app container in Telegram */
+.telegram-webapp #root {
+  height: var(--tg-viewport-height, 100vh) !important;
+  min-height: var(--tg-viewport-height, 100vh) !important;
+  max-height: var(--tg-viewport-height, 100vh) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+}
+
+/* Telegram mobile specific */
+body.telegram-mobile {
+  font-size: 16px !important;
+}
+
+body.telegram-mobile #root {
+  padding: 8px !important;
+}
+
+/* Compact layout for Telegram mobile */
+body.telegram-mobile .glass-panel {
+  margin: 4px !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+}
+
+body.telegram-mobile .game-card {
+  margin: 4px 0 !important;
+  padding: 8px !important;
+  border-radius: 12px !important;
+}
+
+/* Smaller buttons for Telegram mobile */
+body.telegram-mobile button,
+body.telegram-mobile .doge-button {
+  min-height: 44px !important;
+  padding: 10px 16px !important;
+  font-size: 14px !important;
+}
+
+/* Compact ingredient grid for Telegram */
+body.telegram-mobile .ingredient-card {
+  padding: 8px !important;
+  min-height: 60px !important;
+}
+
+body.telegram-mobile .ingredient-card .text-4xl {
+  font-size: 1.5rem !important;
+}
+
+body.telegram-mobile .ingredient-card .font-bold {
+  font-size: 0.75rem !important;
+}
+
+/* Compact active treats for Telegram */
+body.telegram-mobile .treat-card {
+  padding: 8px !important;
+}
+
+/* Hide floating elements on Telegram mobile for cleaner UI */
+body.telegram-mobile .floating-elements {
+  display: none !important;
+}
+
+/* Ensure full width on Telegram */
+body.telegram-webapp .container {
+  max-width: 100% !important;
+  padding: 0 8px !important;
+}
+
+/* Fix scrolling issues in Telegram */
+body.telegram-webapp .overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
 /* Detect Telegram WebApp environment */
 .telegram-webapp {
   /* Ensure full viewport usage in Telegram */
