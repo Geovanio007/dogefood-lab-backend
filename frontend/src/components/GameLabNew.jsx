@@ -158,13 +158,23 @@ const GameLabNew = () => {
       return;
     }
 
+    const userId = getUserId();
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "Could not identify user. Please refresh the page.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/treats/enhanced`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          creator_address: address || `telegram_${telegramUser?.id}`,
+          creator_address: userId,
           ingredients: selectedIngredients.map(ing => ing.name),
           player_level: playerData?.level || 1
         })
@@ -181,8 +191,16 @@ const GameLabNew = () => {
         setSelectedIngredients([]);
         loadActiveTreats();
         loadPlayerData();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        toast({
+          title: "Error creating treat",
+          description: errorData.detail || "Please try again later.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
+      console.error('Error creating treat:', error);
       toast({
         title: "Error creating treat",
         description: "Please try again later.",
