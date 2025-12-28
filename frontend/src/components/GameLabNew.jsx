@@ -118,19 +118,16 @@ const GameLabNew = () => {
       const userId = getUserId();
       if (!userId) return;
 
-      const endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/${userId}`;
+      // Use the new active treats endpoint with timer data
+      const endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/${userId}/active`;
 
       const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
-        // Get all treats - both brewing and ready
-        const treats = Array.isArray(data) ? data : (data.treats || []);
-        // Sort by ready_at time (most recent first)
-        const sortedTreats = treats.sort((a, b) => 
-          new Date(b.ready_at).getTime() - new Date(a.ready_at).getTime()
-        );
-        // Take the most recent 5 treats to display
-        setActiveTreats(sortedTreats.slice(0, 5));
+        // Get treats with timer data from the new endpoint
+        const treats = data.treats || [];
+        // Already sorted by server, just take the treats
+        setActiveTreats(treats);
       }
     } catch (error) {
       console.error('Error loading active treats:', error);
