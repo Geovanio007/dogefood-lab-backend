@@ -298,33 +298,34 @@ const Leaderboard = () => {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-xl">
-                                  👨‍🔬
+                                <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-500 to-sky-400 flex items-center justify-center">
+                                  <span className="text-2xl">🧪</span>
                                 </div>
                               )}
                             </div>
-                            <div>
-                              {/* Character Name */}
-                              {entry.character_name && (
-                                <div className="text-xs text-purple-600 font-semibold">
-                                  {entry.character_name}
-                                </div>
-                              )}
+                            <div className="min-w-0 flex-1">
+                              {/* Character Name - show default if not selected */}
+                              <div className="text-xs text-purple-600 font-semibold">
+                                {entry.character_name || (entry.is_vip ? '🌟 VIP Scientist' : '🧪 Scientist')}
+                              </div>
                               {/* Player Username */}
-                              <div className="font-bold text-gray-800 playful-text">
-                                {entry.nickname || `Scientist ${rank}`}
+                              <div className="font-bold text-gray-800 playful-text truncate">
+                                {entry.nickname || `Scientist #${rank}`}
                               </div>
                               {/* Wallet Address */}
                               <div className="font-mono text-xs text-gray-500">
                                 {formatAddress(entry.address)}
                               </div>
                               {/* Badges */}
-                              <div className="flex items-center gap-1 mt-1">
+                              <div className="flex items-center gap-1 mt-1 flex-wrap">
                                 {isCurrentUser && (
                                   <Badge className="bg-blue-500 text-white text-xs">You</Badge>
                                 )}
                                 {entry.is_vip && (
                                   <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs">VIP</Badge>
+                                )}
+                                {!entry.selected_character && (
+                                  <Badge className="bg-gray-400 text-white text-xs">No Character</Badge>
                                 )}
                               </div>
                             </div>
