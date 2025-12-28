@@ -2,6 +2,14 @@
   "version": 2,
   "builds": [
     {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb",
+        "runtime": "python3.9"
+      }
+    },
+    {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
@@ -12,7 +20,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "https://shiba-gamelab.preview.emergentagent.com/api/$1"
+      "dest": "/api/index.py"
     },
     {
       "src": "/game-mechanisms.html",
