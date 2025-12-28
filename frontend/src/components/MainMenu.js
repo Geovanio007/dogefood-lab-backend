@@ -316,48 +316,6 @@ const MainMenu = () => {
             </Card>
           </div>
         )}
-                              className="bg-purple-500 hover:bg-purple-600 h-8"
-                            >
-                              {savingUsername ? '...' : <Check className="w-4 h-4" />}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setIsEditingUsername(false)}
-                              className="h-8"
-                            >
-                              ✕
-                            </Button>
-                          </div>
-                          {usernameError && (
-                            <span className="text-xs text-red-500">{usernameError}</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Player Stats */}
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <div className="text-xs text-gray-500">Level</div>
-                      <div className="font-bold text-purple-700">{currentLevel || 1}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xs text-gray-500">Points</div>
-                      <div className="font-bold text-purple-700">{points || 0}</div>
-                    </div>
-                    {isNFTHolder && (
-                      <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-                        🌟 VIP Scientist
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Season 1 Announcement Banner - Modern Vibrant Design */}
         <div className="mb-8">
