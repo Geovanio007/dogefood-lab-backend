@@ -89,9 +89,9 @@ const GameLabNew = () => {
     try {
       let endpoint;
       if (isTelegram && telegramUser) {
-        endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/player/telegram_${telegramUser.id}`;
+        endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/telegram_${telegramUser.id}`;
       } else if (address) {
-        endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/player/${address}`;  
+        endpoint = `${process.env.REACT_APP_BACKEND_URL}/api/treats/${address}`;  
       } else {
         return;
       }
@@ -100,9 +100,10 @@ const GameLabNew = () => {
       if (response.ok) {
         const data = await response.json();
         // Filter for active treats (not ready yet)
-        const activeTreats = data.treats ? data.treats.filter(treat => 
-          new Date(treat.ready_at).getTime() > Date.now()
-        ) : [];
+        const treats = Array.isArray(data) ? data : (data.treats || []);
+        const activeTreats = treats.filter(treat => 
+          treat.ready_at && new Date(treat.ready_at).getTime() > Date.now()
+        );
         setActiveTreats(activeTreats);
       }
     } catch (error) {
