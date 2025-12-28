@@ -291,17 +291,7 @@ const GameLabNew = () => {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <Button
-                    onClick={() => {
-                      localStorage.removeItem('selectedCharacter');
-                      setSelectedCharacter(null);
-                      setShowCharacterSelection(true);
-                    }}
-                    className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-blue-500 hover:bg-blue-600 text-white text-xs p-0"
-                    title="Change Character"
-                  >
-                    🔄
-                  </Button>
+                  {/* Character choice is permanent - no change button */}
                 </div>
               )}
               <div>
