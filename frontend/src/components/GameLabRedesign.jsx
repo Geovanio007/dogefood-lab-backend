@@ -286,23 +286,23 @@ const GameLabRedesign = ({ playerAddress }) => {
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-3xl shadow-lg shadow-purple-500/30">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-3xl shadow-lg shadow-yellow-500/40">
                     🐕
                   </div>
-                  <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full px-2 py-0.5 text-xs font-bold text-black">
+                  <div className="absolute -bottom-1 -right-1 bg-sky-500 rounded-full px-2 py-0.5 text-xs font-bold text-white shadow-md">
                     Lv.{playerLevel}
                   </div>
                 </div>
                 <div className="flex-1">
-                  <div className="text-white font-bold text-lg truncate">
+                  <div className="text-white font-bold text-lg truncate drop-shadow-md">
                     {playerAddress?.slice(0, 8)}...{playerAddress?.slice(-4)}
                   </div>
                   <div className="mt-2">
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-purple-300">XP</span>
+                      <span className="text-yellow-300 font-semibold">XP</span>
                       <span className="text-white">{playerXP % xpForNextLevel}/{xpForNextLevel}</span>
                     </div>
-                    <Progress value={xpProgress} className="h-2 bg-purple-900/50" />
+                    <Progress value={xpProgress} className="h-2 bg-sky-900/50" />
                   </div>
                 </div>
               </div>
@@ -311,19 +311,19 @@ const GameLabRedesign = ({ playerAddress }) => {
 
           {/* Stats Cards */}
           <div className="flex gap-4">
-            <Card className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-xl border-yellow-500/30 min-w-[120px]">
+            <Card className="bg-gradient-to-br from-yellow-400/90 to-yellow-500/90 backdrop-blur-xl border-yellow-300 min-w-[120px] shadow-lg shadow-yellow-500/30">
               <CardContent className="p-4 text-center">
                 <div className="text-3xl mb-1">🏆</div>
-                <div className="text-2xl font-bold text-yellow-400">{playerPoints}</div>
-                <div className="text-xs text-yellow-300/70">Points</div>
+                <div className="text-2xl font-bold text-white drop-shadow-md">{playerPoints}</div>
+                <div className="text-xs text-yellow-100">Points</div>
               </CardContent>
             </Card>
             
-            <Card className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-xl border-green-500/30 min-w-[120px]">
+            <Card className="bg-gradient-to-br from-sky-400/90 to-sky-500/90 backdrop-blur-xl border-sky-300 min-w-[120px] shadow-lg shadow-sky-500/30">
               <CardContent className="p-4 text-center">
                 <div className="text-3xl mb-1">🧪</div>
-                <div className="text-2xl font-bold text-green-400">{activeTreats.length}</div>
-                <div className="text-xs text-green-300/70">Brewing</div>
+                <div className="text-2xl font-bold text-white drop-shadow-md">{activeTreats.length}</div>
+                <div className="text-xs text-sky-100">Brewing</div>
               </CardContent>
             </Card>
           </div>
@@ -331,7 +331,7 @@ const GameLabRedesign = ({ playerAddress }) => {
           {/* Back Button */}
           <Button 
             onClick={() => navigate('/')}
-            className="bg-white/10 hover:bg-white/20 border border-white/20"
+            className="bg-yellow-500 hover:bg-yellow-400 text-white font-bold shadow-lg shadow-yellow-500/30 border-0"
           >
             ← Menu
           </Button>
@@ -340,9 +340,9 @@ const GameLabRedesign = ({ playerAddress }) => {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left: Mixing Cauldron */}
           <div className="lg:col-span-1">
-            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/30 sticky top-4">
+            <Card className="bg-gradient-to-br from-sky-600/95 to-blue-700/95 backdrop-blur-xl border-sky-400/50 sticky top-4 shadow-xl shadow-sky-500/20">
               <CardContent className="p-6">
-                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 drop-shadow-md">
                   <span className="text-3xl">🔮</span> Mixing Cauldron
                 </h2>
 
