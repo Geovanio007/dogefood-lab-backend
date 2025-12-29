@@ -350,10 +350,11 @@ const GameLabRedesign = ({ playerAddress }) => {
                 <div className="grid grid-cols-5 gap-2 mb-4">
                   {[0, 1, 2, 3, 4].map(index => {
                     const ingredient = selectedIngredientsData[index];
+                    const iconUrl = ingredient ? getIcon(ingredient.id) : null;
                     return (
                       <div
                         key={index}
-                        className={`aspect-square rounded-xl border-2 border-dashed flex items-center justify-center transition-all ${
+                        className={`aspect-square rounded-xl border-2 border-dashed flex items-center justify-center transition-all overflow-hidden ${
                           ingredient 
                             ? `bg-gradient-to-br ${CATEGORY_STYLES[ingredient.category]?.gradient} border-solid ${CATEGORY_STYLES[ingredient.category]?.border}` 
                             : 'border-white/20 bg-white/5'
@@ -361,8 +362,16 @@ const GameLabRedesign = ({ playerAddress }) => {
                         onClick={() => ingredient && toggleIngredient(ingredient)}
                       >
                         {ingredient ? (
-                          <div className="text-center cursor-pointer hover:scale-110 transition-transform">
-                            <div className="text-2xl">{ingredient.emoji}</div>
+                          <div className="text-center cursor-pointer hover:scale-110 transition-transform p-1">
+                            {iconUrl ? (
+                              <img 
+                                src={iconUrl} 
+                                alt={ingredient.name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                              />
+                            ) : null}
+                            <div className={`text-2xl ${iconUrl ? 'hidden' : ''}`}>{ingredient.emoji}</div>
                           </div>
                         ) : (
                           <div className="text-white/30 text-xl">+</div>
