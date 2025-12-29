@@ -1120,6 +1120,107 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating enhanced treat: {str(e)}")
 
+
+# =====================================================
+# INGREDIENT SYSTEM API ENDPOINTS
+# =====================================================
+
+@api_router.get("/ingredients/catalog")
+async def get_ingredient_catalog():
+    """Get complete ingredient catalog with all details"""
+    from services.ingredient_system import IngredientSystem, RECIPE_TEMPLATES
+    ing_system = IngredientSystem()
+    
+    return {
+        "ingredients": ing_system.get_all_ingredients_json(),
+        "categories": ing_system.get_category_info(),
+        "recipes": RECIPE_TEMPLATES,
+        "total_ingredients": len(ing_system.ingredients)
+    }
+
+
+@api_router.get("/ingredients/unlocked/{player_level}")
+async def get_unlocked_ingredients(player_level: int):
+    """Get ingredients unlocked at a specific player level"""
+    from services.ingredient_system import IngredientSystem
+    ing_system = IngredientSystem()
+    
+    unlocked = ing_system.get_unlocked_ingredients(player_level)
+    locked = ing_system.get_locked_ingredients(player_level)
+    
+    # Group unlocked by category
+    unlocked_by_category = {}
+    for ing in unlocked:
+        cat = ing.category.value
+        if cat not in unlocked_by_category:
+            unlocked_by_category[cat] = []
+        unlocked_by_category[cat].append({
+            "id": ing.id,
+            "name": ing.name,
+            "emoji": ing.emoji,
+            "description": ing.description,
+            "special_effect": ing.special_effect.value,
+            "rarity_weight": ing.rarity_weight,
+            "color": ing.color,
+            "unlock_level": ing.unlock_level
+        })
+    
+    # Get next unlocks
+    next_unlocks = []
+    current_locked_levels = sorted(set(ing.unlock_level for ing in locked))
+    for level in current_locked_levels[:3]:  # Show next 3 unlock levels
+        ingredients_at_level = [ing for ing in locked if ing.unlock_level == level]
+        next_unlocks.append({
+            "level": level,
+            "ingredients": [{"id": ing.id, "name": ing.name, "emoji": ing.emoji, "category": ing.category.value} 
+                          for ing in ingredients_at_level]
+        })
+    
+    return {
+        "player_level": player_level,
+        "unlocked_count": len(unlocked),
+        "locked_count": len(locked),
+        "unlocked_by_category": unlocked_by_category,
+        "next_unlocks": next_unlocks,
+        "categories": ing_system.get_category_info()
+    }
+
+
+@api_router.post("/ingredients/validate-recipe")
+async def validate_recipe(ingredients: List[str] = [], player_level: int = 1):
+    """Validate a recipe before creating a treat"""
+    from services.ingredient_system import IngredientSystem
+    ing_system = IngredientSystem()
+    
+    # Check if all ingredients are unlocked
+    unlocked_ids = [ing.id for ing in ing_system.get_unlocked_ingredients(player_level)]
+    locked_ingredients = [ing_id for ing_id in ingredients if ing_id not in unlocked_ids]
+    
+    # Get special effects
+    effects = ing_system.get_special_effects(ingredients)
+    
+    # Calculate rarity modifier
+    rarity_mod = ing_system.calculate_rarity_modifier(ingredients)
+    
+    # Check possible rarities
+    possible_rarities = []
+    for rarity in ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic"]:
+        if ing_system.can_create_rarity(ingredients, rarity):
+            possible_rarities.append(rarity)
+    
+    return {
+        "valid": len(locked_ingredients) == 0 and len(ingredients) >= 1,
+        "ingredient_count": len(ingredients),
+        "locked_ingredients": locked_ingredients,
+        "special_effects": [e.value for e in effects],
+        "rarity_modifier": round(rarity_mod, 2),
+        "has_mythic_catalyst": ing_system.has_mythic_catalyst(ingredients),
+        "has_legendary_gate": ing_system.has_legendary_gate(ingredients),
+        "possible_rarities": possible_rarities,
+        "max_possible_rarity": possible_rarities[-1] if possible_rarities else "Common"
+    }
+
+
 # Season 1: Points to LAB Token Conversion (Placeholder - Not Active)
 @api_router.post("/points/convert")
 async def convert_points_to_lab_tokens(conversion_request: PointsConversionRequest):
