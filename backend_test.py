@@ -17,6 +17,7 @@ class DogeLabAPITester:
         self.test_telegram_id = None  # For Telegram authentication testing
         self.missing_features = []
         self.season_id = 1
+        self.guest_address = "GUEST_TEST_123"  # For guest mode testing
 
     def run_test(self, name, method, endpoint, expected_status, data=None, params=None):
         """Run a single API test"""
