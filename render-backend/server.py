@@ -928,6 +928,17 @@ async def get_all_seasons():
 # ENHANCED GAME MECHANICS API ENDPOINTS (PHASE 3)
 # =====================================================
 
+@api_router.get("/game/rarity-system")
+async def get_rarity_system():
+    """Get the complete rarity system information including probabilities, rewards, and timers"""
+    rarity_info = game_engine.get_rarity_info()
+    return {
+        "rarity_system": rarity_info,
+        "total_rarities": len(rarity_info),
+        "description": "Rarity determines timer duration, points reward, and XP reward for each treat",
+        "note": "Higher ingredient count unlocks higher rarity tiers"
+    }
+
 # Enhanced Treat Creation with Game Engine
 @api_router.post("/treats/enhanced")
 async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_tasks: BackgroundTasks):
@@ -976,6 +987,10 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             "season_id": season_id,
             "created_at": datetime.utcnow(),
             "is_offchain": season_id == 1,  # Season 1 is offchain only
+            "points_reward": treat_outcome.get("points_reward", 10),
+            "xp_reward": treat_outcome.get("xp_reward", 5),
+            "rarity_emoji": treat_outcome.get("rarity_emoji", "⚪"),
+            "rarity_color": treat_outcome.get("rarity_color", "#9CA3AF"),
             "nft_metadata": {
                 "name": f"{treat_outcome['rarity']} DogeFood Treat",
                 "description": f"A {treat_outcome['rarity'].lower()} treat created in Season {season_id} of DogeFood Lab",
@@ -986,6 +1001,8 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                     {"trait_type": "Creator Level", "value": treat_data.player_level},
                     {"trait_type": "Ingredients Count", "value": len(treat_outcome["ingredients_used"])},
                     {"trait_type": "Timer Duration (hours)", "value": treat_outcome["timer_duration_hours"]},
+                    {"trait_type": "Points Reward", "value": treat_outcome.get("points_reward", 10)},
+                    {"trait_type": "XP Reward", "value": treat_outcome.get("xp_reward", 5)},
                     {"trait_type": "Secret Combo", "value": treat_outcome.get("secret_combo", {}).get("is_secret_combo", False)}
                 ]
             },
@@ -1045,7 +1062,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             }
         )
         
-        # Award points in background
+        # Award points in background (pass pre-calculated rewards)
         background_tasks.add_task(
             award_treat_creation_points,
             treat_data.creator_address,
@@ -1054,8 +1071,17 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 "ingredients": treat_outcome["ingredients_used"],
                 "level": treat_data.player_level,
                 "secret_combo": treat_outcome.get("secret_combo", {}),
-                "season_id": season_id
+                "season_id": season_id,
+                "points_reward": treat_outcome.get("points_reward", 10),
+                "xp_reward": treat_outcome.get("xp_reward", 5)
             }
+        )
+        
+        # Award XP directly to player based on rarity
+        xp_to_award = treat_outcome.get("xp_reward", 5) + sack_bonus_xp
+        await db.players.update_one(
+            {"address": treat_data.creator_address},
+            {"$inc": {"experience": xp_to_award}}
         )
         
         # Convert treat_dict to JSON-serializable format

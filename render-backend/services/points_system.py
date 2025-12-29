@@ -37,17 +37,18 @@ class PointsCollectionSystem:
     def __init__(self, db: AsyncIOMotorClient):
         self.db = db
         
-        # Points configuration
+        # Points configuration - Updated to use rarity-based rewards
         self.POINTS_CONFIG = {
             "treat_creation": {
-                "base_points": 10,
-                "rarity_multipliers": {
-                    "common": 1.0,
-                    "rare": 1.5,
-                    "epic": 2.0,
-                    "legendary": 3.0
+                "rarity_rewards": {
+                    "common": {"points_min": 10, "points_max": 20, "xp_min": 5, "xp_max": 10},
+                    "uncommon": {"points_min": 25, "points_max": 40, "xp_min": 15, "xp_max": 25},
+                    "rare": {"points_min": 50, "points_max": 80, "xp_min": 30, "xp_max": 50},
+                    "epic": {"points_min": 100, "points_max": 150, "xp_min": 60, "xp_max": 100},
+                    "legendary": {"points_min": 200, "points_max": 300, "xp_min": 120, "xp_max": 200},
+                    "mythic": {"points_min": 500, "points_max": 1000, "xp_min": 250, "xp_max": 500}
                 },
-                "ingredient_bonus": 2  # points per ingredient
+                "ingredient_bonus": 2  # Extra points per ingredient
             },
             "level_up": {
                 "base_points": 50,
@@ -108,24 +109,31 @@ class PointsCollectionSystem:
         return points_awarded
     
     async def _calculate_treat_points(self, player: Dict, metadata: Dict) -> int:
-        """Calculate points for treat creation"""
-        base_points = self.POINTS_CONFIG["treat_creation"]["base_points"]
+        """Calculate points for treat creation based on rarity system"""
+        import random
         
-        # Rarity bonus
+        # Get rarity and use the rarity rewards table
         rarity = metadata.get("rarity", "common").lower()
-        rarity_multiplier = self.POINTS_CONFIG["treat_creation"]["rarity_multipliers"].get(rarity, 1.0)
+        rarity_rewards = self.POINTS_CONFIG["treat_creation"]["rarity_rewards"]
+        
+        # Get reward config for this rarity, default to common if unknown
+        reward_config = rarity_rewards.get(rarity, rarity_rewards["common"])
+        
+        # Use pre-calculated points from metadata if available
+        if "points_reward" in metadata:
+            base_points = metadata["points_reward"]
+        else:
+            # Otherwise calculate randomly within range
+            base_points = random.randint(reward_config["points_min"], reward_config["points_max"])
         
         # Ingredient count bonus
         ingredients_count = len(metadata.get("ingredients", []))
         ingredient_bonus = ingredients_count * self.POINTS_CONFIG["treat_creation"]["ingredient_bonus"]
         
-        # Level bonus (higher level players get slightly more points)
-        level_bonus = player.get("level", 1) * 2
+        total_points = base_points + ingredient_bonus
         
-        total_points = int((base_points + ingredient_bonus + level_bonus) * rarity_multiplier)
-        
-        logger.info(f"Treat points calculation: base={base_points}, ingredient_bonus={ingredient_bonus}, "
-                   f"level_bonus={level_bonus}, rarity_multiplier={rarity_multiplier}, total={total_points}")
+        logger.info(f"Treat points calculation: rarity={rarity}, base_points={base_points}, "
+                   f"ingredient_bonus={ingredient_bonus}, total={total_points}")
         
         return total_points
     
