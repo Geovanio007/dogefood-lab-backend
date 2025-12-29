@@ -481,29 +481,45 @@ const GameLabRedesign = ({ playerAddress }) => {
                   {filteredIngredients.map(ingredient => {
                     const isSelected = selectedIngredients.includes(ingredient.id);
                     const style = CATEGORY_STYLES[ingredient.category] || CATEGORY_STYLES.Core;
+                    const iconUrl = getIcon(ingredient.id);
                     
                     return (
                       <div
                         key={ingredient.id}
                         onClick={() => toggleIngredient(ingredient)}
                         className={`
-                          relative p-4 rounded-xl cursor-pointer transition-all duration-200
+                          relative p-3 rounded-xl cursor-pointer transition-all duration-200
                           ${isSelected 
                             ? `bg-gradient-to-br ${style.gradient} border-2 ${style.border} scale-105 shadow-lg ${style.glow}` 
-                            : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/30'
+                            : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/30 hover:scale-102'
                           }
                         `}
                       >
                         {isSelected && (
-                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg z-10">
                             ✓
                           </div>
                         )}
                         
                         <div className="text-center">
-                          <div className="text-4xl mb-2 transform hover:scale-110 transition-transform">
-                            {ingredient.emoji}
+                          {/* Icon/Image Container */}
+                          <div className="w-16 h-16 mx-auto mb-2 relative">
+                            {iconUrl ? (
+                              <img 
+                                src={iconUrl} 
+                                alt={ingredient.name}
+                                className="w-full h-full object-contain transform hover:scale-110 transition-transform drop-shadow-lg"
+                                onError={(e) => { 
+                                  e.target.style.display = 'none'; 
+                                  e.target.parentElement.querySelector('.emoji-fallback').style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className={`emoji-fallback text-4xl ${iconUrl ? 'hidden' : 'flex'} items-center justify-center h-full`}>
+                              {ingredient.emoji}
+                            </div>
                           </div>
+                          
                           <div className="text-white font-medium text-sm truncate">
                             {ingredient.name}
                           </div>
