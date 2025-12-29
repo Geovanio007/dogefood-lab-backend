@@ -449,13 +449,13 @@ const GameLabRedesign = ({ playerAddress }) => {
 
           {/* Middle: Ingredient Grid */}
           <div className="lg:col-span-2">
-            <Card className="bg-black/40 backdrop-blur-xl border-purple-500/30">
+            <Card className="bg-gradient-to-br from-sky-600/95 to-blue-700/95 backdrop-blur-xl border-sky-400/50 shadow-xl shadow-sky-500/20">
               <CardContent className="p-6">
                 {/* Category Tabs */}
                 <div className="flex flex-wrap gap-2 mb-6">
                   <Button
                     onClick={() => setSelectedCategory('all')}
-                    className={`${selectedCategory === 'all' ? 'bg-white/20' : 'bg-white/5'} hover:bg-white/15 border border-white/20`}
+                    className={`${selectedCategory === 'all' ? 'bg-yellow-400 text-white' : 'bg-white/20 text-white'} hover:bg-yellow-400/80 border-0`}
                     size="sm"
                   >
                     All ({ingredients.length})
@@ -467,10 +467,10 @@ const GameLabRedesign = ({ playerAddress }) => {
                       <Button
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
-                        className={`${selectedCategory === cat ? CATEGORY_STYLES[cat].bg : 'bg-white/5'} hover:bg-white/15 border ${CATEGORY_STYLES[cat].border}`}
+                        className={`${selectedCategory === cat ? CATEGORY_STYLES[cat].bg + ' border-2' : 'bg-white/20'} hover:bg-white/30 border ${CATEGORY_STYLES[cat].border}`}
                         size="sm"
                       >
-                        <span className={CATEGORY_STYLES[cat].text}>{cat} ({count})</span>
+                        <span className={selectedCategory === cat ? 'text-white' : CATEGORY_STYLES[cat].text}>{cat} ({count})</span>
                       </Button>
                     );
                   })}
