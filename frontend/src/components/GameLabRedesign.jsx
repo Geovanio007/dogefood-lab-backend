@@ -349,6 +349,135 @@ const GameLabRedesign = ({ playerAddress }) => {
     );
   }
 
+  // Character Selection Gate
+  if (showCharacterSelection) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-sky-400 via-sky-500 to-blue-600 p-4 flex items-center justify-center overflow-auto">
+        {/* Animated Background */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-32 h-32 bg-yellow-400/30 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-10 w-40 h-40 bg-sky-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+        
+        <div className="relative z-10 max-w-6xl mx-auto py-8">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
+              🧪 Choose Your Scientist! 🧪
+            </h1>
+            <p className="text-lg md:text-xl text-white/90 mb-2 drop-shadow-md">
+              Select your character to begin your DogeFood Lab adventure
+            </p>
+            <p className="text-base md:text-lg text-yellow-300 font-semibold drop-shadow-md">
+              ⚠️ This choice is permanent!
+            </p>
+          </div>
+
+          {/* Character Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {characters.map((character) => (
+              <Card
+                key={character.id}
+                className={`relative cursor-pointer transition-all duration-300 transform hover:scale-105 ${
+                  selectedCharacter?.id === character.id
+                    ? 'ring-4 ring-yellow-400 shadow-2xl shadow-yellow-400/50 bg-gradient-to-br from-yellow-50 to-yellow-100'
+                    : 'bg-white/95 hover:bg-white shadow-xl hover:shadow-2xl'
+                }`}
+                onClick={() => setSelectedCharacter(character)}
+              >
+                <CardContent className="p-6">
+                  {/* Character Image */}
+                  <div className="w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden border-4 border-sky-400 shadow-lg">
+                    <img
+                      src={character.image}
+                      alt={character.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.target.src = '🐕'; }}
+                    />
+                  </div>
+                  
+                  {/* Character Name */}
+                  <h3 className="text-xl font-bold text-gray-800 text-center mb-2">
+                    {character.name}
+                  </h3>
+                  <p className="text-sky-600 font-semibold text-center mb-3">
+                    {character.description}
+                  </p>
+                  
+                  {/* Personality */}
+                  <p className="text-gray-600 text-sm text-center mb-4 leading-relaxed">
+                    {character.personality}
+                  </p>
+                  
+                  {/* Traits */}
+                  <div className="flex flex-wrap justify-center gap-2 mb-4">
+                    {character.traits.map((trait, index) => (
+                      <span
+                        key={index}
+                        className="bg-sky-100 text-sky-700 px-2 py-1 rounded-full text-xs font-medium"
+                      >
+                        {trait}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Bonus */}
+                  <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 p-3 rounded-lg border-2 border-yellow-400">
+                    <p className="text-yellow-800 text-center font-bold text-sm">
+                      ✨ {character.bonus}
+                    </p>
+                  </div>
+
+                  {/* Selection Indicator */}
+                  {selectedCharacter?.id === character.id && (
+                    <div className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 p-2 rounded-full shadow-lg">
+                      <span className="text-xl">✓</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Confirm Button */}
+          <div className="text-center">
+            <Button
+              onClick={() => selectedCharacter && handleCharacterSelect(selectedCharacter)}
+              disabled={!selectedCharacter || selectingCharacter}
+              className={`text-xl font-bold py-6 px-12 rounded-xl shadow-2xl transition-all duration-300 ${
+                selectedCharacter && !selectingCharacter
+                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-white hover:scale-105 shadow-yellow-400/50'
+                  : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+              }`}
+            >
+              {selectingCharacter ? (
+                <span className="animate-pulse">⏳ Selecting...</span>
+              ) : selectedCharacter ? (
+                <>🚀 Start Adventure with {selectedCharacter.name.split(' ')[2]}!</>
+              ) : (
+                'Please select a character'
+              )}
+            </Button>
+            
+            {selectedCharacter && !selectingCharacter && (
+              <p className="text-white/90 mt-4 text-lg drop-shadow-md">
+                Ready to begin your scientific journey? Let's go! 🧪✨
+              </p>
+            )}
+            
+            {/* Back to Menu */}
+            <Button
+              onClick={() => navigate('/')}
+              className="mt-4 bg-white/20 hover:bg-white/30 text-white border-0"
+            >
+              ← Back to Menu
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-400 via-sky-500 to-blue-600 overflow-hidden">
       {/* Animated Background */}
@@ -366,8 +495,13 @@ const GameLabRedesign = ({ playerAddress }) => {
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-3xl shadow-lg shadow-yellow-500/40">
-                    🐕
+                  {/* Show selected character image or default */}
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center overflow-hidden shadow-lg shadow-yellow-500/40">
+                    {selectedCharacter?.image ? (
+                      <img src={selectedCharacter.image} alt={selectedCharacter.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-3xl">🐕</span>
+                    )}
                   </div>
                   <div className="absolute -bottom-1 -right-1 bg-sky-500 rounded-full px-2 py-0.5 text-xs font-bold text-white shadow-md">
                     Lv.{playerLevel}
@@ -375,7 +509,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                 </div>
                 <div className="flex-1">
                   <div className="text-white font-bold text-lg truncate drop-shadow-md">
-                    {playerAddress?.slice(0, 8)}...{playerAddress?.slice(-4)}
+                    {selectedCharacter?.name?.split(' ')[2] || playerAddress?.slice(0, 8) + '...' + playerAddress?.slice(-4)}
                   </div>
                   <div className="mt-2">
                     <div className="flex justify-between text-xs mb-1">
