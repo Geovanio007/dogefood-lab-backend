@@ -260,22 +260,22 @@ const GameLabRedesign = ({ playerAddress }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-indigo-900 via-purple-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-sky-400 via-sky-500 to-blue-600 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-bounce text-6xl mb-4">🧪</div>
-          <div className="text-white text-xl font-bold animate-pulse">Loading Laboratory...</div>
+          <div className="text-white text-xl font-bold animate-pulse drop-shadow-lg">Loading Laboratory...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-900 via-purple-900 to-black overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-sky-400 via-sky-500 to-blue-600 overflow-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-500"></div>
+        <div className="absolute top-20 left-10 w-32 h-32 bg-yellow-400/30 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-40 h-40 bg-sky-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-white/20 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
       <div className="relative z-10 p-4 max-w-7xl mx-auto">
