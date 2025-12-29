@@ -2,6 +2,16 @@
 Enhanced Treat Game Engine
 Implements comprehensive game mechanics including level-based timers, rarity calculations,
 ingredient combinations, and server-side randomization for the DogeFood Lab game.
+
+RARITY SYSTEM:
+| Rarity    | Probability | Timer Duration | Points Reward | Experience |
+|-----------|-------------|----------------|---------------|------------|
+| Common    | 45%         | 1-2 hours      | 10-20 points  | 5-10 XP    |
+| Uncommon  | 30%         | 2-4 hours      | 25-40 points  | 15-25 XP   |
+| Rare      | 15%         | 4-6 hours      | 50-80 points  | 30-50 XP   |
+| Epic      | 7%          | 6-8 hours      | 100-150 pts   | 60-100 XP  |
+| Legendary | 2.5%        | 8-12 hours     | 200-300 pts   | 120-200 XP |
+| Mythic    | 0.5%        | 12-24 hours    | 500-1000 pts  | 250-500 XP |
 """
 
 import random
@@ -15,9 +25,82 @@ from enum import Enum
 
 class TreatRarity(Enum):
     COMMON = "Common"
+    UNCOMMON = "Uncommon"
     RARE = "Rare" 
     EPIC = "Epic"
     LEGENDARY = "Legendary"
+    MYTHIC = "Mythic"
+
+
+# Rarity configuration based on the game system
+RARITY_CONFIG = {
+    TreatRarity.COMMON: {
+        "probability": 45.0,
+        "timer_min_hours": 1.0,
+        "timer_max_hours": 2.0,
+        "points_min": 10,
+        "points_max": 20,
+        "xp_min": 5,
+        "xp_max": 10,
+        "color": "#9CA3AF",  # Gray
+        "emoji": "⚪"
+    },
+    TreatRarity.UNCOMMON: {
+        "probability": 30.0,
+        "timer_min_hours": 2.0,
+        "timer_max_hours": 4.0,
+        "points_min": 25,
+        "points_max": 40,
+        "xp_min": 15,
+        "xp_max": 25,
+        "color": "#22C55E",  # Green
+        "emoji": "🟢"
+    },
+    TreatRarity.RARE: {
+        "probability": 15.0,
+        "timer_min_hours": 4.0,
+        "timer_max_hours": 6.0,
+        "points_min": 50,
+        "points_max": 80,
+        "xp_min": 30,
+        "xp_max": 50,
+        "color": "#3B82F6",  # Blue
+        "emoji": "🔵"
+    },
+    TreatRarity.EPIC: {
+        "probability": 7.0,
+        "timer_min_hours": 6.0,
+        "timer_max_hours": 8.0,
+        "points_min": 100,
+        "points_max": 150,
+        "xp_min": 60,
+        "xp_max": 100,
+        "color": "#A855F7",  # Purple
+        "emoji": "🟣"
+    },
+    TreatRarity.LEGENDARY: {
+        "probability": 2.5,
+        "timer_min_hours": 8.0,
+        "timer_max_hours": 12.0,
+        "points_min": 200,
+        "points_max": 300,
+        "xp_min": 120,
+        "xp_max": 200,
+        "color": "#F59E0B",  # Gold/Orange
+        "emoji": "🟡"
+    },
+    TreatRarity.MYTHIC: {
+        "probability": 0.5,
+        "timer_min_hours": 12.0,
+        "timer_max_hours": 24.0,
+        "points_min": 500,
+        "points_max": 1000,
+        "xp_min": 250,
+        "xp_max": 500,
+        "color": "#EF4444",  # Red
+        "emoji": "🔴"
+    }
+}
 
 
 class TreatGameEngine:
@@ -30,62 +113,29 @@ class TreatGameEngine:
         """
         self.secret_key = secret_key or "default_secret_for_development_only"
         
-        # Rarity probabilities (must sum to 100)
-        self.rarity_probabilities = {
-            TreatRarity.LEGENDARY: 10,  # 10% chance
-            TreatRarity.EPIC: 20,       # 20% chance  
-            TreatRarity.RARE: 30,       # 30% chance
-            TreatRarity.COMMON: 40      # 40% chance
-        }
+        # Rarity order from most rare to least rare
+        self.rarity_order = [
+            TreatRarity.MYTHIC,
+            TreatRarity.LEGENDARY,
+            TreatRarity.EPIC,
+            TreatRarity.RARE,
+            TreatRarity.UNCOMMON,
+            TreatRarity.COMMON
+        ]
         
-        # Minimum ingredients required for each rarity
+        # Minimum ingredients required for each rarity tier
         self.rarity_requirements = {
             TreatRarity.COMMON: 2,
+            TreatRarity.UNCOMMON: 2,
             TreatRarity.RARE: 3,
             TreatRarity.EPIC: 4,
-            TreatRarity.LEGENDARY: 5
-        }
-        
-        # Time progression formula parameters
-        self.time_formula = {
-            "base_time_hours": 1.0,          # 1 hour base
-            "scaling_type": "exponential",    # or "linear" 
-            "scaling_factor": 0.2,           # Growth rate
-            "max_time_hours": 12.0           # Cap at 12 hours
+            TreatRarity.LEGENDARY: 5,
+            TreatRarity.MYTHIC: 5
         }
         
         # Season duration in months
         self.season_duration_months = 3
         
-    def calculate_treat_timer(self, level: int) -> int:
-        """
-        Calculate treat preparation time based on level with exponential/linear growth
-        
-        Args:
-            level: Player level (1-100+)
-            
-        Returns:
-            Time in seconds
-        """
-        base_time = self.time_formula["base_time_hours"]
-        scaling_factor = self.time_formula["scaling_factor"]
-        max_time = self.time_formula["max_time_hours"]
-        
-        if self.time_formula["scaling_type"] == "exponential":
-            # Exponential: time = base_time * (1 + scaling_factor) ^ (level - 1)
-            time_hours = min(
-                base_time * ((1 + scaling_factor) ** (level - 1)),
-                max_time
-            )
-        else:  # linear
-            # Linear: time = base_time + (level - 1) * scaling_factor
-            time_hours = min(
-                base_time + (level - 1) * scaling_factor,
-                max_time
-            )
-            
-        return int(time_hours * 3600)  # Convert to seconds
-    
     def generate_secure_random(self, player_address: str, treat_data: Dict, timestamp: int = None) -> float:
         """
         Generate secure, deterministic random number for consistency across players
@@ -99,7 +149,7 @@ class TreatGameEngine:
             Random float between 0.0 and 1.0
         """
         if timestamp is None:
-            timestamp = int(time.time())
+            timestamp = int(time.time() * 1000)  # Use milliseconds for more entropy
             
         # Create deterministic seed from player data
         seed_string = f"{player_address}:{treat_data}:{timestamp}:{self.secret_key}"
@@ -113,13 +163,21 @@ class TreatGameEngine:
         ).hexdigest()
         
         # Convert hash to float between 0 and 1
-        hash_int = int(hmac_hash[:8], 16)  # Use first 8 hex chars
-        return hash_int / 0xFFFFFFFF
+        hash_int = int(hmac_hash[:16], 16)  # Use first 16 hex chars for more precision
+        return hash_int / 0xFFFFFFFFFFFFFFFF
     
     def calculate_treat_rarity(self, ingredients: List[str], player_level: int, 
                              player_address: str, timestamp: int = None) -> TreatRarity:
         """
-        Calculate treat rarity based on ingredients, with minimum requirements enforced
+        Calculate treat rarity based on probability system
+        
+        Probabilities:
+        - Common: 45%
+        - Uncommon: 30%
+        - Rare: 15%
+        - Epic: 7%
+        - Legendary: 2.5%
+        - Mythic: 0.5%
         
         Args:
             ingredients: List of ingredient IDs used
@@ -138,8 +196,8 @@ class TreatGameEngine:
         
         # Determine allowed rarities based on ingredient count
         allowed_rarities = []
-        for rarity, min_required in self.rarity_requirements.items():
-            if num_ingredients >= min_required:
+        for rarity in self.rarity_order:
+            if num_ingredients >= self.rarity_requirements[rarity]:
                 allowed_rarities.append(rarity)
         
         if not allowed_rarities:
@@ -157,14 +215,79 @@ class TreatGameEngine:
         
         # Check rarities in order of rarity (highest first)
         cumulative_chance = 0
-        for rarity in [TreatRarity.LEGENDARY, TreatRarity.EPIC, TreatRarity.RARE, TreatRarity.COMMON]:
+        for rarity in self.rarity_order:
             if rarity in allowed_rarities:
-                cumulative_chance += self.rarity_probabilities[rarity]
+                cumulative_chance += RARITY_CONFIG[rarity]["probability"]
                 if roll <= cumulative_chance:
                     return rarity
         
         # Fallback to common
         return TreatRarity.COMMON
+    
+    def calculate_timer_duration(self, rarity: TreatRarity, player_address: str, timestamp: int = None) -> int:
+        """
+        Calculate timer duration based on rarity with randomization within range
+        
+        Args:
+            rarity: The treat rarity
+            player_address: For randomization
+            timestamp: Optional timestamp
+            
+        Returns:
+            Timer duration in seconds
+        """
+        config = RARITY_CONFIG[rarity]
+        min_hours = config["timer_min_hours"]
+        max_hours = config["timer_max_hours"]
+        
+        # Generate random value within range
+        random_value = self.generate_secure_random(
+            player_address + "_timer",
+            {"rarity": rarity.value},
+            timestamp
+        )
+        
+        # Calculate hours within range
+        hours = min_hours + (random_value * (max_hours - min_hours))
+        
+        return int(hours * 3600)  # Convert to seconds
+    
+    def calculate_rewards(self, rarity: TreatRarity, player_address: str, timestamp: int = None) -> Dict:
+        """
+        Calculate points and XP rewards based on rarity
+        
+        Args:
+            rarity: The treat rarity
+            player_address: For randomization
+            timestamp: Optional timestamp
+            
+        Returns:
+            Dictionary with points and xp rewards
+        """
+        config = RARITY_CONFIG[rarity]
+        
+        # Generate random values for points and XP
+        points_random = self.generate_secure_random(
+            player_address + "_points",
+            {"rarity": rarity.value},
+            timestamp
+        )
+        xp_random = self.generate_secure_random(
+            player_address + "_xp",
+            {"rarity": rarity.value},
+            timestamp
+        )
+        
+        # Calculate rewards within ranges
+        points = int(config["points_min"] + (points_random * (config["points_max"] - config["points_min"])))
+        xp = int(config["xp_min"] + (xp_random * (config["xp_max"] - config["xp_min"])))
+        
+        return {
+            "points": points,
+            "xp": xp,
+            "points_range": f"{config['points_min']}-{config['points_max']}",
+            "xp_range": f"{config['xp_min']}-{config['xp_max']}"
+        }
     
     def check_secret_combo_bonus(self, ingredients: List[str]) -> Dict:
         """
@@ -177,26 +300,29 @@ class TreatGameEngine:
             Dictionary with bonus information
         """
         # Sort ingredients for consistent checking
-        sorted_ingredients = sorted(ingredients)
+        sorted_ingredients = sorted([ing.lower() for ing in ingredients])
         combo_key = "+".join(sorted_ingredients)
         
         # Secret combo definitions (stored server-side for security)
         secret_combos = {
-            # High-value combos (+10% legendary chance)
+            # High-value combos (+10% legendary/mythic chance)
             "chocolate+honey+milk+strawberry": {
                 "name": "Ultimate Sweet Harmony",
+                "bonus_mythic": 5,
                 "bonus_legendary": 10,
                 "bonus_epic": 5,
                 "description": "The perfect dessert combination!"
             },
             "bacon+cheese+chicken+garlic": {
                 "name": "Savory Master Blend", 
+                "bonus_mythic": 5,
                 "bonus_legendary": 10,
                 "bonus_epic": 5,
                 "description": "Ultimate protein and flavor combo!"
             },
             "chili_flakes+honey+peanut_butter+rainbow_sprinkles": {
                 "name": "Sweet Fire Surprise",
+                "bonus_mythic": 3,
                 "bonus_legendary": 8,
                 "bonus_epic": 7,
                 "description": "Unexpected but amazing!"
@@ -205,12 +331,14 @@ class TreatGameEngine:
             # Medium combos (+5% legendary chance)
             "chocolate+milk+vanilla": {
                 "name": "Classic Milkshake",
+                "bonus_mythic": 2,
                 "bonus_legendary": 5,
                 "bonus_epic": 3,
                 "description": "Timeless favorite!"
             },
             "banana+honey+peanut_butter": {
                 "name": "Monkey's Dream",
+                "bonus_mythic": 2,
                 "bonus_legendary": 5,
                 "bonus_epic": 3,
                 "description": "Natural energy boost!"
@@ -219,6 +347,7 @@ class TreatGameEngine:
             # Fun combos (+3% bonus)
             "cookie_crumbs+milk": {
                 "name": "Cookie Dunk Special",
+                "bonus_mythic": 1,
                 "bonus_legendary": 3,
                 "bonus_epic": 2,
                 "description": "Just like childhood!"
@@ -229,6 +358,7 @@ class TreatGameEngine:
         return {
             "is_secret_combo": bool(combo),
             "combo_name": combo.get("name", ""),
+            "bonus_mythic": combo.get("bonus_mythic", 0),
             "bonus_legendary": combo.get("bonus_legendary", 0),
             "bonus_epic": combo.get("bonus_epic", 0),
             "description": combo.get("description", "")
@@ -237,7 +367,7 @@ class TreatGameEngine:
     def calculate_treat_outcome(self, ingredients: List[str], player_level: int,
                               player_address: str, timestamp: int = None) -> Dict:
         """
-        Complete treat outcome calculation including rarity, bonuses, and metadata
+        Complete treat outcome calculation including rarity, rewards, and metadata
         
         Args:
             ingredients: List of ingredient IDs
@@ -251,6 +381,9 @@ class TreatGameEngine:
         # Validate minimum ingredients
         if len(ingredients) < 2:
             raise ValueError("Minimum 2 ingredients required")
+        
+        if timestamp is None:
+            timestamp = int(time.time() * 1000)
         
         # Check for secret combo bonuses
         combo_bonus = self.check_secret_combo_bonus(ingredients)
@@ -271,29 +404,45 @@ class TreatGameEngine:
             )
             bonus_roll = bonus_random * 100
             
+            # Apply mythic bonus
+            if (final_rarity != TreatRarity.MYTHIC and 
+                bonus_roll <= combo_bonus["bonus_mythic"]):
+                final_rarity = TreatRarity.MYTHIC
             # Apply legendary bonus
-            if (final_rarity != TreatRarity.LEGENDARY and 
+            elif (final_rarity not in [TreatRarity.MYTHIC, TreatRarity.LEGENDARY] and 
                 bonus_roll <= combo_bonus["bonus_legendary"]):
                 final_rarity = TreatRarity.LEGENDARY
             # Apply epic bonus
-            elif (final_rarity not in [TreatRarity.LEGENDARY, TreatRarity.EPIC] and
+            elif (final_rarity not in [TreatRarity.MYTHIC, TreatRarity.LEGENDARY, TreatRarity.EPIC] and
                   bonus_roll <= combo_bonus["bonus_epic"]):
                 final_rarity = TreatRarity.EPIC
         
-        # Calculate timer duration
-        timer_duration = self.calculate_treat_timer(player_level)
+        # Calculate timer duration based on rarity
+        timer_duration = self.calculate_timer_duration(final_rarity, player_address, timestamp)
+        
+        # Calculate rewards based on rarity
+        rewards = self.calculate_rewards(final_rarity, player_address, timestamp)
+        
+        # Get rarity config for additional metadata
+        rarity_config = RARITY_CONFIG[final_rarity]
         
         # Generate treat metadata
         return {
             "rarity": final_rarity.value,
+            "rarity_emoji": rarity_config["emoji"],
+            "rarity_color": rarity_config["color"],
             "ingredients_used": ingredients,
             "ingredient_count": len(ingredients),
             "player_level": player_level,
             "timer_duration_seconds": timer_duration,
-            "timer_duration_hours": round(timer_duration / 3600, 1),
+            "timer_duration_hours": round(timer_duration / 3600, 2),
+            "points_reward": rewards["points"],
+            "xp_reward": rewards["xp"],
+            "points_range": rewards["points_range"],
+            "xp_range": rewards["xp_range"],
             "secret_combo": combo_bonus,
-            "created_at": timestamp or int(time.time()),
-            "ready_at": (timestamp or int(time.time())) + timer_duration,
+            "created_at": timestamp // 1000,  # Convert back to seconds
+            "ready_at": (timestamp // 1000) + timer_duration,
             "season_id": self.get_current_season_id()
         }
     
@@ -306,20 +455,6 @@ class TreatGameEngine:
         """
         # For Season 1 offchain testing, always return Season 1
         return 1
-        
-        # Original logic (commented out for testing)
-        # # Use a fixed start date (e.g., January 1, 2024)
-        # start_date = datetime(2024, 1, 1)
-        # current_date = datetime.now()
-        # 
-        # # Calculate months elapsed
-        # months_elapsed = (
-        #     (current_date.year - start_date.year) * 12 + 
-        #     current_date.month - start_date.month
-        # )
-        # 
-        # # Season ID = (months // 3) + 1
-        # return (months_elapsed // self.season_duration_months) + 1
     
     def get_season_info(self, season_id: int = None) -> Dict:
         """
@@ -382,10 +517,37 @@ class TreatGameEngine:
             "valid": len(errors) == 0,
             "errors": errors,
             "warnings": warnings,
+            "can_get_mythic": len(ingredients) >= self.rarity_requirements[TreatRarity.MYTHIC],
             "can_get_legendary": len(ingredients) >= self.rarity_requirements[TreatRarity.LEGENDARY],
             "can_get_epic": len(ingredients) >= self.rarity_requirements[TreatRarity.EPIC],
             "can_get_rare": len(ingredients) >= self.rarity_requirements[TreatRarity.RARE]
         }
+    
+    def get_rarity_info(self) -> Dict:
+        """
+        Get complete rarity system information for display
+        
+        Returns:
+            Dictionary with all rarity configurations
+        """
+        rarity_info = {}
+        for rarity in self.rarity_order:
+            config = RARITY_CONFIG[rarity]
+            rarity_info[rarity.value] = {
+                "probability": f"{config['probability']}%",
+                "timer_range": f"{config['timer_min_hours']}-{config['timer_max_hours']} hours",
+                "points_range": f"{config['points_min']}-{config['points_max']} points",
+                "xp_range": f"{config['xp_min']}-{config['xp_max']} XP",
+                "color": config["color"],
+                "emoji": config["emoji"],
+                "min_ingredients": self.rarity_requirements[rarity]
+            }
+        return rarity_info
+
+
+# Export RARITY_CONFIG for use in other modules
+def get_rarity_config():
+    return RARITY_CONFIG
 
 
 # Example usage and testing functions
@@ -393,35 +555,37 @@ def test_game_engine():
     """Test the game engine functionality"""
     engine = TreatGameEngine("test_secret_key_123")
     
-    # Test timer progression
-    print("Timer Progression:")
-    for level in [1, 5, 10, 20, 30, 50]:
-        timer_seconds = engine.calculate_treat_timer(level)
-        hours = timer_seconds / 3600
-        print(f"Level {level}: {hours:.1f} hours ({timer_seconds} seconds)")
+    # Test rarity distribution
+    print("Testing Rarity Distribution (1000 rolls):")
+    rarity_counts = {r.value: 0 for r in TreatRarity}
     
-    # Test rarity calculation
-    print("\nRarity Testing:")
-    test_ingredients = ["chocolate", "honey", "milk", "strawberry", "vanilla"]
-    for i in range(2, 6):
-        ingredients_subset = test_ingredients[:i]
+    for i in range(1000):
+        ingredients = ["chicken", "rice", "vegetables", "honey", "milk"]  # 5 ingredients
         rarity = engine.calculate_treat_rarity(
-            ingredients_subset, 10, "0x1234567890123456789012345678901234567890"
+            ingredients, 10, f"0x{i:040x}", i * 1000
         )
-        print(f"{i} ingredients {ingredients_subset}: {rarity.value}")
+        rarity_counts[rarity.value] += 1
     
-    # Test secret combos
-    print("\nSecret Combo Testing:")
-    secret_combo_ingredients = ["chocolate", "honey", "milk", "strawberry"]
-    combo_result = engine.check_secret_combo_bonus(secret_combo_ingredients)
-    print(f"Secret combo result: {combo_result}")
+    for rarity, count in rarity_counts.items():
+        print(f"  {rarity}: {count/10:.1f}%")
     
     # Test complete treat outcome
-    print("\nComplete Treat Outcome:")
+    print("\nComplete Treat Outcome Example:")
     outcome = engine.calculate_treat_outcome(
-        secret_combo_ingredients, 15, "0x1234567890123456789012345678901234567890"
+        ["chocolate", "honey", "milk", "strawberry"], 
+        15, 
+        "0x1234567890123456789012345678901234567890"
     )
-    print(f"Final outcome: {outcome}")
+    print(f"  Rarity: {outcome['rarity']} {outcome['rarity_emoji']}")
+    print(f"  Timer: {outcome['timer_duration_hours']} hours")
+    print(f"  Points: {outcome['points_reward']} ({outcome['points_range']})")
+    print(f"  XP: {outcome['xp_reward']} ({outcome['xp_range']})")
+    
+    # Test rarity info
+    print("\nRarity System Info:")
+    rarity_info = engine.get_rarity_info()
+    for rarity, info in rarity_info.items():
+        print(f"  {info['emoji']} {rarity}: {info['probability']} chance, {info['timer_range']}, {info['points_range']}")
 
 
 if __name__ == "__main__":
