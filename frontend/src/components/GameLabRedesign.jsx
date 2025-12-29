@@ -551,9 +551,9 @@ const GameLabRedesign = ({ playerAddress }) => {
 
         {/* Active Treats Section */}
         {activeTreats.length > 0 && (
-          <Card className="mt-6 bg-black/40 backdrop-blur-xl border-green-500/30">
+          <Card className="mt-6 bg-gradient-to-br from-sky-600/95 to-blue-700/95 backdrop-blur-xl border-sky-400/50 shadow-xl shadow-sky-500/20">
             <CardContent className="p-6">
-              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 drop-shadow-md">
                 <span className="text-3xl animate-bounce">⏳</span> Active Brews
               </h2>
               
@@ -578,22 +578,22 @@ const GameLabRedesign = ({ playerAddress }) => {
                       key={treat.id || index}
                       className={`p-4 rounded-xl border-2 transition-all ${
                         isReady 
-                          ? 'bg-gradient-to-br from-green-500/30 to-emerald-500/30 border-green-400 animate-pulse' 
-                          : `bg-white/5 border-white/20`
+                          ? 'bg-gradient-to-br from-yellow-400/40 to-yellow-500/40 border-yellow-400 animate-pulse' 
+                          : `bg-white/10 border-white/30`
                       }`}
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <span className="text-2xl">{rarityStyle.emoji}</span>
                           <div>
-                            <div className="text-white font-bold">{treat.rarity} Treat</div>
-                            <div className="text-white/50 text-xs">
+                            <div className="text-white font-bold drop-shadow-md">{treat.rarity} Treat</div>
+                            <div className="text-sky-200 text-xs">
                               {treat.ingredients?.length || 0} ingredients
                             </div>
                           </div>
                         </div>
                         {isReady ? (
-                          <Badge className="bg-green-500 text-white animate-bounce">Ready!</Badge>
+                          <Badge className="bg-yellow-400 text-white animate-bounce shadow-lg">Ready!</Badge>
                         ) : (
                           <Badge className={rarityStyle.bg + ' text-white'}>Brewing</Badge>
                         )}
@@ -603,9 +603,9 @@ const GameLabRedesign = ({ playerAddress }) => {
                       
                       <div className="text-center">
                         {isReady ? (
-                          <div className="text-green-400 font-bold text-lg">🎉 Ready to Collect!</div>
+                          <div className="text-yellow-300 font-bold text-lg drop-shadow-md">🎉 Ready to Collect!</div>
                         ) : (
-                          <div className="text-white font-mono text-lg">
+                          <div className="text-white font-mono text-lg drop-shadow-md">
                             {hours > 0 && `${hours}h `}{minutes}m {seconds}s
                           </div>
                         )}
