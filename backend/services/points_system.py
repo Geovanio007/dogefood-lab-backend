@@ -109,24 +109,31 @@ class PointsCollectionSystem:
         return points_awarded
     
     async def _calculate_treat_points(self, player: Dict, metadata: Dict) -> int:
-        """Calculate points for treat creation"""
-        base_points = self.POINTS_CONFIG["treat_creation"]["base_points"]
+        """Calculate points for treat creation based on rarity system"""
+        import random
         
-        # Rarity bonus
+        # Get rarity and use the rarity rewards table
         rarity = metadata.get("rarity", "common").lower()
-        rarity_multiplier = self.POINTS_CONFIG["treat_creation"]["rarity_multipliers"].get(rarity, 1.0)
+        rarity_rewards = self.POINTS_CONFIG["treat_creation"]["rarity_rewards"]
+        
+        # Get reward config for this rarity, default to common if unknown
+        reward_config = rarity_rewards.get(rarity, rarity_rewards["common"])
+        
+        # Use pre-calculated points from metadata if available
+        if "points_reward" in metadata:
+            base_points = metadata["points_reward"]
+        else:
+            # Otherwise calculate randomly within range
+            base_points = random.randint(reward_config["points_min"], reward_config["points_max"])
         
         # Ingredient count bonus
         ingredients_count = len(metadata.get("ingredients", []))
         ingredient_bonus = ingredients_count * self.POINTS_CONFIG["treat_creation"]["ingredient_bonus"]
         
-        # Level bonus (higher level players get slightly more points)
-        level_bonus = player.get("level", 1) * 2
+        total_points = base_points + ingredient_bonus
         
-        total_points = int((base_points + ingredient_bonus + level_bonus) * rarity_multiplier)
-        
-        logger.info(f"Treat points calculation: base={base_points}, ingredient_bonus={ingredient_bonus}, "
-                   f"level_bonus={level_bonus}, rarity_multiplier={rarity_multiplier}, total={total_points}")
+        logger.info(f"Treat points calculation: rarity={rarity}, base_points={base_points}, "
+                   f"ingredient_bonus={ingredient_bonus}, total={total_points}")
         
         return total_points
     
