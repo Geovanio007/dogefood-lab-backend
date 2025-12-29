@@ -166,7 +166,7 @@ const InnerApp = () => {
             {/* Always show main routes after loading - authentication is optional */}
             <Routes>
               <Route path="/" element={<MainMenu />} />
-              <Route path="/lab" element={<GameLabNew />} />
+              <Route path="/lab" element={<GameLabRedesign playerAddress={effectiveAddress || 'GUEST_USER'} />} />
               <Route path="/nfts" element={<MyTreats />} />
               <Route path="/dashboard" element={<ActiveTreatsStatus />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
