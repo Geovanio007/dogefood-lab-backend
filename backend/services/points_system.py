@@ -37,17 +37,18 @@ class PointsCollectionSystem:
     def __init__(self, db: AsyncIOMotorClient):
         self.db = db
         
-        # Points configuration
+        # Points configuration - Updated to use rarity-based rewards
         self.POINTS_CONFIG = {
             "treat_creation": {
-                "base_points": 10,
-                "rarity_multipliers": {
-                    "common": 1.0,
-                    "rare": 1.5,
-                    "epic": 2.0,
-                    "legendary": 3.0
+                "rarity_rewards": {
+                    "common": {"points_min": 10, "points_max": 20, "xp_min": 5, "xp_max": 10},
+                    "uncommon": {"points_min": 25, "points_max": 40, "xp_min": 15, "xp_max": 25},
+                    "rare": {"points_min": 50, "points_max": 80, "xp_min": 30, "xp_max": 50},
+                    "epic": {"points_min": 100, "points_max": 150, "xp_min": 60, "xp_max": 100},
+                    "legendary": {"points_min": 200, "points_max": 300, "xp_min": 120, "xp_max": 200},
+                    "mythic": {"points_min": 500, "points_max": 1000, "xp_min": 250, "xp_max": 500}
                 },
-                "ingredient_bonus": 2  # points per ingredient
+                "ingredient_bonus": 2  # Extra points per ingredient
             },
             "level_up": {
                 "base_points": 50,
