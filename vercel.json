@@ -1,19 +1,45 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && yarn install --legacy-peer-deps && yarn build",
-  "outputDirectory": "frontend/build",
-  "routes": [
+  "builds": [
     {
-      "src": "/game-mechanisms.html",
-      "dest": "/game-mechanisms.html"
+      "src": "api/index.py",
+      "use": "@vercel/python"
     },
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|webp|woff|woff2|ttf|eot|json))",
-      "dest": "/$1"
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/game-mechanisms.html",
+      "dest": "/frontend/build/game-mechanisms.html"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|webp|woff|woff2|ttf|eot|json|map))",
+      "dest": "/frontend/build/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/frontend/build/index.html"
     }
-  ]
+  ],
+  "env": {
+    "MONGO_URL": "@mongo_url",
+    "DB_NAME": "dogefood_lab_production",
+    "CORS_ORIGINS": "*",
+    "TELEGRAM_BOT_TOKEN": "@telegram_bot_token"
+  },
+  "build": {
+    "env": {
+      "REACT_APP_BACKEND_URL": ""
+    }
+  }
 }
