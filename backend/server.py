@@ -976,6 +976,10 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             "season_id": season_id,
             "created_at": datetime.utcnow(),
             "is_offchain": season_id == 1,  # Season 1 is offchain only
+            "points_reward": treat_outcome.get("points_reward", 10),
+            "xp_reward": treat_outcome.get("xp_reward", 5),
+            "rarity_emoji": treat_outcome.get("rarity_emoji", "⚪"),
+            "rarity_color": treat_outcome.get("rarity_color", "#9CA3AF"),
             "nft_metadata": {
                 "name": f"{treat_outcome['rarity']} DogeFood Treat",
                 "description": f"A {treat_outcome['rarity'].lower()} treat created in Season {season_id} of DogeFood Lab",
@@ -986,6 +990,8 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                     {"trait_type": "Creator Level", "value": treat_data.player_level},
                     {"trait_type": "Ingredients Count", "value": len(treat_outcome["ingredients_used"])},
                     {"trait_type": "Timer Duration (hours)", "value": treat_outcome["timer_duration_hours"]},
+                    {"trait_type": "Points Reward", "value": treat_outcome.get("points_reward", 10)},
+                    {"trait_type": "XP Reward", "value": treat_outcome.get("xp_reward", 5)},
                     {"trait_type": "Secret Combo", "value": treat_outcome.get("secret_combo", {}).get("is_secret_combo", False)}
                 ]
             },
