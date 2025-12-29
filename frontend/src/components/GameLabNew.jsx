@@ -75,13 +75,23 @@ const GameLabNew = () => {
     }
   }, [address, isTelegram, telegramUser, getUserId]);
 
-  // Timer update
+  // Timer update - refresh local time every second
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(Date.now());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Refresh active treats from server every 30 seconds
+  useEffect(() => {
+    const refreshTimer = setInterval(() => {
+      if (activeTreats.length > 0) {
+        loadActiveTreats();
+      }
+    }, 30000);
+    return () => clearInterval(refreshTimer);
+  }, [activeTreats.length]);
 
   const loadPlayerData = async () => {
     try {
