@@ -622,43 +622,43 @@ const GameLabRedesign = ({ playerAddress }) => {
       {/* Result Modal */}
       {showResult && brewResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <Card className="max-w-md w-full bg-gradient-to-b from-purple-900/90 to-black/90 border-purple-500/50 overflow-hidden animate-in zoom-in-95 duration-300">
+          <Card className="max-w-md w-full bg-gradient-to-b from-sky-500 via-sky-600 to-blue-700 border-sky-400 overflow-hidden animate-in zoom-in-95 duration-300 shadow-2xl shadow-sky-500/30">
             <CardContent className="p-8 text-center">
               <div className="text-6xl mb-4 animate-bounce">
                 {RARITY_STYLES[brewResult.outcome?.rarity]?.emoji || '🧪'}
               </div>
               
-              <h2 className="text-2xl font-bold text-white mb-2">
+              <h2 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">
                 {brewResult.outcome?.rarity} Treat Created!
               </h2>
               
               <div className="grid grid-cols-2 gap-4 my-6">
-                <div className="bg-white/10 rounded-xl p-3">
+                <div className="bg-yellow-400/90 rounded-xl p-3 shadow-lg">
                   <div className="text-3xl">🏆</div>
-                  <div className="text-yellow-400 font-bold text-xl">
+                  <div className="text-white font-bold text-xl drop-shadow-md">
                     +{brewResult.outcome?.points_reward || 0}
                   </div>
-                  <div className="text-white/50 text-xs">Points</div>
+                  <div className="text-yellow-100 text-xs">Points</div>
                 </div>
-                <div className="bg-white/10 rounded-xl p-3">
+                <div className="bg-sky-400/90 rounded-xl p-3 shadow-lg">
                   <div className="text-3xl">⭐</div>
-                  <div className="text-purple-400 font-bold text-xl">
+                  <div className="text-white font-bold text-xl drop-shadow-md">
                     +{brewResult.outcome?.xp_reward || 0}
                   </div>
-                  <div className="text-white/50 text-xs">XP</div>
+                  <div className="text-sky-100 text-xs">XP</div>
                 </div>
               </div>
               
-              <div className="bg-white/5 rounded-xl p-4 mb-6">
-                <div className="text-white/70 text-sm mb-2">Brewing Time</div>
-                <div className="text-white font-bold text-lg">
+              <div className="bg-white/20 rounded-xl p-4 mb-6">
+                <div className="text-sky-200 text-sm mb-2">Brewing Time</div>
+                <div className="text-white font-bold text-lg drop-shadow-md">
                   ⏱️ {brewResult.outcome?.timer_duration_hours || 0} hours
                 </div>
               </div>
               
               <Button
                 onClick={() => setShowResult(false)}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500"
+                className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-white font-bold shadow-lg shadow-yellow-500/40"
               >
                 Awesome! 🎉
               </Button>
