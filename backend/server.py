@@ -928,6 +928,17 @@ async def get_all_seasons():
 # ENHANCED GAME MECHANICS API ENDPOINTS (PHASE 3)
 # =====================================================
 
+@api_router.get("/game/rarity-system")
+async def get_rarity_system():
+    """Get the complete rarity system information including probabilities, rewards, and timers"""
+    rarity_info = game_engine.get_rarity_info()
+    return {
+        "rarity_system": rarity_info,
+        "total_rarities": len(rarity_info),
+        "description": "Rarity determines timer duration, points reward, and XP reward for each treat",
+        "note": "Higher ingredient count unlocks higher rarity tiers"
+    }
+
 # Enhanced Treat Creation with Game Engine
 @api_router.post("/treats/enhanced")
 async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_tasks: BackgroundTasks):
