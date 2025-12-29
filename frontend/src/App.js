@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 import WelcomeScreen from './components/WelcomeScreen';
 import LoadingScreen from './components/LoadingScreen';
 import MainMenu from './components/MainMenu';
-import GameLabNew from './components/GameLabNew';
+import GameLabRedesign from './components/GameLabRedesign';
 import MyTreats from './components/MyTreats';
 import Leaderboard from './components/Leaderboard';
 import Settings from './components/Settings';
