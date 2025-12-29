@@ -215,7 +215,7 @@ const GameLabRedesign = ({ playerAddress }) => {
       
       if (response.ok) {
         const data = await response.json();
-        setBrew Result(data);
+        setBrewResult(data);
         setShowResult(true);
         setSelectedIngredients([]);
         
