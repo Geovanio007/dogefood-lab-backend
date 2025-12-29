@@ -3,15 +3,9 @@ import os
 import sys
 
 # CRITICAL: Add api directory to Python path BEFORE any imports
-# This ensures that relative imports like 'from services.xxx' work correctly
 api_path = os.path.dirname(os.path.abspath(__file__))
 if api_path not in sys.path:
     sys.path.insert(0, api_path)
-
-# Also add the parent path for any root-level imports
-root_path = os.path.dirname(api_path)
-if root_path not in sys.path:
-    sys.path.insert(0, root_path)
 
 # Set up logging
 import logging
@@ -19,11 +13,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 try:
-    # Now import the FastAPI app
-    from server import app, api_router
+    # Import Mangum for ASGI -> Lambda/Vercel adapter
+    from mangum import Mangum
     
-    # Include the API router
-    app.include_router(api_router)
+    # Import the FastAPI app (router is already included in server.py)
+    from server import app
     
     logger.info("✅ DogeFood Lab API loaded successfully")
     
@@ -33,5 +27,5 @@ except Exception as e:
     traceback.print_exc()
     raise
 
-# Vercel expects a 'handler' or 'app' export
-handler = app
+# Vercel/Lambda expects a handler export - wrap FastAPI with Mangum
+handler = Mangum(app, lifespan="off")
