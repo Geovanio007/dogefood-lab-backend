@@ -527,7 +527,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                             {ingredient.category}
                           </div>
                           {ingredient.special_effect !== 'None' && (
-                            <Badge variant="outline" className="mt-2 text-xs border-purple-500/50 text-purple-300">
+                            <Badge variant="outline" className="mt-2 text-xs border-yellow-400/60 text-yellow-300">
                               {ingredient.special_effect}
                             </Badge>
                           )}
@@ -538,10 +538,10 @@ const GameLabRedesign = ({ playerAddress }) => {
                 </div>
 
                 {filteredIngredients.length === 0 && (
-                  <div className="text-center py-12 text-white/50">
+                  <div className="text-center py-12 text-sky-200">
                     <div className="text-4xl mb-4">🔒</div>
-                    <p>No ingredients available in this category yet.</p>
-                    <p className="text-sm mt-2">Level up to unlock more!</p>
+                    <p className="text-white">No ingredients available in this category yet.</p>
+                    <p className="text-sm mt-2 text-sky-200">Level up to unlock more!</p>
                   </div>
                 )}
               </CardContent>
