@@ -282,7 +282,7 @@ const GameLabRedesign = ({ playerAddress }) => {
         {/* Header with Player Stats */}
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
           {/* Player Card */}
-          <Card className="flex-1 bg-black/40 backdrop-blur-xl border-purple-500/30 overflow-hidden">
+          <Card className="flex-1 bg-gradient-to-br from-sky-600/95 to-blue-700/95 backdrop-blur-xl border-sky-400/50 overflow-hidden shadow-xl shadow-sky-500/20">
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
                 <div className="relative">
