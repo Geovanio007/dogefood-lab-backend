@@ -26,7 +26,11 @@ from services.ingredient_system import IngredientSystem
 from services.season_manager import SeasonManager
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+
+# Load .env only if it exists (for local development)
+env_file = ROOT_DIR / '.env'
+if env_file.exists():
+    load_dotenv(env_file)
 
 # Database connection with Atlas MongoDB
 try:
