@@ -1,70 +1,168 @@
-<analysis>
-The previous AI engineer successfully initiated the DogeFood Lab Game, building its core Web3 and UI elements. The work then transitioned to addressing multiple critical functional and UI bugs, while also introducing significant game mechanics and features. Challenges included persistent blockchain transaction failures, UI state inconsistencies, and visual requirements (e.g., specific Shiba Inu imagery, 3D vs. 2D lab UI).
+<analysis>**original_problem_statement:**
+The user's primary objective is to migrate the DogeFood Lab Game from Emergent's infrastructure to their personal Vercel and MongoDB Atlas accounts, making it fully independent and stable.
 
-Key development phases involved a major refactor of  to re-enable transaction-based NFT minting and persistent timers. A significant pivot occurred when the user requested a return to the original sack UI after a brief implementation of a 3D lab. This led to extensive React state management and hooks debugging, culminating in the complete restoration of the requested UI and resolution of complex React rendering issues.
+Throughout the session, the user added numerous requirements, including:
+- **Core Gameplay:** Fixing the character selection, ensuring the treat creation timer works correctly, and implementing a one-time character choice.
+- **UI/UX:** Redesigning banners (Season 1, Username), adding Return to Menu buttons on all pages, removing old UI elements, and optimizing the layout for the Telegram Mini App.
+- **New Features:**
+    - A VIP system that grants 500 bonus points and a badge to players holding a specific NFT ().
+    - A feature for players to create and update their own usernames.
+    - Displaying the chosen character's image and name on the leaderboard.
+- **Admin/Backend:** A mechanism to clear the leaderboard to officially start a new season and ensure all game state and timers are managed through the user's MongoDB Atlas instance.
+- **Deployment:** The entire application (frontend and backend) should be deployed and functional on the user's Vercel account.
 
-More recently, the focus shifted to implementing a Season 1: Offchain model, which involved disabling on-chain features, introducing placeholder UI elements, and future-proofing backend data for eventual Web3 migration. The final phase, still in progress, addresses critical data persistence and navigation bugs (due to React infinite loops) and the implementation of a new user registration system, ensuring a robust and stable foundation for the game.
-</analysis>
+**User's preferred language**: English
 
-<product_requirements>
-The DogeFood Lab Game is a Web3-integrated beta for DogeOS devnet, focused on blockchain/NFT-based treat creation, points, leveling, and competition. Players mix ingredients for treats with level-scaled preparation times and server-side randomized rarity. An ingredient system with secret combos exists. Each completed treat *should* mint an ERC721 NFT, remaining in progress until claimable. Player data is stored in MongoDB, and the game features 3-month seasons configurable via an admin panel. The UI should be clean and modern, featuring a Dogecoin palette, rounded buttons, playful iconography, a welcome/loading flow, wallet registration, leaderboard, real-time mixing timers, and treat notifications. The original Shiba Inu scientist UI and a sack system are explicitly required. For Season 1, the game must be fully offchain, with disabled Mint and Convert buttons as placeholders, but designed for seamless future onchain migration. A new requirement is a mandatory user registration system with a username and wallet signature.
-</product_requirements>
+**what currently exists?**
+The application is in a hybrid deployment state. The React frontend is successfully deployed and publicly accessible on the user's Vercel account. The FastAPI backend, however, is still running on Emergent's servers, but it is correctly configured and connected to the user's personal MongoDB Atlas database. The application includes a guest mode (for playing without a wallet), a VIP system for NFT holders, username creation, a redesigned UI, and optimizations for the Telegram Mini App. Most requested features have been implemented, but some critical bugs and the full backend migration remain outstanding.
 
-<key_technical_concepts>
--   **Frontend**: React.js, React-scripts, Tailwind CSS, RainbowKit, Wagmi, Viem.
--   **Backend**: FastAPI, MongoDB.
--   **Blockchain**: DogeOS Devnet, Solidity, Hardhat, OpenZeppelin (ERC-20, ERC-721).
--   **Tools**: Yarn, Supervisor.
--   **State Management**: React Context API, , , .
-</key_technical_concepts>
+**Last working item**:
+-   **Last item agent was working:** The agent addressed a user report that the leaderboard was not showing character images. The agent identified that the player's  field was  (as they hadn't chosen one yet) and updated the  component to display a default avatar in such cases, preventing a broken UI. This change was deployed to Vercel.
+-   **Status:** USER VERIFICATION PENDING
+-   **Agent Testing Done:** N (The fix was deployed, but not visually verified via screenshot post-deployment).
+-   **Which testing method agent to use?** Manual testing by the user is required to confirm the fix. If the issue persists, the next agent should use the screenshot tool to view the live leaderboard page.
+-   **User Testing Done:** N
 
-<code_architecture>
-The application utilizes a full-stack architecture with a React frontend, FastAPI backend, and MongoDB database, complemented by Solidity smart contracts.
+**All Pending/In progress Issue list**:
+-   **Issue 1:** Treat creation timer does not display on the frontend. (Priority: P0)
+-   **Issue 2:** Points system returns a generic 500 error instead of 404 for non-existent players. (Priority: P2)
 
-**Directory Structure:**
+    **Issues Detail:**
+    -   **Issue 1: Treat creation timer not displaying**
+        -   **Attempted fixes:** The agent first tried to fix client-side date parsing. When that failed, a new dedicated backend endpoint () was created to provide server-calculated timer data. The frontend was updated to use this endpoint. Agent  tests showed the API returning correct timer data, but the user reports the UI is still not showing the countdown.
+        -   **Next debug checklist:**
+            1.  In , use  within the  function to verify the data being received from the  endpoint.
+            2.  Inspect the  state to ensure it's being updated correctly.
+            3.  Examine the JSX rendering logic for the active treats list to confirm it is correctly accessing the  property.
+            4.  Use the screenshot tool to capture the game lab UI and the browser console after creating a treat to check for rendering issues or JavaScript errors.
+        -   **Why fix this issue and what will be achieved with the fix?** The treat timer is a core gameplay mechanic. Fixing it is essential for the game to be functional.
+        -   **Status:** IN PROGRESS
+        -   **Is recurring issue?** Y
+        -   **Should Test frontend/backend/both after fix?** Frontend
+        -   **Blocked on other issue:** None
+
+    -   **Issue 2: Points System Incorrect Error Code**
+        -   **Attempted fixes:** None in this session. This is a carry-over from the initial problem statement.
+        -   **Next debug checklist:**
+            1.  In , find the  endpoint.
+            2.  Add a check to see if the player exists in the database before attempting to retrieve stats.
+            3.  If the player is not found, .
+        -   **Why fix this issue and what will be achieved with the fix?** This aligns the API with REST best practices and allows the frontend to handle the player not found case more gracefully.
+        -   **Status:** NOT STARTED
+        -   **Is recurring issue?** N
+        -   **Should Test frontend/backend/both after fix?** Backend
+        -   **Blocked on other issue:** None
+
+**In progress Task List**:
+- None.
+
+**Upcoming and Future Tasks**
+- **Upcoming Tasks:**
+    -   **P0: Migrate Backend to Vercel:** The original goal of a full migration is incomplete. The agent pivoted to a frontend-only Vercel deployment due to Python dependency size limits. After optimizing , this blocker was removed, but the agent did not re-attempt the backend deployment. The next step is to configure  to deploy the FastAPI backend as a serverless function alongside the frontend, achieving the user's goal of full independence from Emergent's servers.
+
+- **Future Tasks:**
+    -   Implement a full anti-cheat system. (P1)
+    -   Implement Merkle tree generation for rewards. (P2)
+    -   Implement a policy for returning unclaimed tokens after 180 days. (P2)
+    -   Implement the full points-to-blockchain conversion system for redeeming  tokens. (P1)
+    -   Complete the full Web3 integration for reward claiming. (P1)
+
+**Completed work in this session**
+-   **Vercel Deployment:** Successfully deployed the React frontend to the user's Vercel account, overcoming numerous obstacles like corrupted files, function size limits, and auth issues.
+-   **Full-Stack Bug Fixing:** Resolved critical bugs that made the game unplayable, including fixing broken API calls, correcting the ingredient selection logic, and implementing a guest mode for wallet-less play.
+-   **VIP NFT Holder System:** Implemented a system to award 500 bonus points and a VIP status to players holding a specific NFT. This involved backend logic changes in  and frontend configuration updates.
+-   **Season 1 Launch:** Created an admin endpoint () to clear all player points and officially start the new season.
+-   **User Profile Features:**
+    -   Implemented a one-time, permanent character selection.
+    -   Added a UI for players to create and update their own .
+    -   Updated the leaderboard to display the player's chosen character image and name.
+-   **UI/UX Overhaul:**
+    -   Redesigned the Season 1 and Username banners with a modern, vibrant style.
+    -   Added Return to Menu buttons across multiple game pages for better navigation.
+    -   Optimized the application's CSS and viewport settings to ensure a proper fit on mobile devices within the Telegram Mini App.
+
+**Earlier issues found/mentioned but not fixed**
+-   **Issue 1: Points System Incorrect Error Code:** Same as listed in All Pending/In progress Issue list.
+
+**Known issue recurrence from previous fork**
+-   **Issue recurrence in previous fork:** Buggy character selection flow.
+-   **Recurrence count:** 3-4 attempts in the previous session.
+-   **Status:** RESOLVED. The entire flow was reworked, tested, and is now stable, saving the selection to the database.
+
+**Code Architecture**
 
 
-**Key Files and Changes:**
-*   ****: The core FastAPI application. It has been extensively modified to:
-    *   Handle  serialization issues.
-    *   Implement Season 1 specific logic for treat creation, storing future-proof NFT metadata (, , , custom image URL).
-    *   Adjust leaderboard queries to include all players, not just NFT holders.
-    *   Add a disabled placeholder endpoint for  and a  endpoint.
-    *   Introduce a new  endpoint for user registration.
-*   ****: A newly created script to ensure a clean database state by removing test/contaminated player data.
-*   ****: The main entry point. It manages global state and routing. Recent changes include:
-    *   Fixing the  transition using .
-    *   Integrating the  component, managing  state, and conditionally rendering the registration flow or the main application.
-*   ****: This component underwent significant refactoring multiple times. It now displays the original sack UI, includes real-time mixing timers with progress bars, and dynamically updates sack progress. It also skips NFT minting in Season 1 and incorporates logic to conditionally render content based on user registration status.
-*   ****: Displays a prominent Season 1: Offchain Launch banner. A new Active Treats card was added for dashboard navigation. Critical  dependencies were fixed, and  is now called upon wallet connection.
-*   ****: Updated for Season 1 to display disabled Mint NFT - Coming Soon buttons and a disabled Convert to  button. It now fetches and displays user treats from the backend API, incorporating the custom Shiba treat image.
-*   ** (New)**: A global component responsible for polling treat status and showing toast notifications when treats are ready. An infinite loop bug in its  was resolved.
-*   ** (New)**: A new component introduced to facilitate user registration, requiring a username and wallet signature.
-*   ****: Central to game state. A  function was added to fetch comprehensive player data from the backend when a wallet connects. This function is now memoized using  to prevent infinite loops.
-*   ****: Corrected to properly receive and utilize the  prop for fetching active treats.
-</code_architecture>
+**Key Technical Concepts**
+-   **Frontend**: React.js, Tailwind CSS, , Wagmi, Viem, 
+-   **Backend**: FastAPI, Pydantic, MongoDB (via Atlas)
+-   **Deployment**: Vercel (for frontend), 
+-   **Infrastructure**: **Hybrid Model** (Frontend on Vercel, Backend on Emergent's servers)
 
-<pending_tasks>
--   **Off-chain Services (Detailed)**: Full anti-cheat, ranking, Merkle tree generation, IPFS publishing.
--   **Unclaimed Tokens Policy**: Logic for returning tokens after 180 days.
--   **Wallet Cap**: Optional reward cap per wallet.
--   **Points Conversion to Blockchain**: Full implementation of redeeming points for  tokens.
--   **Full Web3 Integration**: Complete reward claiming functionality.
--   **User Registration Completion**: Finalize frontend integration of the user registration system.
-</pending_tasks>
+**key DB schema**
+-   **players:** 
+-   **treats:** 
+-   **timers:** A new collection was created to support the  endpoint, storing pre-calculated timer data for active treats.
 
-<current_work>
-Immediately before this summary request, the previous AI engineer was addressing a user report concerning persistent mock data, a stuck mixing timer, and a new feature request for mandatory user registration.
+**changes in tech stack**
+-   **Hosting:** The application was partially migrated. The frontend now runs on **Vercel**, while the backend remains on Emergent's servers.
+-   **Database:** Successfully migrated from an Emergent-hosted instance to the user's **MongoDB Atlas** cluster.
 
-The engineer first tackled the mock data issue by creating and executing a  script to clear contaminated database entries. Simultaneously, the mixing timer bug in  was investigated and fixed, likely by refining state management and  dependencies to ensure the progress bar updates in real-time during mixing.
+**All files of reference**
+-   : The current configuration for the frontend-only Vercel deployment. Will need modification for backend deployment.
+-   : The heart of the backend logic, containing all new endpoints and fixes related to VIPs, admin controls, and user profiles.
+-   : The core gameplay component, which was the focus of major bug fixes and feature updates (timer, ingredient selection).
+-   : The main menu UI, which received a significant redesign for banners and the new username feature.
+-   : The optimized dependency list that makes backend deployment to Vercel now feasible.
 
-The primary focus then shifted to implementing the new user registration system:
-1.  A new React component, , was created for the registration UI.
-2.  A corresponding backend endpoint, , was added to  to handle the registration logic (username and wallet signature synchronization).
-3.  The  was updated to conditionally gate access to the lab based on whether a user is registered.
-4.  The  file was in the process of being modified to manage the application-wide  state and to conditionally render the  component or the main game content. This modification of  is the last recorded action. The state of the product is that the registration components and backend endpoint are mostly in place, but the full integration into the  to control access is still ongoing.
-</current_work>
+**Areas that need refactoring**:
+-   The  in  points to an Emergent preview URL. This is a temporary measure and must be updated to point to the user's Vercel backend URL once the backend migration is complete.
 
-<optional_next_step>
-Complete the integration of the User Registration component into .
-</optional_next_step>
+**key api endpoints**
+-   : **(NEW)** Updates a player's nickname and sets their character choice (one-time).
+-   : **(NEW)** Admin endpoint to clear all player points and start a new season.
+-   : **(NEW)** Fetches active treats for a user with server-calculated remaining time.
+-   : **(UPDATED)** Verifies NFT ownership, creates a player record if one doesn't exist, and grants VIP status with 500 bonus points.
+-   : **(UPDATED)** Now includes  data and is resilient to players missing a  field.
+
+**Critical Info for New Agent**
+-   **Hybrid Deployment is Temporary:** The current setup (Vercel FE, Emergent BE) is a workaround. The primary goal of a full migration is not yet complete. Your first major task should be to attempt deploying the FastAPI backend to Vercel, as the initial blocker (dependency size) has been solved.
+-   **P0 Bug - Treat Timer:** The most critical bug is the non-functional treat timer display. The user has reported this multiple times. Even though a new backend endpoint was created, the UI is still not showing the countdown. This breaks the core game loop and must be your immediate priority.
+-   **Backend is on Atlas:** All backend operations are correctly reading from and writing to the user's personal MongoDB Atlas database. The backend code itself is just executing on Emergent's servers.
+
+**documents and test reports created in this job**
+-   
+-   
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **User (msg 576):** Provided wallet address for missing 500 NFT bonus points and reported that the leaderboard does not show character images/names. (Status: Agent manually awarded points and deployed a fix for the default image).
+2.  **User (msg 520):** Reported multiple issues: leaderboard not fetching, NFT points not being awarded automatically, and the treat timer is still broken. Requested a redesign of the username banner. (Status: All addressed, but timer fix was ineffective).
+3.  **User (msg 465):** Requested character choice be permanent, character image/name be shown on the leaderboard, and the ability for players to create usernames. (Status: Implemented).
+4.  **User (msg 416):** Requested the VIP/NFT holder feature (500 bonus points), clearing the leaderboard to start the season, and ensuring the season timer is live. (Status: Implemented).
+5.  **User (msg 370):** Requested a redesign of the Season 1 banner, a return to menu button on the active treats page, and reported the treat timer was still broken. (Status: Implemented banner/button; timer issue persists).
+6.  **User (msg 344):** Requested optimization of the UI for the Telegram Mini App. (Status: Implemented).
+7.  **User (msg 274):** Reported the treat timer was not showing a countdown and requested a return to menu button on game pages. (Status: Implemented button; timer issue persists).
+8.  **User (msg 167):** Stated the deployed game was not functional and requested the agent to fix all game mechanisms. (Status: In Progress).
+9.  **User (msg 99, 107):** Gave instructions to the agent regarding disabling Vercel's deployment protection. (Status: Resolved).
+10. **User (msg 5):** Gave initial approval to proceed with the agent's plan.
+
+**Project Health Check:**
+-   **Working:** Frontend is deployed to Vercel and connected to the backend. User management, character selection, and leaderboard display are mostly functional. The database is correctly migrated to MongoDB Atlas.
+-   **Broken:**
+    -   **Treat Timer Display:** The UI does not show the countdown for treat creation, which is a core gameplay mechanic.
+    -   **Backend Deployment:** The backend has not been migrated to the user's Vercel infrastructure, failing to meet a primary objective of the project.
+-   **Mocked:** No components are mocked.
+
+**3rd Party Integrations**
+-   **Vercel:** Used for deploying the frontend. Requires a user-provided API Key.
+-   **MongoDB Atlas:** Cloud database service for all game data. Requires a user-provided connection string.
+-   **GitHub:** Used for source control and CI/CD with Vercel. Requires a user-provided PAT.
+-   **Telegram Mini App:** The application is optimized to run inside Telegram's web view.
+
+**Testing status**
+-   **Testing agent used after significant changes:** YES. The testing agent was used multiple times to validate full user flows and was critical in identifying the ingredient selection bug.
+-   **Troubleshoot agent used after agent stuck in loop:** NO.
+-   **Test files created:** None permanent.
+-   **Known regressions:** The treat timer display. Despite multiple fix attempts, the issue persists from the user's perspective, making it a recurring bug/regression.
+
+**What agent forgot to execute**
+-   The agent never completed the original task of migrating the backend to Vercel. After resolving the dependency size issue that initially blocked the deployment, the agent did not circle back to re-attempt the backend migration, leaving the project in a temporary hybrid state.</analysis>
