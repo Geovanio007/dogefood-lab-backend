@@ -5056,12 +5056,6 @@ def main():
             print(f"📊 Success Rate: {success_rate:.1f}% (need 80%+ for full functionality)")
             print("\n⚠️ Some features may need fixes!")
             return 1
-            
-        except Exception as e:
-            print(f"❌ Game lab features tests failed with exception: {str(e)}")
-            print("\n🚨 CRITICAL ERROR: Cannot verify game functionality")
-            print("⚠️ Review system logs for debugging!")
-            return 1
 
     def test_render_backend_migration(self):
         """Test the DogeFood Lab Game migrated to Render backend infrastructure"""
