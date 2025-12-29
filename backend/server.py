@@ -1045,7 +1045,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             }
         )
         
-        # Award points in background
+        # Award points in background (pass pre-calculated rewards)
         background_tasks.add_task(
             award_treat_creation_points,
             treat_data.creator_address,
@@ -1054,8 +1054,17 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 "ingredients": treat_outcome["ingredients_used"],
                 "level": treat_data.player_level,
                 "secret_combo": treat_outcome.get("secret_combo", {}),
-                "season_id": season_id
+                "season_id": season_id,
+                "points_reward": treat_outcome.get("points_reward", 10),
+                "xp_reward": treat_outcome.get("xp_reward", 5)
             }
+        )
+        
+        # Award XP directly to player based on rarity
+        xp_to_award = treat_outcome.get("xp_reward", 5) + sack_bonus_xp
+        await db.players.update_one(
+            {"address": treat_data.creator_address},
+            {"$inc": {"experience": xp_to_award}}
         )
         
         # Convert treat_dict to JSON-serializable format
