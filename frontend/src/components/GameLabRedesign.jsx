@@ -394,7 +394,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                     {validation.special_effects.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {validation.special_effects.map((effect, i) => (
-                          <Badge key={i} variant="outline" className="text-xs border-purple-500/50 text-purple-300">
+                          <Badge key={i} variant="outline" className="text-xs border-yellow-400/50 text-yellow-300">
                             ✨ {effect}
                           </Badge>
                         ))}
@@ -402,7 +402,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                     )}
                     
                     {validation.has_mythic_catalyst && (
-                      <div className="mt-2 text-yellow-400 text-xs flex items-center gap-1">
+                      <div className="mt-2 text-yellow-300 text-xs flex items-center gap-1">
                         <span>🌟</span> Mythic catalyst active!
                       </div>
                     )}
@@ -411,14 +411,14 @@ const GameLabRedesign = ({ playerAddress }) => {
 
                 {/* Rarity Chances */}
                 <div className="mb-4">
-                  <div className="text-white/50 text-xs mb-2">Possible Rarities:</div>
+                  <div className="text-sky-200 text-xs mb-2 font-semibold">Possible Rarities:</div>
                   <div className="flex flex-wrap gap-1">
                     {['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Mythic'].map(rarity => {
                       const canGet = validation?.possible_rarities?.includes(rarity);
                       return (
                         <Badge 
                           key={rarity}
-                          className={`text-xs ${canGet ? RARITY_STYLES[rarity]?.bg : 'bg-white/5 opacity-30'} text-white`}
+                          className={`text-xs ${canGet ? RARITY_STYLES[rarity]?.bg : 'bg-white/10 opacity-40'} text-white`}
                         >
                           {RARITY_STYLES[rarity]?.emoji}
                         </Badge>
@@ -433,8 +433,8 @@ const GameLabRedesign = ({ playerAddress }) => {
                   disabled={selectedIngredients.length < 1 || isBrewing}
                   className={`w-full h-14 text-lg font-bold transition-all ${
                     selectedIngredients.length >= 1 && !isBrewing
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-lg shadow-purple-500/30'
-                      : 'bg-gray-600 cursor-not-allowed'
+                      ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-white shadow-lg shadow-yellow-500/40'
+                      : 'bg-sky-800/50 cursor-not-allowed text-white/50'
                   }`}
                 >
                   {isBrewing ? (
