@@ -135,6 +135,9 @@ const InnerApp = () => {
     </div>
   );
 
+  // Get the effective player address (wallet or telegram or guest)
+  const effectiveAddress = address || (telegramUser ? `TG_${telegramUser.id}` : null);
+
   return (
     <GameProvider>
       <div className="App">
