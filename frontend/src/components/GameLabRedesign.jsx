@@ -200,7 +200,7 @@ const GameLabRedesign = ({ playerAddress }) => {
     if (selectedIngredients.length < 1) return;
     
     setIsBrewing(true);
-    setBrew Result(null);
+    setBrewResult(null);
     
     try {
       const response = await fetch(`${API_URL}/api/treats/enhanced`, {
