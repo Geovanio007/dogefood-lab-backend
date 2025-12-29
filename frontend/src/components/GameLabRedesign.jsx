@@ -78,7 +78,7 @@ const GameLabRedesign = ({ playerAddress }) => {
   
   // Brewing
   const [isBrewing, setIsBrewing] = useState(false);
-  const [brewResult, setBrew Result] = useState(null);
+  const [brewResult, setBrewResult] = useState(null);
   const [showResult, setShowResult] = useState(false);
   
   // Active treats
