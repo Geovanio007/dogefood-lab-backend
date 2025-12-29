@@ -4,8 +4,20 @@ import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { Card, CardContent } from './ui/card';
+import INGREDIENT_ICONS from '../config/ingredientIcons';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+
+// Helper to get ingredient icon
+const getIcon = (ingredientId) => {
+  const data = INGREDIENT_ICONS[ingredientId];
+  return data?.icon || null;
+};
+
+const getEmoji = (ingredientId) => {
+  const data = INGREDIENT_ICONS[ingredientId];
+  return data?.emoji || '❓';
+};
 
 // Category styling
 const CATEGORY_STYLES = {
