@@ -89,7 +89,9 @@ class RaritySystemTester:
             probability_errors = []
             for rarity, expected_prob in expected_probabilities.items():
                 if rarity in rarity_system:
-                    actual_prob = rarity_system[rarity].get('probability', 0)
+                    actual_prob_str = rarity_system[rarity].get('probability', '0%')
+                    # Convert "45.0%" to 45.0
+                    actual_prob = float(actual_prob_str.replace('%', ''))
                     if abs(actual_prob - expected_prob) > 0.1:  # Allow small floating point differences
                         probability_errors.append(f"{rarity}: expected {expected_prob}%, got {actual_prob}%")
                     else:
