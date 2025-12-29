@@ -73,6 +73,11 @@ const GameLabRedesign = ({ playerAddress }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  // Character selection state
+  const [showCharacterSelection, setShowCharacterSelection] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState(null);
+  const [selectingCharacter, setSelectingCharacter] = useState(false);
+  
   // Player data
   const [playerData, setPlayerData] = useState(null);
   const [playerLevel, setPlayerLevel] = useState(1);
@@ -97,6 +102,37 @@ const GameLabRedesign = ({ playerAddress }) => {
   const [activeTreats, setActiveTreats] = useState([]);
   const [currentTime, setCurrentTime] = useState(Date.now());
 
+  // Character data
+  const characters = [
+    {
+      id: 'max',
+      name: 'Shiba Scientist Max',
+      description: 'The clever and curious one',
+      personality: 'Methodical and analytical, Max loves to understand the science behind every reaction.',
+      image: 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/5thty2tp_20250921_1510_Doge%20Scientist%20Trio_simple_compose_01k5p68s01e1p8f81hk4dvm5tm.png',
+      traits: ['🧠 Analytical', '🔬 Precise', '📚 Studious'],
+      bonus: '+10% Experience from treats'
+    },
+    {
+      id: 'rex',
+      name: 'Shiba Scientist Rex',
+      description: 'The mischievous genius',
+      personality: 'Bold and experimental, Rex loves to try wild combinations.',
+      image: 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/w3y5oh69_assets_task_01k5p6sq20fh68gb4hjbs9271e_1758460753_img_0.webp',
+      traits: ['⚡ Creative', '🎯 Risk-taker', '🎪 Playful'],
+      bonus: '+15% Rare treat chance'
+    },
+    {
+      id: 'luna',
+      name: 'Shiba Scientist Luna',
+      description: 'The smart and fearless female scientist',
+      personality: 'Confident and innovative, Luna excels at optimization.',
+      image: 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/m1k3hm3c_assets_task_01k5p7arcvf6jt34pk82yke1sh_1758461571_img_0.webp',
+      traits: ['💪 Fearless', '⚡ Efficient', '🌟 Innovative'],
+      bonus: '+20% Points from treats'
+    }
+  ];
+
   // Load player data
   const loadPlayerData = useCallback(async () => {
     try {
@@ -107,9 +143,22 @@ const GameLabRedesign = ({ playerAddress }) => {
         setPlayerLevel(data.level || 1);
         setPlayerXP(data.experience || 0);
         setPlayerPoints(data.points || 0);
+        
+        // Check if player has selected a character
+        if (data.selected_character) {
+          const char = characters.find(c => c.id === data.selected_character);
+          setSelectedCharacter(char || null);
+          setShowCharacterSelection(false);
+        } else {
+          setShowCharacterSelection(true);
+        }
+      } else {
+        // New player - show character selection
+        setShowCharacterSelection(true);
       }
     } catch (err) {
       console.error('Error loading player:', err);
+      setShowCharacterSelection(true);
     }
   }, [playerAddress]);
 
