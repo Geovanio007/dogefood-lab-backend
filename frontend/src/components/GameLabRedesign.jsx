@@ -196,6 +196,37 @@ const GameLabRedesign = ({ playerAddress }) => {
     }
   }, [playerAddress]);
 
+  // Handle character selection
+  const handleCharacterSelect = async (character) => {
+    setSelectingCharacter(true);
+    try {
+      const response = await fetch(`${API_URL}/api/player/${playerAddress}/select-character?character_id=${character.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedCharacter(character);
+        setShowCharacterSelection(false);
+        // Reload player data to get updated character info
+        await loadPlayerData();
+        console.log('Character selected:', data);
+      } else {
+        const errorData = await response.json();
+        console.error('Error selecting character:', errorData);
+        // If character already selected, just proceed
+        if (errorData.detail?.includes('already')) {
+          setShowCharacterSelection(false);
+        }
+      }
+    } catch (err) {
+      console.error('Error selecting character:', err);
+    } finally {
+      setSelectingCharacter(false);
+    }
+  };
+
   // Initial load
   useEffect(() => {
     const init = async () => {
