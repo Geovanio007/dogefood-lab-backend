@@ -484,132 +484,40 @@ const Leaderboard = () => {
                 })}
               </div>
             </>
-          )} 
-                        key={entry.address} 
-                        className={`border-b border-gray-100 hover:bg-slate-50 dark:bg-slate-800 transition-colors ${
-                          isCurrentUser ? 'bg-blue-50 border-blue-200' : ''
-                        } ${rank <= 3 ? `leaderboard-row rank-${rank}` : 'leaderboard-row'}`}
-                      >
-                        <td className="py-4 px-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-2xl">{getRankIcon(rank)}</span>
-                            <span className={`font-bold ${getRankColor(rank)}`}>
-                              #{rank}
-                            </span>
-                          </div>
-                        </td>
-                        
-                        <td className="py-4 px-2">
-                          <div className="flex items-center gap-3">
-                            {/* Character Image */}
-                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg flex-shrink-0">
-                              {entry.character_image ? (
-                                <img 
-                                  src={entry.character_image} 
-                                  alt={entry.character_name || 'Scientist'}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-500 to-sky-400 flex items-center justify-center">
-                                  <span className="text-2xl">🧪</span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              {/* Character Name - show default if not selected */}
-                              <div className="text-xs text-purple-600 font-semibold">
-                                {entry.character_name || (entry.is_vip ? '🌟 VIP Scientist' : '🧪 Scientist')}
-                              </div>
-                              {/* Player Username */}
-                              <div className="font-bold text-gray-800 playful-text truncate">
-                                {entry.nickname || `Scientist #${rank}`}
-                              </div>
-                              {/* Wallet Address */}
-                              <div className="font-mono text-xs text-slate-500 dark:text-slate-300">
-                                {formatAddress(entry.address)}
-                              </div>
-                              {/* Badges */}
-                              <div className="flex items-center gap-1 mt-1 flex-wrap">
-                                {isCurrentUser && (
-                                  <Badge className="bg-blue-500 text-white text-xs">You</Badge>
-                                )}
-                                {entry.is_vip && (
-                                  <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs">VIP</Badge>
-                                )}
-                                {!entry.selected_character && (
-                                  <Badge className="bg-gray-400 text-white text-xs">No Character</Badge>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        
-                        <td className="py-4 px-2 text-center">
-                          <div className="font-bold text-green-600 text-lg playful-text">
-                            {entry.points.toLocaleString()}
-                          </div>
-                        </td>
-                        
-                        <td className="py-4 px-2 text-center">
-                          <Badge variant="outline" className="font-bold">
-                            Level {entry.level}
-                          </Badge>
-                        </td>
-                        
-                        <td className="py-4 px-2 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            {entry.is_nft_holder && <Crown className="w-5 h-5 text-purple-500" />}
-                            <Badge className={entry.is_nft_holder ? 'vip-badge' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'}>
-                              {entry.is_nft_holder ? 'VIP Scientist' : 'Scientist'}
-                            </Badge>
-                          </div>
-                        </td>
-                        
-                        <td className="py-4 px-2 text-right">
-                          <div className="font-bold text-yellow-600">
-                            {rank <= 50 ? calculateRewards(rank) : '0 LAB'}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Rewards Info */}
-      <Card className="glass-panel mt-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Star className="w-5 h-5" />
+      {/* Rewards Info - Mobile Optimized */}
+      <Card className="glass-panel mt-6 sm:mt-8">
+        <CardHeader className="pb-2 sm:pb-4">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Star className="w-4 h-4 sm:w-5 sm:h-5" />
             Reward Structure
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-3 gap-2 sm:gap-6">
             <div className="text-center">
-              <div className="text-4xl mb-2">🥇</div>
-              <h3 className="font-bold text-lg text-yellow-500">Ranks 1-10</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-200">1,000 - 10,000 LAB</p>
+              <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">🥇</div>
+              <h3 className="font-bold text-xs sm:text-lg text-yellow-500">Ranks 1-10</h3>
+              <p className="text-[10px] sm:text-sm text-slate-600 dark:text-slate-200">1K - 10K LAB</p>
             </div>
             <div className="text-center">
-              <div className="text-4xl mb-2">🥈</div>
-              <h3 className="font-bold text-lg text-slate-500 dark:text-slate-300">Ranks 11-25</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-200">250 - 1,000 LAB</p>
+              <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">🥈</div>
+              <h3 className="font-bold text-xs sm:text-lg text-slate-500 dark:text-slate-300">Ranks 11-25</h3>
+              <p className="text-[10px] sm:text-sm text-slate-600 dark:text-slate-200">250 - 1K LAB</p>
             </div>
             <div className="text-center">
-              <div className="text-4xl mb-2">🥉</div>
-              <h3 className="font-bold text-lg text-amber-600 dark:text-amber-400">Ranks 26-50</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-200">125 - 250 LAB</p>
+              <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">🥉</div>
+              <h3 className="font-bold text-xs sm:text-lg text-amber-600 dark:text-amber-400">Ranks 26-50</h3>
+              <p className="text-[10px] sm:text-sm text-slate-600 dark:text-slate-200">125 - 250 LAB</p>
             </div>
           </div>
           
-          <div className="mt-6 p-4 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg">
-            <p className="text-blue-800 dark:text-blue-200 text-sm text-center">
-              🎯 <strong>Remember:</strong> Only the top 50 DogeFood NFT holders are eligible for seasonal $LAB rewards!
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg">
+            <p className="text-blue-800 dark:text-blue-200 text-xs sm:text-sm text-center">
+              🎯 <strong>Remember:</strong> Only top 50 DogeFood NFT holders are eligible for $LAB rewards!
             </p>
           </div>
         </CardContent>
