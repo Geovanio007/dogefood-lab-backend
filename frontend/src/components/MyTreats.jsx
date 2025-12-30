@@ -90,7 +90,7 @@ const MyTreats = () => {
           </Link>
           <div>
             <h1 className="text-4xl font-bold doge-gradient mb-2">🎨 My Treats</h1>
-            <p className="text-gray-600">Your collection of magical Dogetreats</p>
+            <p className="text-slate-600 dark:text-slate-300">Your collection of magical Dogetreats</p>
           </div>
         </div>
         
@@ -107,14 +107,14 @@ const MyTreats = () => {
         <Card className="glass-panel">
           <CardContent className="text-center p-6">
             <div className="text-3xl font-bold doge-gradient">{treats.length}</div>
-            <div className="text-sm text-gray-600">Total Treats Created</div>
+            <div className="text-sm text-slate-600 dark:text-slate-300">Total Treats Created</div>
           </CardContent>
         </Card>
         
         <Card className="glass-panel">
           <CardContent className="text-center p-6">
             <div className="text-3xl font-bold text-purple-600">{isNFTHolder ? '1+' : '0'}</div>
-            <div className="text-sm text-gray-600">DogeFood NFTs</div>
+            <div className="text-sm text-slate-600 dark:text-slate-300">DogeFood NFTs</div>
           </CardContent>
         </Card>
         
@@ -125,7 +125,7 @@ const MyTreats = () => {
             <Button 
               disabled 
               size="sm" 
-              className="bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300 text-xs"
+              className="bg-slate-300 dark:bg-slate-600 text-slate-500 dark:text-slate-300 cursor-not-allowed hover:bg-gray-300 text-xs"
               title="Points conversion available at season end"
             >
               Convert to $LAB
@@ -137,7 +137,7 @@ const MyTreats = () => {
         <Card className="glass-panel">
           <CardContent className="text-center p-6">
             <div className="text-3xl font-bold text-yellow-600">0.00</div>
-            <div className="text-sm text-gray-600">$LAB Tokens</div>
+            <div className="text-sm text-slate-600 dark:text-slate-300">$LAB Tokens</div>
           </CardContent>
         </Card>
       </div>
@@ -154,11 +154,11 @@ const MyTreats = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-600">Wallet Address:</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">Wallet Address:</p>
                 <p className="font-mono text-sm break-all">{address}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">NFT Holder Status:</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300">NFT Holder Status:</p>
                 <Badge className={isNFTHolder ? "bg-purple-500 text-white" : "bg-gray-500 text-white"}>
                   {isNFTHolder ? "VIP Scientist 👨‍🔬" : "Regular User"}
                 </Badge>
@@ -191,7 +191,7 @@ const MyTreats = () => {
           <CardContent className="text-center p-12">
             <div className="text-6xl mb-4">🔄</div>
             <h3 className="text-2xl font-bold text-gray-600 mb-2">Loading your treats...</h3>
-            <p className="text-gray-500">Fetching your magical creations from the lab!</p>
+            <p className="text-slate-500 dark:text-slate-300">Fetching your magical creations from the lab!</p>
           </CardContent>
         </Card>
       ) : error ? (
@@ -263,12 +263,12 @@ const MyTreats = () => {
               <CardContent>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm font-semibold text-gray-600">Flavor Profile:</p>
+                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">Flavor Profile:</p>
                     <p className="text-sm">{treat.flavor || 'Enhanced'}</p>
                   </div>
                   
                   <div>
-                    <p className="text-sm font-semibold text-gray-600">Ingredients Used:</p>
+                    <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">Ingredients Used:</p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {treat.ingredients && Array.isArray(treat.ingredients) ? treat.ingredients.map((ingredient, idx) => (
                         <Badge key={idx} variant="outline" className="text-xs">
@@ -282,7 +282,7 @@ const MyTreats = () => {
                     </div>
                   </div>
                   
-                  <div className="flex justify-between items-center text-sm text-gray-500">
+                  <div className="flex justify-between items-center text-sm text-slate-500 dark:text-slate-300">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
                       {treat.created_at ? new Date(treat.created_at).toLocaleDateString() : 'Recently'}
@@ -297,7 +297,7 @@ const MyTreats = () => {
                   <div className="pt-3 border-t border-gray-200">
                     <Button 
                       disabled 
-                      className="w-full bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300"
+                      className="w-full bg-slate-300 dark:bg-slate-600 text-slate-500 dark:text-slate-300 cursor-not-allowed hover:bg-gray-300"
                       title="Minting will be available in future seasons"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />

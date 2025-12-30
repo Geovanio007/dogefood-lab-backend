@@ -65,7 +65,7 @@ const Settings = () => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Sound Effects</div>
-                <div className="text-sm text-gray-600">Enable mixing sounds and UI feedback</div>
+                <div className="text-sm text-slate-600 dark:text-slate-300">Enable mixing sounds and UI feedback</div>
               </div>
               <Switch
                 checked={settings.soundEnabled}
@@ -76,7 +76,7 @@ const Settings = () => {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="font-medium">Background Music Volume</div>
-                <span className="text-sm text-gray-600">{settings.musicVolume[0]}%</span>
+                <span className="text-sm text-slate-600 dark:text-slate-300">{settings.musicVolume[0]}%</span>
               </div>
               <Slider
                 value={settings.musicVolume}
@@ -91,7 +91,7 @@ const Settings = () => {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="font-medium">Effects Volume</div>
-                <span className="text-sm text-gray-600">{settings.effectsVolume[0]}%</span>
+                <span className="text-sm text-slate-600 dark:text-slate-300">{settings.effectsVolume[0]}%</span>
               </div>
               <Slider
                 value={settings.effectsVolume}
@@ -117,7 +117,7 @@ const Settings = () => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Particle Effects</div>
-                <div className="text-sm text-gray-600">Show floating particles and animations</div>
+                <div className="text-sm text-slate-600 dark:text-slate-300">Show floating particles and animations</div>
               </div>
               <Switch
                 checked={settings.particleEffects}
@@ -128,7 +128,7 @@ const Settings = () => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Reduced Motion</div>
-                <div className="text-sm text-gray-600">Minimize animations for better performance</div>
+                <div className="text-sm text-slate-600 dark:text-slate-300">Minimize animations for better performance</div>
               </div>
               <Switch
                 checked={settings.reducedMotion}
@@ -139,7 +139,7 @@ const Settings = () => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Dark Mode</div>
-                <div className="text-sm text-gray-600">Switch to darker theme (Coming Soon!)</div>
+                <div className="text-sm text-slate-600 dark:text-slate-300">Switch to darker theme (Coming Soon!)</div>
               </div>
               <Switch
                 checked={settings.darkMode}
@@ -162,7 +162,7 @@ const Settings = () => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Auto-Mix Mode</div>
-                <div className="text-sm text-gray-600">Automatically start mixing when ingredients are selected</div>
+                <div className="text-sm text-slate-600 dark:text-slate-300">Automatically start mixing when ingredients are selected</div>
               </div>
               <Switch
                 checked={settings.autoMix}
@@ -173,7 +173,7 @@ const Settings = () => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Push Notifications</div>
-                <div className="text-sm text-gray-600">Get notified about new features and events</div>
+                <div className="text-sm text-slate-600 dark:text-slate-300">Get notified about new features and events</div>
               </div>
               <Switch
                 checked={settings.notifications}
@@ -195,14 +195,14 @@ const Settings = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="p-4 bg-white/20 rounded-xl">
                 <div className="font-medium mb-2">Account Status</div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-slate-600 dark:text-slate-300">
                   {isNFTHolder ? '🌟 VIP Scientist' : '👨‍🔬 Regular Scientist'}
                 </div>
               </div>
               
               <div className="p-4 bg-white/20 rounded-xl">
                 <div className="font-medium mb-2">Data Storage</div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-slate-600 dark:text-slate-300">
                   Local browser storage
                 </div>
               </div>
@@ -231,27 +231,27 @@ const Settings = () => {
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <div className="text-6xl mb-4">🐕‍🦺</div>
-            <p className="text-gray-700">
+            <p className="text-slate-700 dark:text-slate-200">
               A playful Web3 game inspired by Dogecoin culture. Mix, create, and compete!
             </p>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 text-sm">
               <div className="p-3 bg-white/20 rounded-lg">
                 <div className="font-medium">Version</div>
-                <div className="text-gray-600">1.0.0 Alpha</div>
+                <div className="text-slate-600 dark:text-slate-300">1.0.0 Alpha</div>
               </div>
               <div className="p-3 bg-white/20 rounded-lg">
                 <div className="font-medium">Network</div>
-                <div className="text-gray-600">Ethereum Mainnet</div>
+                <div className="text-slate-600 dark:text-slate-300">Ethereum Mainnet</div>
               </div>
               <div className="p-3 bg-white/20 rounded-lg">
                 <div className="font-medium">Status</div>
-                <div className="text-gray-600">🔴 Prototype</div>
+                <div className="text-slate-600 dark:text-slate-300">🔴 Prototype</div>
               </div>
             </div>
             
             <div className="border-t border-white/20 pt-6 mt-6">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-slate-500 dark:text-slate-300">
                 Built with React, Three.js, and Web3 technologies.<br />
                 Much love to the Dogecoin community! 🚀
               </p>

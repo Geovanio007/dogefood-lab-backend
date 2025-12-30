@@ -199,7 +199,7 @@ const MainMenu = () => {
                   </Badge>
                 )}
                 <div className="glass-panel p-3">
-                  <div className="text-sm text-gray-600">Level {currentLevel}</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-300">Level {currentLevel}</div>
                   <div className="font-bold text-lg">{points} Points</div>
                 </div>
               </div>

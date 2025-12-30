@@ -29,13 +29,13 @@ const ActiveTreats = ({ playerAddress }) => {
           <div className="flex items-center gap-2">
             <span className="text-2xl">{treat.image || '🍖'}</span>
             <div>
-              <h3 className="font-bold text-sm text-gray-800">{treat.name}</h3>
+              <h3 className="font-bold text-sm text-slate-800 dark:text-white">{treat.name}</h3>
               <span className={`
                 text-xs px-2 py-1 rounded-full font-medium
                 ${treat.rarity === 'Legendary' ? 'bg-yellow-100 text-yellow-800' :
                   treat.rarity === 'Epic' ? 'bg-purple-100 text-purple-800' :
                   treat.rarity === 'Rare' ? 'bg-blue-100 text-blue-800' :
-                  'bg-gray-100 text-gray-800'}
+                  'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-white'}
               `}>
                 {treat.rarity}
               </span>
@@ -56,12 +56,12 @@ const ActiveTreats = ({ playerAddress }) => {
             </div>
           ) : (
             <div className="text-center">
-              <div className="text-sm font-mono text-gray-600">
+              <div className="text-sm font-mono text-slate-600 dark:text-slate-300">
                 {String(timeInfo?.hours || 0).padStart(2, '0')}:
                 {String(timeInfo?.minutes || 0).padStart(2, '0')}:
                 {String(timeInfo?.seconds || 0).padStart(2, '0')}
               </div>
-              <div className="text-xs text-gray-500">remaining</div>
+              <div className="text-xs text-slate-500 dark:text-slate-300">remaining</div>
             </div>
           )}
         </div>
@@ -71,7 +71,7 @@ const ActiveTreats = ({ playerAddress }) => {
           <div className="text-xs text-gray-600 mb-1">Ingredients:</div>
           <div className="flex flex-wrap gap-1">
             {treat.ingredients?.map((ingredient, index) => (
-              <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+              <span key={index} className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2 py-1 rounded text-xs">
                 {ingredient}
               </span>
             ))}
@@ -100,7 +100,7 @@ const ActiveTreats = ({ playerAddress }) => {
   if (!playerAddress) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">Connect your wallet to see your treats</p>
+        <p className="text-slate-500 dark:text-slate-300">Connect your wallet to see your treats</p>
       </div>
     );
   }

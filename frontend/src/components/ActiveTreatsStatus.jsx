@@ -102,7 +102,7 @@ const ActiveTreatsStatus = () => {
       <Card className="glass-panel border-orange-400">
         <CardContent className="text-center p-6">
           <div className="text-4xl mb-2">🔗</div>
-          <p className="text-gray-600">Connect your wallet to see your active treats</p>
+          <p className="text-slate-600 dark:text-slate-300">Connect your wallet to see your active treats</p>
         </CardContent>
       </Card>
     );
@@ -113,7 +113,7 @@ const ActiveTreatsStatus = () => {
       <Card className="glass-panel">
         <CardContent className="text-center p-6">
           <div className="text-4xl mb-2">⏳</div>
-          <p className="text-gray-600">Loading your treats...</p>
+          <p className="text-slate-600 dark:text-slate-300">Loading your treats...</p>
         </CardContent>
       </Card>
     );
@@ -199,7 +199,7 @@ const ActiveTreatsStatus = () => {
                       <div className="font-bold text-blue-600">
                         {formatTimeRemaining(treat.ready_at)}
                       </div>
-                      <div className="text-xs text-gray-500">remaining</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-300">remaining</div>
                     </div>
                   </div>
                   
@@ -211,7 +211,7 @@ const ActiveTreatsStatus = () => {
                     />
                   </div>
                   
-                  <div className="text-xs text-gray-600">
+                  <div className="text-xs text-slate-600 dark:text-slate-300">
                     Ready at: {new Date(treat.ready_at).toLocaleString()}
                   </div>
                 </div>
@@ -227,7 +227,7 @@ const ActiveTreatsStatus = () => {
           <CardContent className="text-center p-6">
             <div className="text-4xl mb-2">🧪</div>
             <p className="text-gray-600 mb-4">No active treats brewing</p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-slate-500 dark:text-slate-300">
               Head to the Lab to start creating some magical treats!
             </p>
           </CardContent>
