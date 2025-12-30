@@ -212,7 +212,7 @@ const Leaderboard = () => {
           </Link>
           <div>
             <h1 className="text-4xl font-bold doge-gradient mb-2">🏆 Leaderboard</h1>
-            <p className="text-gray-600">Top VIP Scientists competing for $LAB rewards</p>
+            <p className="text-slate-600 dark:text-slate-300">Top VIP Scientists competing for $LAB rewards</p>
           </div>
         </div>
         
