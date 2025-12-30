@@ -1015,6 +1015,83 @@ const GameLabRedesign = ({ playerAddress }) => {
           </div>
         </div>
       )}
+
+      {/* Collect Animation Modal */}
+      {showCollectAnimation && collectedTreat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="text-center">
+            {/* Sparkle explosion effect */}
+            <div className="relative w-64 h-64 mx-auto mb-8">
+              {/* Central treat */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-8xl animate-bounce">
+                  {RARITY_STYLES[collectedTreat.rarity]?.emoji || '🧪'}
+                </div>
+              </div>
+              
+              {/* Sparkles */}
+              {[...Array(12)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-4 h-4 bg-yellow-400 rounded-full"
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    animation: `sparkle-burst 1s ease-out ${i * 0.1}s infinite`,
+                    transform: `rotate(${i * 30}deg) translateY(-80px)`,
+                  }}
+                />
+              ))}
+              
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-gradient-radial from-yellow-400/50 via-transparent to-transparent rounded-full animate-pulse" />
+              
+              {/* Stars floating */}
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={`star-${i}`}
+                  className="absolute text-2xl animate-ping"
+                  style={{
+                    left: `${20 + Math.random() * 60}%`,
+                    top: `${20 + Math.random() * 60}%`,
+                    animationDelay: `${i * 0.2}s`,
+                    animationDuration: '1.5s'
+                  }}
+                >
+                  ⭐
+                </div>
+              ))}
+            </div>
+            
+            <h2 className="text-4xl font-bold text-white mb-4 drop-shadow-lg animate-pulse">
+              🎉 Treat Collected! 🎉
+            </h2>
+            <div className="text-2xl font-bold text-yellow-400 mb-2">
+              {collectedTreat.rarity} Treat
+            </div>
+            <p className="text-sky-300 text-lg">
+              +{collectedTreat.points_reward || 0} Points • +{collectedTreat.xp_reward || 0} XP
+            </p>
+            
+            {/* Confetti effect */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              {[...Array(20)].map((_, i) => (
+                <div
+                  key={`confetti-${i}`}
+                  className="absolute w-3 h-3 rounded-sm"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: '-20px',
+                    backgroundColor: ['#fbbf24', '#3b82f6', '#10b981', '#f472b6', '#8b5cf6'][i % 5],
+                    animation: `confetti-fall 2s linear ${i * 0.1}s infinite`,
+                    transform: `rotate(${Math.random() * 360}deg)`
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
