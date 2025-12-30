@@ -351,11 +351,13 @@ const MainMenu = () => {
                     </div>
                   </div>
                   
-                  {/* Right Content - Status Pills */}
+                  {/* Right Content - Season Timer */}
                   <div className="flex flex-col gap-2">
                     <Badge className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 py-2 text-sm font-bold shadow-lg border-0">
                       🎮 SEASON 1 ACTIVE
                     </Badge>
+                    {/* Real-time Season Countdown */}
+                    <SeasonCountdown />
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">
                         <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
@@ -364,14 +366,6 @@ const MainMenu = () => {
                       <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">
                         <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
                         Leaderboards
-                      </div>
-                      <div className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">
-                        <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
-                        NFT Minting
-                      </div>
-                      <div className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">
-                        <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
-                        Token Convert
                       </div>
                     </div>
                   </div>
