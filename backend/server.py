@@ -1094,9 +1094,22 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         if not cheat_check["valid"]:
             raise HTTPException(status_code=429, detail=f"Anti-cheat triggered: {cheat_check['reason']}")
         
-        # Calculate treat outcome using game engine
+        # Get player's character bonus (Rex gives +15% rare chance)
+        rare_chance_bonus = 0.0
+        player = await db.players.find_one({"address": treat_data.creator_address})
+        if player:
+            selected_character = player.get("selected_character")
+            character_bonuses = player.get("character_bonuses", {})
+            
+            # Rex: +15% rare treat chance
+            if selected_character == "rex" or character_bonuses.get("rare_chance_bonus"):
+                rare_chance_bonus = character_bonuses.get("rare_chance_bonus", 0.15)
+                logger.info(f"🦖 Rex bonus: +{rare_chance_bonus*100}% rare chance for {treat_data.creator_address}")
+        
+        # Calculate treat outcome using game engine with character bonus
         treat_outcome = game_engine.calculate_treat_outcome(
-            treat_data.ingredients, treat_data.player_level, treat_data.creator_address
+            treat_data.ingredients, treat_data.player_level, treat_data.creator_address,
+            rare_chance_bonus=rare_chance_bonus
         )
         
         # Get current season info
