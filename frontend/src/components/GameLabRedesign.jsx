@@ -782,8 +782,11 @@ const GameLabRedesign = ({ playerAddress }) => {
               
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {activeTreats.map((treat, index) => {
-                  const readyAt = new Date(treat.ready_at).getTime();
-                  const createdAt = new Date(treat.created_at).getTime();
+                  // Parse dates - ensure UTC interpretation by adding 'Z' if missing
+                  const readyAtStr = treat.ready_at?.endsWith('Z') ? treat.ready_at : treat.ready_at + 'Z';
+                  const createdAtStr = treat.created_at?.endsWith('Z') ? treat.created_at : treat.created_at + 'Z';
+                  const readyAt = new Date(readyAtStr).getTime();
+                  const createdAt = new Date(createdAtStr).getTime();
                   const total = readyAt - createdAt;
                   const elapsed = currentTime - createdAt;
                   const progress = Math.min(100, (elapsed / total) * 100);
