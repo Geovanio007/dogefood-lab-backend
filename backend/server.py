@@ -555,6 +555,10 @@ async def get_active_treats_with_timer(address: str):
 async def collect_treat(treat_id: str, data: dict):
     """
     Collect a ready treat and award points/XP to the player.
+    Character bonuses are applied:
+    - Max: +10% Experience
+    - Luna: +20% Points
+    - Rex: (bonus applies during treat creation for rare chance)
     """
     try:
         player_address = data.get("player_address")
@@ -583,30 +587,64 @@ async def collect_treat(treat_id: str, data: dict):
         if ready_at and now < ready_at:
             raise HTTPException(status_code=400, detail="Treat is not ready yet")
         
-        # Get rewards
-        points_reward = treat.get("points_reward", 10)
-        xp_reward = treat.get("xp_reward", 5)
+        # Get base rewards
+        base_points_reward = treat.get("points_reward", 10)
+        base_xp_reward = treat.get("xp_reward", 5)
+        
+        # Get player to check for character bonuses
+        player = await db.players.find_one({"address": player_address})
+        
+        # Apply character bonuses
+        points_bonus = 0
+        xp_bonus = 0
+        bonus_details = {}
+        
+        if player:
+            selected_character = player.get("selected_character")
+            character_bonuses = player.get("character_bonuses", {})
+            
+            # Luna: +20% Points bonus
+            if selected_character == "luna" or character_bonuses.get("points_bonus"):
+                points_bonus_percent = character_bonuses.get("points_bonus", 0.20)
+                points_bonus = int(base_points_reward * points_bonus_percent)
+                bonus_details["luna_points_bonus"] = points_bonus
+                logger.info(f"🌙 Luna bonus: +{points_bonus} points ({points_bonus_percent*100}%) for {player_address}")
+            
+            # Max: +10% Experience bonus
+            if selected_character == "max" or character_bonuses.get("experience_bonus"):
+                xp_bonus_percent = character_bonuses.get("experience_bonus", 0.10)
+                xp_bonus = int(base_xp_reward * xp_bonus_percent)
+                bonus_details["max_xp_bonus"] = xp_bonus
+                logger.info(f"🔥 Max bonus: +{xp_bonus} XP ({xp_bonus_percent*100}%) for {player_address}")
+        
+        # Calculate final rewards with bonuses
+        final_points_reward = base_points_reward + points_bonus
+        final_xp_reward = base_xp_reward + xp_bonus
         
         # Update treat status
         await db.treats.update_one(
             {"id": treat_id},
             {"$set": {
                 "brewing_status": "collected",
-                "collected_at": now.isoformat()
+                "collected_at": now.isoformat(),
+                "final_points_awarded": final_points_reward,
+                "final_xp_awarded": final_xp_reward,
+                "character_bonuses_applied": bonus_details
             }}
         )
         
         # Update player stats
-        player = await db.players.find_one({"address": player_address})
         if player:
-            new_xp = player.get("experience", 0) + xp_reward
+            new_xp = player.get("experience", 0) + final_xp_reward
             new_level = player.get("level", 1)
             
             # Check for level up (100 XP per level)
             xp_for_level = new_level * 100
+            leveled_up = False
             if new_xp >= xp_for_level:
                 new_level += 1
                 new_xp = new_xp - xp_for_level
+                leveled_up = True
             
             await db.players.update_one(
                 {"address": player_address},
@@ -615,15 +653,32 @@ async def collect_treat(treat_id: str, data: dict):
                     "level": new_level,
                     "last_active": now.isoformat()
                 },
-                "$inc": {"points": points_reward}}
+                "$inc": {"points": final_points_reward}}
             )
+            
+            return {
+                "success": True,
+                "message": "Treat collected successfully!",
+                "rewards": {
+                    "base_points": base_points_reward,
+                    "base_xp": base_xp_reward,
+                    "points_bonus": points_bonus,
+                    "xp_bonus": xp_bonus,
+                    "total_points": final_points_reward,
+                    "total_xp": final_xp_reward
+                },
+                "character_bonus_applied": bonus_details if bonus_details else None,
+                "leveled_up": leveled_up,
+                "new_level": new_level if leveled_up else None,
+                "treat_id": treat_id
+            }
         
         return {
             "success": True,
             "message": "Treat collected successfully!",
             "rewards": {
-                "points": points_reward,
-                "xp": xp_reward
+                "points": final_points_reward,
+                "xp": final_xp_reward
             },
             "treat_id": treat_id
         }
