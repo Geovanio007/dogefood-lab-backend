@@ -4915,7 +4915,7 @@ class DogeLabAPITester:
         # Bot Configuration Status
         print(f"\n🤖 TELEGRAM BOT STATUS:")
         print(f"   Bot: @Dogefoodlabbot")
-        print(f"   URL: https://dogelab-game.preview.emergentagent.com")
+        print(f"   URL: https://doge-treats.preview.emergentagent.com")
         print(f"   Status: {'✅ READY FOR LAUNCH' if overall_percentage >= 85 else '⚠️ NEEDS ATTENTION'}")
         
         return overall_percentage >= 85, {
