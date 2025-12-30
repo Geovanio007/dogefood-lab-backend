@@ -577,7 +577,13 @@ const GameLabRedesign = ({ playerAddress }) => {
                       <span className="text-yellow-300 font-semibold">XP</span>
                       <span className="text-white">{playerXP % xpForNextLevel}/{xpForNextLevel}</span>
                     </div>
-                    <Progress value={xpProgress} className="h-2 bg-sky-900/50" />
+                    {/* Custom XP Progress Bar */}
+                    <div className="h-3 w-full bg-sky-900/50 rounded-full overflow-hidden border border-sky-400/30">
+                      <div 
+                        className="h-full bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 rounded-full transition-all duration-500 ease-out shadow-lg shadow-yellow-400/50"
+                        style={{ width: `${Math.max(0, Math.min(100, xpProgress))}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
