@@ -236,17 +236,17 @@ const Leaderboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl">
-              <div className="text-2xl font-bold text-yellow-600">{seasonInfo.totalRewards}</div>
-              <div className="text-sm text-slate-600 dark:text-slate-300">Total Rewards Pool</div>
+            <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 rounded-xl">
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{seasonInfo.totalRewards}</div>
+              <div className="text-sm text-slate-600 dark:text-slate-200">Total Rewards Pool</div>
             </div>
-            <div className="text-center p-4 bg-gradient-to-br from-sky-50 to-sky-100 rounded-xl">
-              <div className="text-2xl font-bold text-sky-600">{leaderboard.length}</div>
-              <div className="text-sm text-slate-600 dark:text-slate-300">Active Players</div>
+            <div className="text-center p-4 bg-gradient-to-br from-sky-50 to-sky-100 dark:from-sky-900/30 dark:to-sky-800/30 rounded-xl">
+              <div className="text-2xl font-bold text-sky-600 dark:text-sky-400">{leaderboard.length}</div>
+              <div className="text-sm text-slate-600 dark:text-slate-200">Active Players</div>
             </div>
-            <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl">
-              <div className="text-2xl font-bold text-emerald-600">Coming Soon</div>
-              <div className="text-sm text-slate-600 dark:text-slate-300">NFT Minting</div>
+            <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/30 rounded-xl">
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">Coming Soon</div>
+              <div className="text-sm text-slate-600 dark:text-slate-200">NFT Minting</div>
             </div>
           </div>
         </CardContent>
@@ -267,27 +267,27 @@ const Leaderboard = () => {
                 <div className="text-2xl font-bold doge-gradient">
                   {currentUserRank ? `#${currentUserRank}` : 'Unranked'}
                 </div>
-                <div className="text-sm text-slate-600 dark:text-slate-300">Current Rank</div>
+                <div className="text-sm text-slate-600 dark:text-slate-200">Current Rank</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{points}</div>
-                <div className="text-sm text-slate-600 dark:text-slate-300">Points</div>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{points}</div>
+                <div className="text-sm text-slate-600 dark:text-slate-200">Points</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">Level {currentLevel}</div>
-                <div className="text-sm text-slate-600 dark:text-slate-300">Lab Level</div>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">Level {currentLevel}</div>
+                <div className="text-sm text-slate-600 dark:text-slate-200">Lab Level</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">
+                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                   {currentUserRank && currentUserRank <= 50 ? calculateRewards(currentUserRank) : '0 LAB'}
                 </div>
-                <div className="text-sm text-slate-600 dark:text-slate-300">Est. Rewards</div>
+                <div className="text-sm text-slate-600 dark:text-slate-200">Est. Rewards</div>
               </div>
             </div>
             
             {!isNFTHolder && (
-              <div className="mt-4 p-4 bg-yellow-100 border border-yellow-300 rounded-lg">
-                <p className="text-yellow-800 text-sm">
+              <div className="mt-4 p-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+                <p className="text-yellow-800 dark:text-yellow-200 text-sm">
                   💡 <strong>Pro Tip:</strong> Only DogeFood NFT holders can earn points and compete for $LAB rewards!
                 </p>
               </div>
