@@ -238,15 +238,15 @@ const Leaderboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl">
               <div className="text-2xl font-bold text-yellow-600">{seasonInfo.totalRewards}</div>
-              <div className="text-sm text-gray-600">Total Rewards Pool</div>
+              <div className="text-sm text-slate-600 dark:text-slate-300">Total Rewards Pool</div>
             </div>
             <div className="text-center p-4 bg-gradient-to-br from-sky-50 to-sky-100 rounded-xl">
               <div className="text-2xl font-bold text-sky-600">{leaderboard.length}</div>
-              <div className="text-sm text-gray-600">Active Players</div>
+              <div className="text-sm text-slate-600 dark:text-slate-300">Active Players</div>
             </div>
             <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl">
               <div className="text-2xl font-bold text-emerald-600">Coming Soon</div>
-              <div className="text-sm text-gray-600">NFT Minting</div>
+              <div className="text-sm text-slate-600 dark:text-slate-300">NFT Minting</div>
             </div>
           </div>
         </CardContent>
@@ -267,21 +267,21 @@ const Leaderboard = () => {
                 <div className="text-2xl font-bold doge-gradient">
                   {currentUserRank ? `#${currentUserRank}` : 'Unranked'}
                 </div>
-                <div className="text-sm text-gray-600">Current Rank</div>
+                <div className="text-sm text-slate-600 dark:text-slate-300">Current Rank</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">{points}</div>
-                <div className="text-sm text-gray-600">Points</div>
+                <div className="text-sm text-slate-600 dark:text-slate-300">Points</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">Level {currentLevel}</div>
-                <div className="text-sm text-gray-600">Lab Level</div>
+                <div className="text-sm text-slate-600 dark:text-slate-300">Lab Level</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-yellow-600">
                   {currentUserRank && currentUserRank <= 50 ? calculateRewards(currentUserRank) : '0 LAB'}
                 </div>
-                <div className="text-sm text-gray-600">Est. Rewards</div>
+                <div className="text-sm text-slate-600 dark:text-slate-300">Est. Rewards</div>
               </div>
             </div>
             
@@ -339,7 +339,7 @@ const Leaderboard = () => {
                     return (
                       <tr 
                         key={entry.address} 
-                        className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                        className={`border-b border-gray-100 hover:bg-slate-50 dark:bg-slate-800 transition-colors ${
                           isCurrentUser ? 'bg-blue-50 border-blue-200' : ''
                         } ${rank <= 3 ? `leaderboard-row rank-${rank}` : 'leaderboard-row'}`}
                       >
@@ -378,7 +378,7 @@ const Leaderboard = () => {
                                 {entry.nickname || `Scientist #${rank}`}
                               </div>
                               {/* Wallet Address */}
-                              <div className="font-mono text-xs text-gray-500">
+                              <div className="font-mono text-xs text-slate-500 dark:text-slate-300">
                                 {formatAddress(entry.address)}
                               </div>
                               {/* Badges */}
@@ -412,7 +412,7 @@ const Leaderboard = () => {
                         <td className="py-4 px-2 text-center">
                           <div className="flex items-center justify-center gap-2">
                             {entry.is_nft_holder && <Crown className="w-5 h-5 text-purple-500" />}
-                            <Badge className={entry.is_nft_holder ? 'vip-badge' : 'bg-gray-200 text-gray-700'}>
+                            <Badge className={entry.is_nft_holder ? 'vip-badge' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'}>
                               {entry.is_nft_holder ? 'VIP Scientist' : 'Scientist'}
                             </Badge>
                           </div>
@@ -446,17 +446,17 @@ const Leaderboard = () => {
             <div className="text-center">
               <div className="text-4xl mb-2">🥇</div>
               <h3 className="font-bold text-lg text-yellow-500">Ranks 1-10</h3>
-              <p className="text-sm text-gray-600">1,000 - 10,000 LAB</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">1,000 - 10,000 LAB</p>
             </div>
             <div className="text-center">
               <div className="text-4xl mb-2">🥈</div>
-              <h3 className="font-bold text-lg text-gray-400">Ranks 11-25</h3>
-              <p className="text-sm text-gray-600">250 - 1,000 LAB</p>
+              <h3 className="font-bold text-lg text-slate-400 dark:text-slate-300">Ranks 11-25</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300">250 - 1,000 LAB</p>
             </div>
             <div className="text-center">
               <div className="text-4xl mb-2">🥉</div>
               <h3 className="font-bold text-lg text-amber-600">Ranks 26-50</h3>
-              <p className="text-sm text-gray-600">125 - 250 LAB</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">125 - 250 LAB</p>
             </div>
           </div>
           
