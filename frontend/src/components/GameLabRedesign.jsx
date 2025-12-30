@@ -294,6 +294,7 @@ const GameLabRedesign = ({ playerAddress }) => {
     
     setIsBrewing(true);
     setBrewResult(null);
+    setShowBrewingAnimation(true);
     
     try {
       const response = await fetch(`${API_URL}/api/treats/enhanced`, {
@@ -308,17 +309,24 @@ const GameLabRedesign = ({ playerAddress }) => {
       
       if (response.ok) {
         const data = await response.json();
-        setBrewResult(data);
-        setShowResult(true);
-        setSelectedIngredients([]);
+        
+        // Show brewing animation for 3 seconds before showing result
+        setTimeout(() => {
+          setShowBrewingAnimation(false);
+          setBrewResult(data);
+          setShowResult(true);
+          setSelectedIngredients([]);
+        }, 3000);
         
         // Reload data
         await loadPlayerData();
         await loadActiveTreats();
       } else {
+        setShowBrewingAnimation(false);
         throw new Error('Failed to create treat');
       }
     } catch (err) {
+      setShowBrewingAnimation(false);
       setError(err.message);
     } finally {
       setIsBrewing(false);
