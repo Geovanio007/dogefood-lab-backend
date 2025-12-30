@@ -477,17 +477,24 @@ async def get_active_treats_with_timer(address: str):
         now = datetime.utcnow()
         
         # Get all recent treats for this player (last 24 hours or still brewing)
+        # Exclude collected treats
         cutoff = now - timedelta(hours=24)
         treats = await db.treats.find({
             "creator_address": address,
+            "brewing_status": {"$ne": "collected"},  # Exclude collected treats
             "$or": [
                 {"brewing_status": "brewing"},
+                {"brewing_status": "ready"},
                 {"created_at": {"$gte": cutoff}}
             ]
         }).sort("created_at", -1).limit(10).to_list(10)
         
         result = []
         for treat in treats:
+            # Skip collected treats (double check)
+            if treat.get("brewing_status") == "collected":
+                continue
+                
             ready_at = treat.get("ready_at")
             created_at = treat.get("created_at")
             timer_duration = treat.get("timer_duration", 3600)
