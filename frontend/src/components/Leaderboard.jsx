@@ -9,8 +9,8 @@ import { ArrowLeft, Trophy, Crown, Star, Users, TrendingUp, Clock, Sparkles } fr
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-// Season 1 End Date - 90 days from Dec 1, 2024
-const SEASON_1_END = new Date('2025-03-01T00:00:00Z').getTime();
+// Season 1 End Date - 90 days from Dec 1, 2025 (Season started Dec 1, 2025)
+const SEASON_1_END = new Date('2026-03-01T00:00:00Z').getTime();
 
 // Season Countdown Component
 const SeasonCountdown = () => {
