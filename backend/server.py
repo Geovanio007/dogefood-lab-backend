@@ -347,6 +347,47 @@ async def select_player_character(address: str, character_id: str):
         "message": f"Character {character_id} selected! This choice is permanent."
     }
 
+@api_router.get("/characters")
+async def get_characters():
+    """Get all available characters and their bonuses"""
+    characters = {
+        "max": {
+            "id": "max",
+            "name": "Max",
+            "description": "The energetic Shiba who never stops learning",
+            "image": "https://customer-assets.emergentagent.com/job_shibalab/artifacts/max_character.png",
+            "bonus_type": "experience",
+            "bonus_value": 0.10,
+            "bonus_description": "+10% Experience from treats",
+            "personality": ["Energetic", "Curious", "Friendly"]
+        },
+        "rex": {
+            "id": "rex",
+            "name": "Rex",
+            "description": "The lucky Shiba with a nose for rare treats",
+            "image": "https://customer-assets.emergentagent.com/job_shibalab/artifacts/rex_character.png",
+            "bonus_type": "rare_chance",
+            "bonus_value": 0.15,
+            "bonus_description": "+15% Rare treat chance",
+            "personality": ["Lucky", "Adventurous", "Bold"]
+        },
+        "luna": {
+            "id": "luna",
+            "name": "Luna",
+            "description": "The clever Shiba who knows how to earn more",
+            "image": "https://customer-assets.emergentagent.com/job_shibalab/artifacts/luna_character.png",
+            "bonus_type": "points",
+            "bonus_value": 0.20,
+            "bonus_description": "+20% Points from treats",
+            "personality": ["Clever", "Strategic", "Calm"]
+        }
+    }
+    
+    return {
+        "characters": characters,
+        "note": "Character selection is permanent and cannot be changed!"
+    }
+
 @api_router.get("/player/{address}/profile")
 async def get_player_profile(address: str):
     """Get player profile including character and username"""
