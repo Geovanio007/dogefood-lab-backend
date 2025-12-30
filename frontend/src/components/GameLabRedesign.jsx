@@ -336,6 +336,55 @@ const GameLabRedesign = ({ playerAddress }) => {
     }
   };
 
+  // Collect ready treat
+  const handleCollectTreat = async (treat) => {
+    if (collectingTreat) return;
+    
+    setCollectingTreat(treat.id);
+    setShowCollectAnimation(true);
+    setCollectedTreat(treat);
+    
+    try {
+      // Call backend to collect the treat
+      const response = await fetch(`${API_URL}/api/treats/${treat.id}/collect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_address: playerAddress })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Show collection animation for 2.5 seconds
+        setTimeout(async () => {
+          setShowCollectAnimation(false);
+          setCollectingTreat(null);
+          setCollectedTreat(null);
+          
+          // Reload player data to update XP and points
+          await loadPlayerData();
+          await loadActiveTreats();
+        }, 2500);
+      } else {
+        // If API fails, just remove from local state and reload
+        setTimeout(async () => {
+          setShowCollectAnimation(false);
+          setCollectingTreat(null);
+          setCollectedTreat(null);
+          await loadPlayerData();
+          await loadActiveTreats();
+        }, 2500);
+      }
+    } catch (err) {
+      console.error('Error collecting treat:', err);
+      setTimeout(() => {
+        setShowCollectAnimation(false);
+        setCollectingTreat(null);
+        setCollectedTreat(null);
+      }, 2500);
+    }
+  };
+
   // Calculate XP progress to next level
   const xpForNextLevel = playerLevel * 100;
   const xpProgress = (playerXP % xpForNextLevel) / xpForNextLevel * 100;
