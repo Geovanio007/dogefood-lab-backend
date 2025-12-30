@@ -875,7 +875,7 @@ const GameLabRedesign = ({ playerAddress }) => {
               <div className="bg-white/20 rounded-xl p-4 mb-6">
                 <div className="text-sky-200 text-sm mb-2">Brewing Time</div>
                 <div className="text-white font-bold text-lg drop-shadow-md">
-                  ⏱️ {brewResult.outcome?.timer_duration_hours || 0} hours
+                  ⏱️ {brewResult.outcome?.timer_duration_hours?.toFixed(1) || 0} hours
                 </div>
               </div>
               
@@ -887,6 +887,71 @@ const GameLabRedesign = ({ playerAddress }) => {
               </Button>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Brewing Animation Modal */}
+      {showBrewingAnimation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="text-center">
+            {/* Cauldron Animation */}
+            <div className="relative w-48 h-48 mx-auto mb-8">
+              {/* Bubbles */}
+              <div className="absolute inset-0">
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-4 h-4 bg-yellow-400/60 rounded-full animate-bounce"
+                    style={{
+                      left: `${20 + Math.random() * 60}%`,
+                      bottom: `${30 + Math.random() * 30}%`,
+                      animationDelay: `${i * 0.2}s`,
+                      animationDuration: `${0.8 + Math.random() * 0.4}s`
+                    }}
+                  />
+                ))}
+              </div>
+              
+              {/* Cauldron */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-40 h-32 bg-gradient-to-b from-gray-700 to-gray-900 rounded-b-full border-4 border-gray-600 overflow-hidden">
+                {/* Liquid */}
+                <div className="absolute bottom-0 left-0 right-0 h-3/4 bg-gradient-to-t from-sky-500 via-emerald-400 to-yellow-400 animate-pulse">
+                  {/* Waves */}
+                  <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
+                </div>
+              </div>
+              
+              {/* Steam */}
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex gap-2">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-6 h-12 bg-gradient-to-t from-white/40 to-transparent rounded-full animate-pulse blur-sm"
+                    style={{ animationDelay: `${i * 0.3}s` }}
+                  />
+                ))}
+              </div>
+              
+              {/* Glow */}
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-32 h-32 bg-sky-400/30 rounded-full blur-2xl animate-pulse" />
+            </div>
+            
+            <h2 className="text-3xl font-bold text-white mb-4 animate-pulse drop-shadow-lg">
+              🧪 Mixing Ingredients... 🧪
+            </h2>
+            <p className="text-sky-300 text-lg mb-2">Your treat is being prepared!</p>
+            
+            {/* Loading dots */}
+            <div className="flex justify-center gap-2 mt-6">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-4 h-4 bg-yellow-400 rounded-full animate-bounce"
+                  style={{ animationDelay: `${i * 0.15}s` }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
