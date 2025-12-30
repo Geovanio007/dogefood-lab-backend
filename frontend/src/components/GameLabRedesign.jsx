@@ -102,6 +102,9 @@ const GameLabRedesign = ({ playerAddress }) => {
   // Active treats
   const [activeTreats, setActiveTreats] = useState([]);
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [collectingTreat, setCollectingTreat] = useState(null);
+  const [showCollectAnimation, setShowCollectAnimation] = useState(false);
+  const [collectedTreat, setCollectedTreat] = useState(null);
 
   // Character data
   const characters = [
