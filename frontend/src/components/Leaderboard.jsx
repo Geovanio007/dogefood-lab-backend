@@ -216,29 +216,38 @@ const Leaderboard = () => {
           </div>
         </div>
         
-        <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+        <Badge className="bg-gradient-to-r from-sky-500 to-blue-500 text-white">
           Season {seasonInfo.current}
         </Badge>
+      </div>
+
+      {/* Season Countdown Timer */}
+      <div className="mb-8">
+        <SeasonCountdown />
       </div>
 
       {/* Season Info */}
       <Card className="glass-panel mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Season {seasonInfo.current} Information
+            <Trophy className="w-5 h-5 text-yellow-500" />
+            Season {seasonInfo.current} Rewards
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{seasonInfo.timeRemaining}</div>
-              <div className="text-sm text-gray-600">Time Remaining</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl">
+              <div className="text-2xl font-bold text-yellow-600">{seasonInfo.totalRewards}</div>
+              <div className="text-sm text-gray-600">Total Rewards Pool</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{seasonInfo.totalRewards}</div>
-              <div className="text-sm text-gray-600">Total Rewards</div>
+            <div className="text-center p-4 bg-gradient-to-br from-sky-50 to-sky-100 rounded-xl">
+              <div className="text-2xl font-bold text-sky-600">{leaderboard.length}</div>
+              <div className="text-sm text-gray-600">Active Players</div>
             </div>
+            <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl">
+              <div className="text-2xl font-bold text-emerald-600">Coming Soon</div>
+              <div className="text-sm text-gray-600">NFT Minting</div>
+            </div>            </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">{seasonInfo.participants}</div>
               <div className="text-sm text-gray-600">Participants</div>
