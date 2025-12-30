@@ -2377,3 +2377,37 @@ body.telegram-webapp .overflow-y-auto {
     justify-content: center;
   }
 }
+
+/* Collect Treat Animation */
+@keyframes sparkle-burst {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--rotation, 0deg)) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--rotation, 0deg)) translateY(-100px) scale(0);
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    top: -20px;
+    opacity: 1;
+    transform: translateX(0) rotate(0deg);
+  }
+  100% {
+    top: 100vh;
+    opacity: 0;
+    transform: translateX(100px) rotate(720deg);
+  }
+}
+
+@keyframes collect-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 60px rgba(251, 191, 36, 0.9), 0 0 100px rgba(251, 191, 36, 0.5);
+  }
+}
