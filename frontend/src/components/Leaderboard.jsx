@@ -200,34 +200,34 @@ const Leaderboard = () => {
   }
 
   return (
-    <div className="min-h-screen p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-4">
+    <div className="min-h-screen p-3 sm:p-6">
+      {/* Header - Mobile Optimized */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
           <Link to="/">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Menu
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+              <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              Back
             </Button>
           </Link>
           <div>
-            <h1 className="text-4xl font-bold doge-gradient mb-2">🏆 Leaderboard</h1>
-            <p className="text-slate-600 dark:text-slate-300">Top VIP Scientists competing for $LAB rewards</p>
+            <h1 className="text-2xl sm:text-4xl font-bold doge-gradient mb-1 sm:mb-2">🏆 Leaderboard</h1>
+            <p className="text-xs sm:text-base text-slate-600 dark:text-slate-300">Top VIP Scientists competing for $LAB rewards</p>
           </div>
         </div>
         
-        <Badge className="bg-gradient-to-r from-sky-500 to-blue-500 text-white">
+        <Badge className="bg-gradient-to-r from-sky-500 to-blue-500 text-white self-start sm:self-auto text-xs sm:text-sm">
           Season {seasonInfo.current}
         </Badge>
       </div>
 
       {/* Season Countdown Timer */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <SeasonCountdown />
       </div>
 
       {/* Season Info */}
-      <Card className="glass-panel mb-8">
+      <Card className="glass-panel mb-6 sm:mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-500" />
