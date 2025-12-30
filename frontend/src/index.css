@@ -23,7 +23,7 @@
 }
 
 /* Dark mode colors - Dark Shiny Blue Theme */
-.dark-mode {
+.dark-mode, .dark {
   --bg-primary: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
   --bg-secondary: rgba(15, 23, 42, 0.95);
   --text-primary: #f1f5f9;
