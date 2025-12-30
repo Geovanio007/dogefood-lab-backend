@@ -1138,32 +1138,14 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                     "last_activity": datetime.utcnow()
                 },
                 "$inc": {
-                    "experience": sack_bonus_xp  # Award sack completion XP
+                    "experience": sack_bonus_xp  # Only award sack completion bonus XP (not treat creation XP)
                 }
             }
         )
         
-        # Award points in background (pass pre-calculated rewards)
-        background_tasks.add_task(
-            award_treat_creation_points,
-            treat_data.creator_address,
-            {
-                "rarity": treat_outcome["rarity"],
-                "ingredients": treat_outcome["ingredients_used"],
-                "level": treat_data.player_level,
-                "secret_combo": treat_outcome.get("secret_combo", {}),
-                "season_id": season_id,
-                "points_reward": treat_outcome.get("points_reward", 10),
-                "xp_reward": treat_outcome.get("xp_reward", 5)
-            }
-        )
-        
-        # Award XP directly to player based on rarity
-        xp_to_award = treat_outcome.get("xp_reward", 5) + sack_bonus_xp
-        await db.players.update_one(
-            {"address": treat_data.creator_address},
-            {"$inc": {"experience": xp_to_award}}
-        )
+        # NOTE: Points and XP rewards are awarded ONLY when the treat is COLLECTED (not created)
+        # This prevents double-awarding. The points_reward and xp_reward are stored in the treat
+        # and will be awarded when the player calls the /treats/{treat_id}/collect endpoint
         
         # Convert treat_dict to JSON-serializable format
         treat_response = treat_dict.copy()
