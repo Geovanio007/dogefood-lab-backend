@@ -374,7 +374,8 @@ class TreatGameEngine:
         }
     
     def calculate_treat_outcome(self, ingredients: List[str], player_level: int,
-                              player_address: str, timestamp: int = None) -> Dict:
+                              player_address: str, timestamp: int = None,
+                              rare_chance_bonus: float = 0.0) -> Dict:
         """
         Complete treat outcome calculation including rarity, rewards, and metadata
         
@@ -383,6 +384,7 @@ class TreatGameEngine:
             player_level: Player's current level
             player_address: Player's wallet address
             timestamp: Optional timestamp for deterministic results
+            rare_chance_bonus: Bonus percentage for rare+ treats (Rex character = 0.15)
             
         Returns:
             Dictionary with complete treat outcome data
@@ -397,9 +399,9 @@ class TreatGameEngine:
         # Check for secret combo bonuses
         combo_bonus = self.check_secret_combo_bonus(ingredients)
         
-        # Calculate base rarity
+        # Calculate base rarity with character bonus (Rex)
         base_rarity = self.calculate_treat_rarity(
-            ingredients, player_level, player_address, timestamp
+            ingredients, player_level, player_address, timestamp, rare_chance_bonus
         )
         
         # Apply combo bonuses (if any)
@@ -438,6 +440,7 @@ class TreatGameEngine:
         # Generate treat metadata
         return {
             "rarity": final_rarity.value,
+            "rex_bonus_applied": rare_chance_bonus > 0,
             "rarity_emoji": rarity_config["emoji"],
             "rarity_color": rarity_config["color"],
             "ingredients_used": ingredients,
