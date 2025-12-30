@@ -1855,25 +1855,25 @@ body {
 }
 
 /* Dark mode adjustments for various components */
-.dark-mode .glass-panel {
+.dark-mode .glass-panel, .dark .glass-panel {
   color: #f1f5f9;
   border-color: rgba(59, 130, 246, 0.6);
 }
 
-.dark-mode .vip-badge {
+.dark-mode .vip-badge, .dark .vip-badge {
   background: linear-gradient(to right, #3b82f6, #1e40af);
   box-shadow: 0 5px 15px rgba(59, 130, 246, 0.5);
 }
 
 /* Dark mode button styling */
-.dark-mode .doge-button {
+.dark-mode .doge-button, .dark .doge-button {
   background: linear-gradient(to bottom, #3b82f6, #2563eb, #1d4ed8);
   box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5),
               inset 0 -2px 0 rgba(0, 0, 0, 0.3),
               inset 0 2px 0 rgba(59, 130, 246, 0.2);
 }
 
-.dark-mode .doge-button:hover {
+.dark-mode .doge-button:hover, .dark .doge-button:hover {
   background: linear-gradient(to bottom, #2563eb, #1d4ed8, #1e3a8a);
   box-shadow: 0 15px 35px rgba(37, 99, 235, 0.7),
               inset 0 -3px 0 rgba(0, 0, 0, 0.4),
@@ -1881,12 +1881,34 @@ body {
 }
 
 /* Dark mode text colors for GameLab */
-.dark-mode h1, .dark-mode h2, .dark-mode h3, .dark-mode h4, .dark-mode h5, .dark-mode h6 {
+.dark-mode h1, .dark-mode h2, .dark-mode h3, .dark-mode h4, .dark-mode h5, .dark-mode h6,
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
   color: var(--text-primary);
 }
 
-.dark-mode p {
+.dark-mode p, .dark p {
   color: var(--text-secondary);
+}
+
+/* Dark mode table and card text fix */
+.dark-mode table, .dark table {
+  color: var(--text-primary);
+}
+
+.dark-mode td, .dark td,
+.dark-mode th, .dark th {
+  color: var(--text-primary);
+}
+
+.dark-mode .text-gray-600, .dark .text-gray-600,
+.dark-mode .text-gray-500, .dark .text-gray-500,
+.dark-mode .text-gray-400, .dark .text-gray-400 {
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .text-gray-700, .dark .text-gray-700,
+.dark-mode .text-gray-800, .dark .text-gray-800 {
+  color: #f1f5f9 !important;
 }
 
 /* Welcome Screen Styles */
