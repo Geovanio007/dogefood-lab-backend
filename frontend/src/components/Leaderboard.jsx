@@ -247,14 +247,6 @@ const Leaderboard = () => {
             <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl">
               <div className="text-2xl font-bold text-emerald-600">Coming Soon</div>
               <div className="text-sm text-gray-600">NFT Minting</div>
-            </div>            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{seasonInfo.participants}</div>
-              <div className="text-sm text-gray-600">Participants</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">Top 50</div>
-              <div className="text-sm text-gray-600">Eligible for Rewards</div>
             </div>
           </div>
         </CardContent>
