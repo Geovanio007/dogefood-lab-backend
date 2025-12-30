@@ -171,7 +171,7 @@ const InnerApp = () => {
               <Route path="/" element={<MainMenu />} />
               <Route path="/lab" element={<GameLabRedesign playerAddress={effectiveAddress || 'GUEST_USER'} />} />
               <Route path="/nfts" element={<MyTreats />} />
-              <Route path="/dashboard" element={<ActiveTreatsStatus />} />
+              <Route path="/dashboard" element={<GameLabRedesign playerAddress={effectiveAddress || 'GUEST_USER'} />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<AdminDashboard />} />
