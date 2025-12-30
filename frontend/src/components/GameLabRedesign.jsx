@@ -352,6 +352,9 @@ const GameLabRedesign = ({ playerAddress }) => {
         body: JSON.stringify({ player_address: playerAddress })
       });
       
+      // Immediately remove the treat from local state
+      setActiveTreats(prev => prev.filter(t => t.id !== treat.id));
+      
       if (response.ok) {
         const data = await response.json();
         
@@ -363,20 +366,20 @@ const GameLabRedesign = ({ playerAddress }) => {
           
           // Reload player data to update XP and points
           await loadPlayerData();
-          await loadActiveTreats();
         }, 2500);
       } else {
-        // If API fails, just remove from local state and reload
+        // If API fails, still hide animation
         setTimeout(async () => {
           setShowCollectAnimation(false);
           setCollectingTreat(null);
           setCollectedTreat(null);
           await loadPlayerData();
-          await loadActiveTreats();
         }, 2500);
       }
     } catch (err) {
       console.error('Error collecting treat:', err);
+      // Still remove from UI even if API fails
+      setActiveTreats(prev => prev.filter(t => t.id !== treat.id));
       setTimeout(() => {
         setShowCollectAnimation(false);
         setCollectingTreat(null);
