@@ -298,46 +298,193 @@ const Leaderboard = () => {
 
       {/* Leaderboard Table */}
       <Card className="glass-panel">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
+        <CardHeader className="pb-2 sm:pb-4">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
             Top 50 VIP Scientists
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-2 sm:px-6">
           {!leaderboard || leaderboard.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🦗</div>
-              <h3 className="text-2xl font-bold text-gray-600 mb-2">It's Quiet Here...</h3>
-              <p className="text-gray-500 mb-6">
+            <div className="text-center py-8 sm:py-12">
+              <div className="text-4xl sm:text-6xl mb-4">🦗</div>
+              <h3 className="text-lg sm:text-2xl font-bold text-gray-600 mb-2">It's Quiet Here...</h3>
+              <p className="text-sm sm:text-base text-gray-500 mb-6">
                 Be the first VIP Scientist to start competing for $LAB rewards!
               </p>
               <Link to="/lab">
-                <Button className="doge-button">
+                <Button className="doge-button text-sm sm:text-base">
                   Start Creating Treats 🧪
                 </Button>
               </Link>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-2">Rank</th>
-                    <th className="text-left py-3 px-2">Scientist</th>
-                    <th className="text-center py-3 px-2">Points</th>
-                    <th className="text-center py-3 px-2">Level</th>
-                    <th className="text-center py-3 px-2">Status</th>
-                    <th className="text-right py-3 px-2">Est. Rewards</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaderboard.map((entry, index) => {
-                    const rank = index + 1;
-                    const isCurrentUser = address && entry.address.toLowerCase() === address.toLowerCase();
-                    
-                    return (
-                      <tr 
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="text-left py-3 px-2 text-sm">Rank</th>
+                      <th className="text-left py-3 px-2 text-sm">Scientist</th>
+                      <th className="text-center py-3 px-2 text-sm">Points</th>
+                      <th className="text-center py-3 px-2 text-sm">Level</th>
+                      <th className="text-center py-3 px-2 text-sm">Status</th>
+                      <th className="text-right py-3 px-2 text-sm">Est. Rewards</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboard.map((entry, index) => {
+                      const rank = index + 1;
+                      const isCurrentUser = address && entry.address.toLowerCase() === address.toLowerCase();
+                      
+                      return (
+                        <tr 
+                          key={entry.address} 
+                          className={`border-b border-gray-100 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
+                            isCurrentUser ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200' : ''
+                          } ${rank <= 3 ? `leaderboard-row rank-${rank}` : 'leaderboard-row'}`}
+                        >
+                          <td className="py-4 px-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl">{getRankIcon(rank)}</span>
+                              <span className={`font-bold ${getRankColor(rank)}`}>
+                                #{rank}
+                              </span>
+                            </div>
+                          </td>
+                          
+                          <td className="py-4 px-2">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg flex-shrink-0">
+                                {entry.character_image ? (
+                                  <img 
+                                    src={entry.character_image} 
+                                    alt={entry.character_name || 'Scientist'}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-500 to-sky-400 flex items-center justify-center">
+                                    <span className="text-lg">🧪</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-bold text-gray-800 dark:text-gray-100 truncate text-sm">
+                                  {entry.nickname || `Scientist #${rank}`}
+                                </div>
+                                <div className="font-mono text-xs text-slate-500 dark:text-slate-400">
+                                  {formatAddress(entry.address)}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          
+                          <td className="py-4 px-2 text-center">
+                            <div className="font-bold text-green-600 dark:text-green-400 text-base">
+                              {entry.points.toLocaleString()}
+                            </div>
+                          </td>
+                          
+                          <td className="py-4 px-2 text-center">
+                            <Badge variant="outline" className="font-bold text-xs">
+                              Lv {entry.level}
+                            </Badge>
+                          </td>
+                          
+                          <td className="py-4 px-2 text-center">
+                            <Badge className={entry.is_nft_holder ? 'vip-badge text-xs' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs'}>
+                              {entry.is_nft_holder ? 'VIP' : 'Scientist'}
+                            </Badge>
+                          </td>
+                          
+                          <td className="py-4 px-2 text-right">
+                            <div className="font-bold text-yellow-600 dark:text-yellow-400 text-sm">
+                              {rank <= 50 ? calculateRewards(rank) : '0 LAB'}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {leaderboard.map((entry, index) => {
+                  const rank = index + 1;
+                  const isCurrentUser = address && entry.address.toLowerCase() === address.toLowerCase();
+                  
+                  return (
+                    <div 
+                      key={entry.address}
+                      className={`p-3 rounded-xl border ${
+                        isCurrentUser 
+                          ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' 
+                          : 'bg-white/50 dark:bg-slate-800/50 border-gray-200 dark:border-gray-700'
+                      } ${rank <= 3 ? 'ring-2 ring-yellow-400/50' : ''}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Rank */}
+                        <div className="flex flex-col items-center min-w-[40px]">
+                          <span className="text-2xl">{getRankIcon(rank)}</span>
+                          <span className={`font-bold text-sm ${getRankColor(rank)}`}>#{rank}</span>
+                        </div>
+                        
+                        {/* Character Avatar */}
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg flex-shrink-0">
+                          {entry.character_image ? (
+                            <img 
+                              src={entry.character_image} 
+                              alt={entry.character_name || 'Scientist'}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-500 to-sky-400 flex items-center justify-center">
+                              <span className="text-xl">🧪</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-800 dark:text-gray-100 truncate text-sm">
+                              {entry.nickname || `Scientist #${rank}`}
+                            </span>
+                            {isCurrentUser && (
+                              <Badge className="bg-blue-500 text-white text-[10px] px-1.5 py-0">You</Badge>
+                            )}
+                          </div>
+                          <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                            {formatAddress(entry.address)}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">Lv {entry.level}</Badge>
+                            {entry.is_nft_holder && (
+                              <Badge className="vip-badge text-[10px] px-1.5 py-0">VIP</Badge>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Points & Rewards */}
+                        <div className="text-right flex-shrink-0">
+                          <div className="font-bold text-green-600 dark:text-green-400 text-lg">
+                            {entry.points.toLocaleString()}
+                          </div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400">points</div>
+                          <div className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 mt-1">
+                            {rank <= 50 ? calculateRewards(rank) : '0 LAB'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )} 
                         key={entry.address} 
                         className={`border-b border-gray-100 hover:bg-slate-50 dark:bg-slate-800 transition-colors ${
                           isCurrentUser ? 'bg-blue-50 border-blue-200' : ''
