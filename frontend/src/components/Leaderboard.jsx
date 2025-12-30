@@ -155,9 +155,9 @@ const Leaderboard = () => {
   const getRankColor = (rank) => {
     switch (rank) {
       case 1: return 'text-yellow-500';
-      case 2: return 'text-gray-400';
-      case 3: return 'text-amber-600';
-      default: return 'text-gray-600';
+      case 2: return 'text-slate-400 dark:text-slate-300';
+      case 3: return 'text-amber-600 dark:text-amber-400';
+      default: return 'text-slate-600 dark:text-slate-300';
     }
   };
 
