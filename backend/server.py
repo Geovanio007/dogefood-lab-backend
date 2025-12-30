@@ -269,16 +269,8 @@ async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTask
         {"$push": {"created_treats": treat.id}}
     )
     
-    # Phase 2: Award points for treat creation
-    background_tasks.add_task(
-        award_treat_creation_points,
-        treat_data.creator_address,
-        {
-            "rarity": treat_data.rarity,
-            "ingredients": treat_data.ingredients,
-            "main_ingredient": treat_data.main_ingredient
-        }
-    )
+    # NOTE: Points and XP are awarded ONLY when the treat is collected, not on creation
+    # This prevents double-awarding rewards
     
     return treat
 
