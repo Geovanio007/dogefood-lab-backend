@@ -446,22 +446,22 @@ const Leaderboard = () => {
             <div className="text-center">
               <div className="text-4xl mb-2">🥇</div>
               <h3 className="font-bold text-lg text-yellow-500">Ranks 1-10</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-300">1,000 - 10,000 LAB</p>
+              <p className="text-sm text-slate-600 dark:text-slate-200">1,000 - 10,000 LAB</p>
             </div>
             <div className="text-center">
               <div className="text-4xl mb-2">🥈</div>
-              <h3 className="font-bold text-lg text-slate-400 dark:text-slate-300">Ranks 11-25</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-300">250 - 1,000 LAB</p>
+              <h3 className="font-bold text-lg text-slate-500 dark:text-slate-300">Ranks 11-25</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-200">250 - 1,000 LAB</p>
             </div>
             <div className="text-center">
               <div className="text-4xl mb-2">🥉</div>
-              <h3 className="font-bold text-lg text-amber-600">Ranks 26-50</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-300">125 - 250 LAB</p>
+              <h3 className="font-bold text-lg text-amber-600 dark:text-amber-400">Ranks 26-50</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-200">125 - 250 LAB</p>
             </div>
           </div>
           
-          <div className="mt-6 p-4 bg-blue-100 border border-blue-300 rounded-lg">
-            <p className="text-blue-800 text-sm text-center">
+          <div className="mt-6 p-4 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg">
+            <p className="text-blue-800 dark:text-blue-200 text-sm text-center">
               🎯 <strong>Remember:</strong> Only the top 50 DogeFood NFT holders are eligible for seasonal $LAB rewards!
             </p>
           </div>
