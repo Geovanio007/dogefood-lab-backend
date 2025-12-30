@@ -854,11 +854,12 @@ const GameLabRedesign = ({ playerAddress }) => {
                   return (
                     <div
                       key={treat.id || index}
+                      onClick={() => isReady && handleCollectTreat(treat)}
                       className={`p-4 rounded-xl border-2 transition-all ${
                         isReady 
-                          ? 'bg-gradient-to-br from-yellow-400/40 to-yellow-500/40 border-yellow-400 animate-pulse' 
+                          ? 'bg-gradient-to-br from-yellow-400/40 to-yellow-500/40 border-yellow-400 animate-pulse cursor-pointer hover:scale-105 hover:shadow-xl hover:shadow-yellow-400/30' 
                           : `bg-white/10 border-white/30`
-                      }`}
+                      } ${collectingTreat === treat.id ? 'opacity-50 pointer-events-none' : ''}`}
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
@@ -881,7 +882,12 @@ const GameLabRedesign = ({ playerAddress }) => {
                       
                       <div className="text-center">
                         {isReady ? (
-                          <div className="text-yellow-300 font-bold text-lg drop-shadow-md">🎉 Ready to Collect!</div>
+                          <Button 
+                            className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-white font-bold shadow-lg shadow-yellow-500/40 px-6"
+                            disabled={collectingTreat === treat.id}
+                          >
+                            {collectingTreat === treat.id ? '✨ Collecting...' : '🎁 Tap to Collect!'}
+                          </Button>
                         ) : (
                           <div className="text-white font-mono text-lg drop-shadow-md">
                             {hours > 0 && `${hours}h `}{minutes}m {seconds}s
