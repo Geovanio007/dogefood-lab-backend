@@ -167,11 +167,12 @@ class TreatGameEngine:
         return hash_int / 0xFFFFFFFFFFFFFFFF
     
     def calculate_treat_rarity(self, ingredients: List[str], player_level: int, 
-                             player_address: str, timestamp: int = None) -> TreatRarity:
+                             player_address: str, timestamp: int = None,
+                             rare_chance_bonus: float = 0.0) -> TreatRarity:
         """
         Calculate treat rarity based on probability system
         
-        Probabilities:
+        Probabilities (base):
         - Common: 45%
         - Uncommon: 30%
         - Rare: 15%
@@ -184,6 +185,7 @@ class TreatGameEngine:
             player_level: Player's current level
             player_address: Player's wallet address for secure randomization
             timestamp: Optional timestamp for deterministic results
+            rare_chance_bonus: Bonus percentage for rare+ treats (Rex character = 0.15)
             
         Returns:
             TreatRarity enum value
@@ -212,6 +214,13 @@ class TreatGameEngine:
         
         # Convert to percentage (0-100)
         roll = random_value * 100
+        
+        # Apply Rex's rare chance bonus - increases chance for Rare, Epic, Legendary, Mythic
+        # By reducing the roll value, higher rarities become more likely
+        if rare_chance_bonus > 0:
+            # Apply bonus to make rare+ more likely (reduce the roll for better outcomes)
+            bonus_applied = roll * (1 - rare_chance_bonus)
+            roll = bonus_applied
         
         # Check rarities in order of rarity (highest first)
         cumulative_chance = 0
