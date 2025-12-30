@@ -14,6 +14,68 @@ import { Beaker, Trophy, Settings, Palette, Clock, User, Check, Edit2 } from 'lu
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
+// Season 1 End Date - 90 days from Dec 1, 2024
+const SEASON_1_END = new Date('2025-03-01T00:00:00Z').getTime();
+
+// Season Countdown Component
+const SeasonCountdown = () => {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const now = Date.now();
+      const diff = SEASON_1_END - now;
+      
+      if (diff <= 0) {
+        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+      }
+      
+      return {
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((diff % (1000 * 60)) / 1000)
+      };
+    };
+    
+    setTimeLeft(calculateTimeLeft());
+    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  
+  return (
+    <div className="bg-gradient-to-r from-sky-500/20 to-emerald-500/20 rounded-lg p-3 border border-sky-400/30">
+      <div className="text-xs text-sky-300 mb-1 text-center font-semibold">⏱️ SEASON ENDS IN</div>
+      <div className="flex gap-2 justify-center">
+        <div className="text-center">
+          <div className="bg-sky-500/30 rounded px-2 py-1 min-w-[40px]">
+            <span className="text-lg font-bold text-white">{timeLeft.days}</span>
+          </div>
+          <span className="text-[10px] text-sky-300">DAYS</span>
+        </div>
+        <div className="text-center">
+          <div className="bg-sky-500/30 rounded px-2 py-1 min-w-[40px]">
+            <span className="text-lg font-bold text-white">{String(timeLeft.hours).padStart(2, '0')}</span>
+          </div>
+          <span className="text-[10px] text-sky-300">HRS</span>
+        </div>
+        <div className="text-center">
+          <div className="bg-sky-500/30 rounded px-2 py-1 min-w-[40px]">
+            <span className="text-lg font-bold text-white">{String(timeLeft.minutes).padStart(2, '0')}</span>
+          </div>
+          <span className="text-[10px] text-sky-300">MIN</span>
+        </div>
+        <div className="text-center">
+          <div className="bg-emerald-500/30 rounded px-2 py-1 min-w-[40px]">
+            <span className="text-lg font-bold text-emerald-400">{String(timeLeft.seconds).padStart(2, '0')}</span>
+          </div>
+          <span className="text-[10px] text-emerald-300">SEC</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MainMenu = () => {
   const { address, isConnected } = useAccount();
   const { nftBalance, isNFTHolder, loading: nftLoading } = useNFTVerification();
