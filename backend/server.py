@@ -552,6 +552,88 @@ async def get_active_treats_with_timer(address: str):
         logger.error(f"Error getting active treats: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
+@api_router.post("/treats/{treat_id}/collect")
+async def collect_treat(treat_id: str, data: dict):
+    """
+    Collect a ready treat and award points/XP to the player.
+    """
+    try:
+        player_address = data.get("player_address")
+        if not player_address:
+            raise HTTPException(status_code=400, detail="Player address required")
+        
+        # Find the treat
+        treat = await db.treats.find_one({"id": treat_id})
+        if not treat:
+            raise HTTPException(status_code=404, detail="Treat not found")
+        
+        # Verify ownership
+        if treat.get("creator_address") != player_address:
+            raise HTTPException(status_code=403, detail="You don't own this treat")
+        
+        # Check if already collected
+        if treat.get("brewing_status") == "collected":
+            raise HTTPException(status_code=400, detail="Treat already collected")
+        
+        # Check if ready
+        now = datetime.utcnow()
+        ready_at = treat.get("ready_at")
+        if isinstance(ready_at, str):
+            ready_at = datetime.fromisoformat(ready_at.replace("Z", ""))
+        
+        if ready_at and now < ready_at:
+            raise HTTPException(status_code=400, detail="Treat is not ready yet")
+        
+        # Get rewards
+        points_reward = treat.get("points_reward", 10)
+        xp_reward = treat.get("xp_reward", 5)
+        
+        # Update treat status
+        await db.treats.update_one(
+            {"id": treat_id},
+            {"$set": {
+                "brewing_status": "collected",
+                "collected_at": now.isoformat()
+            }}
+        )
+        
+        # Update player stats
+        player = await db.players.find_one({"address": player_address})
+        if player:
+            new_xp = player.get("experience", 0) + xp_reward
+            new_level = player.get("level", 1)
+            
+            # Check for level up (100 XP per level)
+            xp_for_level = new_level * 100
+            if new_xp >= xp_for_level:
+                new_level += 1
+                new_xp = new_xp - xp_for_level
+            
+            await db.players.update_one(
+                {"address": player_address},
+                {"$set": {
+                    "experience": new_xp,
+                    "level": new_level,
+                    "last_active": now.isoformat()
+                },
+                "$inc": {"points": points_reward}}
+            )
+        
+        return {
+            "success": True,
+            "message": "Treat collected successfully!",
+            "rewards": {
+                "points": points_reward,
+                "xp": xp_reward
+            },
+            "treat_id": treat_id
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error collecting treat: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
 # Leaderboard Routes
 @api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
 async def get_leaderboard(limit: int = 50):
