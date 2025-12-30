@@ -12,7 +12,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 // Season 1 End Date - 90 days from Dec 1, 2025 (Season started Dec 1, 2025)
 const SEASON_1_END = new Date('2026-03-01T00:00:00Z').getTime();
 
-// Season Countdown Component
+// Season Countdown Component - Mobile Optimized
 const SeasonCountdown = () => {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   
@@ -39,34 +39,34 @@ const SeasonCountdown = () => {
   }, []);
   
   return (
-    <div className="bg-gradient-to-r from-sky-500/20 to-yellow-500/20 rounded-xl p-4 border border-sky-400/30">
-      <div className="text-sm text-sky-400 mb-2 text-center font-semibold flex items-center justify-center gap-2">
-        <Clock className="w-4 h-4" /> SEASON 1 ENDS IN
+    <div className="bg-gradient-to-r from-sky-500/20 to-yellow-500/20 rounded-xl p-3 sm:p-4 border border-sky-400/30">
+      <div className="text-xs sm:text-sm text-sky-400 mb-2 text-center font-semibold flex items-center justify-center gap-1 sm:gap-2">
+        <Clock className="w-3 h-3 sm:w-4 sm:h-4" /> SEASON 1 ENDS IN
       </div>
-      <div className="flex gap-3 justify-center">
+      <div className="flex gap-1.5 sm:gap-3 justify-center">
         <div className="text-center">
-          <div className="bg-sky-500/30 rounded-lg px-3 py-2 min-w-[50px]">
-            <span className="text-2xl font-bold text-white">{timeLeft.days}</span>
+          <div className="bg-sky-500/30 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 min-w-[40px] sm:min-w-[50px]">
+            <span className="text-lg sm:text-2xl font-bold text-white">{timeLeft.days}</span>
           </div>
-          <span className="text-xs text-sky-300 mt-1 block">DAYS</span>
+          <span className="text-[10px] sm:text-xs text-sky-300 mt-1 block">DAYS</span>
         </div>
         <div className="text-center">
-          <div className="bg-sky-500/30 rounded-lg px-3 py-2 min-w-[50px]">
-            <span className="text-2xl font-bold text-white">{String(timeLeft.hours).padStart(2, '0')}</span>
+          <div className="bg-sky-500/30 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 min-w-[40px] sm:min-w-[50px]">
+            <span className="text-lg sm:text-2xl font-bold text-white">{String(timeLeft.hours).padStart(2, '0')}</span>
           </div>
-          <span className="text-xs text-sky-300 mt-1 block">HRS</span>
+          <span className="text-[10px] sm:text-xs text-sky-300 mt-1 block">HRS</span>
         </div>
         <div className="text-center">
-          <div className="bg-sky-500/30 rounded-lg px-3 py-2 min-w-[50px]">
-            <span className="text-2xl font-bold text-white">{String(timeLeft.minutes).padStart(2, '0')}</span>
+          <div className="bg-sky-500/30 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 min-w-[40px] sm:min-w-[50px]">
+            <span className="text-lg sm:text-2xl font-bold text-white">{String(timeLeft.minutes).padStart(2, '0')}</span>
           </div>
-          <span className="text-xs text-sky-300 mt-1 block">MIN</span>
+          <span className="text-[10px] sm:text-xs text-sky-300 mt-1 block">MIN</span>
         </div>
         <div className="text-center">
-          <div className="bg-yellow-500/30 rounded-lg px-3 py-2 min-w-[50px]">
-            <span className="text-2xl font-bold text-yellow-400">{String(timeLeft.seconds).padStart(2, '0')}</span>
+          <div className="bg-yellow-500/30 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 min-w-[40px] sm:min-w-[50px]">
+            <span className="text-lg sm:text-2xl font-bold text-yellow-400">{String(timeLeft.seconds).padStart(2, '0')}</span>
           </div>
-          <span className="text-xs text-yellow-300 mt-1 block">SEC</span>
+          <span className="text-[10px] sm:text-xs text-yellow-300 mt-1 block">SEC</span>
         </div>
       </div>
     </div>
