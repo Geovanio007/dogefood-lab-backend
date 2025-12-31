@@ -173,7 +173,7 @@ const MainMenu = () => {
       
       // Save to backend
       try {
-        const response = await fetch(`${BACKEND_URL}/api/player/${address}/profile-image`, {
+        const response = await fetch(`${BACKEND_URL}/api/player/${effectiveAddress}/profile-image`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ image: base64Image })
@@ -205,7 +205,7 @@ const MainMenu = () => {
     
     try {
       const response = await fetch(
-        `${BACKEND_URL}/api/player/${address}/update-username?username=${encodeURIComponent(usernameInput)}`,
+        `${BACKEND_URL}/api/player/${effectiveAddress}/update-username?username=${encodeURIComponent(usernameInput)}`,
         { method: 'POST' }
       );
       
