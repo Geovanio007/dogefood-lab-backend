@@ -468,18 +468,22 @@ const MainMenu = () => {
                       <div className="flex items-center gap-2 sm:gap-3 bg-white/5 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2">
                         <div className="text-center">
                           <div className="text-[10px] sm:text-xs text-white/60">Level</div>
-                          <div className="font-bold text-sm sm:text-lg text-white">{currentLevel || 1}</div>
+                          <div className="font-bold text-sm sm:text-lg text-white">{effectiveLevel || 1}</div>
                         </div>
                         <div className="w-px h-6 sm:h-8 bg-white/20"></div>
                         <div className="text-center">
                           <div className="text-[10px] sm:text-xs text-white/60">Points</div>
-                          <div className="font-bold text-sm sm:text-lg text-emerald-400">{points || 0}</div>
+                          <div className="font-bold text-sm sm:text-lg text-emerald-400">{effectivePoints || 0}</div>
                         </div>
                       </div>
                       
-                      {isNFTHolder && (
+                      {isNFTHolder ? (
                         <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-bold shadow-lg border-0 whitespace-nowrap">
                           🌟 VIP
+                        </Badge>
+                      ) : guestUser && !isConnected && (
+                        <Badge className="bg-gradient-to-r from-sky-500 to-emerald-500 text-white px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-bold shadow-lg border-0 whitespace-nowrap">
+                          🎮 Player
                         </Badge>
                       )}
                     </div>
