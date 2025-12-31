@@ -55,19 +55,26 @@
 - **Testing Focus:** Guest user flow and profile banner visibility
 - **Priority:** HIGH - Fix authentication flows before other features
 
-### CRITICAL ISSUE FOUND (2025-12-31):
-**Root Cause**: Telegram detection logic is incorrectly identifying regular browser as Telegram environment
-- `window.Telegram.WebApp.initData` exists but is empty string `''`
-- Detection logic `window.Telegram?.WebApp?.initData !== undefined` returns true for empty string
-- This causes `isTelegram = true`, which skips WelcomeScreen entirely
+### CRITICAL ISSUE FOUND & FIXED (2025-12-31):
+**Root Cause**: Telegram detection logic was incorrectly identifying regular browser as Telegram environment
+- `window.Telegram.WebApp.initData` existed but was empty string `''`
+- Detection logic `window.Telegram?.WebApp?.initData !== undefined` returned true for empty string
+- This caused `isTelegram = true`, which skipped WelcomeScreen entirely
 - Result: No access to guest registration flow in regular browser
 
 **Impact**: 
-- ❌ WelcomeScreen never shows in regular browser
+- ❌ WelcomeScreen never showed in regular browser
 - ❌ No "PLAY NOW" or "Create Account" buttons visible
 - ❌ Only "Connect Wallet" option available
 - ❌ Guest registration completely inaccessible
 
-**Fix Required**: Update Telegram detection in `/app/frontend/src/utils/telegram.js` line 14-16
-- Change from: `window.Telegram?.WebApp?.initData !== undefined`
-- Change to: `window.Telegram?.WebApp?.initData && window.Telegram.WebApp.initData.length > 0`
+**Fix Applied**: Updated Telegram detection in `/app/frontend/src/utils/telegram.js` line 14-16
+- Changed from: `window.Telegram?.WebApp?.initData !== undefined`
+- Changed to: `window.Telegram?.WebApp?.initData && window.Telegram.WebApp.initData.length > 0`
+
+**RESULT**: ✅ **GUEST REGISTRATION FLOW NOW FULLY WORKING**
+- ✅ WelcomeScreen shows correctly
+- ✅ Guest registration accessible via "Create Account" → "Quick Play (Guest)"
+- ✅ Profile banner appears with username, level, points, and guest badge
+- ✅ Username editing functionality works
+- ✅ All authentication flows restored
