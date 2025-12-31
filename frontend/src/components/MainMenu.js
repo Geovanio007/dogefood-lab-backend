@@ -87,8 +87,11 @@ const MainMenu = () => {
   const [usernameInput, setUsernameInput] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [savingUsername, setSavingUsername] = useState(false);
+  
+  // Profile image state
+  const [profileImage, setProfileImage] = useState(null);
 
-  // Load player profile including username
+  // Load player profile including username and profile image
   useEffect(() => {
     const loadProfile = async () => {
       if (isConnected && address) {
@@ -97,6 +100,7 @@ const MainMenu = () => {
           if (response.ok) {
             const profile = await response.json();
             setUsername(profile.nickname || '');
+            setProfileImage(profile.profile_image || null);
           }
         } catch (error) {
           console.error('Error loading profile:', error);
@@ -105,6 +109,41 @@ const MainMenu = () => {
     };
     loadProfile();
   }, [isConnected, address]);
+
+  // Handle profile image upload
+  const handleProfileImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image must be less than 2MB');
+      return;
+    }
+    
+    // Convert to base64 for preview and upload
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64Image = event.target.result;
+      setProfileImage(base64Image);
+      
+      // Save to backend
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/player/${address}/profile-image`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64Image })
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to upload profile image');
+        }
+      } catch (error) {
+        console.error('Error uploading profile image:', error);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSaveUsername = async () => {
     if (!usernameInput.trim()) {
