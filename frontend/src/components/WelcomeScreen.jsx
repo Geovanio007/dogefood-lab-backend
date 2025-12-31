@@ -80,8 +80,9 @@ const WelcomeScreen = ({ onPlayNow }) => {
           <p className="text-sm sm:text-xl opacity-80">Ready to become the ultimate treat creator?</p>
         </div>
 
-        {/* Play Now Button - Mobile Optimized */}
-        <div className="welcome-button-container mb-6 sm:mb-8 flex justify-center items-center">
+        {/* Buttons Container - Mobile Optimized */}
+        <div className="welcome-button-container mb-6 sm:mb-8 flex flex-col items-center gap-4">
+          {/* Play Now Button (for returning users/wallet users) */}
           <button
             onClick={() => {
               console.log('PLAY NOW button clicked!');
