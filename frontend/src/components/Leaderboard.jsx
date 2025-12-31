@@ -456,6 +456,12 @@ const Leaderboard = () => {
                         
                         {/* Info */}
                         <div className="flex-1 min-w-0">
+                          {/* Character Name */}
+                          {entry.character_name && (
+                            <div className="text-[10px] text-purple-500 dark:text-purple-400 font-semibold truncate">
+                              {entry.character_name}
+                            </div>
+                          )}
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-gray-800 dark:text-gray-100 truncate text-sm">
                               {entry.nickname || `Scientist #${rank}`}
