@@ -44,12 +44,16 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
       }
       
       // Store player info in localStorage
-      localStorage.setItem('dogefood_player', JSON.stringify({
+      const playerData = {
         id: data.player_id,
         username: data.username,
         guest_id: data.guest_id,
         auth_type: 'guest'
-      }));
+      };
+      localStorage.setItem('dogefood_player', JSON.stringify(playerData));
+      
+      // Dispatch custom event to notify MainMenu of registration
+      window.dispatchEvent(new Event('dogefood_player_registered'));
       
       onSuccess(data);
     } catch (err) {
@@ -81,13 +85,17 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
       }
       
       // Store player info
-      localStorage.setItem('dogefood_player', JSON.stringify({
+      const playerData = {
         id: data.player_id,
         username: data.username,
         email: data.email,
         firebase_uid: data.firebase_uid,
         auth_type: 'firebase'
-      }));
+      };
+      localStorage.setItem('dogefood_player', JSON.stringify(playerData));
+      
+      // Dispatch custom event to notify MainMenu of registration
+      window.dispatchEvent(new Event('dogefood_player_registered'));
       
       onSuccess(data);
     } catch (err) {
@@ -130,13 +138,17 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
       }
       
       // Store player info
-      localStorage.setItem('dogefood_player', JSON.stringify({
+      const playerData = {
         id: data.player_id,
         username: data.username,
         email: data.email,
         firebase_uid: data.firebase_uid,
         auth_type: 'firebase'
-      }));
+      };
+      localStorage.setItem('dogefood_player', JSON.stringify(playerData));
+      
+      // Dispatch custom event to notify MainMenu of registration
+      window.dispatchEvent(new Event('dogefood_player_registered'));
       
       onSuccess(data);
     } catch (err) {

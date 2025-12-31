@@ -92,25 +92,64 @@ const MainMenu = () => {
   const [profileImage, setProfileImage] = useState(null);
   
   // Guest/Firebase user state
-  const [guestUser, setGuestUser] = useState(null);
-  const [playerLevel, setPlayerLevel] = useState(1);
-  const [playerPoints, setPlayerPoints] = useState(0);
-
-  // Check for guest/firebase user on mount
-  useEffect(() => {
+  const [guestUser, setGuestUser] = useState(() => {
+    // Initialize from localStorage immediately
     const storedPlayer = localStorage.getItem('dogefood_player');
     if (storedPlayer) {
       try {
-        const player = JSON.parse(storedPlayer);
-        setGuestUser(player);
-        setUsername(player.username || '');
-        
-        // Load full profile from backend
-        loadGuestProfile(player.guest_id || player.id);
+        return JSON.parse(storedPlayer);
       } catch (e) {
         console.error('Error parsing stored player:', e);
+        return null;
       }
     }
+    return null;
+  });
+  const [playerLevel, setPlayerLevel] = useState(1);
+  const [playerPoints, setPlayerPoints] = useState(0);
+
+  // Check for guest/firebase user on mount and when localStorage changes
+  useEffect(() => {
+    const loadStoredPlayer = () => {
+      const storedPlayer = localStorage.getItem('dogefood_player');
+      if (storedPlayer) {
+        try {
+          const player = JSON.parse(storedPlayer);
+          setGuestUser(player);
+          setUsername(player.username || '');
+          
+          // Load full profile from backend
+          const playerId = player.guest_id || player.id || player.address;
+          if (playerId) {
+            loadGuestProfile(playerId);
+          }
+        } catch (e) {
+          console.error('Error parsing stored player:', e);
+        }
+      }
+    };
+    
+    loadStoredPlayer();
+    
+    // Listen for storage changes (in case user registers in another flow)
+    const handleStorageChange = (e) => {
+      if (e.key === 'dogefood_player') {
+        loadStoredPlayer();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom event dispatched after registration
+    const handlePlayerRegistered = () => {
+      loadStoredPlayer();
+    };
+    window.addEventListener('dogefood_player_registered', handlePlayerRegistered);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('dogefood_player_registered', handlePlayerRegistered);
+    };
   }, []);
 
   // Load guest/firebase user profile
