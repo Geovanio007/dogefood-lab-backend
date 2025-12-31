@@ -163,8 +163,19 @@ const InnerApp = () => {
           </div>
         )}
 
+        {/* Telegram Authentication - Show when Telegram user needs registration */}
+        {!showWelcome && !isLoading && !isCheckingRegistration && showTelegramAuth && (
+          <TelegramAuth 
+            onAuthComplete={(data) => {
+              console.log('Telegram auth complete:', data);
+              setShowTelegramAuth(false);
+              setUserRegistered(true);
+            }} 
+          />
+        )}
+
         {/* Main Application - After loading screen, show main menu */}
-        {!showWelcome && !isLoading && !isCheckingRegistration && (
+        {!showWelcome && !isLoading && !isCheckingRegistration && !showTelegramAuth && (
           <Router>
             {/* Always show main routes after loading - authentication is optional */}
             <Routes>
