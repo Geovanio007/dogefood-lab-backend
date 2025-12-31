@@ -160,7 +160,7 @@ const MainMenu = () => {
   }, [isConnected, address, isNFTHolder, nftBalance, nftLoading, dispatch]);
 
   return (
-    <div className="lab-container min-h-screen p-8">
+    <div className="lab-container min-h-screen p-4 sm:p-8">
       {/* Background Lab Scene */}
       <div className="absolute inset-0 opacity-10">
         <img
@@ -172,38 +172,41 @@ const MainMenu = () => {
 
       <div className="relative z-10 max-w-6xl mx-auto">
         
-        {/* Shiba Inu image removed as requested */}
-        {/* Header with New Logo */}
-        <div className="flex justify-between items-center mb-12">
-          <div>
+        {/* Header - Mobile Optimized */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-12">
+          {/* Logo and Tagline */}
+          <div className="w-full sm:w-auto">
             <DogeFoodLogo 
               size="hero" 
               showText={false} 
               showBeta={true}
-              className="animate-fade-in mb-4"
+              className="animate-fade-in mb-2 sm:mb-4 scale-75 sm:scale-100 origin-left"
             />
-            <p className="text-2xl text-yellow-500 font-bold playful-text bubble-text drop-shadow-lg">
+            <p className="text-sm sm:text-2xl text-yellow-500 font-bold drop-shadow-lg">
               Mix, Test & Upgrade Your Way to the Top! 🚀
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* Right Side Controls */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto">
             {/* Theme Toggle Button */}
             <ThemeToggle />
             
             {isConnected && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {isNFTHolder && (
-                  <Badge className="vip-badge">
-                    VIP Scientist 👨‍🔬
+                  <Badge className="vip-badge text-xs sm:text-sm whitespace-nowrap">
+                    VIP 👨‍🔬
                   </Badge>
                 )}
-                <div className="glass-panel p-3">
-                  <div className="text-sm text-slate-600 dark:text-slate-300">Level {currentLevel}</div>
-                  <div className="font-bold text-lg">{points} Points</div>
+                <div className="glass-panel p-2 sm:p-3">
+                  <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">Lv {currentLevel}</div>
+                  <div className="font-bold text-sm sm:text-lg">{points} Pts</div>
                 </div>
               </div>
             )}
+            
+            {/* Wallet Connection - Mobile Optimized */}
             <div className="wallet-connection-wrapper">
               <ConnectButton.Custom>
                 {({
@@ -239,7 +242,7 @@ const MainMenu = () => {
                           return (
                             <Button
                               onClick={openConnectModal}
-                              className="doge-button"
+                              className="doge-button text-xs sm:text-sm px-3 sm:px-4 py-2"
                             >
                               Connect Wallet
                             </Button>
@@ -250,7 +253,7 @@ const MainMenu = () => {
                           return (
                             <Button
                               onClick={openChainModal}
-                              className="bg-red-500 text-white px-4 py-2 rounded-lg"
+                              className="bg-red-500 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm"
                             >
                               Wrong network
                             </Button>
@@ -258,14 +261,12 @@ const MainMenu = () => {
                         }
 
                         return (
-                          <div className="flex items-center gap-2">
-                            <Button
-                              onClick={openAccountModal}
-                              className="doge-button"
-                            >
-                              {`${account.address.slice(0,6)}...${account.address.slice(-4)}`}
-                            </Button>
-                          </div>
+                          <Button
+                            onClick={openAccountModal}
+                            className="doge-button text-xs sm:text-sm px-3 sm:px-4 py-2 font-mono"
+                          >
+                            {`${account.address.slice(0,4)}...${account.address.slice(-3)}`}
+                          </Button>
                         );
                       })()}
                     </div>
