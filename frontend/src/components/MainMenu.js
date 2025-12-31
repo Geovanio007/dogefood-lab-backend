@@ -360,8 +360,8 @@ const MainMenu = () => {
           </div>
         </div>
         
-        {/* Username Section - Modern Design - Only show when connected */}
-        {isConnected && (
+        {/* Username Section - Modern Design - Show for wallet users, guest users, or firebase users */}
+        {isLoggedIn && (
           <div className="mb-4 sm:mb-6">
             <Card className="overflow-hidden border-0 shadow-xl">
               {/* Gradient Border - Same as Season 1 Banner */}
@@ -369,6 +369,16 @@ const MainMenu = () => {
                 <CardContent className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
                   {/* Decorative Elements - Hidden on mobile */}
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/20 to-transparent rounded-full blur-2xl hidden sm:block"></div>
+                  
+                  {/* Guest/Firebase user badge */}
+                  {guestUser && !isConnected && (
+                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
+                      <Badge className="bg-sky-500/20 text-sky-300 text-[10px] sm:text-xs border border-sky-500/30">
+                        {guestUser.auth_type === 'firebase' ? '🔥 ' : '👤 '}
+                        {guestUser.auth_type === 'firebase' ? 'Firebase' : 'Guest'}
+                      </Badge>
+                    </div>
+                  )}
                   
                   <div className="flex flex-col gap-3 sm:gap-4 relative z-10">
                     {/* Profile Section */}
@@ -396,7 +406,7 @@ const MainMenu = () => {
                         />
                         {isNFTHolder && (
                           <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-yellow-400 rounded-full flex items-center justify-center text-[10px] sm:text-xs">⭐</div>
-                        )}
+                        )}}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[10px] sm:text-xs text-emerald-400 font-semibold uppercase tracking-wide">Scientist Profile</div>
