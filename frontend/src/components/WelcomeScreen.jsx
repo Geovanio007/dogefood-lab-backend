@@ -107,8 +107,17 @@ const WelcomeScreen = ({ onPlayNow }) => {
             <div className="absolute inset-0 rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover:scale-125 border-4 border-sky-300 shadow-lg shadow-sky-300/30"></div>
           </button>
 
-          {/* Pulsing Effect - Sky Blue */}
-          <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-sky-400" style={{ animationDuration: '2s' }}></div>
+          {/* Create Account Button (for new users) */}
+          <button
+            onClick={() => setShowAuthModal(true)}
+            className={`text-sm sm:text-lg font-semibold px-6 py-2 rounded-full transition-all hover:scale-105 ${
+              isDarkMode 
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-500/30' 
+                : 'bg-emerald-500/20 text-emerald-700 border border-emerald-500/50 hover:bg-emerald-500/30'
+            }`}
+          >
+            ✨ New? Create Account (Email/Google/Guest)
+          </button>
         </div>
 
         {/* Bottom Tagline - Mobile Optimized */}
