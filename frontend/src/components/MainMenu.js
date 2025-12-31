@@ -281,28 +281,45 @@ const MainMenu = () => {
         {isConnected && (
           <div className="mb-4 sm:mb-6">
             <Card className="overflow-hidden border-0 shadow-xl">
-              {/* Gradient Border */}
-              <div className="relative bg-gradient-to-r from-purple-500 via-pink-500 to-sky-400 p-0.5 sm:p-1">
+              {/* Gradient Border - Same as Season 1 Banner */}
+              <div className="relative bg-gradient-to-r from-sky-400 via-emerald-400 to-yellow-400 p-0.5 sm:p-1">
                 <CardContent className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
                   {/* Decorative Elements - Hidden on mobile */}
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-2xl hidden sm:block"></div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/20 to-transparent rounded-full blur-2xl hidden sm:block"></div>
                   
                   <div className="flex flex-col gap-3 sm:gap-4 relative z-10">
                     {/* Profile Section */}
                     <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="relative flex-shrink-0">
-                        <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-purple-400 via-pink-500 to-sky-400 rounded-xl flex items-center justify-center shadow-lg">
-                          <User className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-                        </div>
+                      {/* Profile Picture - Clickable for upload */}
+                      <div className="relative flex-shrink-0 group">
+                        <label htmlFor="profile-upload" className="cursor-pointer">
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-sky-400 via-emerald-400 to-yellow-400 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                            {profileImage ? (
+                              <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                              <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                            )}
+                          </div>
+                          <div className="absolute inset-0 bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="text-white text-xs">📷</span>
+                          </div>
+                        </label>
+                        <input
+                          id="profile-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleProfileImageUpload}
+                        />
                         {isNFTHolder && (
                           <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-yellow-400 rounded-full flex items-center justify-center text-[10px] sm:text-xs">⭐</div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[10px] sm:text-xs text-sky-400 font-semibold uppercase tracking-wide">Scientist Profile</div>
+                        <div className="text-[10px] sm:text-xs text-emerald-400 font-semibold uppercase tracking-wide">Scientist Profile</div>
                         {!isEditingUsername ? (
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm sm:text-lg bg-gradient-to-r from-purple-400 via-pink-400 to-sky-400 bg-clip-text text-transparent truncate">
+                            <span className="font-bold text-sm sm:text-lg bg-gradient-to-r from-sky-400 via-emerald-400 to-yellow-400 bg-clip-text text-transparent truncate">
                               {username || 'Set username'}
                             </span>
                             <Button
@@ -315,7 +332,7 @@ const MainMenu = () => {
                               }}
                               className="p-1 h-auto hover:bg-white/10 flex-shrink-0"
                             >
-                              <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 text-sky-400" />
+                              <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-400" />
                             </Button>
                           </div>
                         ) : (
