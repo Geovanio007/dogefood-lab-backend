@@ -90,8 +90,9 @@ api_router = APIRouter(prefix="/api")
 # Game Models
 class Player(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    address: Optional[str] = None  # Wallet address (optional for Telegram users)
+    address: Optional[str] = None  # Wallet address (optional for Telegram/guest users)
     nickname: Optional[str] = None  # Enhanced: Add nickname support
+    email: Optional[str] = None  # Email for Firebase auth users
     # Character selection
     selected_character: Optional[str] = None  # Character ID: 'max', 'rex', or 'luna'
     character_bonuses: Optional[dict] = None  # Character-specific bonuses
@@ -100,10 +101,17 @@ class Player(BaseModel):
     telegram_username: Optional[str] = None  # Telegram @username
     telegram_first_name: Optional[str] = None  # Telegram first name
     telegram_last_name: Optional[str] = None  # Telegram last name
-    auth_type: str = "wallet"  # "wallet", "telegram", or "linked"
+    # Firebase user fields
+    firebase_uid: Optional[str] = None  # Firebase user ID
+    firebase_provider: Optional[str] = None  # "email", "google", etc.
+    profile_image: Optional[str] = None  # Profile image URL or base64
+    # Auth type: "wallet", "telegram", "firebase", "guest", or "linked"
+    auth_type: str = "wallet"
     is_nft_holder: bool = False
     is_vip: bool = False  # VIP Scientist badge
     vip_bonus_claimed: bool = False  # Track if 500 point bonus was claimed
+    leaderboard_eligible: bool = True  # All users can appear on leaderboard
+    can_convert_points: bool = False  # Only NFT holders can convert points to $LAB
     level: int = 1
     experience: int = 0
     points: int = 0
