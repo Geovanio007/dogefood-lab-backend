@@ -90,8 +90,46 @@ const MainMenu = () => {
   
   // Profile image state
   const [profileImage, setProfileImage] = useState(null);
+  
+  // Guest/Firebase user state
+  const [guestUser, setGuestUser] = useState(null);
+  const [playerLevel, setPlayerLevel] = useState(1);
+  const [playerPoints, setPlayerPoints] = useState(0);
 
-  // Load player profile including username and profile image
+  // Check for guest/firebase user on mount
+  useEffect(() => {
+    const storedPlayer = localStorage.getItem('dogefood_player');
+    if (storedPlayer) {
+      try {
+        const player = JSON.parse(storedPlayer);
+        setGuestUser(player);
+        setUsername(player.username || '');
+        
+        // Load full profile from backend
+        loadGuestProfile(player.guest_id || player.id);
+      } catch (e) {
+        console.error('Error parsing stored player:', e);
+      }
+    }
+  }, []);
+
+  // Load guest/firebase user profile
+  const loadGuestProfile = async (playerId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/player/${playerId}/profile`);
+      if (response.ok) {
+        const profile = await response.json();
+        setUsername(profile.nickname || '');
+        setProfileImage(profile.profile_image || null);
+        setPlayerLevel(profile.level || 1);
+        setPlayerPoints(profile.points || 0);
+      }
+    } catch (error) {
+      console.error('Error loading guest profile:', error);
+    }
+  };
+
+  // Load player profile including username and profile image (for wallet users)
   useEffect(() => {
     const loadProfile = async () => {
       if (isConnected && address) {
@@ -109,6 +147,12 @@ const MainMenu = () => {
     };
     loadProfile();
   }, [isConnected, address]);
+
+  // Determine if user is logged in (wallet or guest/firebase)
+  const isLoggedIn = isConnected || guestUser;
+  const effectiveAddress = address || guestUser?.guest_id || guestUser?.id;
+  const effectiveLevel = isConnected ? currentLevel : playerLevel;
+  const effectivePoints = isConnected ? points : playerPoints;
 
   // Handle profile image upload
   const handleProfileImageUpload = async (e) => {
