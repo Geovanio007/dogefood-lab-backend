@@ -269,16 +269,8 @@ async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTask
         {"$push": {"created_treats": treat.id}}
     )
     
-    # Phase 2: Award points for treat creation
-    background_tasks.add_task(
-        award_treat_creation_points,
-        treat_data.creator_address,
-        {
-            "rarity": treat_data.rarity,
-            "ingredients": treat_data.ingredients,
-            "main_ingredient": treat_data.main_ingredient
-        }
-    )
+    # NOTE: Points and XP are awarded ONLY when the treat is collected, not on creation
+    # This prevents double-awarding rewards
     
     return treat
 
@@ -355,6 +347,47 @@ async def select_player_character(address: str, character_id: str):
         "message": f"Character {character_id} selected! This choice is permanent."
     }
 
+@api_router.get("/characters")
+async def get_characters():
+    """Get all available characters and their bonuses"""
+    characters = {
+        "max": {
+            "id": "max",
+            "name": "Max",
+            "description": "The energetic Shiba who never stops learning",
+            "image": "https://customer-assets.emergentagent.com/job_shibalab/artifacts/max_character.png",
+            "bonus_type": "experience",
+            "bonus_value": 0.10,
+            "bonus_description": "+10% Experience from treats",
+            "personality": ["Energetic", "Curious", "Friendly"]
+        },
+        "rex": {
+            "id": "rex",
+            "name": "Rex",
+            "description": "The lucky Shiba with a nose for rare treats",
+            "image": "https://customer-assets.emergentagent.com/job_shibalab/artifacts/rex_character.png",
+            "bonus_type": "rare_chance",
+            "bonus_value": 0.15,
+            "bonus_description": "+15% Rare treat chance",
+            "personality": ["Lucky", "Adventurous", "Bold"]
+        },
+        "luna": {
+            "id": "luna",
+            "name": "Luna",
+            "description": "The clever Shiba who knows how to earn more",
+            "image": "https://customer-assets.emergentagent.com/job_shibalab/artifacts/luna_character.png",
+            "bonus_type": "points",
+            "bonus_value": 0.20,
+            "bonus_description": "+20% Points from treats",
+            "personality": ["Clever", "Strategic", "Calm"]
+        }
+    }
+    
+    return {
+        "characters": characters,
+        "note": "Character selection is permanent and cannot be changed!"
+    }
+
 @api_router.get("/player/{address}/profile")
 async def get_player_profile(address: str):
     """Get player profile including character and username"""
@@ -368,10 +401,45 @@ async def get_player_profile(address: str):
             "character_bonuses": None,
             "is_vip": False,
             "points": 0,
-            "level": 1
+            "level": 1,
+            "profile_image": None
         }
     
     return player
+
+@api_router.post("/player/{address}/profile-image")
+async def update_profile_image(address: str, data: dict):
+    """Update player's profile image (base64 encoded)"""
+    try:
+        image_data = data.get("image")
+        if not image_data:
+            raise HTTPException(status_code=400, detail="Image data required")
+        
+        # Validate image size (base64 adds ~33% overhead, so 2MB file = ~2.7MB base64)
+        if len(image_data) > 3 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Image too large (max 2MB)")
+        
+        # Update player's profile image
+        result = await db.players.update_one(
+            {"address": address},
+            {"$set": {"profile_image": image_data, "last_active": datetime.utcnow().isoformat()}}
+        )
+        
+        if result.modified_count == 0:
+            # Player doesn't exist, create them
+            await db.players.insert_one({
+                "address": address,
+                "profile_image": image_data,
+                "created_at": datetime.utcnow().isoformat(),
+                "last_active": datetime.utcnow().isoformat()
+            })
+        
+        return {"success": True, "message": "Profile image updated"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating profile image: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/treats", response_model=List[DogeTreat])
 async def get_all_treats(limit: int = 50):
@@ -477,17 +545,24 @@ async def get_active_treats_with_timer(address: str):
         now = datetime.utcnow()
         
         # Get all recent treats for this player (last 24 hours or still brewing)
+        # Exclude collected treats
         cutoff = now - timedelta(hours=24)
         treats = await db.treats.find({
             "creator_address": address,
+            "brewing_status": {"$ne": "collected"},  # Exclude collected treats
             "$or": [
                 {"brewing_status": "brewing"},
+                {"brewing_status": "ready"},
                 {"created_at": {"$gte": cutoff}}
             ]
         }).sort("created_at", -1).limit(10).to_list(10)
         
         result = []
         for treat in treats:
+            # Skip collected treats (double check)
+            if treat.get("brewing_status") == "collected":
+                continue
+                
             ready_at = treat.get("ready_at")
             created_at = treat.get("created_at")
             timer_duration = treat.get("timer_duration", 3600)
@@ -556,6 +631,10 @@ async def get_active_treats_with_timer(address: str):
 async def collect_treat(treat_id: str, data: dict):
     """
     Collect a ready treat and award points/XP to the player.
+    Character bonuses are applied:
+    - Max: +10% Experience
+    - Luna: +20% Points
+    - Rex: (bonus applies during treat creation for rare chance)
     """
     try:
         player_address = data.get("player_address")
@@ -584,30 +663,64 @@ async def collect_treat(treat_id: str, data: dict):
         if ready_at and now < ready_at:
             raise HTTPException(status_code=400, detail="Treat is not ready yet")
         
-        # Get rewards
-        points_reward = treat.get("points_reward", 10)
-        xp_reward = treat.get("xp_reward", 5)
+        # Get base rewards
+        base_points_reward = treat.get("points_reward", 10)
+        base_xp_reward = treat.get("xp_reward", 5)
+        
+        # Get player to check for character bonuses
+        player = await db.players.find_one({"address": player_address})
+        
+        # Apply character bonuses
+        points_bonus = 0
+        xp_bonus = 0
+        bonus_details = {}
+        
+        if player:
+            selected_character = player.get("selected_character")
+            character_bonuses = player.get("character_bonuses", {})
+            
+            # Luna: +20% Points bonus
+            if selected_character == "luna" or character_bonuses.get("points_bonus"):
+                points_bonus_percent = character_bonuses.get("points_bonus", 0.20)
+                points_bonus = int(base_points_reward * points_bonus_percent)
+                bonus_details["luna_points_bonus"] = points_bonus
+                logger.info(f"🌙 Luna bonus: +{points_bonus} points ({points_bonus_percent*100}%) for {player_address}")
+            
+            # Max: +10% Experience bonus
+            if selected_character == "max" or character_bonuses.get("experience_bonus"):
+                xp_bonus_percent = character_bonuses.get("experience_bonus", 0.10)
+                xp_bonus = int(base_xp_reward * xp_bonus_percent)
+                bonus_details["max_xp_bonus"] = xp_bonus
+                logger.info(f"🔥 Max bonus: +{xp_bonus} XP ({xp_bonus_percent*100}%) for {player_address}")
+        
+        # Calculate final rewards with bonuses
+        final_points_reward = base_points_reward + points_bonus
+        final_xp_reward = base_xp_reward + xp_bonus
         
         # Update treat status
         await db.treats.update_one(
             {"id": treat_id},
             {"$set": {
                 "brewing_status": "collected",
-                "collected_at": now.isoformat()
+                "collected_at": now.isoformat(),
+                "final_points_awarded": final_points_reward,
+                "final_xp_awarded": final_xp_reward,
+                "character_bonuses_applied": bonus_details
             }}
         )
         
         # Update player stats
-        player = await db.players.find_one({"address": player_address})
         if player:
-            new_xp = player.get("experience", 0) + xp_reward
+            new_xp = player.get("experience", 0) + final_xp_reward
             new_level = player.get("level", 1)
             
             # Check for level up (100 XP per level)
             xp_for_level = new_level * 100
+            leveled_up = False
             if new_xp >= xp_for_level:
                 new_level += 1
                 new_xp = new_xp - xp_for_level
+                leveled_up = True
             
             await db.players.update_one(
                 {"address": player_address},
@@ -616,15 +729,32 @@ async def collect_treat(treat_id: str, data: dict):
                     "level": new_level,
                     "last_active": now.isoformat()
                 },
-                "$inc": {"points": points_reward}}
+                "$inc": {"points": final_points_reward}}
             )
+            
+            return {
+                "success": True,
+                "message": "Treat collected successfully!",
+                "rewards": {
+                    "base_points": base_points_reward,
+                    "base_xp": base_xp_reward,
+                    "points_bonus": points_bonus,
+                    "xp_bonus": xp_bonus,
+                    "total_points": final_points_reward,
+                    "total_xp": final_xp_reward
+                },
+                "character_bonus_applied": bonus_details if bonus_details else None,
+                "leveled_up": leveled_up,
+                "new_level": new_level if leveled_up else None,
+                "treat_id": treat_id
+            }
         
         return {
             "success": True,
             "message": "Treat collected successfully!",
             "rewards": {
-                "points": points_reward,
-                "xp": xp_reward
+                "points": final_points_reward,
+                "xp": final_xp_reward
             },
             "treat_id": treat_id
         }
@@ -1040,9 +1170,22 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         if not cheat_check["valid"]:
             raise HTTPException(status_code=429, detail=f"Anti-cheat triggered: {cheat_check['reason']}")
         
-        # Calculate treat outcome using game engine
+        # Get player's character bonus (Rex gives +15% rare chance)
+        rare_chance_bonus = 0.0
+        player = await db.players.find_one({"address": treat_data.creator_address})
+        if player:
+            selected_character = player.get("selected_character")
+            character_bonuses = player.get("character_bonuses", {})
+            
+            # Rex: +15% rare treat chance
+            if selected_character == "rex" or character_bonuses.get("rare_chance_bonus"):
+                rare_chance_bonus = character_bonuses.get("rare_chance_bonus", 0.15)
+                logger.info(f"🦖 Rex bonus: +{rare_chance_bonus*100}% rare chance for {treat_data.creator_address}")
+        
+        # Calculate treat outcome using game engine with character bonus
         treat_outcome = game_engine.calculate_treat_outcome(
-            treat_data.ingredients, treat_data.player_level, treat_data.creator_address
+            treat_data.ingredients, treat_data.player_level, treat_data.creator_address,
+            rare_chance_bonus=rare_chance_bonus
         )
         
         # Get current season info
@@ -1139,32 +1282,14 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                     "last_activity": datetime.utcnow()
                 },
                 "$inc": {
-                    "experience": sack_bonus_xp  # Award sack completion XP
+                    "experience": sack_bonus_xp  # Only award sack completion bonus XP (not treat creation XP)
                 }
             }
         )
         
-        # Award points in background (pass pre-calculated rewards)
-        background_tasks.add_task(
-            award_treat_creation_points,
-            treat_data.creator_address,
-            {
-                "rarity": treat_outcome["rarity"],
-                "ingredients": treat_outcome["ingredients_used"],
-                "level": treat_data.player_level,
-                "secret_combo": treat_outcome.get("secret_combo", {}),
-                "season_id": season_id,
-                "points_reward": treat_outcome.get("points_reward", 10),
-                "xp_reward": treat_outcome.get("xp_reward", 5)
-            }
-        )
-        
-        # Award XP directly to player based on rarity
-        xp_to_award = treat_outcome.get("xp_reward", 5) + sack_bonus_xp
-        await db.players.update_one(
-            {"address": treat_data.creator_address},
-            {"$inc": {"experience": xp_to_award}}
-        )
+        # NOTE: Points and XP rewards are awarded ONLY when the treat is COLLECTED (not created)
+        # This prevents double-awarding. The points_reward and xp_reward are stored in the treat
+        # and will be awarded when the player calls the /treats/{treat_id}/collect endpoint
         
         # Convert treat_dict to JSON-serializable format
         treat_response = treat_dict.copy()
