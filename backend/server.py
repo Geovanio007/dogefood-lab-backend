@@ -14,6 +14,7 @@ import hmac
 import json
 import urllib.parse
 from telegram import Bot
+import httpx  # For Firebase verification
 
 # Import Phase 2 services
 from services.anti_cheat import AntiCheatSystem
@@ -24,6 +25,10 @@ from services.merkle_tree import MerkleTreeGenerator
 from services.treat_game_engine import TreatGameEngine, TreatRarity
 from services.ingredient_system import IngredientSystem
 from services.season_manager import SeasonManager
+
+# Firebase Configuration
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "AIzaSyDPDYvwWVhmnTTAcACEdI1agLQcetDV9jQ")
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "dogefood-lab")
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
