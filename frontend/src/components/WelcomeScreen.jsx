@@ -1,14 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import DogeFoodLogo from './DogeFoodLogo';
+import AuthModal from './AuthModal';
 
 const WelcomeScreen = ({ onPlayNow }) => {
   const { isDarkMode } = useTheme();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleAuthSuccess = (data) => {
+    console.log('Auth successful:', data);
+    setShowAuthModal(false);
+    onPlayNow();
+  };
 
   return (
     <div className={`welcome-screen min-h-screen flex items-center justify-center relative overflow-hidden ${
       isDarkMode ? 'bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900' : 'bg-gradient-to-br from-yellow-100 via-orange-100 to-red-100'
     }`}>
+      
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+      />
       
       {/* Background Pattern/Texture */}
       <div className="absolute inset-0 opacity-10">
