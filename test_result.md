@@ -52,3 +52,20 @@
 ## Agent Communication
 - **Testing Focus:** Guest user flow and profile banner visibility
 - **Priority:** HIGH - Fix authentication flows before other features
+
+### CRITICAL ISSUE FOUND (2025-12-31):
+**Root Cause**: Telegram detection logic is incorrectly identifying regular browser as Telegram environment
+- `window.Telegram.WebApp.initData` exists but is empty string `''`
+- Detection logic `window.Telegram?.WebApp?.initData !== undefined` returns true for empty string
+- This causes `isTelegram = true`, which skips WelcomeScreen entirely
+- Result: No access to guest registration flow in regular browser
+
+**Impact**: 
+- ❌ WelcomeScreen never shows in regular browser
+- ❌ No "PLAY NOW" or "Create Account" buttons visible
+- ❌ Only "Connect Wallet" option available
+- ❌ Guest registration completely inaccessible
+
+**Fix Required**: Update Telegram detection in `/app/frontend/src/utils/telegram.js` line 14-16
+- Change from: `window.Telegram?.WebApp?.initData !== undefined`
+- Change to: `window.Telegram?.WebApp?.initData && window.Telegram.WebApp.initData.length > 0`
