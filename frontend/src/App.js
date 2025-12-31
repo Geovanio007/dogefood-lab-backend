@@ -134,17 +134,6 @@ const InnerApp = () => {
     }, 3500);
   };
 
-  // Settings component placeholder
-  const Settings = () => (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Settings</h1>
-        <p className="text-xl text-gray-600">Coming Soon! 🚧</p>
-        <Link to="/" className="text-blue-600 underline mt-4 block">← Back to Main Menu</Link>
-      </div>
-    </div>
-  );
-
   // Get the effective player address (wallet or telegram or guest)
   const effectiveAddress = address || (telegramUser ? `TG_${telegramUser.id}` : null);
 
