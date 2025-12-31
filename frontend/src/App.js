@@ -27,16 +27,26 @@ const InnerApp = () => {
   const { address, isConnected } = useAccount();
   const { isTelegram, telegramUser, isAuthenticated: isTelegramAuthenticated, isLoading: isTelegramLoading } = useTelegram();
   
-  const [showWelcome, setShowWelcome] = useState(() => {
-    // Show welcome screen for regular browsers, skip for Telegram
-    return !isTelegram && window.location.pathname === '/';
-  });
+  const [showWelcome, setShowWelcome] = useState(true); // Start with true, will be updated
   const [isLoading, setIsLoading] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
   const [showTelegramAuth, setShowTelegramAuth] = useState(false);
   const [userRegistered, setUserRegistered] = useState(false);
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
   const [authType, setAuthType] = useState(null); // 'wallet', 'telegram', or 'linked'
+
+  // Handle welcome screen visibility based on Telegram status
+  useEffect(() => {
+    if (!isTelegramLoading) {
+      // If in Telegram, skip welcome screen entirely
+      if (isTelegram) {
+        setShowWelcome(false);
+      } else if (window.location.pathname !== '/') {
+        // If on a specific route, skip welcome
+        setShowWelcome(false);
+      }
+    }
+  }, [isTelegram, isTelegramLoading]);
 
   // Check registration status for both wallet and Telegram authentication
   useEffect(() => {
