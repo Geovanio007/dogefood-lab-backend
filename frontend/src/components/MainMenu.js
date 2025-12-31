@@ -380,57 +380,59 @@ const MainMenu = () => {
           </div>
         )}
 
-        {/* Season 1 Announcement Banner - Modern Vibrant Design */}
-        <div className="mb-8">
+        {/* Season 1 Announcement Banner - Mobile Optimized */}
+        <div className="mb-4 sm:mb-8">
           <Card className="overflow-hidden border-0 shadow-2xl">
             {/* Gradient Background */}
-            <div className="relative bg-gradient-to-r from-sky-400 via-emerald-400 to-yellow-400 p-1">
-              <CardContent className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 dark:from-slate-900/98 dark:via-slate-800/98 dark:to-slate-900/98 rounded-lg p-6 backdrop-blur-sm">
-                {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-400/20 to-transparent rounded-full blur-2xl"></div>
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-sky-400/20 to-transparent rounded-full blur-2xl"></div>
+            <div className="relative bg-gradient-to-r from-sky-400 via-emerald-400 to-yellow-400 p-0.5 sm:p-1">
+              <CardContent className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 dark:from-slate-900/98 dark:via-slate-800/98 dark:to-slate-900/98 rounded-lg p-3 sm:p-6 backdrop-blur-sm">
+                {/* Decorative Elements - Hidden on mobile */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-400/20 to-transparent rounded-full blur-2xl hidden sm:block"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-sky-400/20 to-transparent rounded-full blur-2xl hidden sm:block"></div>
                 
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-                  {/* Left Content */}
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="relative">
-                      <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-yellow-400 via-emerald-400 to-sky-400 rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
-                        <span className="text-3xl md:text-4xl">🧪</span>
+                <div className="flex flex-col gap-4 sm:gap-6 relative z-10">
+                  {/* Top Row - Season Info */}
+                  <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                    <div className="relative flex-shrink-0">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-gradient-to-br from-yellow-400 via-emerald-400 to-sky-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
+                        <span className="text-2xl sm:text-3xl md:text-4xl">🧪</span>
                       </div>
-                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
+                      <div className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-[10px] sm:text-xs font-bold shadow-md">
                         1
                       </div>
                     </div>
-                    <div>
-                      <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-yellow-400 via-emerald-400 to-sky-400 bg-clip-text text-transparent mb-1">
-                        Season 1: Beta Launch
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-yellow-400 via-emerald-400 to-sky-400 bg-clip-text text-transparent mb-0.5 sm:mb-1">
+                        Season 1: Beta
                       </h3>
-                      <p className="text-white/90 dark:text-white/90 text-sm md:text-base max-w-md">
-                        Create treats, earn points, and climb the leaderboard!
-                        <span className="block mt-1 text-emerald-400 font-semibold">
-                          NFT minting & token conversion coming in Season 2!
+                      <p className="text-white/90 dark:text-white/90 text-xs sm:text-sm md:text-base">
+                        Create treats, earn points, climb the leaderboard!
+                        <span className="block mt-0.5 sm:mt-1 text-emerald-400 font-semibold text-[10px] sm:text-sm">
+                          NFT minting coming in Season 2!
                         </span>
                       </p>
                     </div>
                   </div>
                   
-                  {/* Right Content - Season Timer */}
+                  {/* Bottom Row - Timer & Status */}
                   <div className="flex flex-col gap-2">
-                    <Badge className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 py-2 text-sm font-bold shadow-lg border-0">
-                      🎮 SEASON 1 ACTIVE
-                    </Badge>
-                    {/* Real-time Season Countdown */}
-                    <SeasonCountdown />
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">
-                        <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
-                        Treat Creation
-                      </div>
-                      <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">
-                        <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
-                        Leaderboards
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-bold shadow-lg border-0">
+                        🎮 SEASON 1 ACTIVE
+                      </Badge>
+                      <div className="flex gap-1 sm:gap-2 text-[10px] sm:text-xs">
+                        <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-400 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
+                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                          Treats
+                        </div>
+                        <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-400 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
+                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                          Boards
+                        </div>
                       </div>
                     </div>
+                    {/* Real-time Season Countdown */}
+                    <SeasonCountdown />
                   </div>
                 </div>
               </CardContent>
@@ -438,23 +440,23 @@ const MainMenu = () => {
           </Card>
         </div>
 
-        {/* Main Menu Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+        {/* Main Menu Cards - Mobile Optimized */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-8 mb-6 sm:mb-12">
           {/* Enter Lab */}
           <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
             <Link to="/lab">
-              <CardHeader className="text-center">
-                <div className="mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-4 shadow-xl">
-                  <Beaker size={48} className="text-white drop-shadow-lg" />
+              <CardHeader className="text-center p-3 sm:p-6">
+                <div className="mx-auto w-14 h-14 sm:w-24 sm:h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-2 sm:mb-4 shadow-xl">
+                  <Beaker className="w-7 h-7 sm:w-12 sm:h-12 text-white drop-shadow-lg" />
                 </div>
-                <CardTitle className="text-3xl playful-title bubble-text text-white">🧪 Enter Lab</CardTitle>
+                <CardTitle className="text-base sm:text-3xl font-bold text-white">🧪 Lab</CardTitle>
               </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-white/90 mb-6 playful-text text-lg bubble-text">
+              <CardContent className="text-center p-3 sm:p-6 pt-0">
+                <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
                   Start mixing magical Dogetreats and unlock new recipes!
                 </p>
-                <Button className="doge-button w-full text-lg">
-                  Start Mixing 🧪
+                <Button className="doge-button w-full text-xs sm:text-lg py-1.5 sm:py-2">
+                  Mix 🧪
                 </Button>
               </CardContent>
             </Link>
@@ -463,18 +465,18 @@ const MainMenu = () => {
           {/* My NFTs */}
           <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
             <Link to="/nfts">
-              <CardHeader className="text-center">
-                <div className="mx-auto w-24 h-24 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center mb-4 shadow-xl">
-                  <Palette size={48} className="text-white drop-shadow-lg" />
+              <CardHeader className="text-center p-3 sm:p-6">
+                <div className="mx-auto w-14 h-14 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center mb-2 sm:mb-4 shadow-xl">
+                  <Palette className="w-7 h-7 sm:w-12 sm:h-12 text-white drop-shadow-lg" />
                 </div>
-                <CardTitle className="text-3xl playful-title bubble-text text-white">🎨 My Treats</CardTitle>
+                <CardTitle className="text-base sm:text-3xl font-bold text-white">🎨 Treats</CardTitle>
               </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-white/90 mb-6 playful-text text-lg bubble-text">
+              <CardContent className="text-center p-3 sm:p-6 pt-0">
+                <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
                   View your created Dogetreats and rare collections!
                 </p>
-                <Button className="doge-button w-full text-lg">
-                  View Collection 🎨
+                <Button className="doge-button w-full text-xs sm:text-lg py-1.5 sm:py-2">
+                  View 🎨
                 </Button>
               </CardContent>
             </Link>
@@ -483,18 +485,38 @@ const MainMenu = () => {
           {/* Leaderboard */}
           <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
             <Link to="/leaderboard">
-              <CardHeader className="text-center">
-                <div className="mx-auto w-24 h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mb-4 shadow-xl">
-                  <Trophy size={48} className="text-white drop-shadow-lg" />
+              <CardHeader className="text-center p-3 sm:p-6">
+                <div className="mx-auto w-14 h-14 sm:w-24 sm:h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mb-2 sm:mb-4 shadow-xl">
+                  <Trophy className="w-7 h-7 sm:w-12 sm:h-12 text-white drop-shadow-lg" />
                 </div>
-                <CardTitle className="text-3xl playful-title bubble-text text-white">🏆 Leaderboard</CardTitle>
+                <CardTitle className="text-base sm:text-3xl font-bold text-white">🏆 Ranks</CardTitle>
               </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-white/90 mb-6 playful-text text-lg bubble-text">
+              <CardContent className="text-center p-3 sm:p-6 pt-0">
+                <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
                   Compete with other VIP Scientists for $LAB rewards!
                 </p>
-                <Button className="doge-button w-full text-lg">
-                  View Rankings 🏆
+                <Button className="doge-button w-full text-xs sm:text-lg py-1.5 sm:py-2">
+                  Compete 🏆
+                </Button>
+              </CardContent>
+            </Link>
+          </Card>
+
+          {/* Settings */}
+          <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
+            <Link to="/settings">
+              <CardHeader className="text-center p-3 sm:p-6">
+                <div className="mx-auto w-14 h-14 sm:w-24 sm:h-24 bg-gradient-to-br from-slate-400 to-slate-600 rounded-full flex items-center justify-center mb-2 sm:mb-4 shadow-xl">
+                  <Settings className="w-7 h-7 sm:w-12 sm:h-12 text-white drop-shadow-lg" />
+                </div>
+                <CardTitle className="text-base sm:text-3xl font-bold text-white">⚙️ Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center p-3 sm:p-6 pt-0">
+                <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
+                  Customize your experience and manage your account
+                </p>
+                <Button className="doge-button w-full text-xs sm:text-lg py-1.5 sm:py-2">
+                  Manage ⚙️
                 </Button>
               </CardContent>
             </Link>
