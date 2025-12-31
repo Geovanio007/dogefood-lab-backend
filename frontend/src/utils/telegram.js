@@ -12,7 +12,8 @@ export const initTelegramWebApp = () => {
 // Check if running inside Telegram
 export const isTelegramWebApp = () => {
   return typeof window !== 'undefined' && 
-         window.Telegram?.WebApp?.initData !== undefined;
+         window.Telegram?.WebApp?.initData && 
+         window.Telegram.WebApp.initData.length > 0;
 };
 
 // Get Telegram user data
