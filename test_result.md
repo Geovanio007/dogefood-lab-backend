@@ -2,7 +2,7 @@
 
 ## Testing Context
 - **Vercel Deployment URL:** https://app-eight-bay-35.vercel.app/
-- **Backend API:** https://doge-treats.preview.emergentagent.com/api
+- **Backend API:** https://lab-treats-2.preview.emergentagent.com/api
 - **MongoDB:** User's MongoDB Atlas instance
 
 ## Fixed Issues:

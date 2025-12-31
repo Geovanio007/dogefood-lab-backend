@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TELEGRAM_BOT_TOKEN = "8253212634:AAGZ0Bo0ZD3CcNKyABmMurEMsTclyADCqIE"
-WEB_APP_URL = "https://doge-treats.preview.emergentagent.com"
+WEB_APP_URL = "https://lab-treats-2.preview.emergentagent.com"
 
 async def setup_bot():
     """Setup the Telegram bot with Mini App configuration"""

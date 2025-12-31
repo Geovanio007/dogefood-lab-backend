@@ -1,79 +1,83 @@
 <analysis>**original_problem_statement:**
-The user's primary objective was to migrate the DogeFood Lab Game from Emergent's infrastructure to their personal Vercel and MongoDB Atlas accounts. This expanded to include:
-- A complete backend migration to an independent hosting provider (ultimately Render).
-- Implementation of a detailed, probability-based rarity system for treat creation.
-- A full redesign of the game's Lab page with a modern, cartoonish UI and new mechanics like level-based ingredient unlocking.
-- Integration of custom 3D ingredient icons provided by the user.
-- Ensuring UI theme consistency (sky blue, yellow, white) across the app.
-- Fixing a persistent bug where a player's chosen character does not appear on the leaderboard.
-- Adding real-time countdown timers for the game season and for individual treat creation (brewing).
+The user's initial goal was to migrate their DogeFood Lab Game from Emergent's infrastructure to their personal Vercel and Render accounts, connecting to a MongoDB Atlas database. The scope expanded significantly to include:
+- A full redesign of the game's Lab page with a modern UI.
+- Implementation of a probability-based rarity system for treat creation.
+- Integration of custom 3D ingredient icons.
+- Fixing a bug where character images did not appear on the leaderboard.
+- Adding real-time countdown timers for the game season and treat brewing.
+- Improving dark mode text visibility and overall theme consistency.
+- Implementing a treat collection mechanism with animations and ensuring the XP bar updates correctly.
+- Fixing a critical bug that awarded points and experience twice (on treat creation and collection).
+- Implementing character-specific bonuses for XP, points, and rare treat chances.
+- A comprehensive mobile responsiveness overhaul for the landing page, main menu, and leaderboard.
+- Allowing users to upload custom profile pictures.
+- Implementing new authentication systems: a guest mode for non-wallet users and Firebase (Google/Email) login, in addition to the existing wallet and Telegram connections.
+- Ensuring guest users can set a username and appear on the leaderboard.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is fully migrated and functional on the user's independent infrastructure. The React frontend is deployed on Vercel, the FastAPI backend is deployed on Render, and both are connected to the user's MongoDB Atlas database. The game features a completely redesigned Lab page with a new UI, a complex ingredient and rarity system, and custom 3D icons. The character selection gate has been restored. Code for real-time timers and brewing animations has been implemented but awaits verification.
+The full-stack application is deployed and functional on the user's independent infrastructure: React frontend on Vercel and a FastAPI backend on Render, connected to MongoDB Atlas. The game features a redesigned lab, a complex rarity system, and a collect treat flow. Major UI/UX improvements for mobile responsiveness and dark mode have been implemented. Character bonuses are live on the backend. A multi-faceted authentication system is in place, supporting wallets (Wagmi), guest users, and Firebase (Google/Email), though some flows have issues.
 
 **Last working item**:
--   **Last item agent was working:** The agent was simultaneously implementing several user-requested features:
-    1.  Adding a real-time season countdown timer to  and .
-    2.  Fixing the treat timer in  to show a live countdown.
-    3.  Adding a brewing animation modal to .
-    4.  Consolidating the Active Treats page into the lab page by redirecting the  route.
-    5.  Attempting to fix the missing character images on the leaderboard.
--   **Status:** IN PROGRESS (Code implemented and deployed, but no verification was performed).
--   **Agent Testing Done:** N
--   **Which testing method agent to use?** Frontend testing agent. The agent should be instructed to:
-    1.  Verify the presence and functionality of the season countdown timer on the main menu and leaderboard pages.
-    2.  Execute the treat creation flow to test the new brewing animation and verify that the created treat shows a live countdown timer on the lab page.
-    3.  Check the leaderboard to see if character images are now appearing correctly.
--   **User Testing Done:** N
+- **Last item agent was working:** The agent was addressing two user-reported issues:
+    1.  The username editing section/banner was not appearing for newly registered guest users.
+    2.  The Telegram auto-registration flow was broken.
+    The agent attempted to fix the guest user issue by modifying  to correctly show the profile banner for non-wallet users. The Telegram issue was not addressed.
+- **Status:** IN PROGRESS
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** Frontend testing agent. The agent should be instructed to:
+    1.  Test the guest registration flow to verify that the username edit banner appears correctly on the main menu.
+    2.  Test the app's loading flow within a simulated Telegram environment to diagnose why the auto-registration is failing.
+- **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1:** Character image not showing on the leaderboard. (Priority: P0)
--   **Issue 2:** Points system returns a generic 500 error instead of 404 for non-existent players. (Priority: P2)
+-   **Issue 1:** Guest user username edit banner not appearing after registration. (Priority: P0)
+-   **Issue 2:** Telegram auto-registration flow is broken. (Priority: P0)
+-   **Issue 3:** Points system returns a generic 500 error instead of 404 for non-existent players. (Priority: P2)
 
     **Issues Detail:**
-    -   **Issue 1: Character image not showing on leaderboard**
-        -   **Attempted fixes:** The agent re-implemented the character selection gate and verified the choice is saved. However, a  test against the  endpoint confirmed that character data is not being included in the response payload. The agent did not manage to fix the backend logic before the session ended.
+    -   **Issue 1: Guest user username edit banner not appearing**
+        -   **Attempted fixes:** The agent modified . It introduced , , and  states to differentiate between wallet-connected users and guest users. It then changed the rendering condition for the profile banner to . However, this did not resolve the issue.
         -   **Next debug checklist:**
-            1.  In , locate the  endpoint (around line 556).
-            2.  Define a dictionary that maps character IDs (, , ) to their corresponding names and image URLs, similar to the one on the frontend.
-            3.  Inside the endpoint's loop that processes player data, use the  value to look up the character's name and image from the map.
-            4.  Add the  and  to the data being returned for each player.
-            5.  Push the changes to the  GitHub repository to trigger an auto-deploy on Render.
-            6.  Verify the fix by calling the  endpoint with  and then using the screenshot tool on the live leaderboard page.
-        -   **Why fix this issue and what will be achieved with the fix?** This is a key visual and social feature that the user has requested multiple times. Fixing it is crucial for player satisfaction.
+            1.  In , verify that the  state is correctly set to  after a guest user successfully registers or logs in via the .
+            2.  Confirm that the  state object, which is used to determine if a guest user exists, is being populated correctly from local storage or context.
+            3.  Inspect the conditional rendering logic for the profile banner () to ensure it's evaluating as expected for guest users.
+        -   **Why fix this issue and what will be achieved with the fix?** This is a critical blocker for the new guest user feature. Without this banner, guests cannot set their username or upload a profile picture.
         -   **Status:** IN PROGRESS
-        -   **Is recurring issue?** Y
+        -   **Is recurring issue?** N
+        -   **Should Test frontend/backend/both after fix?** Frontend.
+        -   **Blocked on other issue:** None
+
+    -   **Issue 2: Telegram auto-registration flow is broken**
+        -   **Attempted fixes:** None. The agent acknowledged the user's report but did not investigate.
+        -   **Next debug checklist:**
+            1.  Examine the  hook in  that handles Telegram Web App initialization ().
+            2.  Trace the logic that calls the  backend endpoint.
+            3.  Check the browser console logs for errors during initialization within a Telegram environment.
+            4.  Review the  endpoint in  for any logic failures or unhandled exceptions. Check backend logs.
+        -   **Why fix this issue and what will be achieved with the fix?** The application is intended to function as a Telegram Mini App, making this a primary user acquisition and login channel.
+        -   **Status:** NOT STARTED
+        -   **Is recurring issue?** N
         -   **Should Test frontend/backend/both after fix?** Both.
         -   **Blocked on other issue:** None
 
-    -   **Issue 2: Points System Incorrect Error Code**
-        -   **Attempted fixes:** None. This is a low-priority carry-over issue.
-        -   **Next debug checklist:**
-            1.  In , find the  endpoint.
-            2.  Add a check to see if the player exists. If not, .
-        -   **Why fix this issue and what will be achieved with the fix?** It aligns the API with REST best practices.
+    -   **Issue 3: Points System Incorrect Error Code**
+        -   **Attempted fixes:** None.
+        -   **Next debug checklist:** In , find the  endpoint. Add a check to see if the player exists. If not, .
+        -   **Why fix this issue and what will be achieved with the fix?** Aligns the API with REST best practices for error handling.
         -   **Status:** NOT STARTED
         -   **Is recurring issue?** N
         -   **Should Test frontend/backend/both after fix?** Backend.
         -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   **Task 1: Verify recently implemented frontend features (P0)**
-    -   **Where to resume:** The code has been deployed. The next step is to test the live application.
-    -   **What will be achieved with this?** This will confirm if the user's latest requests for timers and animations are functioning correctly.
-    -   **Verification Steps:**
-        1.  **Season Timer:** Use the screenshot tool on the main menu and leaderboard pages to confirm the countdown timer is visible and ticking.
-        2.  **Brewing Flow:** Navigate to the lab page, mix a treat, and verify (via screenshots) that a Brewing... animation appears, followed by the new treat showing a live countdown in the Active Brews section.
-    -   **Status:** USER VERIFICATION PENDING
-    -   **Should Test frontend/backend/both after fix?** Frontend.
-    -   **Blocked on something:** None.
+-   None.
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks:**
     -   **P1:** Implement a full anti-cheat system.
-    -   **P1:** Implement the points-to-blockchain conversion system for redeeming  tokens.
+    -   **P1:** Implement the points-to-blockchain conversion system for redeeming  tokens (for NFT holders).
     -   **P1:** Complete Web3 integration for reward claiming.
 - **Future Tasks:**
     -   **P2:** Implement Merkle tree generation for rewards.
@@ -81,13 +85,19 @@ The application is fully migrated and functional on the user's independent infra
     -   **P2:** Implement discovery achievements for new treat combinations.
 
 **Completed work in this session**
--   **Full Backend Migration:** Successfully migrated the FastAPI backend from Emergent servers to **Render**, achieving full infrastructure independence.
--   **Rarity System:** Implemented a complex, probability-based rarity, timer, and reward system for treat creation in .
--   **Complete Lab Page Redesign:** Created a new, modern game UI from scratch in .
--   **New Ingredient System:** Implemented backend logic and API endpoints for a level-based ingredient unlocking system.
--   **3D Ingredient Icons:** Integrated all user-provided 3D icon URLs into the frontend via .
--   **UI Theme Consistency:** Refactored the lab page's CSS to match the app's sky blue and yellow color theme.
--   **Character Selection Gate:** Re-implemented the character selection screen as a mandatory step before entering the lab.
+- **Authentication System Overhaul:** Implemented guest registration and Firebase (Google/Email) login systems on both the frontend and backend.
+- **Character Bonuses Implemented:** Backend logic for character-specific bonuses is live: Max (+10% XP), Luna (+20% Points), and Rex (+15% Rare Treat Chance).
+- **Treat Collection Flow:** Created a full collect lifecycle for treats, including a clickable UI, collection animation, and logic to remove the treat from the active list.
+- **Double Points/XP Bug Fixed:** Refactored backend logic to ensure points and experience are awarded only upon collecting a treat, not upon creation.
+- **Mobile UI Overhaul:** Greatly improved mobile responsiveness for the , , and  components.
+- **Dark Mode UI Fixed:** Corrected numerous text visibility issues by replacing static gray colors with responsive  variants in Tailwind CSS.
+- **XP Bar Fixed:** Re-styled the XP progress bar to be visible and ensured it updates correctly after collecting a treat.
+- **Profile Customization:**
+    - Implemented a backend endpoint and frontend UI for users to upload custom profile pictures.
+    - Changed the username banner color theme to match the season banner.
+- **Leaderboard Fixes:** Restored the display of character names alongside nicknames.
+- **Landing Page Images:** Replaced default emojis on the  with user-provided custom images for the scientist and  token.
+- **Deployment & Configuration:** Successfully pointed the Vercel frontend to the user's Render backend, updated Vercel environment variables, and consistently pushed all changes to the user's GitHub repositories.
 
 **Earlier issues found/mentioned but not fixed**
 -   Same as **All Pending/In progress Issue list**.
@@ -99,7 +109,7 @@ The application is fully migrated and functional on the user's independent infra
 
 
 **Key Technical Concepts**
--   **Frontend**: React.js, Tailwind CSS, , Wagmi
+-   **Frontend**: React.js, Tailwind CSS, , Wagmi, **Firebase Authentication**
 -   **Backend**: FastAPI, Pydantic, MongoDB (via Atlas)
 -   **Deployment**: Frontend on **Vercel**, Backend on **Render**, both with CI/CD via GitHub.
 
@@ -108,53 +118,52 @@ The application is fully migrated and functional on the user's independent infra
 -   **treats:** 
 
 **changes in tech stack**
--   **Backend Hosting:** The backend has been fully migrated from Emergent's servers to **Render**.
+-   **Firebase Authentication** has been added for email and Google social login.
 
 **All files of reference**
--   : Contains all API logic, including the leaderboard endpoint that needs fixing.
--   : The new core gameplay component where timer fixes need to be verified.
--   : Where the character image bug is visible.
--   : Defines the core rarity and reward logic.
--   : Contains the mapping for all the new 3D ingredient icons.
+-   : Contains all new backend logic for authentication, profile updates, and treat collection.
+-   : Core component for handling the new complex auth state and displaying user info. **(CURRENTLY BUGGED)**
+-   : New component central to the guest and Firebase login flows.
+-   : Contains the fixed XP bar and new treat collection UI/logic.
+-   : Contains fixes for mobile responsiveness and dark mode.
+-   : Contains the Telegram initialization logic. **(CURRENTLY BUGGED)**
+-   : New context file for managing global authentication state.
 
 **Areas that need refactoring**:
--   The old  component is deprecated and can be safely removed from the codebase.
--   The  directory at the project root is a remnant of a failed deployment attempt and should be deleted to avoid confusion.
+-   **** has become a very large god component managing multiple states, API calls, and complex rendering logic. It should be broken down into smaller components (e.g., , , ).
+-   **** is over 1000 lines long and could also benefit from being broken down into smaller, more focused components.
+-   The deprecated  component and the root  directory can be safely deleted.
 
 **key api endpoints**
--   ****: Returns leaderboard data. **(NEEDS FIX)**
--   ****: Core treat creation endpoint using the new rarity engine.
--   ****: Saves a player's character choice.
--   ****: Returns the configuration for the treat rarity system.
--   ****: Returns ingredients unlocked for a player.
+-   ****: **NEW** - Collects a ready treat and awards points/XP with character bonuses.
+-   ****: **NEW** - Uploads a user's profile picture.
+-   ****: **NEW** - Registers a guest user and returns a session ID.
+-   ****: **NEW** - Logs in or registers a user via a Firebase ID token.
+-   ****: **NEEDS FIX** - The endpoint for registering users via the Telegram Mini App.
+-   ****: **UPDATED** - No longer awards points/XP; now applies Rex's rare chance bonus during treat creation.
+-   ****: **UPDATED** - Now correctly filters out  treats.
 
 **Critical Info for New Agent**
--   **Infrastructure is Independent:** The project is fully migrated. The backend on Render auto-deploys from the  branch of the  GitHub repo. The frontend on Vercel deploys from the root of the current project.
--   **Verification and Bug Fixing First:** Your first priority is to **verify the functionality of the recently deployed timers and animations**. Immediately after, you must fix the **P0 bug of missing character images on the leaderboard**, as this is a recurring user complaint.
--   **Codebase Has Changed Significantly:** The main gameplay logic is now in . Do not refer to the old .
+-   **Authentication is complex:** The app now supports Wallet, Guest, and Firebase logins. The primary state management for this happens in  and . The current bugs are located in this new system.
+-   **Prioritize Auth Fixes:** The immediate priority is to fix the guest user UI bug and the broken Telegram registration flow. These are critical for user onboarding.
+-   **Points/XP are awarded on Collection only:** All logic for awarding points and experience has been moved to the  endpoint. The creation endpoints are reward-neutral.
+-   **User-Provided Keys:** The user has provided keys for Vercel, Render, GitHub, MongoDB, and Firebase. They are configured in the environment and should be used for all deployments and API interactions.
 
 **documents and test reports created in this job**
 -   
 -   
 -   
--   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (msg 464, 463):** Requested a large batch of features: fix leaderboard character display, add real-time season/treat timers, add a brewing animation, and merge the active treats page into the lab. (Status: IN PROGRESS).
-2.  **User (msg 407):** Reported that the character selection gate was missing and their chosen character was not showing on their profile or the leaderboard. (Status: Gate was restored, but leaderboard bug persists).
-3.  **User (msg 354):** Requested that the lab page's purple theme be changed to match the main menu's sky blue/yellow theme for consistency. (Status: COMPLETED).
-4.  **User (msg 329):** Provided a complete list of URLs for the 3D ingredient icons. (Status: COMPLETED).
-5.  **User (msg 265):** Requested a complete redesign of the lab page and a new, level-based ingredient system with detailed specifications. (Status: COMPLETED).
-6.  **User (msg 218):** Requested the implementation of a detailed rarity system with specific probabilities and rewards. (Status: COMPLETED).
-7.  **User (msg 179):** Confirmed their Render plan was upgraded to support auto-deployments.
-8.  **User (msg 155, 132, 119):** Provided deployment keys/URLs for Render and Railway during the migration process.
-9.  **User (msg 5):** Gave initial approval to start the migration.
-10. **User (msg 4, 6):** Initial interaction about priorities, where the user emphasized full backend migration to Vercel.
+1.  **User (msg 436):** Requested username banner color change, profile picture uploads, fix for character bonuses, and restoration of character names on the leaderboard. (Status: COMPLETED)
+2.  **User (msg 473):** Reported broken Telegram registration. Requested guest user registration, Firebase (Google/email) auth, and defined rules for guests vs. NFT holders. Provided Firebase API key. (Status: IN PROGRESS)
+3.  **User (msg 521):** Reported that the guest user username edit section is not appearing and that the Telegram registration is still not working. (Status: IN PROGRESS - This is the current task)
 
 **Project Health Check:**
--   **Working:** The full-stack application is live and running on the user's independent infrastructure (Vercel, Render, Atlas). The core gameplay loop, UI redesign, and rarity system are implemented.
+-   **Working:** Core gameplay loop (create/collect), multi-provider auth backend logic, deployments, character bonuses, most UI/UX features.
 -   **Broken:**
-    -   Character images are not displayed on the leaderboard.
+    -   Telegram registration flow.
+    -   UI for guest users to edit their username.
 -   **Mocked:** No components are mocked.
 
 **3rd Party Integrations**
@@ -162,16 +171,19 @@ The application is fully migrated and functional on the user's independent infra
 -   **Render:** Backend Deployment
 -   **MongoDB Atlas:** Database
 -   **GitHub:** Source Control & CI/CD
--   **Telegram Mini App:** The app is optimized for this platform.
+-   **Telegram Mini App:** For platform integration.
+-   **Firebase Authentication:** For Google and Email/Password login. Requires a User API Key, which has been provided and implemented.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES (to validate the backend migration).
--   **Troubleshoot agent used after agent stuck in loop:** YES (to diagnose Vercel deployment issues).
--   **Test files created:** None.
--   **Known regressions:** The bug with character images on the leaderboard is a new form of a previously fixed issue.
+-   **Testing agent used after significant changes:** NO
+-   **Troubleshoot agent used after agent stuck in loop:** NO
+-   **Test files created:** None
+-   **Known regressions:** The previously functional Telegram registration flow is now broken.
 
 **Credentials to test flow:**
-- All necessary credentials for Vercel, Render, GitHub, and MongoDB have been provided by the user and are configured in the environment.
+-   All necessary credentials for Vercel, Render, GitHub, MongoDB, and Firebase have been provided by the user and are configured in the environment.
 
 **What agent forgot to execute**
-- The agent did not test or verify the last set of major features it implemented (real-time timers, brewing animation) before the session ended. It deployed the code but never confirmed if it worked.</analysis>
+- The agent failed to test the new guest user flow after implementation, leading to the user immediately finding a critical bug.
+- The agent acknowledged the broken Telegram registration but did not perform any investigation or attempt a fix, prioritizing other parts of the user's request first.
+- The agent frequently required reminders from the user to deploy frontend changes to Vercel, often only pushing backend changes and assuming the job was done.</analysis>
