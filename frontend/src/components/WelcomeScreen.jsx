@@ -38,7 +38,12 @@ const WelcomeScreen = ({ onPlayNow }) => {
             }`}>
               Adventure
             </h2>
-            <div className="text-3xl sm:text-6xl animate-bounce">🐕</div>
+            {/* Scientist Shiba Image */}
+            <img 
+              src="https://customer-assets.emergentagent.com/job_doge-treats/artifacts/uvrqvytu_1000081756-removebg-preview.png" 
+              alt="Scientist Shiba" 
+              className="w-12 h-12 sm:w-20 sm:h-20 object-contain animate-bounce"
+            />
           </div>
         </div>
 
@@ -48,7 +53,15 @@ const WelcomeScreen = ({ onPlayNow }) => {
         }`}>
           <p className="mb-2 sm:mb-4">🎮 Mix Magical Dogetreats</p>
           <p className="mb-2 sm:mb-4">🏆 Compete with VIP Scientists</p>
-          <p className="mb-2 sm:mb-4">💎 Earn $LAB Tokens</p>
+          <p className="mb-2 sm:mb-4 flex items-center justify-center gap-2">
+            {/* $LAB Token Logo */}
+            <img 
+              src="https://customer-assets.emergentagent.com/job_doge-treats/artifacts/bihai5rz_1000081758-removebg-preview.png" 
+              alt="LAB Token" 
+              className="w-6 h-6 sm:w-8 sm:h-8 object-contain inline-block"
+            />
+            <span>Earn $LAB Tokens</span>
+          </p>
           <p className="text-sm sm:text-xl opacity-80">Ready to become the ultimate treat creator?</p>
         </div>
 
