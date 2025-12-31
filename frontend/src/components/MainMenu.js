@@ -445,7 +445,7 @@ const MainMenu = () => {
                         />
                         {isNFTHolder && (
                           <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-yellow-400 rounded-full flex items-center justify-center text-[10px] sm:text-xs">⭐</div>
-                        )}}
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[10px] sm:text-xs text-emerald-400 font-semibold uppercase tracking-wide">Scientist Profile</div>
