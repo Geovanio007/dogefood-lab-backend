@@ -401,10 +401,45 @@ async def get_player_profile(address: str):
             "character_bonuses": None,
             "is_vip": False,
             "points": 0,
-            "level": 1
+            "level": 1,
+            "profile_image": None
         }
     
     return player
+
+@api_router.post("/player/{address}/profile-image")
+async def update_profile_image(address: str, data: dict):
+    """Update player's profile image (base64 encoded)"""
+    try:
+        image_data = data.get("image")
+        if not image_data:
+            raise HTTPException(status_code=400, detail="Image data required")
+        
+        # Validate image size (base64 adds ~33% overhead, so 2MB file = ~2.7MB base64)
+        if len(image_data) > 3 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Image too large (max 2MB)")
+        
+        # Update player's profile image
+        result = await db.players.update_one(
+            {"address": address},
+            {"$set": {"profile_image": image_data, "last_active": datetime.utcnow().isoformat()}}
+        )
+        
+        if result.modified_count == 0:
+            # Player doesn't exist, create them
+            await db.players.insert_one({
+                "address": address,
+                "profile_image": image_data,
+                "created_at": datetime.utcnow().isoformat(),
+                "last_active": datetime.utcnow().isoformat()
+            })
+        
+        return {"success": True, "message": "Profile image updated"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating profile image: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/treats", response_model=List[DogeTreat])
 async def get_all_treats(limit: int = 50):
