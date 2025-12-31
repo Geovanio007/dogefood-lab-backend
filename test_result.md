@@ -28,12 +28,14 @@
 
 ## Test Scenarios to Verify:
 
-### 1. Guest User Registration Flow
-- [ ] Clear localStorage, load welcome screen
-- [ ] Click "Quick Play (Guest)" in AuthModal
-- [ ] Enter username and register
-- [ ] Verify profile banner appears on MainMenu
-- [ ] Verify username can be edited
+### 1. Guest User Registration Flow ✅ WORKING
+- [x] Clear localStorage, load welcome screen
+- [x] Click "Quick Play (Guest)" in AuthModal  
+- [x] Enter username and register
+- [x] Verify profile banner appears on MainMenu
+- [x] Verify username can be edited
+
+**STATUS**: ✅ FULLY WORKING after fixing Telegram detection issue
 
 ### 2. Firebase Authentication Flow
 - [ ] Test Google sign-in
