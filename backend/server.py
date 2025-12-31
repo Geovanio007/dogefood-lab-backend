@@ -871,6 +871,9 @@ async def get_player_points_stats(address: str):
         if not stats:
             raise HTTPException(status_code=404, detail="Player not found")
         return stats
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         logger.error(f"Error getting player stats for {address}: {str(e)}")
         # Return basic stats if detailed stats fail
@@ -895,6 +898,8 @@ async def get_player_points_stats(address: str):
                 },
                 "points_breakdown": {}
             }
+        except HTTPException:
+            raise
         except Exception as fallback_error:
             logger.error(f"Fallback stats failed for {address}: {str(fallback_error)}")
             raise HTTPException(status_code=500, detail="Unable to retrieve player statistics")
