@@ -112,7 +112,7 @@ const MyTreats = () => {
           </div>
         </div>
         
-        {isNFTHolder && (
+        {effectiveNFTStatus && (
           <Badge className="vip-badge">
             <Crown className="w-4 h-4 mr-1" />
             VIP Scientist
@@ -131,7 +131,7 @@ const MyTreats = () => {
         
         <Card className="glass-panel">
           <CardContent className="text-center p-6">
-            <div className="text-3xl font-bold text-purple-600">{isNFTHolder ? '1+' : '0'}</div>
+            <div className="text-3xl font-bold text-purple-600">{effectiveNFTStatus ? '1+' : '0'}</div>
             <div className="text-sm text-slate-600 dark:text-slate-300">DogeFood NFTs</div>
           </CardContent>
         </Card>
@@ -177,8 +177,8 @@ const MyTreats = () => {
               </div>
               <div>
                 <p className="text-sm text-slate-600 dark:text-slate-300">NFT Holder Status:</p>
-                <Badge className={isNFTHolder ? "bg-purple-500 text-white" : "bg-gray-500 text-white"}>
-                  {isNFTHolder ? "VIP Scientist 👨‍🔬" : "Regular User"}
+                <Badge className={effectiveNFTStatus ? "bg-purple-500 text-white" : "bg-gray-500 text-white"}>
+                  {effectiveNFTStatus ? "VIP Scientist 👨‍🔬" : "Regular User"}
                 </Badge>
               </div>
             </div>
