@@ -165,7 +165,7 @@ const InnerApp = () => {
   };
 
   // Get the effective player address (wallet or telegram or guest)
-  const effectiveAddress = address || (telegramUser ? `TG_${telegramUser.id}` : null);
+  const effectiveAddress = address || (telegramUser ? `TG_${telegramUser.id}` : null) || (guestUser ? (guestUser.guest_id || guestUser.id) : null);
 
   return (
     <GameProvider>
