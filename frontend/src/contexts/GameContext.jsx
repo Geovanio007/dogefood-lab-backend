@@ -458,7 +458,11 @@ export function GameProvider({ children }) {
           }
         });
         
-        console.log(`✅ Player data loaded: Level ${playerData.level}, ${playerData.points} points`);
+        // Also set NFT holder status from backend
+        const isHolder = playerData.is_nft_holder === true;
+        dispatch({ type: 'SET_NFT_HOLDER', payload: isHolder });
+        
+        console.log(`✅ Player data loaded: Level ${playerData.level}, ${playerData.points} points, NFT Holder: ${isHolder}`);
       } else {
         console.log(`ℹ️ Player not found, will be created on first treat creation`);
       }
