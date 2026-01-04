@@ -2082,6 +2082,51 @@ async def simulate_treat_outcome(
     }
 
 # Season Management Endpoints
+
+@api_router.delete("/admin/cleanup-test-players")
+async def cleanup_test_players(admin_key: str = "dogefood_admin_2024"):
+    """Remove test players from the database - admin only"""
+    
+    # Simple admin key check (in production, use proper authentication)
+    expected_key = "dogefood_admin_cleanup_2024"
+    if admin_key != expected_key:
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+    
+    # Define patterns that identify test players
+    test_patterns = [
+        {"address": {"$regex": "^TEST_", "$options": "i"}},
+        {"address": {"$regex": "^RARITY_", "$options": "i"}},
+        {"address": {"$regex": "_TEST_", "$options": "i"}},
+        {"address": {"$regex": "timer_debug", "$options": "i"}},
+        {"address": {"$regex": "^GUEST_TEST", "$options": "i"}},
+        {"address": {"$regex": "^0xATLAS_", "$options": "i"}},
+        {"address": {"$regex": "^0xWALLET_USER_ATLAS", "$options": "i"}},
+    ]
+    
+    # Find all test players first
+    test_query = {"$or": test_patterns}
+    test_players = await db.players.find(test_query, {"_id": 0, "address": 1, "nickname": 1}).to_list(100)
+    
+    if not test_players:
+        return {"message": "No test players found", "deleted_count": 0}
+    
+    # Delete test players
+    result = await db.players.delete_many(test_query)
+    
+    # Also delete their treats
+    test_addresses = [p["address"] for p in test_players]
+    treats_result = await db.treats.delete_many({"player_address": {"$in": test_addresses}})
+    
+    logger.info(f"🧹 Cleaned up {result.deleted_count} test players and {treats_result.deleted_count} treats")
+    
+    return {
+        "message": f"Successfully cleaned up test players",
+        "deleted_players": result.deleted_count,
+        "deleted_treats": treats_result.deleted_count,
+        "players_removed": [{"address": p.get("address"), "nickname": p.get("nickname")} for p in test_players]
+    }
+
+
 @api_router.get("/seasons/current")
 async def get_current_season():
     """Get current season information"""
