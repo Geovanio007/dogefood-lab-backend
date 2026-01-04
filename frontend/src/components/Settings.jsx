@@ -294,7 +294,7 @@ const Settings = () => {
               <div className="p-4 bg-white/20 rounded-xl">
                 <div className="font-medium mb-2">Account Status</div>
                 <div className="text-sm text-slate-600 dark:text-slate-300">
-                  {isNFTHolder ? '🌟 VIP Scientist' : '👨‍🔬 Regular Scientist'}
+                  {effectiveNFTStatus ? '🌟 VIP Scientist' : '👨‍🔬 Regular Scientist'}
                 </div>
               </div>
               
