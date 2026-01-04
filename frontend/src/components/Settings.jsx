@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAccount } from 'wagmi';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Switch } from './ui/switch';
@@ -8,8 +9,13 @@ import { useGame } from '../contexts/GameContext';
 import { useAudio } from '../contexts/AudioContext';
 import { ArrowLeft, Volume2, VolumeX, Palette, Zap, Settings as SettingsIcon, Play, Pause } from 'lucide-react';
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
 const Settings = () => {
-  const { isNFTHolder } = useGame();
+  const { address, isConnected } = useAccount();
+  const { isNFTHolder, dispatch } = useGame();
+  const [playerNFTStatus, setPlayerNFTStatus] = useState(false);
+  
   const { 
     soundEnabled, 
     musicVolume, 
@@ -24,13 +30,39 @@ const Settings = () => {
     playSuccess
   } = useAudio();
 
-  const [visualSettings, setVisualSettings] = React.useState({
+  const [visualSettings, setVisualSettings] = useState({
     particleEffects: true,
     reducedMotion: false,
     darkMode: false,
     autoMix: false,
     notifications: true,
   });
+
+  // Fetch player NFT status
+  useEffect(() => {
+    const fetchNFTStatus = async () => {
+      if (!address) return;
+      
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/player/${address}`);
+        if (response.ok) {
+          const playerData = await response.json();
+          const nftStatus = playerData.is_nft_holder === true;
+          setPlayerNFTStatus(nftStatus);
+          if (dispatch) {
+            dispatch({ type: 'SET_NFT_HOLDER', payload: nftStatus });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching NFT status:', error);
+      }
+    };
+    
+    fetchNFTStatus();
+  }, [address, dispatch]);
+
+  // Use the fetched NFT status or the one from GameContext
+  const effectiveNFTStatus = playerNFTStatus || isNFTHolder;
 
   const updateVisualSetting = (key, value) => {
     setVisualSettings(prev => ({ ...prev, [key]: value }));
