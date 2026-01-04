@@ -34,6 +34,36 @@ const InnerApp = () => {
   const [userRegistered, setUserRegistered] = useState(false);
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
   const [authType, setAuthType] = useState(null); // 'wallet', 'telegram', or 'linked'
+  
+  // Guest user state - read from localStorage
+  const [guestUser, setGuestUser] = useState(() => {
+    const stored = localStorage.getItem('dogefood_player');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  // Listen for guest user registration events
+  useEffect(() => {
+    const handlePlayerRegistered = () => {
+      const stored = localStorage.getItem('dogefood_player');
+      if (stored) {
+        try {
+          setGuestUser(JSON.parse(stored));
+        } catch (e) {
+          console.error('Error parsing guest user:', e);
+        }
+      }
+    };
+    
+    window.addEventListener('dogefood_player_registered', handlePlayerRegistered);
+    return () => window.removeEventListener('dogefood_player_registered', handlePlayerRegistered);
+  }, []);
 
   // Handle welcome screen visibility based on Telegram status
   useEffect(() => {
