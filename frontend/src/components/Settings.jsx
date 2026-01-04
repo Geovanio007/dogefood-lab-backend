@@ -14,6 +14,7 @@ const Settings = () => {
     soundEnabled, 
     musicVolume, 
     effectsVolume,
+    isMusicPlaying,
     setSoundEnabled,
     setMusicVolume,
     setEffectsVolume,
@@ -30,8 +31,6 @@ const Settings = () => {
     autoMix: false,
     notifications: true,
   });
-
-  const [isMusicPlaying, setIsMusicPlaying] = React.useState(false);
 
   const updateVisualSetting = (key, value) => {
     setVisualSettings(prev => ({ ...prev, [key]: value }));
