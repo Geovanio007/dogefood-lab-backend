@@ -296,7 +296,6 @@ const Settings = () => {
             <CardTitle className="text-center doge-gradient">About DogeFood Lab 🧪</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <div className="text-6xl mb-4">🐕‍🦺</div>
             <p className="text-slate-700 dark:text-slate-200">
               A playful Web3 game inspired by Dogecoin culture. Mix, create, and compete!
             </p>
