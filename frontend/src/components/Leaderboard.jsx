@@ -175,12 +175,37 @@ const Leaderboard = () => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  const calculateRewards = (rank) => {
-    // Reward calculation based on season specifications
-    if (rank <= 10) return `${10000 - (rank - 1) * 1000} LAB`;
-    if (rank <= 25) return `${1000 - (rank - 10) * 50} LAB`;
-    if (rank <= 50) return `${250 - (rank - 25) * 5} LAB`;
-    return '0 LAB';
+  // Calculate estimated rewards based on rank and multipliers
+  const calculateRewards = (rank, totalPlayers) => {
+    if (rank <= 10) {
+      // Top 10: 30% pool (6M $LAB) with 1.5x multiplier
+      const baseShare = DISTRIBUTION.top10.tokens / 10;
+      const multipliedShare = baseShare * DISTRIBUTION.top10.multiplier;
+      // Rank-weighted: higher ranks get more
+      const rankWeight = (11 - rank) / 55; // Sum of 1-10 = 55
+      const estimated = Math.floor(DISTRIBUTION.top10.tokens * rankWeight * DISTRIBUTION.top10.multiplier);
+      return { tokens: estimated, tier: 'Top 10', multiplier: '1.5×' };
+    }
+    if (rank <= 20) {
+      // Top 20 (ranks 11-20): 20% pool (4M $LAB) with 0.7x multiplier
+      const baseShare = DISTRIBUTION.top20.tokens / 10;
+      const rankWeight = (21 - rank) / 55;
+      const estimated = Math.floor(DISTRIBUTION.top20.tokens * rankWeight * DISTRIBUTION.top20.multiplier);
+      return { tokens: estimated, tier: 'Top 20', multiplier: '0.7×' };
+    }
+    if (rank <= 50) {
+      // Top 50 (ranks 21-50): 20% pool (4M $LAB) with 0.2x multiplier
+      const baseShare = DISTRIBUTION.top50.tokens / 30;
+      const rankWeight = (51 - rank) / 465; // Sum of 21-50
+      const estimated = Math.floor(DISTRIBUTION.top50.tokens * rankWeight * DISTRIBUTION.top50.multiplier);
+      return { tokens: estimated, tier: 'Top 50', multiplier: '0.2×' };
+    }
+    return { tokens: 0, tier: 'Below Top 50', multiplier: '-' };
+  };
+
+  // Format number with commas
+  const formatNumber = (num) => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
   if (loading) {
