@@ -230,11 +230,13 @@ const InnerApp = () => {
 function App() {
   return (
     <ThemeProvider>
-      <TelegramProvider>
-        <Web3Provider>
-          <InnerApp />
-        </Web3Provider>
-      </TelegramProvider>
+      <AudioProvider>
+        <TelegramProvider>
+          <Web3Provider>
+            <InnerApp />
+          </Web3Provider>
+        </TelegramProvider>
+      </AudioProvider>
     </ThemeProvider>
   );
 };
