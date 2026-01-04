@@ -80,7 +80,6 @@ const Settings = () => {
     setSoundEnabled(checked);
     if (!checked) {
       stopBackgroundMusic();
-      setIsMusicPlaying(false);
     }
   };
 
