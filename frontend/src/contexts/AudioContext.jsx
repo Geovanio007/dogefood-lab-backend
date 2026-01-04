@@ -2,16 +2,19 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 
 const AudioContext = createContext(null);
 
-// Audio URLs - using free sound effects
+// Using CDN audio files that work with CORS
 const AUDIO_SOURCES = {
-  background: 'https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3',
-  labAmbient: 'https://assets.mixkit.co/sfx/preview/mixkit-laboratory-bubbling-2404.mp3',
-  click: 'https://assets.mixkit.co/sfx/preview/mixkit-modern-technology-select-3124.mp3',
-  success: 'https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3',
-  mix: 'https://assets.mixkit.co/sfx/preview/mixkit-bubbles-popping-in-water-88.mp3',
-  collect: 'https://assets.mixkit.co/sfx/preview/mixkit-bonus-earned-in-video-game-2058.mp3',
-  rare: 'https://assets.mixkit.co/sfx/preview/mixkit-magical-coin-win-1936.mp3',
-  levelUp: 'https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3'
+  // Background music - ambient electronic
+  background: 'https://cdn.pixabay.com/audio/2022/10/25/audio_7f3be04c9d.mp3',
+  // Lab ambient - science lab atmosphere
+  labAmbient: 'https://cdn.pixabay.com/audio/2022/03/15/audio_115b9c5a71.mp3',
+  // UI Sounds
+  click: 'https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3',
+  success: 'https://cdn.pixabay.com/audio/2021/08/04/audio_0625c1539c.mp3',
+  mix: 'https://cdn.pixabay.com/audio/2022/03/24/audio_6fb2c2b25b.mp3',
+  collect: 'https://cdn.pixabay.com/audio/2022/03/15/audio_8cb9a90138.mp3',
+  rare: 'https://cdn.pixabay.com/audio/2021/08/04/audio_c6ccf3232f.mp3',
+  levelUp: 'https://cdn.pixabay.com/audio/2021/08/04/audio_12b0c7443c.mp3'
 };
 
 export const AudioProvider = ({ children }) => {
@@ -30,39 +33,74 @@ export const AudioProvider = ({ children }) => {
     return saved !== null ? parseInt(saved) : 80;
   });
 
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const backgroundMusicRef = useRef(null);
   const labAmbientRef = useRef(null);
   const effectsRef = useRef({});
-  const isInitializedRef = useRef(false);
+  const audioContextRef = useRef(null);
+
+  // Initialize Web Audio API context on first user interaction
+  const initAudioContext = useCallback(() => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+  }, []);
+
+  // Create audio element with error handling
+  const createAudioElement = useCallback((src, loop = false, volume = 0.5) => {
+    const audio = new Audio();
+    audio.crossOrigin = 'anonymous';
+    audio.loop = loop;
+    audio.volume = volume;
+    audio.preload = 'auto';
+    
+    // Handle loading errors gracefully
+    audio.onerror = () => {
+      console.warn(`Failed to load audio: ${src}`);
+    };
+    
+    audio.src = src;
+    return audio;
+  }, []);
 
   // Initialize audio elements
-  const initializeAudio = useCallback(() => {
-    if (isInitializedRef.current) return;
+  useEffect(() => {
+    // Background music
+    backgroundMusicRef.current = createAudioElement(
+      AUDIO_SOURCES.background, 
+      true, 
+      (musicVolume / 100) * 0.4
+    );
     
-    try {
-      // Background music
-      backgroundMusicRef.current = new Audio(AUDIO_SOURCES.background);
-      backgroundMusicRef.current.loop = true;
-      backgroundMusicRef.current.volume = (musicVolume / 100) * 0.3; // Lower base volume for bg music
-      
-      // Lab ambient sounds
-      labAmbientRef.current = new Audio(AUDIO_SOURCES.labAmbient);
-      labAmbientRef.current.loop = true;
-      labAmbientRef.current.volume = (musicVolume / 100) * 0.2;
-      
-      // Effect sounds
-      Object.keys(AUDIO_SOURCES).forEach(key => {
-        if (key !== 'background' && key !== 'labAmbient') {
-          effectsRef.current[key] = new Audio(AUDIO_SOURCES[key]);
-          effectsRef.current[key].volume = effectsVolume / 100;
-        }
-      });
-      
-      isInitializedRef.current = true;
-    } catch (error) {
-      console.error('Error initializing audio:', error);
-    }
-  }, [musicVolume, effectsVolume]);
+    // Lab ambient
+    labAmbientRef.current = createAudioElement(
+      AUDIO_SOURCES.labAmbient, 
+      true, 
+      (musicVolume / 100) * 0.2
+    );
+    
+    // Effect sounds
+    Object.entries(AUDIO_SOURCES).forEach(([key, src]) => {
+      if (key !== 'background' && key !== 'labAmbient') {
+        effectsRef.current[key] = createAudioElement(src, false, effectsVolume / 100);
+      }
+    });
+
+    return () => {
+      // Cleanup
+      if (backgroundMusicRef.current) {
+        backgroundMusicRef.current.pause();
+        backgroundMusicRef.current = null;
+      }
+      if (labAmbientRef.current) {
+        labAmbientRef.current.pause();
+        labAmbientRef.current = null;
+      }
+    };
+  }, [createAudioElement, musicVolume, effectsVolume]);
 
   // Save settings to localStorage
   useEffect(() => {
@@ -72,7 +110,7 @@ export const AudioProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('dogefood_music_volume', musicVolume.toString());
     if (backgroundMusicRef.current) {
-      backgroundMusicRef.current.volume = (musicVolume / 100) * 0.3;
+      backgroundMusicRef.current.volume = (musicVolume / 100) * 0.4;
     }
     if (labAmbientRef.current) {
       labAmbientRef.current.volume = (musicVolume / 100) * 0.2;
@@ -88,41 +126,54 @@ export const AudioProvider = ({ children }) => {
 
   // Start background music
   const startBackgroundMusic = useCallback(async () => {
-    if (!soundEnabled) return;
-    initializeAudio();
+    if (!soundEnabled) return false;
+    
+    initAudioContext();
     
     try {
       if (backgroundMusicRef.current) {
-        backgroundMusicRef.current.volume = (musicVolume / 100) * 0.3;
+        backgroundMusicRef.current.volume = (musicVolume / 100) * 0.4;
         await backgroundMusicRef.current.play();
+        setIsMusicPlaying(true);
+        console.log('🎵 Background music started');
+        return true;
       }
     } catch (error) {
-      console.log('Background music autoplay blocked:', error.message);
+      console.warn('Background music play failed (user interaction required):', error.message);
+      return false;
     }
-  }, [soundEnabled, musicVolume, initializeAudio]);
+    return false;
+  }, [soundEnabled, musicVolume, initAudioContext]);
 
   // Stop background music
   const stopBackgroundMusic = useCallback(() => {
     if (backgroundMusicRef.current) {
       backgroundMusicRef.current.pause();
       backgroundMusicRef.current.currentTime = 0;
+      setIsMusicPlaying(false);
+      console.log('🔇 Background music stopped');
     }
   }, []);
 
   // Start lab ambient sounds
   const startLabAmbient = useCallback(async () => {
-    if (!soundEnabled) return;
-    initializeAudio();
+    if (!soundEnabled) return false;
+    
+    initAudioContext();
     
     try {
       if (labAmbientRef.current) {
         labAmbientRef.current.volume = (musicVolume / 100) * 0.2;
         await labAmbientRef.current.play();
+        console.log('🧪 Lab ambient started');
+        return true;
       }
     } catch (error) {
-      console.log('Lab ambient autoplay blocked:', error.message);
+      console.warn('Lab ambient play failed:', error.message);
+      return false;
     }
-  }, [soundEnabled, musicVolume, initializeAudio]);
+    return false;
+  }, [soundEnabled, musicVolume, initAudioContext]);
 
   // Stop lab ambient
   const stopLabAmbient = useCallback(() => {
@@ -135,36 +186,30 @@ export const AudioProvider = ({ children }) => {
   // Play effect sound
   const playEffect = useCallback((effectName) => {
     if (!soundEnabled) return;
-    initializeAudio();
+    
+    initAudioContext();
     
     try {
       const effect = effectsRef.current[effectName];
       if (effect) {
-        effect.currentTime = 0;
-        effect.volume = effectsVolume / 100;
-        effect.play().catch(e => console.log('Effect play blocked:', e.message));
+        // Clone the audio for overlapping sounds
+        const clone = effect.cloneNode();
+        clone.volume = effectsVolume / 100;
+        clone.play().catch(e => {
+          // Silently fail - likely user hasn't interacted yet
+        });
       }
     } catch (error) {
-      console.log('Error playing effect:', error.message);
+      // Silently fail
     }
-  }, [soundEnabled, effectsVolume, initializeAudio]);
+  }, [soundEnabled, effectsVolume, initAudioContext]);
 
-  // Play click sound
+  // Convenience methods
   const playClick = useCallback(() => playEffect('click'), [playEffect]);
-  
-  // Play success sound
   const playSuccess = useCallback(() => playEffect('success'), [playEffect]);
-  
-  // Play mix/brewing sound
   const playMix = useCallback(() => playEffect('mix'), [playEffect]);
-  
-  // Play collect sound
   const playCollect = useCallback(() => playEffect('collect'), [playEffect]);
-  
-  // Play rare treat sound
   const playRare = useCallback(() => playEffect('rare'), [playEffect]);
-  
-  // Play level up sound
   const playLevelUp = useCallback(() => playEffect('levelUp'), [playEffect]);
 
   // Toggle sound
@@ -179,19 +224,12 @@ export const AudioProvider = ({ children }) => {
     });
   }, [stopBackgroundMusic, stopLabAmbient]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      stopBackgroundMusic();
-      stopLabAmbient();
-    };
-  }, [stopBackgroundMusic, stopLabAmbient]);
-
   const value = {
     // State
     soundEnabled,
     musicVolume,
     effectsVolume,
+    isMusicPlaying,
     
     // Setters
     setSoundEnabled,
