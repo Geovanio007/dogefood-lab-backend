@@ -270,7 +270,7 @@ const Leaderboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 rounded-xl">
               <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{seasonInfo.totalRewards}</div>
               <div className="text-sm text-slate-600 dark:text-slate-200">Total Rewards Pool</div>
@@ -284,6 +284,48 @@ const Leaderboard = () => {
               <div className="text-sm text-slate-600 dark:text-slate-200">NFT Minting</div>
             </div>
           </div>
+          
+          {/* Distribution Breakdown */}
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
+            <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-yellow-500" />
+              $LAB Distribution Breakdown
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div className="bg-gradient-to-br from-yellow-100 to-yellow-200 dark:from-yellow-900/40 dark:to-yellow-800/40 rounded-lg p-3 text-center">
+                <div className="text-xs text-yellow-700 dark:text-yellow-300 font-medium mb-1">Top 10</div>
+                <div className="text-lg font-bold text-yellow-800 dark:text-yellow-200">30%</div>
+                <div className="text-xs text-yellow-600 dark:text-yellow-400">{formatNumber(DISTRIBUTION.top10.tokens)} $LAB</div>
+                <div className="text-xs text-yellow-700 dark:text-yellow-300 mt-1 font-semibold">1.5× Multiplier</div>
+              </div>
+              <div className="bg-gradient-to-br from-sky-100 to-sky-200 dark:from-sky-900/40 dark:to-sky-800/40 rounded-lg p-3 text-center">
+                <div className="text-xs text-sky-700 dark:text-sky-300 font-medium mb-1">Top 20</div>
+                <div className="text-lg font-bold text-sky-800 dark:text-sky-200">20%</div>
+                <div className="text-xs text-sky-600 dark:text-sky-400">{formatNumber(DISTRIBUTION.top20.tokens)} $LAB</div>
+                <div className="text-xs text-sky-700 dark:text-sky-300 mt-1 font-semibold">0.7× Multiplier</div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 rounded-lg p-3 text-center">
+                <div className="text-xs text-purple-700 dark:text-purple-300 font-medium mb-1">Top 50</div>
+                <div className="text-lg font-bold text-purple-800 dark:text-purple-200">20%</div>
+                <div className="text-xs text-purple-600 dark:text-purple-400">{formatNumber(DISTRIBUTION.top50.tokens)} $LAB</div>
+                <div className="text-xs text-purple-700 dark:text-purple-300 mt-1 font-semibold">0.2× Multiplier</div>
+              </div>
+              <div className="bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/40 dark:to-emerald-800/40 rounded-lg p-3 text-center">
+                <div className="text-xs text-emerald-700 dark:text-emerald-300 font-medium mb-1">NFT Holders</div>
+                <div className="text-lg font-bold text-emerald-800 dark:text-emerald-200">20%</div>
+                <div className="text-xs text-emerald-600 dark:text-emerald-400">{formatNumber(DISTRIBUTION.nftHolders.tokens)} $LAB</div>
+                <div className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 font-semibold">Baseline Reward</div>
+              </div>
+              <div className="bg-gradient-to-br from-pink-100 to-pink-200 dark:from-pink-900/40 dark:to-pink-800/40 rounded-lg p-3 text-center">
+                <div className="text-xs text-pink-700 dark:text-pink-300 font-medium mb-1">Events</div>
+                <div className="text-lg font-bold text-pink-800 dark:text-pink-200">10%</div>
+                <div className="text-xs text-pink-600 dark:text-pink-400">{formatNumber(DISTRIBUTION.specialEvents.tokens)} $LAB</div>
+                <div className="text-xs text-pink-700 dark:text-pink-300 mt-1 font-semibold">Challenges</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
         </CardContent>
       </Card>
 
