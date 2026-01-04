@@ -9,15 +9,16 @@ import { useGame } from '../contexts/GameContext';
 
 const MyTreats = () => {
   const { isConnected, address } = useAccount();
-  const { user, points, currentLevel, isNFTHolder } = useGame();
+  const { user, points, currentLevel, isNFTHolder, loadPlayerData, dispatch } = useGame();
   const [selectedRarity, setSelectedRarity] = useState('all');
   const [treats, setTreats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [playerNFTStatus, setPlayerNFTStatus] = useState(false);
   
-  // Fetch treats from backend API when component mounts or address changes
+  // Fetch treats and player data from backend API when component mounts or address changes
   useEffect(() => {
-    const fetchTreats = async () => {
+    const fetchData = async () => {
       if (!address && !isConnected) {
         setTreats([]);
         setLoading(false);
@@ -28,8 +29,22 @@ const MyTreats = () => {
       
       try {
         setLoading(true);
-        console.log(`🔄 Fetching treats for ${playerAddress}...`);
+        console.log(`🔄 Fetching data for ${playerAddress}...`);
         
+        // Fetch player data to get NFT status
+        const playerResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/player/${playerAddress}`);
+        if (playerResponse.ok) {
+          const playerData = await playerResponse.json();
+          const nftStatus = playerData.is_nft_holder === true;
+          setPlayerNFTStatus(nftStatus);
+          // Also update GameContext
+          if (dispatch) {
+            dispatch({ type: 'SET_NFT_HOLDER', payload: nftStatus });
+          }
+          console.log(`🎫 NFT Holder status: ${nftStatus}`);
+        }
+        
+        // Fetch treats
         const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/treats/${playerAddress}`);
         
         if (response.ok) {
@@ -42,7 +57,7 @@ const MyTreats = () => {
           setTreats([]);
         }
       } catch (err) {
-        console.error('Error fetching treats:', err);
+        console.error('Error fetching data:', err);
         setError('Failed to load treats');
         setTreats([]);
       } finally {
@@ -50,8 +65,11 @@ const MyTreats = () => {
       }
     };
     
-    fetchTreats();
-  }, [address, isConnected]);
+    fetchData();
+  }, [address, isConnected, dispatch]);
+  
+  // Use the fetched NFT status or the one from GameContext
+  const effectiveNFTStatus = playerNFTStatus || isNFTHolder;
   
   const filteredTreats = treats.filter(treat => 
     selectedRarity === 'all' || treat.rarity?.toLowerCase() === selectedRarity.toLowerCase()
