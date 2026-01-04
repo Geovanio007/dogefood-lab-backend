@@ -5,16 +5,24 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Switch } from './ui/switch';
 import { Slider } from './ui/slider';
+import { Input } from './ui/input';
 import { useGame } from '../contexts/GameContext';
 import { useAudio } from '../contexts/AudioContext';
-import { ArrowLeft, Volume2, VolumeX, Palette, Zap, Settings as SettingsIcon, Play, Pause } from 'lucide-react';
+import { useTelegram } from '../contexts/TelegramContext';
+import { ArrowLeft, Volume2, VolumeX, Palette, Zap, Settings as SettingsIcon, Play, Pause, User, Edit2, Check, X } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Settings = () => {
   const { address, isConnected } = useAccount();
+  const { isTelegram, telegramUser } = useTelegram();
   const { isNFTHolder, dispatch } = useGame();
   const [playerNFTStatus, setPlayerNFTStatus] = useState(false);
+  const [playerData, setPlayerData] = useState(null);
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [savingUsername, setSavingUsername] = useState(false);
   
   const { 
     soundEnabled, 
@@ -38,31 +46,99 @@ const Settings = () => {
     notifications: true,
   });
 
-  // Fetch player NFT status
+  // Get effective player address
+  const getEffectiveAddress = () => {
+    if (address) return address;
+    if (isTelegram && telegramUser?.id) return `TG_${telegramUser.id}`;
+    const storedPlayer = localStorage.getItem('dogefood_player');
+    if (storedPlayer) {
+      try {
+        const player = JSON.parse(storedPlayer);
+        return player.guest_id || player.id || player.address;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const effectiveAddress = getEffectiveAddress();
+
+  // Fetch player data including NFT status
   useEffect(() => {
-    const fetchNFTStatus = async () => {
-      if (!address) return;
+    const fetchPlayerData = async () => {
+      if (!effectiveAddress) return;
       
       try {
-        const response = await fetch(`${BACKEND_URL}/api/player/${address}`);
+        const response = await fetch(`${BACKEND_URL}/api/player/${effectiveAddress}`);
         if (response.ok) {
-          const playerData = await response.json();
-          const nftStatus = playerData.is_nft_holder === true;
-          setPlayerNFTStatus(nftStatus);
+          const data = await response.json();
+          setPlayerData(data);
+          setPlayerNFTStatus(data.is_nft_holder === true);
+          setNewUsername(data.nickname || '');
           if (dispatch) {
-            dispatch({ type: 'SET_NFT_HOLDER', payload: nftStatus });
+            dispatch({ type: 'SET_NFT_HOLDER', payload: data.is_nft_holder === true });
           }
         }
       } catch (error) {
-        console.error('Error fetching NFT status:', error);
+        console.error('Error fetching player data:', error);
       }
     };
     
-    fetchNFTStatus();
-  }, [address, dispatch]);
+    fetchPlayerData();
+  }, [effectiveAddress, dispatch]);
 
   // Use the fetched NFT status or the one from GameContext
   const effectiveNFTStatus = playerNFTStatus || isNFTHolder;
+
+  // Handle username update
+  const handleSaveUsername = async () => {
+    if (!newUsername.trim()) {
+      setUsernameError('Username is required');
+      return;
+    }
+    
+    if (newUsername.length < 3 || newUsername.length > 20) {
+      setUsernameError('Username must be 3-20 characters');
+      return;
+    }
+    
+    if (!newUsername.replace(/_/g, '').match(/^[a-zA-Z0-9]+$/)) {
+      setUsernameError('Only letters, numbers, and underscores allowed');
+      return;
+    }
+    
+    setSavingUsername(true);
+    setUsernameError('');
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/player/${effectiveAddress}/nickname`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: newUsername.trim() })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPlayerData(prev => ({ ...prev, nickname: newUsername.trim() }));
+        setIsEditingUsername(false);
+        playSuccess();
+      } else {
+        const errorData = await response.json();
+        setUsernameError(errorData.detail || 'Failed to update username');
+      }
+    } catch (error) {
+      setUsernameError('Failed to update username');
+    } finally {
+      setSavingUsername(false);
+    }
+  };
+
+  const cancelUsernameEdit = () => {
+    setIsEditingUsername(false);
+    setNewUsername(playerData?.nickname || '');
+    setUsernameError('');
+  };
 
   const updateVisualSetting = (key, value) => {
     setVisualSettings(prev => ({ ...prev, [key]: value }));
