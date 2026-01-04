@@ -445,7 +445,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                 className={`relative cursor-pointer transition-all duration-300 transform hover:scale-105 ${
                   selectedCharacter?.id === character.id
                     ? 'ring-4 ring-yellow-400 shadow-2xl shadow-yellow-400/50 bg-gradient-to-br from-yellow-50 to-yellow-100'
-                    : 'bg-white/95 hover:bg-white shadow-xl hover:shadow-2xl'
+                    : 'bg-white hover:bg-white shadow-xl hover:shadow-2xl'
                 }`}
                 onClick={() => setSelectedCharacter(character)}
               >
@@ -461,15 +461,15 @@ const GameLabRedesign = ({ playerAddress }) => {
                   </div>
                   
                   {/* Character Name */}
-                  <h3 className="text-xl font-bold text-gray-800 text-center mb-2">
+                  <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
                     {character.name}
                   </h3>
-                  <p className="text-sky-600 font-semibold text-center mb-3">
+                  <p className="text-sky-700 font-semibold text-center mb-3">
                     {character.description}
                   </p>
                   
                   {/* Personality */}
-                  <p className="text-gray-600 text-sm text-center mb-4 leading-relaxed">
+                  <p className="text-gray-700 text-sm text-center mb-4 leading-relaxed">
                     {character.personality}
                   </p>
                   
@@ -478,7 +478,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                     {character.traits.map((trait, index) => (
                       <span
                         key={index}
-                        className="bg-sky-100 text-sky-700 px-2 py-1 rounded-full text-xs font-medium"
+                        className="bg-sky-100 text-sky-800 px-2 py-1 rounded-full text-xs font-medium"
                       >
                         {trait}
                       </span>
@@ -487,7 +487,7 @@ const GameLabRedesign = ({ playerAddress }) => {
 
                   {/* Bonus */}
                   <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 p-3 rounded-lg border-2 border-yellow-400">
-                    <p className="text-yellow-800 text-center font-bold text-sm">
+                    <p className="text-yellow-900 text-center font-bold text-sm">
                       ✨ {character.bonus}
                     </p>
                   </div>
