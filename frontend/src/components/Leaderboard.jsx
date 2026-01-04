@@ -354,9 +354,16 @@ const Leaderboard = () => {
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                  {currentUserRank && currentUserRank <= 50 ? calculateRewards(currentUserRank) : '0 LAB'}
+                  {currentUserRank && currentUserRank <= 50 
+                    ? `${formatNumber(calculateRewards(currentUserRank, leaderboard.length).tokens)} $LAB`
+                    : '0 $LAB'}
                 </div>
                 <div className="text-sm text-slate-600 dark:text-slate-200">Est. Rewards</div>
+                {currentUserRank && currentUserRank <= 50 && (
+                  <div className="text-xs text-yellow-500 mt-1">
+                    {calculateRewards(currentUserRank, leaderboard.length).tier} ({calculateRewards(currentUserRank, leaderboard.length).multiplier})
+                  </div>
+                )}
               </div>
             </div>
             
