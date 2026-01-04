@@ -293,15 +293,22 @@ export function GameProvider({ children }) {
   };
 
   const checkNFTOwnership = async (address) => {
-    // Mock NFT verification for prototype
-    const mockNFTHolders = [
-      '0x1234567890123456789012345678901234567890',
-      '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
-    ];
+    // Check NFT ownership from backend
+    try {
+      const response = await fetch(`${API}/player/${address}`);
+      if (response.ok) {
+        const playerData = await response.json();
+        const isHolder = playerData.is_nft_holder === true;
+        dispatch({ type: 'SET_NFT_HOLDER', payload: isHolder });
+        console.log(`🎫 NFT holder status for ${address}: ${isHolder}`);
+        return isHolder;
+      }
+    } catch (error) {
+      console.error('Error checking NFT ownership:', error);
+    }
     
-    const isHolder = mockNFTHolders.includes(address.toLowerCase());
-    dispatch({ type: 'SET_NFT_HOLDER', payload: isHolder });
-    return isHolder;
+    dispatch({ type: 'SET_NFT_HOLDER', payload: false });
+    return false;
   };
 
   const gainXP = (ingredients, difficulty = 1.0) => {
