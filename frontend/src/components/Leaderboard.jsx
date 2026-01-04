@@ -326,8 +326,6 @@ const Leaderboard = () => {
           </div>
         </CardContent>
       </Card>
-        </CardContent>
-      </Card>
 
       {/* Current User Status */}
       {address && (
