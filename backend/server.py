@@ -2083,6 +2083,35 @@ async def simulate_treat_outcome(
 
 # Season Management Endpoints
 
+@api_router.delete("/admin/delete-player/{address}")
+async def delete_player(address: str, admin_key: str):
+    """Delete a specific player by address - admin only"""
+    
+    expected_key = "dogefood_admin_cleanup_2024"
+    if admin_key != expected_key:
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+    
+    # Find and delete the player
+    player = await db.players.find_one({"address": address}, {"_id": 0})
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    # Delete player
+    await db.players.delete_one({"address": address})
+    
+    # Delete their treats too
+    treats_result = await db.treats.delete_many({"player_address": address})
+    
+    logger.info(f"🗑️ Deleted player: {address} and {treats_result.deleted_count} treats")
+    
+    return {
+        "message": f"Player deleted successfully",
+        "address": address,
+        "nickname": player.get("nickname"),
+        "treats_deleted": treats_result.deleted_count
+    }
+
+
 @api_router.delete("/admin/cleanup-test-players")
 async def cleanup_test_players(admin_key: str = "dogefood_admin_2024"):
     """Remove test players from the database - admin only"""
