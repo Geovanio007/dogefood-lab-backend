@@ -39,10 +39,8 @@ const Settings = () => {
   const handleMusicToggle = async () => {
     if (isMusicPlaying) {
       stopBackgroundMusic();
-      setIsMusicPlaying(false);
     } else {
       await startBackgroundMusic();
-      setIsMusicPlaying(true);
     }
   };
 
