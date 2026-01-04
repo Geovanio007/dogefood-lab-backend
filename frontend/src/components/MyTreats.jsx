@@ -6,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { ArrowLeft, Calendar, Trophy, Target, Sparkles, Star, Crown } from 'lucide-react';
 import { useGame } from '../contexts/GameContext';
+import { useTelegram } from '../contexts/TelegramContext';
 
 const MyTreats = () => {
   const { isConnected, address } = useAccount();
+  const { isTelegram, telegramUser } = useTelegram();
   const { user, points, currentLevel, isNFTHolder, loadPlayerData, dispatch } = useGame();
   const [selectedRarity, setSelectedRarity] = useState('all');
   const [treats, setTreats] = useState([]);
@@ -16,23 +18,45 @@ const MyTreats = () => {
   const [error, setError] = useState(null);
   const [playerNFTStatus, setPlayerNFTStatus] = useState(false);
   
+  // Get effective player address (wallet, telegram, or guest)
+  const getEffectiveAddress = () => {
+    // First check wallet
+    if (address) return address;
+    
+    // Then check Telegram
+    if (isTelegram && telegramUser?.id) return `TG_${telegramUser.id}`;
+    
+    // Then check localStorage for guest user
+    const storedPlayer = localStorage.getItem('dogefood_player');
+    if (storedPlayer) {
+      try {
+        const player = JSON.parse(storedPlayer);
+        return player.guest_id || player.id || player.address;
+      } catch (e) {
+        console.error('Error parsing stored player:', e);
+      }
+    }
+    
+    return null;
+  };
+  
+  const effectiveAddress = getEffectiveAddress();
+  
   // Fetch treats and player data from backend API when component mounts or address changes
   useEffect(() => {
     const fetchData = async () => {
-      if (!address && !isConnected) {
+      if (!effectiveAddress) {
         setTreats([]);
         setLoading(false);
         return;
       }
       
-      const playerAddress = address || 'demo_player';
-      
       try {
         setLoading(true);
-        console.log(`🔄 Fetching data for ${playerAddress}...`);
+        console.log(`🔄 Fetching data for ${effectiveAddress}...`);
         
         // Fetch player data to get NFT status
-        const playerResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/player/${playerAddress}`);
+        const playerResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/player/${effectiveAddress}`);
         if (playerResponse.ok) {
           const playerData = await playerResponse.json();
           const nftStatus = playerData.is_nft_holder === true;
@@ -45,7 +69,7 @@ const MyTreats = () => {
         }
         
         // Fetch treats
-        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/treats/${playerAddress}`);
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/treats/${effectiveAddress}`);
         
         if (response.ok) {
           const data = await response.json();
@@ -53,7 +77,7 @@ const MyTreats = () => {
           setTreats(treatsArray);
           console.log(`✅ Loaded ${treatsArray.length} treats from backend`);
         } else {
-          console.log(`ℹ️ No treats found for ${playerAddress} (${response.status})`);
+          console.log(`ℹ️ No treats found for ${effectiveAddress} (${response.status})`);
           setTreats([]);
         }
       } catch (err) {
@@ -66,7 +90,7 @@ const MyTreats = () => {
     };
     
     fetchData();
-  }, [address, isConnected, dispatch]);
+  }, [effectiveAddress, dispatch]);
   
   // Use the fetched NFT status or the one from GameContext
   const effectiveNFTStatus = playerNFTStatus || isNFTHolder;
