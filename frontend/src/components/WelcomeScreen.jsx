@@ -96,11 +96,19 @@ const WelcomeScreen = ({ onPlayNow }) => {
             
             {/* Button Content - Mobile Optimized */}
             <div className="relative z-10 px-8 sm:px-16 py-4 sm:py-6 flex items-center gap-2 sm:gap-4">
-              <div className="text-3xl sm:text-6xl">🚀</div>
+              <img 
+                src="https://customer-assets.emergentagent.com/job_doge-treats/artifacts/bihai5rz_1000081758-removebg-preview.png" 
+                alt="LAB Token" 
+                className="w-8 h-8 sm:w-12 sm:h-12 object-contain"
+              />
               <span className="text-2xl sm:text-4xl md:text-5xl font-black text-yellow-400">
                 PLAY NOW
               </span>
-              <div className="text-3xl sm:text-6xl animate-pulse">✨</div>
+              <img 
+                src="https://customer-assets.emergentagent.com/job_doge-treats/artifacts/bihai5rz_1000081758-removebg-preview.png" 
+                alt="LAB Token" 
+                className="w-8 h-8 sm:w-12 sm:h-12 object-contain animate-pulse"
+              />
             </div>
 
             {/* Hover Effect Ring - Sky Blue */}
