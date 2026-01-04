@@ -365,6 +365,65 @@ const Settings = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Username Section - For Telegram and Guest users */}
+            {effectiveAddress && (
+              <div className="p-4 bg-white/20 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-medium flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Username
+                  </div>
+                  {!isEditingUsername && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setIsEditingUsername(true)}
+                      className="h-8 px-2"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+                
+                {isEditingUsername ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        value={newUsername}
+                        onChange={(e) => setNewUsername(e.target.value)}
+                        placeholder="Enter username"
+                        className="flex-1"
+                        maxLength={20}
+                      />
+                      <Button 
+                        size="sm" 
+                        onClick={handleSaveUsername}
+                        disabled={savingUsername}
+                        className="bg-green-500 hover:bg-green-600"
+                      >
+                        {savingUsername ? '...' : <Check className="w-4 h-4" />}
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={cancelUsernameEdit}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {usernameError && (
+                      <p className="text-red-500 text-xs">{usernameError}</p>
+                    )}
+                    <p className="text-xs text-slate-500">3-20 characters, letters, numbers, underscores only</p>
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-600 dark:text-slate-300">
+                    {playerData?.nickname || 'Not set - Click edit to set your username'}
+                  </div>
+                )}
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="p-4 bg-white/20 rounded-xl">
                 <div className="font-medium mb-2">Account Status</div>
@@ -374,16 +433,19 @@ const Settings = () => {
               </div>
               
               <div className="p-4 bg-white/20 rounded-xl">
-                <div className="font-medium mb-2">Data Storage</div>
+                <div className="font-medium mb-2">Account Type</div>
                 <div className="text-sm text-slate-600 dark:text-slate-300">
-                  Local browser storage
+                  {address ? '🔗 Wallet Connected' : 
+                   isTelegram ? '📱 Telegram User' : 
+                   effectiveAddress?.startsWith('guest_') ? '👤 Guest Account' : 
+                   'Not Connected'}
                 </div>
               </div>
             </div>
             
             <div className="border-t border-white/20 pt-6">
               <div className="text-sm text-gray-600 mb-4">
-                Your game progress is automatically saved to your connected wallet.
+                Your game progress is automatically saved to your account.
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" size="sm" onClick={playClick}>
