@@ -89,9 +89,19 @@ const Leaderboard = () => {
   const [seasonInfo, setSeasonInfo] = useState({
     current: 1,
     timeRemaining: '85 days',
-    totalRewards: '70,000,000 LAB',
+    totalRewards: '20,000,000 $LAB',
     participants: 0
   });
+
+  // Season 1 Distribution: 20,000,000 $LAB
+  const SEASON_1_POOL = 20000000;
+  const DISTRIBUTION = {
+    top10: { percent: 30, multiplier: 1.5, tokens: SEASON_1_POOL * 0.30 },      // 6,000,000 $LAB
+    top20: { percent: 20, multiplier: 0.7, tokens: SEASON_1_POOL * 0.20 },      // 4,000,000 $LAB
+    top50: { percent: 20, multiplier: 0.2, tokens: SEASON_1_POOL * 0.20 },      // 4,000,000 $LAB
+    nftHolders: { percent: 20, tokens: SEASON_1_POOL * 0.20 },                  // 4,000,000 $LAB
+    specialEvents: { percent: 10, tokens: SEASON_1_POOL * 0.10 }                // 2,000,000 $LAB
+  };
 
   const loadLeaderboard = async () => {
     try {
