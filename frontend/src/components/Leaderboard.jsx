@@ -598,31 +598,40 @@ const Leaderboard = () => {
         <CardHeader className="pb-2 sm:pb-4">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Star className="w-4 h-4 sm:w-5 sm:h-5" />
-            Reward Structure
+            Reward Tiers & Multipliers
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-2 sm:gap-6">
-            <div className="text-center">
+            <div className="text-center p-2 sm:p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg">
               <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">🥇</div>
-              <h3 className="font-bold text-xs sm:text-lg text-yellow-500">Ranks 1-10</h3>
-              <p className="text-[10px] sm:text-sm text-slate-600 dark:text-slate-200">1K - 10K LAB</p>
+              <h3 className="font-bold text-xs sm:text-lg text-yellow-600 dark:text-yellow-400">Top 10</h3>
+              <p className="text-[10px] sm:text-sm text-slate-600 dark:text-slate-200">30% Pool</p>
+              <p className="text-xs sm:text-base font-bold text-yellow-600 dark:text-yellow-400">1.5× Multiplier</p>
             </div>
-            <div className="text-center">
+            <div className="text-center p-2 sm:p-4 bg-sky-50 dark:bg-sky-900/30 rounded-lg">
               <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">🥈</div>
-              <h3 className="font-bold text-xs sm:text-lg text-slate-500 dark:text-slate-300">Ranks 11-25</h3>
-              <p className="text-[10px] sm:text-sm text-slate-600 dark:text-slate-200">250 - 1K LAB</p>
+              <h3 className="font-bold text-xs sm:text-lg text-sky-600 dark:text-sky-400">Top 20</h3>
+              <p className="text-[10px] sm:text-sm text-slate-600 dark:text-slate-200">20% Pool</p>
+              <p className="text-xs sm:text-base font-bold text-sky-600 dark:text-sky-400">0.7× Multiplier</p>
             </div>
-            <div className="text-center">
+            <div className="text-center p-2 sm:p-4 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
               <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">🥉</div>
-              <h3 className="font-bold text-xs sm:text-lg text-amber-600 dark:text-amber-400">Ranks 26-50</h3>
-              <p className="text-[10px] sm:text-sm text-slate-600 dark:text-slate-200">125 - 250 LAB</p>
+              <h3 className="font-bold text-xs sm:text-lg text-purple-600 dark:text-purple-400">Top 50</h3>
+              <p className="text-[10px] sm:text-sm text-slate-600 dark:text-slate-200">20% Pool</p>
+              <p className="text-xs sm:text-base font-bold text-purple-600 dark:text-purple-400">0.2× Multiplier</p>
             </div>
           </div>
           
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg">
-            <p className="text-blue-800 dark:text-blue-200 text-xs sm:text-sm text-center">
-              🎯 <strong>Remember:</strong> Only top 50 DogeFood NFT holders are eligible for $LAB rewards!
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 rounded-lg">
+            <p className="text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm text-center">
+              🎯 <strong>NFT Holder Bonus:</strong> All active NFT holders share 20% baseline pool (4M $LAB)!
+            </p>
+          </div>
+          
+          <div className="mt-3 p-3 sm:p-4 bg-pink-100 dark:bg-pink-900/30 border border-pink-300 dark:border-pink-700 rounded-lg">
+            <p className="text-pink-800 dark:text-pink-200 text-xs sm:text-sm text-center">
+              🏆 <strong>Special Events:</strong> 10% reserved for challenges & competitions (2M $LAB)
             </p>
           </div>
         </CardContent>
