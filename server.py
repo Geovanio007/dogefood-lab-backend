@@ -14,6 +14,7 @@ import hmac
 import json
 import urllib.parse
 from telegram import Bot
+import httpx  # For Firebase verification
 
 # Import Phase 2 services
 from services.anti_cheat import AntiCheatSystem
@@ -24,6 +25,10 @@ from services.merkle_tree import MerkleTreeGenerator
 from services.treat_game_engine import TreatGameEngine, TreatRarity
 from services.ingredient_system import IngredientSystem
 from services.season_manager import SeasonManager
+
+# Firebase Configuration
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "AIzaSyDPDYvwWVhmnTTAcACEdI1agLQcetDV9jQ")
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "dogefood-lab")
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -85,8 +90,9 @@ api_router = APIRouter(prefix="/api")
 # Game Models
 class Player(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    address: Optional[str] = None  # Wallet address (optional for Telegram users)
+    address: Optional[str] = None  # Wallet address (optional for Telegram/guest users)
     nickname: Optional[str] = None  # Enhanced: Add nickname support
+    email: Optional[str] = None  # Email for Firebase auth users
     # Character selection
     selected_character: Optional[str] = None  # Character ID: 'max', 'rex', or 'luna'
     character_bonuses: Optional[dict] = None  # Character-specific bonuses
@@ -95,10 +101,17 @@ class Player(BaseModel):
     telegram_username: Optional[str] = None  # Telegram @username
     telegram_first_name: Optional[str] = None  # Telegram first name
     telegram_last_name: Optional[str] = None  # Telegram last name
-    auth_type: str = "wallet"  # "wallet", "telegram", or "linked"
+    # Firebase user fields
+    firebase_uid: Optional[str] = None  # Firebase user ID
+    firebase_provider: Optional[str] = None  # "email", "google", etc.
+    profile_image: Optional[str] = None  # Profile image URL or base64
+    # Auth type: "wallet", "telegram", "firebase", "guest", or "linked"
+    auth_type: str = "wallet"
     is_nft_holder: bool = False
     is_vip: bool = False  # VIP Scientist badge
     vip_bonus_claimed: bool = False  # Track if 500 point bonus was claimed
+    leaderboard_eligible: bool = True  # All users can appear on leaderboard
+    can_convert_points: bool = False  # Only NFT holders can convert points to $LAB
     level: int = 1
     experience: int = 0
     points: int = 0
@@ -858,6 +871,9 @@ async def get_player_points_stats(address: str):
         if not stats:
             raise HTTPException(status_code=404, detail="Player not found")
         return stats
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         logger.error(f"Error getting player stats for {address}: {str(e)}")
         # Return basic stats if detailed stats fail
@@ -882,6 +898,8 @@ async def get_player_points_stats(address: str):
                 },
                 "points_breakdown": {}
             }
+        except HTTPException:
+            raise
         except Exception as fallback_error:
             logger.error(f"Fallback stats failed for {address}: {str(fallback_error)}")
             raise HTTPException(status_code=500, detail="Unable to retrieve player statistics")
@@ -1641,6 +1659,257 @@ async def register_telegram_player(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Telegram registration failed: {str(e)}")
 
+# Guest Registration (Username only)
+@api_router.post("/players/guest-register")
+async def register_guest_player(request: Request):
+    """Register a guest player with just a username - can appear on leaderboard but needs NFT to convert points"""
+    
+    try:
+        body = await request.json()
+        username = body.get("username", "").strip()
+        
+        if not username:
+            raise HTTPException(status_code=400, detail="Username is required")
+        
+        # Validate username format
+        if len(username) < 3 or len(username) > 20:
+            raise HTTPException(status_code=400, detail="Username must be 3-20 characters")
+        
+        if not username.replace("_", "").isalnum():
+            raise HTTPException(status_code=400, detail="Username can only contain letters, numbers, and underscores")
+        
+        # Check if username already exists
+        existing_user = await db.players.find_one({"nickname": {"$regex": f"^{username}$", "$options": "i"}})
+        if existing_user:
+            raise HTTPException(status_code=409, detail="Username already taken")
+        
+        # Generate a unique guest ID
+        guest_id = f"guest_{str(uuid.uuid4())[:8]}"
+        
+        # Create guest player
+        player_data = {
+            "id": str(uuid.uuid4()),
+            "address": guest_id,  # Use guest_id as a pseudo-address
+            "nickname": username,
+            "auth_type": "guest",
+            "level": 1,
+            "experience": 0,
+            "points": 0,
+            "created_treats": [],
+            "sack_progress": 0,
+            "sack_completed_count": 0,
+            "total_treats_created": 0,
+            "is_nft_holder": False,
+            "is_vip": False,
+            "leaderboard_eligible": True,
+            "can_convert_points": False,  # Can't convert without NFT
+            "registered_at": datetime.utcnow(),
+            "last_activity": datetime.utcnow()
+        }
+        
+        await db.players.insert_one(player_data)
+        logger.info(f"👤 Guest player registered: {username} ({guest_id})")
+        
+        return {
+            "success": True,
+            "message": f"Welcome, {username}! You can now play and appear on the leaderboard.",
+            "player_id": player_data["id"],
+            "guest_id": guest_id,
+            "username": username,
+            "auth_type": "guest",
+            "leaderboard_eligible": True,
+            "can_convert_points": False,
+            "note": "Connect your wallet with a DogeFood NFT to convert points to $LAB tokens!",
+            "registered_at": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Guest registration failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+# Firebase Authentication (Email/Google)
+@api_router.post("/players/firebase-register")
+async def register_firebase_player(request: Request):
+    """Register a player using Firebase authentication (Email or Google)"""
+    
+    try:
+        body = await request.json()
+        id_token = body.get("idToken")
+        username = body.get("username", "").strip()
+        
+        if not id_token:
+            raise HTTPException(status_code=400, detail="Firebase ID token is required")
+        
+        # Verify Firebase ID token
+        async with httpx.AsyncClient() as client:
+            verify_url = f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={FIREBASE_API_KEY}"
+            response = await client.post(verify_url, json={"idToken": id_token})
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=401, detail="Invalid Firebase token")
+            
+            firebase_data = response.json()
+            users = firebase_data.get("users", [])
+            
+            if not users:
+                raise HTTPException(status_code=401, detail="Firebase user not found")
+            
+            user_info = users[0]
+            firebase_uid = user_info.get("localId")
+            email = user_info.get("email")
+            display_name = user_info.get("displayName", "")
+            photo_url = user_info.get("photoUrl")
+            
+            # Determine provider (email or google)
+            provider_data = user_info.get("providerUserInfo", [])
+            provider = "email"
+            for p in provider_data:
+                if "google" in p.get("providerId", "").lower():
+                    provider = "google"
+                    break
+        
+        # Check if Firebase user already registered
+        existing_player = await db.players.find_one({"firebase_uid": firebase_uid})
+        if existing_player:
+            return {
+                "success": True,
+                "message": "Welcome back!",
+                "player_id": existing_player.get("id"),
+                "firebase_uid": firebase_uid,
+                "email": email,
+                "username": existing_player.get("nickname"),
+                "auth_type": "firebase",
+                "already_registered": True
+            }
+        
+        # Also check if email is already used
+        if email:
+            email_exists = await db.players.find_one({"email": email})
+            if email_exists:
+                raise HTTPException(status_code=409, detail="Email already registered")
+        
+        # Use provided username or generate from display name/email
+        final_username = username or display_name or (email.split("@")[0] if email else f"user_{firebase_uid[:8]}")
+        
+        # Check if username is taken
+        existing_username = await db.players.find_one({"nickname": {"$regex": f"^{final_username}$", "$options": "i"}})
+        if existing_username:
+            # Append random suffix
+            final_username = f"{final_username}_{str(uuid.uuid4())[:4]}"
+        
+        # Create Firebase player
+        player_data = {
+            "id": str(uuid.uuid4()),
+            "address": f"firebase_{firebase_uid[:12]}",  # Pseudo-address
+            "nickname": final_username,
+            "email": email,
+            "firebase_uid": firebase_uid,
+            "firebase_provider": provider,
+            "profile_image": photo_url,
+            "auth_type": "firebase",
+            "level": 1,
+            "experience": 0,
+            "points": 0,
+            "created_treats": [],
+            "sack_progress": 0,
+            "sack_completed_count": 0,
+            "total_treats_created": 0,
+            "is_nft_holder": False,
+            "is_vip": False,
+            "leaderboard_eligible": True,
+            "can_convert_points": False,
+            "registered_at": datetime.utcnow(),
+            "last_activity": datetime.utcnow()
+        }
+        
+        await db.players.insert_one(player_data)
+        logger.info(f"🔥 Firebase player registered: {final_username} ({provider}) - {email}")
+        
+        return {
+            "success": True,
+            "message": f"Welcome, {final_username}!",
+            "player_id": player_data["id"],
+            "firebase_uid": firebase_uid,
+            "email": email,
+            "username": final_username,
+            "auth_type": "firebase",
+            "provider": provider,
+            "leaderboard_eligible": True,
+            "can_convert_points": False,
+            "note": "Connect your wallet with a DogeFood NFT to convert points to $LAB tokens!",
+            "registered_at": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Firebase registration failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+# Link wallet to any account type (guest/firebase/telegram)
+@api_router.post("/players/link-nft-wallet")
+async def link_nft_wallet(request: Request):
+    """Link an NFT wallet to any existing account to enable point conversion"""
+    
+    try:
+        body = await request.json()
+        player_id = body.get("player_id")
+        wallet_address = body.get("address")
+        is_nft_holder = body.get("is_nft_holder", False)
+        
+        if not player_id or not wallet_address:
+            raise HTTPException(status_code=400, detail="Player ID and wallet address are required")
+        
+        # Find the player
+        player = await db.players.find_one({"id": player_id})
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        # Check if wallet is already linked to another player
+        existing_wallet = await db.players.find_one({"address": wallet_address, "id": {"$ne": player_id}})
+        if existing_wallet:
+            raise HTTPException(status_code=409, detail="Wallet already linked to another account")
+        
+        # Update player with wallet info
+        update_data = {
+            "address": wallet_address,
+            "is_nft_holder": is_nft_holder,
+            "can_convert_points": is_nft_holder,  # Can convert if NFT holder
+            "auth_type": "linked",
+            "last_activity": datetime.utcnow(),
+            "wallet_linked_at": datetime.utcnow()
+        }
+        
+        # Award VIP bonus if NFT holder and not claimed
+        if is_nft_holder and not player.get("vip_bonus_claimed"):
+            update_data["is_vip"] = True
+            update_data["vip_bonus_claimed"] = True
+            update_data["points"] = player.get("points", 0) + 500
+            logger.info(f"🌟 VIP bonus awarded to {player.get('nickname')}: +500 points")
+        
+        await db.players.update_one(
+            {"id": player_id},
+            {"$set": update_data}
+        )
+        
+        return {
+            "success": True,
+            "message": "Wallet linked successfully!" + (" VIP bonus awarded!" if is_nft_holder and not player.get("vip_bonus_claimed") else ""),
+            "player_id": player_id,
+            "wallet_address": wallet_address,
+            "is_nft_holder": is_nft_holder,
+            "can_convert_points": is_nft_holder,
+            "vip_bonus_awarded": is_nft_holder and not player.get("vip_bonus_claimed")
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Wallet linking failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to link wallet: {str(e)}")
+
 # Link Telegram Account to Wallet
 @api_router.post("/players/link-wallet")
 async def link_wallet_to_telegram(request: Request):
@@ -1813,6 +2082,51 @@ async def simulate_treat_outcome(
     }
 
 # Season Management Endpoints
+
+@api_router.delete("/admin/cleanup-test-players")
+async def cleanup_test_players(admin_key: str = "dogefood_admin_2024"):
+    """Remove test players from the database - admin only"""
+    
+    # Simple admin key check (in production, use proper authentication)
+    expected_key = "dogefood_admin_cleanup_2024"
+    if admin_key != expected_key:
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+    
+    # Define patterns that identify test players
+    test_patterns = [
+        {"address": {"$regex": "^TEST_", "$options": "i"}},
+        {"address": {"$regex": "^RARITY_", "$options": "i"}},
+        {"address": {"$regex": "_TEST_", "$options": "i"}},
+        {"address": {"$regex": "timer_debug", "$options": "i"}},
+        {"address": {"$regex": "^GUEST_TEST", "$options": "i"}},
+        {"address": {"$regex": "^0xATLAS_", "$options": "i"}},
+        {"address": {"$regex": "^0xWALLET_USER_ATLAS", "$options": "i"}},
+    ]
+    
+    # Find all test players first
+    test_query = {"$or": test_patterns}
+    test_players = await db.players.find(test_query, {"_id": 0, "address": 1, "nickname": 1}).to_list(100)
+    
+    if not test_players:
+        return {"message": "No test players found", "deleted_count": 0}
+    
+    # Delete test players
+    result = await db.players.delete_many(test_query)
+    
+    # Also delete their treats
+    test_addresses = [p["address"] for p in test_players]
+    treats_result = await db.treats.delete_many({"player_address": {"$in": test_addresses}})
+    
+    logger.info(f"🧹 Cleaned up {result.deleted_count} test players and {treats_result.deleted_count} treats")
+    
+    return {
+        "message": f"Successfully cleaned up test players",
+        "deleted_players": result.deleted_count,
+        "deleted_treats": treats_result.deleted_count,
+        "players_removed": [{"address": p.get("address"), "nickname": p.get("nickname")} for p in test_players]
+    }
+
+
 @api_router.get("/seasons/current")
 async def get_current_season():
     """Get current season information"""
