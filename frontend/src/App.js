@@ -4,6 +4,7 @@ import { useAccount } from 'wagmi';
 import { GameProvider } from './contexts/GameContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { TelegramProvider, useTelegram } from './contexts/TelegramContext';
+import { AudioProvider } from './contexts/AudioContext';
 import { Web3Provider } from './components/Web3Provider';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
