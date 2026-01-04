@@ -489,8 +489,13 @@ const Leaderboard = () => {
                           
                           <td className="py-4 px-2 text-right">
                             <div className="font-bold text-yellow-600 dark:text-yellow-400 text-sm">
-                              {rank <= 50 ? calculateRewards(rank) : '0 LAB'}
+                              {rank <= 50 ? `${formatNumber(calculateRewards(rank, leaderboard.length).tokens)} $LAB` : '0 $LAB'}
                             </div>
+                            {rank <= 50 && (
+                              <div className="text-xs text-slate-500 dark:text-slate-400">
+                                {calculateRewards(rank, leaderboard.length).multiplier}
+                              </div>
+                            )}
                           </td>
                         </tr>
                       );
