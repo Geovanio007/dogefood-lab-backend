@@ -1,40 +1,84 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Switch } from './ui/switch';
 import { Slider } from './ui/slider';
 import { useGame } from '../contexts/GameContext';
-import { ArrowLeft, Volume2, VolumeX, Palette, Zap, Settings as SettingsIcon } from 'lucide-react';
+import { useAudio } from '../contexts/AudioContext';
+import { ArrowLeft, Volume2, VolumeX, Palette, Zap, Settings as SettingsIcon, Play, Pause } from 'lucide-react';
 
 const Settings = () => {
   const { isNFTHolder } = useGame();
-  const [settings, setSettings] = useState({
-    soundEnabled: true,
-    musicVolume: [75],
-    effectsVolume: [80],
-    autoMix: false,
+  const { 
+    soundEnabled, 
+    musicVolume, 
+    effectsVolume,
+    setSoundEnabled,
+    setMusicVolume,
+    setEffectsVolume,
+    startBackgroundMusic,
+    stopBackgroundMusic,
+    playClick,
+    playSuccess
+  } = useAudio();
+
+  const [visualSettings, setVisualSettings] = React.useState({
     particleEffects: true,
     reducedMotion: false,
     darkMode: false,
+    autoMix: false,
     notifications: true,
   });
 
-  const updateSetting = (key, value) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+  const [isMusicPlaying, setIsMusicPlaying] = React.useState(false);
+
+  const updateVisualSetting = (key, value) => {
+    setVisualSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleMusicToggle = async () => {
+    if (isMusicPlaying) {
+      stopBackgroundMusic();
+      setIsMusicPlaying(false);
+    } else {
+      await startBackgroundMusic();
+      setIsMusicPlaying(true);
+    }
+  };
+
+  const handleSoundToggle = (checked) => {
+    setSoundEnabled(checked);
+    if (!checked) {
+      stopBackgroundMusic();
+      setIsMusicPlaying(false);
+    }
+  };
+
+  const handleMusicVolumeChange = (value) => {
+    setMusicVolume(value[0]);
+  };
+
+  const handleEffectsVolumeChange = (value) => {
+    setEffectsVolume(value[0]);
+  };
+
+  const testEffectSound = () => {
+    playSuccess();
   };
 
   const resetSettings = () => {
-    setSettings({
-      soundEnabled: true,
-      musicVolume: [75],
-      effectsVolume: [80],
-      autoMix: false,
+    setSoundEnabled(true);
+    setMusicVolume(75);
+    setEffectsVolume(80);
+    setVisualSettings({
       particleEffects: true,
       reducedMotion: false,
       darkMode: false,
+      autoMix: false,
       notifications: true,
     });
+    playClick();
   };
 
   return (
@@ -43,7 +87,7 @@ const Settings = () => {
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-4">
           <Link to="/">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={playClick}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Menu
             </Button>
@@ -57,7 +101,7 @@ const Settings = () => {
         <Card className="glass-panel">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {settings.soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+              {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
               Audio Settings
             </CardTitle>
           </CardHeader>
@@ -65,42 +109,67 @@ const Settings = () => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Sound Effects</div>
-                <div className="text-sm text-slate-600 dark:text-slate-300">Enable mixing sounds and UI feedback</div>
+                <div className="text-sm text-slate-600 dark:text-slate-300">Enable all game sounds and music</div>
               </div>
               <Switch
-                checked={settings.soundEnabled}
-                onCheckedChange={(checked) => updateSetting('soundEnabled', checked)}
+                checked={soundEnabled}
+                onCheckedChange={handleSoundToggle}
               />
             </div>
             
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="font-medium">Background Music Volume</div>
-                <span className="text-sm text-slate-600 dark:text-slate-300">{settings.musicVolume[0]}%</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600 dark:text-slate-300">{musicVolume}%</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleMusicToggle}
+                    disabled={!soundEnabled}
+                    className="ml-2"
+                  >
+                    {isMusicPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    {isMusicPlaying ? 'Stop' : 'Play'}
+                  </Button>
+                </div>
               </div>
               <Slider
-                value={settings.musicVolume}
-                onValueChange={(value) => updateSetting('musicVolume', value)}
+                value={[musicVolume]}
+                onValueChange={handleMusicVolumeChange}
                 max={100}
                 step={5}
-                disabled={!settings.soundEnabled}
+                disabled={!soundEnabled}
                 className="w-full"
               />
+              <p className="text-xs text-slate-500 mt-1">🎵 Cinematic lab background music</p>
             </div>
             
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="font-medium">Effects Volume</div>
-                <span className="text-sm text-slate-600 dark:text-slate-300">{settings.effectsVolume[0]}%</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600 dark:text-slate-300">{effectsVolume}%</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={testEffectSound}
+                    disabled={!soundEnabled}
+                    className="ml-2"
+                  >
+                    🔊 Test
+                  </Button>
+                </div>
               </div>
               <Slider
-                value={settings.effectsVolume}
-                onValueChange={(value) => updateSetting('effectsVolume', value)}
+                value={[effectsVolume]}
+                onValueChange={handleEffectsVolumeChange}
                 max={100}
                 step={5}
-                disabled={!settings.soundEnabled}
+                disabled={!soundEnabled}
                 className="w-full"
               />
+              <p className="text-xs text-slate-500 mt-1">🧪 Mix, collect, and UI feedback sounds</p>
             </div>
           </CardContent>
         </Card>
@@ -120,8 +189,8 @@ const Settings = () => {
                 <div className="text-sm text-slate-600 dark:text-slate-300">Show floating particles and animations</div>
               </div>
               <Switch
-                checked={settings.particleEffects}
-                onCheckedChange={(checked) => updateSetting('particleEffects', checked)}
+                checked={visualSettings.particleEffects}
+                onCheckedChange={(checked) => updateVisualSetting('particleEffects', checked)}
               />
             </div>
             
@@ -131,8 +200,8 @@ const Settings = () => {
                 <div className="text-sm text-slate-600 dark:text-slate-300">Minimize animations for better performance</div>
               </div>
               <Switch
-                checked={settings.reducedMotion}
-                onCheckedChange={(checked) => updateSetting('reducedMotion', checked)}
+                checked={visualSettings.reducedMotion}
+                onCheckedChange={(checked) => updateVisualSetting('reducedMotion', checked)}
               />
             </div>
             
@@ -142,8 +211,8 @@ const Settings = () => {
                 <div className="text-sm text-slate-600 dark:text-slate-300">Switch to darker theme (Coming Soon!)</div>
               </div>
               <Switch
-                checked={settings.darkMode}
-                onCheckedChange={(checked) => updateSetting('darkMode', checked)}
+                checked={visualSettings.darkMode}
+                onCheckedChange={(checked) => updateVisualSetting('darkMode', checked)}
                 disabled={true}
               />
             </div>
@@ -165,8 +234,8 @@ const Settings = () => {
                 <div className="text-sm text-slate-600 dark:text-slate-300">Automatically start mixing when ingredients are selected</div>
               </div>
               <Switch
-                checked={settings.autoMix}
-                onCheckedChange={(checked) => updateSetting('autoMix', checked)}
+                checked={visualSettings.autoMix}
+                onCheckedChange={(checked) => updateVisualSetting('autoMix', checked)}
               />
             </div>
             
@@ -176,8 +245,8 @@ const Settings = () => {
                 <div className="text-sm text-slate-600 dark:text-slate-300">Get notified about new features and events</div>
               </div>
               <Switch
-                checked={settings.notifications}
-                onCheckedChange={(checked) => updateSetting('notifications', checked)}
+                checked={visualSettings.notifications}
+                onCheckedChange={(checked) => updateVisualSetting('notifications', checked)}
               />
             </div>
           </CardContent>
@@ -213,7 +282,7 @@ const Settings = () => {
                 Your game progress is automatically saved to your connected wallet.
               </div>
               <div className="flex gap-3">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={playClick}>
                   Export Data
                 </Button>
                 <Button variant="outline" size="sm" onClick={resetSettings}>
@@ -238,15 +307,15 @@ const Settings = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 text-sm">
               <div className="p-3 bg-white/20 rounded-lg">
                 <div className="font-medium">Version</div>
-                <div className="text-slate-600 dark:text-slate-300">1.0.0 Alpha</div>
+                <div className="text-slate-600 dark:text-slate-300">1.0.0 Beta</div>
               </div>
               <div className="p-3 bg-white/20 rounded-lg">
                 <div className="font-medium">Network</div>
-                <div className="text-slate-600 dark:text-slate-300">Ethereum Mainnet</div>
+                <div className="text-slate-600 dark:text-slate-300">DogeOS</div>
               </div>
               <div className="p-3 bg-white/20 rounded-lg">
                 <div className="font-medium">Status</div>
-                <div className="text-slate-600 dark:text-slate-300">🔴 Prototype</div>
+                <div className="text-slate-600 dark:text-slate-300">🟢 Beta</div>
               </div>
             </div>
             
