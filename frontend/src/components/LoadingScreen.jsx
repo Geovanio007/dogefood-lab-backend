@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import DogeFoodLogo from './DogeFoodLogo';
 
+const LAB_TOKEN_URL = "https://customer-assets.emergentagent.com/job_doge-treats/artifacts/bihai5rz_1000081758-removebg-preview.png";
+
 const LoadingScreen = ({ onLoadingComplete }) => {
   const [progress, setProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -13,18 +15,26 @@ const LoadingScreen = ({ onLoadingComplete }) => {
           if (onLoadingComplete) {
             setTimeout(() => {
               onLoadingComplete();
-            }, 800); // Small delay after completion
+            }, 800);
           }
           clearInterval(interval);
           return 100;
         }
-        // Smooth progress increase with slight randomness for realistic feel
         return prev + Math.random() * 3 + 1;
       });
     }, 80);
 
     return () => clearInterval(interval);
   }, [onLoadingComplete]);
+
+  // Generate falling token positions
+  const fallingTokens = Array.from({ length: 12 }, (_, i) => ({
+    id: i,
+    left: `${5 + (i * 8)}%`,
+    delay: `${i * 0.15}s`,
+    duration: `${1.5 + Math.random() * 1}s`,
+    size: `${30 + Math.random() * 25}px`
+  }));
 
   return (
     <div className="loading-screen">
@@ -110,18 +120,82 @@ const LoadingScreen = ({ onLoadingComplete }) => {
             {progress >= 30 && progress < 60 && "Heating laboratory..."}
             {progress >= 60 && progress < 90 && "Calibrating equipment..."}
             {progress >= 90 && progress < 100 && "Almost ready..."}
-            {progress >= 100 && isComplete && "Laboratory ready! 🎉"}
+            {progress >= 100 && isComplete && "Laboratory ready!"}
           </div>
         </div>
 
-        {/* Completion Animation */}
+        {/* Completion Animation with $LAB Tokens */}
         {isComplete && (
-          <div className="completion-animation">
-            <div className="success-icon">✨</div>
-            <div className="success-text">Welcome to the Lab!</div>
+          <div className="completion-animation relative">
+            {/* Falling $LAB Tokens */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
+              {fallingTokens.map((token) => (
+                <img
+                  key={token.id}
+                  src={LAB_TOKEN_URL}
+                  alt="$LAB"
+                  className="absolute animate-fall-splash"
+                  style={{
+                    left: token.left,
+                    top: '-50px',
+                    width: token.size,
+                    height: token.size,
+                    animationDelay: token.delay,
+                    animationDuration: token.duration,
+                    filter: 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.5))'
+                  }}
+                />
+              ))}
+            </div>
+            
+            {/* Central $LAB Token with splash effect */}
+            <div className="success-icon relative">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-ping absolute">
+                  <img 
+                    src={LAB_TOKEN_URL} 
+                    alt="$LAB" 
+                    className="w-16 h-16 opacity-50"
+                  />
+                </div>
+              </div>
+              <img 
+                src={LAB_TOKEN_URL} 
+                alt="$LAB" 
+                className="w-16 h-16 animate-bounce relative z-10"
+                style={{ filter: 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.8))' }}
+              />
+            </div>
+            <div className="success-text mt-4">Welcome to the Lab!</div>
           </div>
         )}
       </div>
+
+      {/* Custom styles for falling animation */}
+      <style jsx>{`
+        @keyframes fall-splash {
+          0% {
+            transform: translateY(0) rotate(0deg) scale(1);
+            opacity: 1;
+          }
+          70% {
+            transform: translateY(80vh) rotate(360deg) scale(1);
+            opacity: 1;
+          }
+          85% {
+            transform: translateY(85vh) rotate(380deg) scale(1.2);
+            opacity: 0.8;
+          }
+          100% {
+            transform: translateY(100vh) rotate(400deg) scale(0.5);
+            opacity: 0;
+          }
+        }
+        
+        .animate-fall-splash {
+          animation: fall-splash ease-in forwards;
+        }
+      `}</style>
     </div>
   );
 };
