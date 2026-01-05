@@ -112,10 +112,9 @@ const Settings = () => {
     setUsernameError('');
     
     try {
-      const response = await fetch(`${BACKEND_URL}/api/player/${effectiveAddress}/nickname`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname: newUsername.trim() })
+      const response = await fetch(`${BACKEND_URL}/api/player/${effectiveAddress}/update-username?username=${encodeURIComponent(newUsername.trim())}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
       });
       
       if (response.ok) {
