@@ -288,6 +288,7 @@ const GameLabRedesign = ({ playerAddress }) => {
 
   // Toggle ingredient selection
   const toggleIngredient = (ingredient) => {
+    playClick();
     setSelectedIngredients(prev => {
       if (prev.includes(ingredient.id)) {
         return prev.filter(id => id !== ingredient.id);
@@ -303,6 +304,7 @@ const GameLabRedesign = ({ playerAddress }) => {
   const handleCreateTreat = async () => {
     if (selectedIngredients.length < 1) return;
     
+    playMix();
     setIsBrewing(true);
     setBrewResult(null);
     setShowBrewingAnimation(true);
