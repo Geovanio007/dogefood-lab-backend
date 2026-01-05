@@ -81,7 +81,6 @@ const MainMenu = () => {
   const { address, isConnected } = useAccount();
   const { nftBalance, isNFTHolder, loading: nftLoading } = useNFTVerification();
   const { user, currentLevel, points, dispatch, loadPlayerData } = useGame();
-  const { playClick, startBackgroundMusic } = useAudio();
   
   // Username state
   const [username, setUsername] = useState('');
@@ -92,16 +91,6 @@ const MainMenu = () => {
   
   // Profile image state
   const [profileImage, setProfileImage] = useState(null);
-  
-  // Start background music on first interaction
-  useEffect(() => {
-    const handleFirstInteraction = () => {
-      startBackgroundMusic();
-      document.removeEventListener('click', handleFirstInteraction);
-    };
-    document.addEventListener('click', handleFirstInteraction);
-    return () => document.removeEventListener('click', handleFirstInteraction);
-  }, [startBackgroundMusic]);
   
   // Guest/Firebase user state
   const [guestUser, setGuestUser] = useState(() => {
