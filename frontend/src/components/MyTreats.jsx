@@ -11,12 +11,14 @@ import { useTelegram } from '../contexts/TelegramContext';
 const MyTreats = () => {
   const { isConnected, address } = useAccount();
   const { isTelegram, telegramUser } = useTelegram();
-  const { user, points, currentLevel, isNFTHolder, loadPlayerData, dispatch } = useGame();
+  const { user, points: contextPoints, currentLevel, isNFTHolder, loadPlayerData, dispatch } = useGame();
   const [selectedRarity, setSelectedRarity] = useState('all');
   const [treats, setTreats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [playerNFTStatus, setPlayerNFTStatus] = useState(false);
+  const [playerPoints, setPlayerPoints] = useState(0);
+  const [playerLevel, setPlayerLevel] = useState(1);
   
   // Get effective player address (wallet, telegram, or guest)
   const getEffectiveAddress = () => {
@@ -55,17 +57,24 @@ const MyTreats = () => {
         setLoading(true);
         console.log(`🔄 Fetching data for ${effectiveAddress}...`);
         
-        // Fetch player data to get NFT status
+        // Fetch player data to get NFT status and points
         const playerResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/player/${effectiveAddress}`);
         if (playerResponse.ok) {
           const playerData = await playerResponse.json();
           const nftStatus = playerData.is_nft_holder === true;
           setPlayerNFTStatus(nftStatus);
+          setPlayerPoints(playerData.points || 0);
+          setPlayerLevel(playerData.level || 1);
           // Also update GameContext
           if (dispatch) {
             dispatch({ type: 'SET_NFT_HOLDER', payload: nftStatus });
+            dispatch({ type: 'LOAD_PLAYER_DATA', payload: {
+              level: playerData.level || 1,
+              experience: playerData.experience || 0,
+              points: playerData.points || 0
+            }});
           }
-          console.log(`🎫 NFT Holder status: ${nftStatus}`);
+          console.log(`🎫 Player data: ${playerData.points} points, Level ${playerData.level}, NFT: ${nftStatus}`);
         }
         
         // Fetch treats
@@ -94,6 +103,8 @@ const MyTreats = () => {
   
   // Use the fetched NFT status or the one from GameContext
   const effectiveNFTStatus = playerNFTStatus || isNFTHolder;
+  // Use fetched points or context points
+  const effectivePoints = playerPoints || contextPoints || 0;
   
   const filteredTreats = treats.filter(treat => 
     selectedRarity === 'all' || treat.rarity?.toLowerCase() === selectedRarity.toLowerCase()
