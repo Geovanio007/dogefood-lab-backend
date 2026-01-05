@@ -329,6 +329,14 @@ const GameLabRedesign = ({ playerAddress }) => {
           setBrewResult(data);
           setShowResult(true);
           setSelectedIngredients([]);
+          
+          // Play success sound - rare sound for rare+ treats
+          const isRareOrBetter = ['Rare', 'Epic', 'Legendary', 'Mythic'].includes(data.rarity);
+          if (isRareOrBetter) {
+            playRare();
+          } else {
+            playSuccess();
+          }
         }, 3000);
         
         // Reload data
