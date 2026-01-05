@@ -2,19 +2,10 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 
 const AudioContext = createContext(null);
 
-// Using free, reliable audio sources
+// Audio sources - Only lab ambient music
 const AUDIO_SOURCES = {
-  // Background music - calm ambient
-  background: 'https://www.soundjay.com/misc/sounds/magic-chime-02.mp3',
   // Lab ambient - sci-fi futuristic game music (custom uploaded)
-  labAmbient: 'https://customer-assets.emergentagent.com/job_5412b27a-14e8-4bc6-a510-b262ffc85132/artifacts/e6xj38of_magical-technology-sci-fi-science-futuristic-game-music-300607.mp3',
-  // UI Sounds
-  click: 'https://www.soundjay.com/buttons/sounds/button-09.mp3',
-  success: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
-  mix: 'https://www.soundjay.com/misc/sounds/water-bubbles-1.mp3',
-  collect: 'https://www.soundjay.com/misc/sounds/magic-chime-01.mp3',
-  rare: 'https://www.soundjay.com/misc/sounds/magic-chime-03.mp3',
-  levelUp: 'https://www.soundjay.com/misc/sounds/fanfare-3.mp3'
+  labAmbient: 'https://customer-assets.emergentagent.com/job_5412b27a-14e8-4bc6-a510-b262ffc85132/artifacts/e6xj38of_magical-technology-sci-fi-science-futuristic-game-music-300607.mp3'
 };
 
 // Fallback to base64 encoded simple sounds if URLs fail
