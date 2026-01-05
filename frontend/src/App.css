@@ -40,3 +40,47 @@
 .read-the-docs {
   color: #888;
 }
+
+/* $LAB Token Falling Animation */
+@keyframes fall-splash {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(80vh) rotate(360deg) scale(1);
+    opacity: 1;
+  }
+  85% {
+    transform: translateY(85vh) rotate(380deg) scale(1.3);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(100vh) rotate(400deg) scale(0.3);
+    opacity: 0;
+  }
+}
+
+.animate-fall-splash {
+  animation: fall-splash ease-in forwards;
+}
+
+/* Splash effect */
+@keyframes splash {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-splash {
+  animation: splash 0.5s ease-out forwards;
+}
