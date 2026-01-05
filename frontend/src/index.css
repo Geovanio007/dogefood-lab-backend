@@ -698,12 +698,20 @@ body {
     transform: translate(-50%, -50%);
     text-align: center;
     animation: completionPop 0.8s ease-out;
+    z-index: 100;
   }
 
   .success-icon {
-    font-size: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-bottom: 1rem;
-    animation: rotate 2s infinite linear;
+  }
+
+  .success-icon img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
   }
 
   .success-text {
