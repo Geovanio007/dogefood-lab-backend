@@ -350,6 +350,14 @@ const GameLabRedesign = ({ playerAddress }) => {
   const handleCollectTreat = async (treat) => {
     if (collectingTreat) return;
     
+    // Play collect sound, or rare sound for rare+ treats
+    const isRareOrBetter = ['Rare', 'Epic', 'Legendary', 'Mythic'].includes(treat.rarity);
+    if (isRareOrBetter) {
+      playRare();
+    } else {
+      playCollect();
+    }
+    
     setCollectingTreat(treat.id);
     setShowCollectAnimation(true);
     setCollectedTreat(treat);
@@ -367,6 +375,11 @@ const GameLabRedesign = ({ playerAddress }) => {
       
       if (response.ok) {
         const data = await response.json();
+        
+        // Check if player leveled up
+        if (data.new_level && data.new_level > playerLevel) {
+          playLevelUp();
+        }
         
         // Show collection animation for 2.5 seconds
         setTimeout(async () => {
