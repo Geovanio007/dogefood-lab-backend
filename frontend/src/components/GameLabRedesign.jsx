@@ -71,6 +71,7 @@ const RARITY_STYLES = {
 
 const GameLabRedesign = ({ playerAddress }) => {
   const navigate = useNavigate();
+  const { playClick, playMix, playSuccess, playCollect, playRare, playLevelUp, startLabAmbient, stopLabAmbient } = useAudio();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -98,6 +99,12 @@ const GameLabRedesign = ({ playerAddress }) => {
   const [isBrewing, setIsBrewing] = useState(false);
   const [brewResult, setBrewResult] = useState(null);
   const [showResult, setShowResult] = useState(false);
+  
+  // Start lab ambient sound when component mounts
+  useEffect(() => {
+    startLabAmbient();
+    return () => stopLabAmbient();
+  }, [startLabAmbient, stopLabAmbient]);
   const [showBrewingAnimation, setShowBrewingAnimation] = useState(false);
   
   // Active treats
