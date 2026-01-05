@@ -173,7 +173,7 @@ const MyTreats = () => {
         
         <Card className="glass-panel">
           <CardContent className="text-center p-6">
-            <div className="text-3xl font-bold text-green-600">{points}</div>
+            <div className="text-3xl font-bold text-green-600">{effectivePoints}</div>
             <div className="text-sm text-gray-600 mb-3">Total Points</div>
             <Button 
               disabled 
