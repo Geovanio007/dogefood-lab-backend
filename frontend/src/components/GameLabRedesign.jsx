@@ -5,6 +5,7 @@ import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { Card, CardContent } from './ui/card';
 import INGREDIENT_ICONS from '../config/ingredientIcons';
+import { useAudio } from '../contexts/AudioContext';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
