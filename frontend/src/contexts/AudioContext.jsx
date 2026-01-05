@@ -6,8 +6,8 @@ const AudioContext = createContext(null);
 const AUDIO_SOURCES = {
   // Background music - calm ambient
   background: 'https://www.soundjay.com/misc/sounds/magic-chime-02.mp3',
-  // Lab ambient - bubbling/science sounds
-  labAmbient: 'https://www.soundjay.com/misc/sounds/water-bubbles-1.mp3',
+  // Lab ambient - sci-fi futuristic game music (custom uploaded)
+  labAmbient: 'https://customer-assets.emergentagent.com/job_5412b27a-14e8-4bc6-a510-b262ffc85132/artifacts/e6xj38of_magical-technology-sci-fi-science-futuristic-game-music-300607.mp3',
   // UI Sounds
   click: 'https://www.soundjay.com/buttons/sounds/button-09.mp3',
   success: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
