@@ -12,12 +12,13 @@ const LoadingScreen = ({ onLoadingComplete }) => {
       setProgress(prev => {
         if (prev >= 100) {
           setIsComplete(true);
+          clearInterval(interval);
+          // Show the completion animation for 1.5 seconds before navigating
           if (onLoadingComplete) {
             setTimeout(() => {
               onLoadingComplete();
-            }, 800);
+            }, 1500);
           }
-          clearInterval(interval);
           return 100;
         }
         return prev + Math.random() * 3 + 1;
