@@ -556,7 +556,7 @@ const GameLabRedesign = ({ playerAddress }) => {
             
             {selectedCharacter && !selectingCharacter && (
               <p className="text-white/90 mt-4 text-lg drop-shadow-md">
-                Ready to begin your scientific journey? Let's go! 🧪✨
+                Ready to begin your scientific journey? Let&apos;s go! 🧪✨
               </p>
             )}
             
