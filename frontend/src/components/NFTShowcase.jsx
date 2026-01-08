@@ -172,7 +172,7 @@ const NFTShowcase = () => {
               <p className="text-sm text-gray-600">Combine treats to create ultra-rare Mega Meals!</p>
             </div>
             <div className="p-4 bg-white/20 rounded-xl">
-              <div className="text-3xl mb-2">🎨</div>
+              <div className="text-3xl mb-2"><TreatIcon size="xl" /></div>
               <h4 className="font-bold mb-1">Custom Skins</h4>
               <p className="text-sm text-gray-600">Personalize your Shiba Inu scientist avatar!</p>
             </div>
