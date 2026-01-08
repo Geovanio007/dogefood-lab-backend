@@ -9,6 +9,7 @@ const DOGEOS_CHAIN_IDS = [
   '6281971',           // String form
   '0x5fd373',          // Hex lowercase
   '0x5FD373',          // Hex uppercase
+  0x5fd373,            // Hex number form
 ];
 
 // Helper to get chain ID from window.ethereum
