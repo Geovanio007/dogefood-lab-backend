@@ -29,9 +29,22 @@ export const dogeOSDevnet = defineChain({
   testnet: true,
 });
 
+// WalletConnect project ID - required for mobile wallet connections
+const projectId = process.env.REACT_APP_WALLETCONNECT_PROJECT_ID || '';
+
 export const wagmiConfig = getDefaultConfig({
   appName: 'DogeFood Lab Beta',
-  projectId: process.env.REACT_APP_WALLETCONNECT_PROJECT_ID || '',
+  projectId: projectId,
   chains: [dogeOSDevnet],
   ssr: false,
+  // Enable WalletConnect for mobile
+  walletConnectParameters: {
+    projectId: projectId,
+    metadata: {
+      name: 'DogeFood Lab',
+      description: 'Create treats, earn points, climb the leaderboard on DogeOS!',
+      url: 'https://app-eight-bay-35.vercel.app',
+      icons: ['https://customer-assets.emergentagent.com/job_dogefoodlab/artifacts/ckey490s_20250812_154617.jpg']
+    }
+  }
 });
