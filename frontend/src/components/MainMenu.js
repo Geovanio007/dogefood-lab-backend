@@ -10,6 +10,7 @@ import { useGame } from '../contexts/GameContext';
 import { useNFTVerification } from '../hooks/useNFTVerification';
 import ThemeToggle from './ThemeToggle';
 import DogeFoodLogo from './DogeFoodLogo';
+import TreatIcon from './TreatIcon';
 import { Beaker, Trophy, Settings, Palette, Clock, User, Check, Edit2 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
