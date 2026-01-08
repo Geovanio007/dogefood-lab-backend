@@ -1,11 +1,10 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import { defineChain } from 'viem';
 
-// Define DogeOS Testnet chain
-// Chain ID 221122 (0x35fc2) - verified from RPC response
+// Define DogeOS Chikyū Testnet chain
 export const dogeOSDevnet = defineChain({
-  id: 221122,
-  name: 'DogeOS Testnet',
+  id: 6281971,
+  name: 'DogeOS Chikyū Testnet',
   nativeCurrency: {
     decimals: 18,
     name: 'Dogecoin',
@@ -13,16 +12,18 @@ export const dogeOSDevnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ['https://rpc.devnet.doge.xyz'],
+      http: ['https://rpc.testnet.dogeos.com'],
+      webSocket: ['wss://ws.rpc.testnet.dogeos.com'],
     },
     public: {
-      http: ['https://rpc.devnet.doge.xyz'],
+      http: ['https://rpc.testnet.dogeos.com'],
+      webSocket: ['wss://ws.rpc.testnet.dogeos.com'],
     },
   },
   blockExplorers: {
     default: {
       name: 'DogeOS Explorer',
-      url: 'https://blockscout.devnet.doge.xyz',
+      url: 'https://explorer.testnet.dogeos.com',
     },
   },
   testnet: true,
