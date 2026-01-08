@@ -7,6 +7,7 @@ import { Badge } from './ui/badge';
 import { ArrowLeft, Calendar, Trophy, Target, Sparkles, Star, Crown } from 'lucide-react';
 import { useGame } from '../contexts/GameContext';
 import { useTelegram } from '../contexts/TelegramContext';
+import TreatIcon from './TreatIcon';
 
 const MyTreats = () => {
   const { isConnected, address } = useAccount();
