@@ -304,7 +304,7 @@ const GameLabRedesign = ({ playerAddress }) => {
   const handleCreateTreat = async () => {
     if (selectedIngredients.length < 1) return;
     
-    playMix();
+    playBrewing();
     setIsBrewing(true);
     setBrewResult(null);
     setShowBrewingAnimation(true);
