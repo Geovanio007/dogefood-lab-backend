@@ -5,14 +5,14 @@ const AudioContext = createContext(null);
 // Audio sources - Lab ambient and sound effects
 const LAB_AMBIENT_URL = 'https://customer-assets.emergentagent.com/job_5412b27a-14e8-4bc6-a510-b262ffc85132/artifacts/e6xj38of_magical-technology-sci-fi-science-futuristic-game-music-300607.mp3';
 
-// Sound effect URLs - using reliable, CORS-enabled sources
+// Sound effect URLs - using Mixkit (reliable, CORS-enabled)
 const SOUND_EFFECTS = {
-  click: 'https://cdn.freesound.org/previews/220/220206_4100837-lq.mp3',       // UI click sound
-  brewing: 'https://cdn.freesound.org/previews/398/398719_1676145-lq.mp3',    // Bubbling/brewing
-  success: 'https://cdn.freesound.org/previews/320/320775_5260872-lq.mp3',    // Success chime
-  rare: 'https://cdn.freesound.org/previews/270/270404_5123851-lq.mp3',       // Rare item found
-  collect: 'https://cdn.freesound.org/previews/341/341695_5858296-lq.mp3',    // Collect/pickup
-  levelUp: 'https://cdn.freesound.org/previews/270/270319_5123851-lq.mp3',    // Level up fanfare
+  click: 'https://assets.mixkit.co/active_storage/sfx/270/270.wav',       // Soft click
+  brewing: 'https://assets.mixkit.co/active_storage/sfx/2353/2353.wav',   // Bubbling sound
+  success: 'https://assets.mixkit.co/active_storage/sfx/2000/2000.wav',   // Success chime
+  rare: 'https://assets.mixkit.co/active_storage/sfx/2019/2019.wav',      // Achievement/rare sound
+  collect: 'https://assets.mixkit.co/active_storage/sfx/2004/2004.wav',   // Coin/collect sound
+  levelUp: 'https://assets.mixkit.co/active_storage/sfx/2020/2020.wav',   // Level up fanfare
 };
 
 export const AudioProvider = ({ children }) => {
@@ -52,9 +52,10 @@ export const AudioProvider = ({ children }) => {
       // Initialize sound effects
       Object.entries(SOUND_EFFECTS).forEach(([key, url]) => {
         const audio = new Audio(url);
-        audio.volume = (effectsVolume / 100) * 0.7;
+        audio.volume = (effectsVolume / 100) * 0.5;
         audio.preload = 'auto';
         soundEffectsRef.current[key] = audio;
+        console.log(`🎵 Loaded sound effect: ${key}`);
       });
       
       isInitializedRef.current = true;
@@ -95,7 +96,7 @@ export const AudioProvider = ({ children }) => {
     localStorage.setItem('dogefood_effects_volume', effectsVolume.toString());
     // Update all sound effect volumes
     Object.values(soundEffectsRef.current).forEach(audio => {
-      if (audio) audio.volume = (effectsVolume / 100) * 0.7;
+      if (audio) audio.volume = (effectsVolume / 100) * 0.5;
     });
   }, [effectsVolume]);
 
@@ -110,8 +111,15 @@ export const AudioProvider = ({ children }) => {
       if (audio) {
         // Clone and play to allow overlapping sounds
         const clone = audio.cloneNode();
-        clone.volume = (effectsVolume / 100) * 0.7;
-        clone.play().catch(e => console.warn(`Sound ${soundKey} play failed:`, e.message));
+        clone.volume = (effectsVolume / 100) * 0.5;
+        const playPromise = clone.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(e => {
+            console.warn(`Sound ${soundKey} play failed:`, e.message);
+          });
+        }
+      } else {
+        console.warn(`Sound effect ${soundKey} not loaded`);
       }
     } catch (error) {
       console.warn(`Error playing ${soundKey}:`, error.message);
