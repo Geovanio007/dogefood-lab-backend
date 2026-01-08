@@ -27,7 +27,7 @@ const WalletConnection = () => {
           {isCorrectNetwork ? (
             <Badge className="bg-green-500 text-white flex items-center gap-1">
               <CheckCircle size={12} />
-              DogeOS Devnet
+              DogeOS Chikyū
             </Badge>
           ) : (
             <Button 
