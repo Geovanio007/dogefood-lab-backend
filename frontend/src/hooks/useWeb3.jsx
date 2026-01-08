@@ -3,11 +3,12 @@ import { useAccount, useSignMessage, useChainId, useSwitchChain } from 'wagmi';
 import { dogeOSDevnet } from '../config/wagmi';
 
 // DogeOS chain ID - also check for string versions for mobile wallet compatibility
+// Correct chain ID is 221122 (0x35fc2)
 const DOGEOS_CHAIN_IDS = [
-  221122420,           // Number form
-  '221122420',         // String form
-  '0xd30ba1c',         // Hex lowercase
-  '0xD30BA1C',         // Hex uppercase
+  221122,              // Number form (correct)
+  '221122',            // String form
+  '0x35fc2',           // Hex lowercase
+  '0x35FC2',           // Hex uppercase
 ];
 
 // Helper to get chain ID from window.ethereum
