@@ -608,7 +608,7 @@ const MainMenu = () => {
                 <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
                   Start mixing magical Dogetreats and unlock new recipes!
                 </p>
-                <Button className="doge-button w-full text-xs sm:text-lg py-1.5 sm:py-2">
+                <Button className="doge-button w-full text-sm sm:text-lg py-2 sm:py-2 font-bold">
                   Mix 🧪
                 </Button>
               </CardContent>
@@ -628,7 +628,7 @@ const MainMenu = () => {
                 <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
                   View your created Dogetreats and rare collections!
                 </p>
-                <Button className="doge-button w-full text-xs sm:text-lg py-1.5 sm:py-2">
+                <Button className="doge-button w-full text-sm sm:text-lg py-2 sm:py-2 font-bold">
                   View 🎨
                 </Button>
               </CardContent>
@@ -648,7 +648,7 @@ const MainMenu = () => {
                 <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
                   Compete with other VIP Scientists for $LAB rewards!
                 </p>
-                <Button className="doge-button w-full text-xs sm:text-lg py-1.5 sm:py-2">
+                <Button className="doge-button w-full text-sm sm:text-lg py-2 sm:py-2 font-bold">
                   Compete 🏆
                 </Button>
               </CardContent>
@@ -668,7 +668,7 @@ const MainMenu = () => {
                 <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
                   Customize your experience and manage your account
                 </p>
-                <Button className="doge-button w-full text-xs sm:text-lg py-1.5 sm:py-2">
+                <Button className="doge-button w-full text-sm sm:text-lg py-2 sm:py-2 font-bold">
                   Manage ⚙️
                 </Button>
               </CardContent>
