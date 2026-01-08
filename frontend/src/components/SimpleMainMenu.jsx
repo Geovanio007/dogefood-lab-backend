@@ -73,7 +73,7 @@ const SimpleMainMenu = () => {
                 className="w-full py-2 px-4 rounded-lg text-black font-semibold transition-colors"
                 style={{ backgroundColor: '#FFD700' }}
               >
-                View Collection 🎨
+                View Collection <TreatIcon size="sm" />
               </button>
             </div>
           </Link>
