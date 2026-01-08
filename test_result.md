@@ -5,6 +5,40 @@
 - **Backend API:** https://dogefood-lab-api.onrender.com/api
 - **MongoDB:** User's MongoDB Atlas instance
 
+## FIXES IN PROGRESS (2025-01-08)
+
+### 🔧 Issue 1: "Wrong Network" Error on Mobile Wallet Browsers - FIXED
+**Root Cause:** The network detection only checked wagmi's `useChainId()` which may not sync properly with mobile in-wallet browsers (like OKX).
+
+**Changes Made:**
+1. `frontend/src/hooks/useWeb3.jsx`:
+   - Added support for multiple chain ID formats (number, string, hex)
+   - Added direct `window.ethereum.chainId` check for mobile wallet compatibility
+   - Added listener for `chainChanged` events from mobile wallets
+   - Using `useMemo` for correct network computation
+
+### 🔧 Issue 2: Restore Game Sound Effects - FIXED
+**Root Cause:** Previous agent accidentally removed all sound effects when user asked to remove "tingling" sounds.
+
+**Changes Made:**
+1. `frontend/src/contexts/AudioContext.jsx`:
+   - Re-implemented `playClick`, `playBrewing`, `playSuccess`, `playRare`, `playCollect`, `playLevelUp` functions
+   - Added CORS-enabled audio sources for all sound effects
+   - Sound effects now properly clone audio for overlapping playback
+   - Effects volume properly respects user settings
+
+2. `frontend/src/components/GameLabRedesign.jsx`:
+   - Updated to use `playBrewing` function for mixing sounds
+   - All audio triggers properly connected
+
+### Deployment Status
+- **Frontend (Vercel):** ✅ Pushed to GitHub - Auto-deploying
+- **Backend (Render):** ⚠️ Push blocked by GitHub secret scanning - User needs to allow secrets at:
+  - https://github.com/Geovanio007/dogefood-lab-backend/security/secret-scanning/unblock-secret/37yd75VLznqIptq54FBED7GLdVA
+  - https://github.com/Geovanio007/dogefood-lab-backend/security/secret-scanning/unblock-secret/37yd7CJBAEhBnW3AXbxMm4tOmXl
+
+---
+
 ## FIXES COMPLETED (2025-12-31)
 
 ### ✅ Issue 1: Guest User Username Banner Not Appearing - FIXED
