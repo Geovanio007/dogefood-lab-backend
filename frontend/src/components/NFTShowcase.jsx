@@ -39,7 +39,7 @@ const NFTShowcase = () => {
               Back to Menu
             </Button>
           </Link>
-          <h1 className="text-4xl font-bold doge-gradient">My Dogetreats 🎨</h1>
+          <h1 className="text-4xl font-bold doge-gradient flex items-center gap-2">My Dogetreats <TreatIcon size="xl" /></h1>
         </div>
         
         <div className="flex items-center gap-4">
