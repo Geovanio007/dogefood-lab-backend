@@ -10,26 +10,28 @@ const DOGEOS_CHAIN_IDS = [
   '0xD30BA1C',         // Hex uppercase
 ];
 
+// Helper to get chain ID from window.ethereum
+const getDirectChainId = () => {
+  if (typeof window !== 'undefined' && window.ethereum) {
+    try {
+      return window.ethereum.chainId;
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+};
+
 export const useWeb3 = () => {
   const { address, isConnected, isConnecting } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
-  const [detectedChainId, setDetectedChainId] = useState(null);
+  
+  // Initialize detectedChainId with current value
+  const [detectedChainId, setDetectedChainId] = useState(() => getDirectChainId());
 
-  // Check for direct window.ethereum chainId (for mobile wallets)
-  const getDirectChainId = useCallback(() => {
-    if (typeof window !== 'undefined' && window.ethereum) {
-      try {
-        return window.ethereum.chainId;
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  }, []);
-
-  // Compute isCorrectNetwork using useMemo instead of useState + useEffect
+  // Compute isCorrectNetwork using useMemo
   const isCorrectNetwork = useMemo(() => {
     // Check wagmi's reported chainId
     const wagmiMatch = chainId === dogeOSDevnet.id || DOGEOS_CHAIN_IDS.includes(chainId);
@@ -50,17 +52,11 @@ export const useWeb3 = () => {
     }
     
     return wagmiMatch || directMatch;
-  }, [chainId, detectedChainId, getDirectChainId]);
+  }, [chainId, detectedChainId]);
 
   // Listen for chain changes from mobile wallets
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ethereum) {
-      // Initial check
-      const initialChainId = getDirectChainId();
-      if (initialChainId) {
-        setDetectedChainId(initialChainId);
-      }
-      
       const handleChainChanged = (newChainId) => {
         console.log(`⛓️ Chain changed to: ${newChainId}`);
         setDetectedChainId(newChainId);
@@ -71,7 +67,7 @@ export const useWeb3 = () => {
         window.ethereum.removeListener?.('chainChanged', handleChainChanged);
       };
     }
-  }, [getDirectChainId]);
+  }, []);
 
   const switchToDogeOS = async () => {
     try {
