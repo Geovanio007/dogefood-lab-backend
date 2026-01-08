@@ -686,7 +686,7 @@ const MainMenu = () => {
             />
           </div>
           <h3 className="text-2xl font-bold text-yellow-500 mt-4 playful-text bubble-text">
-            Welcome to DogeFood Lab! 🐕‍🦺
+            Welcome to DogeFood Lab!
           </h3>
         </div>
 
