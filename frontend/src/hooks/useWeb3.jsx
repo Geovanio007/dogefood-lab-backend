@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAccount, useSignMessage, useChainId, useSwitchChain } from 'wagmi';
 import { dogeOSDevnet } from '../config/wagmi';
 
@@ -15,48 +15,55 @@ export const useWeb3 = () => {
   const { signMessageAsync } = useSignMessage();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
-  const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
   const [detectedChainId, setDetectedChainId] = useState(null);
 
-  // Enhanced chain ID check for mobile wallet browsers
-  const checkCorrectNetwork = useCallback(() => {
+  // Check for direct window.ethereum chainId (for mobile wallets)
+  const getDirectChainId = useCallback(() => {
+    if (typeof window !== 'undefined' && window.ethereum) {
+      try {
+        return window.ethereum.chainId;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }, []);
+
+  // Compute isCorrectNetwork using useMemo instead of useState + useEffect
+  const isCorrectNetwork = useMemo(() => {
     // Check wagmi's reported chainId
     const wagmiMatch = chainId === dogeOSDevnet.id || DOGEOS_CHAIN_IDS.includes(chainId);
     
     // For mobile in-wallet browsers, also check window.ethereum directly
     let directMatch = false;
-    if (typeof window !== 'undefined' && window.ethereum) {
-      try {
-        const rawChainId = window.ethereum.chainId;
-        setDetectedChainId(rawChainId);
-        // Convert hex to number for comparison
-        const numericChainId = typeof rawChainId === 'string' && rawChainId.startsWith('0x')
-          ? parseInt(rawChainId, 16)
-          : parseInt(rawChainId, 10);
-        
-        directMatch = numericChainId === dogeOSDevnet.id || DOGEOS_CHAIN_IDS.includes(rawChainId);
-        
-        console.log(`🔗 Network Check - Wagmi chainId: ${chainId}, window.ethereum.chainId: ${rawChainId} (${numericChainId}), Match: ${wagmiMatch || directMatch}`);
-      } catch (e) {
-        console.warn('Could not read chainId from window.ethereum:', e);
-      }
+    const rawChainId = detectedChainId || getDirectChainId();
+    
+    if (rawChainId) {
+      // Convert hex to number for comparison
+      const numericChainId = typeof rawChainId === 'string' && rawChainId.startsWith('0x')
+        ? parseInt(rawChainId, 16)
+        : parseInt(rawChainId, 10);
+      
+      directMatch = numericChainId === dogeOSDevnet.id || DOGEOS_CHAIN_IDS.includes(rawChainId);
+      
+      console.log(`🔗 Network Check - Wagmi chainId: ${chainId}, direct chainId: ${rawChainId} (${numericChainId}), Match: ${wagmiMatch || directMatch}`);
     }
     
     return wagmiMatch || directMatch;
-  }, [chainId]);
+  }, [chainId, detectedChainId, getDirectChainId]);
 
+  // Listen for chain changes from mobile wallets
   useEffect(() => {
-    setIsCorrectNetwork(checkCorrectNetwork());
-    
-    // Also listen for chain changes from mobile wallets
     if (typeof window !== 'undefined' && window.ethereum) {
+      // Initial check
+      const initialChainId = getDirectChainId();
+      if (initialChainId) {
+        setDetectedChainId(initialChainId);
+      }
+      
       const handleChainChanged = (newChainId) => {
         console.log(`⛓️ Chain changed to: ${newChainId}`);
         setDetectedChainId(newChainId);
-        // Re-check after a short delay to allow wagmi to sync
-        setTimeout(() => {
-          setIsCorrectNetwork(checkCorrectNetwork());
-        }, 500);
       };
       
       window.ethereum.on?.('chainChanged', handleChainChanged);
@@ -64,7 +71,7 @@ export const useWeb3 = () => {
         window.ethereum.removeListener?.('chainChanged', handleChainChanged);
       };
     }
-  }, [chainId, checkCorrectNetwork]);
+  }, [getDirectChainId]);
 
   const switchToDogeOS = async () => {
     try {
@@ -97,6 +104,11 @@ This signature is only used for authentication and costs no gas.`;
       throw error;
     }
   };
+
+  // Manual check function for debugging
+  const checkCorrectNetwork = useCallback(() => {
+    return isCorrectNetwork;
+  }, [isCorrectNetwork]);
 
   return {
     address,
