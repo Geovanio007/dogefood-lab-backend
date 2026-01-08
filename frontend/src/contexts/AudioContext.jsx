@@ -2,8 +2,18 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 
 const AudioContext = createContext(null);
 
-// Audio source - Only lab ambient music
+// Audio sources - Lab ambient and sound effects
 const LAB_AMBIENT_URL = 'https://customer-assets.emergentagent.com/job_5412b27a-14e8-4bc6-a510-b262ffc85132/artifacts/e6xj38of_magical-technology-sci-fi-science-futuristic-game-music-300607.mp3';
+
+// Sound effect URLs - using reliable, CORS-enabled sources
+const SOUND_EFFECTS = {
+  click: 'https://cdn.freesound.org/previews/220/220206_4100837-lq.mp3',       // UI click sound
+  brewing: 'https://cdn.freesound.org/previews/398/398719_1676145-lq.mp3',    // Bubbling/brewing
+  success: 'https://cdn.freesound.org/previews/320/320775_5260872-lq.mp3',    // Success chime
+  rare: 'https://cdn.freesound.org/previews/270/270404_5123851-lq.mp3',       // Rare item found
+  collect: 'https://cdn.freesound.org/previews/341/341695_5858296-lq.mp3',    // Collect/pickup
+  levelUp: 'https://cdn.freesound.org/previews/270/270319_5123851-lq.mp3',    // Level up fanfare
+};
 
 export const AudioProvider = ({ children }) => {
   const [soundEnabled, setSoundEnabled] = useState(() => {
@@ -23,6 +33,7 @@ export const AudioProvider = ({ children }) => {
 
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const labAmbientRef = useRef(null);
+  const soundEffectsRef = useRef({});
   const isInitializedRef = useRef(false);
 
   // Initialize audio elements
@@ -38,12 +49,20 @@ export const AudioProvider = ({ children }) => {
       labAmbientRef.current.volume = (musicVolume / 100) * 0.5;
       labAmbientRef.current.preload = 'auto';
       
+      // Initialize sound effects
+      Object.entries(SOUND_EFFECTS).forEach(([key, url]) => {
+        const audio = new Audio(url);
+        audio.volume = (effectsVolume / 100) * 0.7;
+        audio.preload = 'auto';
+        soundEffectsRef.current[key] = audio;
+      });
+      
       isInitializedRef.current = true;
-      console.log('✅ Audio system initialized');
+      console.log('✅ Audio system initialized with sound effects');
     } catch (error) {
       console.error('❌ Error initializing audio:', error);
     }
-  }, [musicVolume]);
+  }, [musicVolume, effectsVolume]);
 
   // Initialize on first user interaction
   useEffect(() => {
@@ -74,7 +93,65 @@ export const AudioProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('dogefood_effects_volume', effectsVolume.toString());
+    // Update all sound effect volumes
+    Object.values(soundEffectsRef.current).forEach(audio => {
+      if (audio) audio.volume = (effectsVolume / 100) * 0.7;
+    });
   }, [effectsVolume]);
+
+  // Generic sound effect player
+  const playSound = useCallback((soundKey) => {
+    if (!soundEnabled) return;
+    
+    initializeAudio();
+    
+    try {
+      const audio = soundEffectsRef.current[soundKey];
+      if (audio) {
+        // Clone and play to allow overlapping sounds
+        const clone = audio.cloneNode();
+        clone.volume = (effectsVolume / 100) * 0.7;
+        clone.play().catch(e => console.warn(`Sound ${soundKey} play failed:`, e.message));
+      }
+    } catch (error) {
+      console.warn(`Error playing ${soundKey}:`, error.message);
+    }
+  }, [soundEnabled, effectsVolume, initializeAudio]);
+
+  // Sound effect functions
+  const playClick = useCallback(() => {
+    playSound('click');
+  }, [playSound]);
+
+  const playBrewing = useCallback(() => {
+    playSound('brewing');
+  }, [playSound]);
+
+  const playSuccess = useCallback(() => {
+    playSound('success');
+  }, [playSound]);
+
+  const playRare = useCallback(() => {
+    playSound('rare');
+  }, [playSound]);
+
+  const playCollect = useCallback(() => {
+    playSound('collect');
+  }, [playSound]);
+
+  const playLevelUp = useCallback(() => {
+    playSound('levelUp');
+  }, [playSound]);
+
+  // Alias for backward compatibility
+  const playMix = useCallback(() => {
+    playSound('brewing');
+  }, [playSound]);
+
+  // Generic effect player (can play any sound by name)
+  const playEffect = useCallback((effectName) => {
+    playSound(effectName);
+  }, [playSound]);
 
   // Start lab ambient sounds (the main game music)
   const startLabAmbient = useCallback(async () => {
@@ -118,15 +195,6 @@ export const AudioProvider = ({ children }) => {
     // No longer used - keeping for backward compatibility
   }, []);
 
-  // No-op sound effects (keeping for backward compatibility)
-  const playClick = useCallback(() => {}, []);
-  const playSuccess = useCallback(() => {}, []);
-  const playMix = useCallback(() => {}, []);
-  const playCollect = useCallback(() => {}, []);
-  const playRare = useCallback(() => {}, []);
-  const playLevelUp = useCallback(() => {}, []);
-  const playEffect = useCallback(() => {}, []);
-
   // Toggle sound
   const toggleSound = useCallback(() => {
     setSoundEnabled(prev => {
@@ -157,8 +225,9 @@ export const AudioProvider = ({ children }) => {
     startLabAmbient,
     stopLabAmbient,
     
-    // Effect sounds (no-op for backward compatibility)
+    // Effect sounds
     playClick,
+    playBrewing,
     playSuccess,
     playMix,
     playCollect,
@@ -195,6 +264,7 @@ export const useAudio = () => {
       startLabAmbient: () => {},
       stopLabAmbient: () => {},
       playClick: () => {},
+      playBrewing: () => {},
       playSuccess: () => {},
       playMix: () => {},
       playCollect: () => {},
