@@ -623,14 +623,16 @@ const MainMenu = () => {
                 <div className="mx-auto w-14 h-14 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center mb-2 sm:mb-4 shadow-xl">
                   <Palette className="w-7 h-7 sm:w-12 sm:h-12 text-white drop-shadow-lg" />
                 </div>
-                <CardTitle className="text-base sm:text-3xl font-bold text-white">🎨 Treats</CardTitle>
+                <CardTitle className="text-base sm:text-3xl font-bold text-white flex items-center justify-center gap-1">
+                  <TreatIcon size="lg" className="sm:w-8 sm:h-8" /> Treats
+                </CardTitle>
               </CardHeader>
               <CardContent className="text-center p-3 sm:p-6 pt-0">
                 <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
                   View your created Dogetreats and rare collections!
                 </p>
-                <Button className="doge-button w-full text-sm sm:text-lg py-2 sm:py-2 font-bold">
-                  View 🎨
+                <Button className="doge-button w-full text-sm sm:text-lg py-2 sm:py-2 font-bold flex items-center justify-center gap-1">
+                  View <TreatIcon size="sm" />
                 </Button>
               </CardContent>
             </Link>
