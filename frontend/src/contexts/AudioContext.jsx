@@ -5,14 +5,14 @@ const AudioContext = createContext(null);
 // Audio sources - Lab ambient and sound effects
 const LAB_AMBIENT_URL = 'https://customer-assets.emergentagent.com/job_5412b27a-14e8-4bc6-a510-b262ffc85132/artifacts/e6xj38of_magical-technology-sci-fi-science-futuristic-game-music-300607.mp3';
 
-// Sound effect URLs - using Mixkit (reliable, CORS-enabled)
+// Sound effect URLs - using local files for reliability
 const SOUND_EFFECTS = {
-  click: 'https://assets.mixkit.co/active_storage/sfx/270/270.wav',       // Soft click
-  brewing: 'https://assets.mixkit.co/active_storage/sfx/2353/2353.wav',   // Bubbling sound
-  success: 'https://assets.mixkit.co/active_storage/sfx/2000/2000.wav',   // Success chime
-  rare: 'https://assets.mixkit.co/active_storage/sfx/2019/2019.wav',      // Achievement/rare sound
-  collect: 'https://assets.mixkit.co/active_storage/sfx/2004/2004.wav',   // Coin/collect sound
-  levelUp: 'https://assets.mixkit.co/active_storage/sfx/2020/2020.wav',   // Level up fanfare
+  click: '/sounds/click.wav',       // Soft click
+  brewing: '/sounds/brewing.wav',   // Bubbling sound
+  success: '/sounds/success.wav',   // Success chime
+  rare: '/sounds/rare.wav',         // Achievement/rare sound
+  collect: '/sounds/collect.wav',   // Coin/collect sound
+  levelUp: '/sounds/levelup.wav',   // Level up fanfare
 };
 
 export const AudioProvider = ({ children }) => {
