@@ -26,23 +26,19 @@ export const useNFTVerification = () => {
     
     try {
       console.log(`🔍 Verifying NFT status with backend for ${walletAddress}...`);
-      const response = await fetch(`${BACKEND_URL}/api/player/${walletAddress}/verify-nft`, {
+      // Use the existing verify-nft endpoint with query parameter
+      const response = await fetch(`${BACKEND_URL}/api/verify-nft/${walletAddress}?is_holder=${isHolder}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          is_nft_holder: isHolder,
-          nft_balance: nftBal
-        })
+        headers: { 'Content-Type': 'application/json' }
       });
       
       if (response.ok) {
         const data = await response.json();
         console.log('🎫 NFT Verification Result:', data);
         
-        if (data.vip_bonus_credited) {
+        if (data.vip_bonus_awarded) {
           setVipBonusCredited(true);
           console.log('🌟 VIP BONUS CREDITED: 500 points!');
-          // You could show a toast/notification here
         }
         
         return data;
