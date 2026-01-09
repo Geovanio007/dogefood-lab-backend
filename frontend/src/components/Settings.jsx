@@ -90,8 +90,8 @@ const Settings = () => {
     fetchPlayerData();
   }, [effectiveAddress, dispatch]);
 
-  // Use the fetched NFT status or the one from GameContext
-  const effectiveNFTStatus = playerNFTStatus || isNFTHolder;
+  // Use the fetched NFT status or the one from GameContext or direct verification
+  const effectiveNFTStatus = nftVerifiedHolder || playerNFTStatus || gameNFTHolder;
 
   // Handle username update
   const handleSaveUsername = async () => {
