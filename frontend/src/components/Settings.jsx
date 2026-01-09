@@ -424,11 +424,16 @@ const Settings = () => {
             )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-4 bg-white/20 rounded-xl">
+              <div className={`p-4 rounded-xl ${effectiveNFTStatus ? 'bg-gradient-to-r from-yellow-400/30 to-orange-400/30 border-2 border-yellow-500' : 'bg-white/20'}`}>
                 <div className="font-medium mb-2">Account Status</div>
-                <div className="text-sm text-slate-600 dark:text-slate-300">
-                  {effectiveNFTStatus ? '🌟 VIP Scientist' : '👨‍🔬 Regular Scientist'}
+                <div className={`text-sm font-bold ${effectiveNFTStatus ? 'text-yellow-600 dark:text-yellow-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                  {effectiveNFTStatus ? '🌟 VIP Scientist (NFT Holder)' : '👨‍🔬 Regular Scientist'}
                 </div>
+                {effectiveNFTStatus && (
+                  <div className="text-xs text-yellow-700 dark:text-yellow-500 mt-1">
+                    ✨ 500 Bonus Points + VIP Perks Active
+                  </div>
+                )}
               </div>
               
               <div className="p-4 bg-white/20 rounded-xl">
