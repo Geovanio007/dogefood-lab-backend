@@ -1090,6 +1090,93 @@ async def get_flagged_players(risk_level: str = "high"):
 # DogeFood Lab NFT Contract: 0xA74Dad05f54d32575f82C3e065C4441b8d979a54
 DOGEFOOD_NFT_CONTRACT = "0xA74Dad05f54d32575f82C3e065C4441b8d979a54"
 
+@api_router.post("/player/{address}/verify-nft")
+async def verify_player_nft(address: str, data: dict = None):
+    """
+    Verify NFT ownership from frontend POST body and update player VIP status.
+    Accepts: {"is_nft_holder": true/false, "nft_balance": number}
+    """
+    try:
+        if data is None:
+            data = {}
+        
+        is_holder = data.get("is_nft_holder", False)
+        nft_balance = data.get("nft_balance", 0)
+        
+        logger.info(f"🔍 Verifying NFT status for {address}: holder={is_holder}, balance={nft_balance}")
+        
+        # Check if player exists
+        existing_player = await db.players.find_one({"address": address})
+        
+        if is_holder:
+            if existing_player:
+                # Player exists - check if VIP bonus already claimed
+                if not existing_player.get("vip_bonus_claimed", False):
+                    # Award 500 VIP bonus points
+                    await db.players.update_one(
+                        {"address": address},
+                        {
+                            "$set": {
+                                "is_nft_holder": True,
+                                "is_vip": True,
+                                "vip_bonus_claimed": True,
+                                "nft_balance": nft_balance
+                            },
+                            "$inc": {"points": 500}
+                        }
+                    )
+                    logger.info(f"🌟 VIP bonus awarded to existing player: {address} - 500 points!")
+                    return {
+                        "address": address,
+                        "is_nft_holder": True,
+                        "is_vip": True,
+                        "vip_bonus_credited": True,
+                        "bonus_amount": 500,
+                        "contract": DOGEFOOD_NFT_CONTRACT
+                    }
+                else:
+                    # Already claimed bonus
+                    await db.players.update_one(
+                        {"address": address},
+                        {"$set": {"is_nft_holder": True, "is_vip": True, "nft_balance": nft_balance}}
+                    )
+                    return {
+                        "address": address,
+                        "is_nft_holder": True,
+                        "is_vip": True,
+                        "vip_bonus_credited": False,
+                        "already_claimed": True,
+                        "contract": DOGEFOOD_NFT_CONTRACT
+                    }
+            else:
+                # New player - they'll get bonus when they register
+                return {
+                    "address": address,
+                    "is_nft_holder": True,
+                    "is_vip": True,
+                    "vip_bonus_credited": False,
+                    "message": "Register to receive VIP bonus",
+                    "contract": DOGEFOOD_NFT_CONTRACT
+                }
+        else:
+            # Not an NFT holder
+            if existing_player:
+                await db.players.update_one(
+                    {"address": address},
+                    {"$set": {"is_nft_holder": False, "nft_balance": 0}}
+                )
+            return {
+                "address": address,
+                "is_nft_holder": False,
+                "is_vip": False,
+                "vip_bonus_credited": False,
+                "contract": DOGEFOOD_NFT_CONTRACT
+            }
+            
+    except Exception as e:
+        logger.error(f"Error verifying NFT for {address}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/verify-nft/{address}")
 async def verify_nft_ownership(address: str, is_holder: bool = False):
     """
