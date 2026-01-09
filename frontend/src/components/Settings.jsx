@@ -195,7 +195,7 @@ const Settings = () => {
               Back to Menu
             </Button>
           </Link>
-          <h1 className="text-4xl font-bold doge-gradient">Settings ⚙️</h1>
+          <h1 className="text-4xl font-bold text-orange-600 dark:text-yellow-400" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}>Settings ⚙️</h1>
         </div>
       </div>
 

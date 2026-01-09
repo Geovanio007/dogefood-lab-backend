@@ -246,7 +246,7 @@ const Leaderboard = () => {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl sm:text-4xl font-bold doge-gradient mb-1 sm:mb-2">🏆 Leaderboard</h1>
+            <h1 className="text-2xl sm:text-4xl font-bold text-orange-600 dark:text-yellow-400 mb-1 sm:mb-2" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}>🏆 Leaderboard</h1>
             <p className="text-xs sm:text-base text-slate-600 dark:text-slate-300">Top VIP Scientists competing for $LAB rewards</p>
           </div>
         </div>
