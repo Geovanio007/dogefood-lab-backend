@@ -9,6 +9,7 @@ import { Input } from './ui/input';
 import { useGame } from '../contexts/GameContext';
 import { useAudio } from '../contexts/AudioContext';
 import { useTelegram } from '../contexts/TelegramContext';
+import { useNFTVerification } from '../hooks/useNFTVerification';
 import { ArrowLeft, Volume2, VolumeX, Palette, Zap, Settings as SettingsIcon, Play, Pause, User, Edit2, Check, X } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -16,7 +17,8 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const Settings = () => {
   const { address, isConnected } = useAccount();
   const { isTelegram, telegramUser } = useTelegram();
-  const { isNFTHolder, dispatch } = useGame();
+  const { isNFTHolder: gameNFTHolder, dispatch } = useGame();
+  const { isNFTHolder: nftVerifiedHolder, nftBalance, vipBonusCredited } = useNFTVerification();
   const [playerNFTStatus, setPlayerNFTStatus] = useState(false);
   const [playerData, setPlayerData] = useState(null);
   const [isEditingUsername, setIsEditingUsername] = useState(false);
