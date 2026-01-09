@@ -129,8 +129,9 @@ body {
   .doge-button {
     background: var(--button-gradient);
     color: white;
-    font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+    font-family: 'Patrick Hand', 'Comic Sans MS', 'Marker Felt', cursive !important;
     font-weight: bold !important;
+    font-size: 16px !important;
     padding: 1rem 2rem;
     border-radius: 25px;
     border: none;
