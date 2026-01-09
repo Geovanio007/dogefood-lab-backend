@@ -74,13 +74,13 @@ const CharacterSelection = ({ onCharacterSelected }) => {
               key={character.id}
               className={`relative cursor-pointer transition-all duration-300 transform hover:scale-105 ${
                 selectedCharacter?.id === character.id
-                  ? 'ring-4 ring-yellow-400 shadow-2xl shadow-yellow-400/30 bg-gradient-to-br from-yellow-100 to-orange-100'
-                  : 'bg-white/95 hover:bg-white shadow-xl hover:shadow-2xl'
+                  ? 'ring-4 ring-yellow-400 shadow-2xl shadow-yellow-400/30 bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900/50 dark:to-orange-900/50'
+                  : 'bg-white/95 dark:bg-slate-800/95 hover:bg-white dark:hover:bg-slate-700 shadow-xl hover:shadow-2xl'
               }`}
               onClick={() => handleCharacterSelect(character)}
             >
               <CardHeader className="text-center">
-                <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden border-4 border-blue-300 shadow-lg">
+                <div className="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden border-4 border-blue-300 dark:border-blue-500 shadow-lg">
                   <img
                     src={character.image}
                     alt={character.name}
@@ -90,27 +90,27 @@ const CharacterSelection = ({ onCharacterSelected }) => {
                     }}
                   />
                 </div>
-                <CardTitle className="text-2xl font-bold text-gray-800 mb-2">
+                <CardTitle className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
                   {character.name}
                 </CardTitle>
-                <p className="text-lg text-blue-600 font-semibold">
+                <p className="text-lg text-blue-600 dark:text-blue-400 font-semibold">
                   {character.description}
                 </p>
               </CardHeader>
               
               <CardContent className="space-y-4">
-                <p className="text-gray-700 text-center leading-relaxed">
+                <p className="text-gray-700 dark:text-gray-200 text-center leading-relaxed">
                   {character.personality}
                 </p>
                 
                 {/* Character Traits */}
                 <div className="space-y-2">
-                  <h4 className="font-bold text-gray-800 text-center">Traits:</h4>
+                  <h4 className="font-bold text-gray-800 dark:text-white text-center">Traits:</h4>
                   <div className="flex flex-wrap justify-center gap-2">
                     {character.traits.map((trait, index) => (
                       <span
                         key={index}
-                        className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
+                        className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium"
                       >
                         {trait}
                       </span>
@@ -119,9 +119,9 @@ const CharacterSelection = ({ onCharacterSelected }) => {
                 </div>
 
                 {/* Special Bonus */}
-                <div className="bg-gradient-to-r from-green-100 to-emerald-100 p-3 rounded-lg border-2 border-green-300">
-                  <h4 className="font-bold text-green-800 text-center mb-1">Special Bonus:</h4>
-                  <p className="text-green-700 text-center font-semibold">
+                <div className="bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 p-3 rounded-lg border-2 border-green-300 dark:border-green-600">
+                  <h4 className="font-bold text-green-800 dark:text-green-300 text-center mb-1">Special Bonus:</h4>
+                  <p className="text-green-700 dark:text-green-400 text-center font-semibold">
                     {character.bonus}
                   </p>
                 </div>
