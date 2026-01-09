@@ -158,8 +158,30 @@ body {
   }
   
   .doge-gradient {
-    @apply bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 bg-clip-text text-transparent;
-    text-shadow: 2px 2px 4px rgba(255, 193, 7, 0.3);
+    background: linear-gradient(to right, #f59e0b, #ea580c, #dc2626);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(2px 2px 4px rgba(234, 88, 12, 0.4));
+  }
+  
+  /* Light mode - use solid color for better visibility */
+  .light .doge-gradient,
+  :not(.dark) .doge-gradient {
+    background: linear-gradient(to right, #ea580c, #dc2626, #b91c1c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(2px 2px 4px rgba(185, 28, 28, 0.5));
+  }
+  
+  /* Dark mode gradient */
+  .dark .doge-gradient {
+    background: linear-gradient(to right, #fbbf24, #f97316, #fbbf24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(2px 2px 4px rgba(251, 191, 36, 0.4));
   }
   
   .playful-title {
