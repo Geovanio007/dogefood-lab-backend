@@ -143,7 +143,7 @@ const MyTreats = () => {
             </Button>
           </Link>
           <div>
-            <h1 className="text-4xl font-bold doge-gradient mb-2 flex items-center gap-2">
+            <h1 className="text-4xl font-bold mb-2 flex items-center gap-2 text-orange-600 dark:text-yellow-400" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}>
               <TreatIcon size="xl" /> My Treats
             </h1>
             <p className="text-slate-600 dark:text-slate-300">Your collection of magical Dogetreats</p>
