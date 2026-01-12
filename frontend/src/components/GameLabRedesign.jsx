@@ -1166,6 +1166,90 @@ const GameLabRedesign = ({ playerAddress }) => {
           </div>
         </div>
       )}
+
+      {/* Daily Limit Reached Modal */}
+      {showLimitReachedModal && dailyStatus && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <Card className="max-w-md w-full bg-gradient-to-b from-red-500 via-red-600 to-red-700 border-red-400 overflow-hidden shadow-2xl" data-testid="limit-reached-modal">
+            <CardContent className="p-6 text-center">
+              {/* Icon */}
+              <div className="text-6xl mb-4">🚫</div>
+              
+              <h2 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">
+                Daily Limit Reached!
+              </h2>
+              
+              <p className="text-red-200 mb-6">
+                You've created {dailyStatus.treats_created_today} / {dailyStatus.total_limit} treats today.
+              </p>
+              
+              {/* Info Box */}
+              <div className="bg-white/10 rounded-xl p-4 mb-6 text-left">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-white text-sm">Base limit:</span>
+                  <span className="text-white font-bold">{dailyStatus.base_limit} treats</span>
+                </div>
+                {dailyStatus.extra_lives_purchased > 0 && (
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white text-sm">Bonus treats:</span>
+                    <span className="text-green-400 font-bold">+{dailyStatus.extra_treats_available}</span>
+                  </div>
+                )}
+                {dailyStatus.time_until_reset_seconds > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-white text-sm">Resets in:</span>
+                    <span className="text-yellow-300 font-bold">
+                      {Math.floor(dailyStatus.time_until_reset_seconds / 3600)}h {Math.floor((dailyStatus.time_until_reset_seconds % 3600) / 60)}m
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Extra Life Option */}
+              <div className="bg-yellow-400/20 border border-yellow-400/50 rounded-xl p-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">💎</span>
+                  <div className="text-left">
+                    <h3 className="text-yellow-300 font-bold">Want More Treats?</h3>
+                    <p className="text-yellow-200 text-sm">
+                      Purchase an Extra Life for {dailyStatus.extra_life_cost_lab.toLocaleString()} $LAB to get {dailyStatus.extra_life_treats} more treats!
+                    </p>
+                  </div>
+                </div>
+                
+                {!dailyStatus.lab_token_active && (
+                  <p className="text-yellow-300/70 text-xs mt-3 text-center">
+                    ⚠️ $LAB token coming soon! Extra lives will be available after launch.
+                  </p>
+                )}
+              </div>
+              
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowLimitReachedModal(false)}
+                  className="flex-1 bg-white/20 hover:bg-white/30 text-white"
+                  data-testid="close-limit-modal-btn"
+                >
+                  OK, Got It
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowLimitReachedModal(false);
+                    // The DailyLimitTracker will handle showing the purchase modal
+                  }}
+                  disabled={!dailyStatus.lab_token_active}
+                  className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-white font-bold disabled:opacity-50"
+                  data-testid="buy-extra-life-from-modal-btn"
+                >
+                  <span className="mr-2">💎</span>
+                  {dailyStatus.lab_token_active ? 'Buy Extra Life' : 'Coming Soon'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
