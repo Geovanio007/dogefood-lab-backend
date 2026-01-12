@@ -1573,6 +1573,11 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         # Get updated daily status after treat creation
         daily_status = await anti_cheat_system.get_daily_treat_status(treat_data.creator_address)
         
+        # Build streak message
+        streak_message = ""
+        if streak_result.get("streak_increased"):
+            streak_message = f" {streak_result.get('message', '')}"
+        
         return {
             "treat": treat_response,
             "outcome": treat_outcome,
@@ -1586,7 +1591,8 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 "total_treats": new_treats_count
             },
             "daily_status": daily_status,
-            "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']} hours. {'(Offchain storage)' if season_id == 1 else ''}{' 🎉 Sack completed! +50 XP bonus!' if sack_just_completed else ''}"
+            "streak": streak_result,
+            "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']:.1f} hours.{streak_message}{'(Offchain storage)' if season_id == 1 else ''}{' 🎉 Sack completed! +50 XP bonus!' if sack_just_completed else ''}"
         }
         
     except Exception as e:
