@@ -1409,6 +1409,12 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             }
             raise HTTPException(status_code=429, detail=error_detail)
         
+        # Update player streak on treat creation
+        streak_result = await anti_cheat_system.update_player_streak(treat_data.creator_address)
+        streak_bonus = streak_result.get("streak_bonus", {})
+        xp_multiplier = streak_bonus.get("xp_multiplier", 1.0)
+        brewing_reduction = streak_bonus.get("brewing_reduction", 0)  # percentage reduction
+        
         # Get player's character bonus (Rex gives +15% rare chance)
         rare_chance_bonus = 0.0
         player = await db.players.find_one({"address": treat_data.creator_address})
@@ -1426,6 +1432,22 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             treat_data.ingredients, treat_data.player_level, treat_data.creator_address,
             rare_chance_bonus=rare_chance_bonus
         )
+        
+        # Apply streak XP bonus
+        if xp_multiplier > 1.0:
+            original_xp = treat_outcome.get("xp_reward", 0)
+            treat_outcome["xp_reward"] = int(original_xp * xp_multiplier)
+            treat_outcome["streak_xp_bonus"] = treat_outcome["xp_reward"] - original_xp
+            logger.info(f"🔥 Streak XP bonus: {original_xp} -> {treat_outcome['xp_reward']} ({xp_multiplier}x)")
+        
+        # Apply streak brewing time reduction
+        if brewing_reduction > 0:
+            original_timer = treat_outcome.get("timer_duration_seconds", 0)
+            reduction_factor = 1 - (brewing_reduction / 100)
+            treat_outcome["timer_duration_seconds"] = int(original_timer * reduction_factor)
+            treat_outcome["timer_duration_hours"] = treat_outcome["timer_duration_seconds"] / 3600
+            treat_outcome["streak_time_reduction"] = original_timer - treat_outcome["timer_duration_seconds"]
+            logger.info(f"⏱️ Streak time reduction: {original_timer}s -> {treat_outcome['timer_duration_seconds']}s (-{brewing_reduction}%)")
         
         # Get current season info
         current_season = season_manager.get_season_info()
