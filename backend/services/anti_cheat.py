@@ -353,8 +353,6 @@ class AntiCheatSystem:
     
     async def _get_recent_xp_gains(self, player_address: str, hours: int = 1) -> List[Dict]:
         """Get player's XP gains from last N hours"""
-        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
-        
         # This would come from an activity log in production
         # For now, estimate from treat creation
         treats = await self._get_recent_treats(player_address, hours)
