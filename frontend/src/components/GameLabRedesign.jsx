@@ -1319,7 +1319,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                   className="flex-1 bg-gradient-to-r from-rose-400 to-rose-500 hover:from-rose-300 hover:to-rose-400 text-white font-bold disabled:opacity-50"
                   data-testid="buy-extra-life-from-modal-btn"
                 >
-                  <span className="mr-2">💎</span>
+                  <span className="mr-2">❤️</span>
                   {dailyStatus.lab_token_active ? 'Buy Extra Life' : 'Coming Soon'}
                 </Button>
               </div>
