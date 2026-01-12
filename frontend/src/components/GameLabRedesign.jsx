@@ -309,6 +309,12 @@ const GameLabRedesign = ({ playerAddress }) => {
   const handleCreateTreat = async () => {
     if (selectedIngredients.length < 1) return;
     
+    // Check daily limit before attempting to create
+    if (dailyStatus && !dailyStatus.can_create_treat) {
+      setShowLimitReachedModal(true);
+      return;
+    }
+    
     playBrewing();
     setIsBrewing(true);
     setBrewResult(null);
@@ -328,6 +334,11 @@ const GameLabRedesign = ({ playerAddress }) => {
       if (response.ok) {
         const data = await response.json();
         
+        // Update daily status from response
+        if (data.daily_status) {
+          setDailyStatus(data.daily_status);
+        }
+        
         // Show brewing animation for 3 seconds before showing result
         setTimeout(() => {
           setShowBrewingAnimation(false);
@@ -336,7 +347,7 @@ const GameLabRedesign = ({ playerAddress }) => {
           setSelectedIngredients([]);
           
           // Play success sound - rare sound for rare+ treats
-          const isRareOrBetter = ['Rare', 'Epic', 'Legendary', 'Mythic'].includes(data.rarity);
+          const isRareOrBetter = ['Rare', 'Epic', 'Legendary', 'Mythic'].includes(data.outcome?.rarity);
           if (isRareOrBetter) {
             playRare();
           } else {
@@ -349,7 +360,19 @@ const GameLabRedesign = ({ playerAddress }) => {
         await loadActiveTreats();
       } else {
         setShowBrewingAnimation(false);
-        throw new Error('Failed to create treat');
+        
+        // Check if it's a daily limit error
+        if (response.status === 429) {
+          const errorData = await response.json();
+          if (errorData.detail?.daily_status) {
+            setDailyStatus(errorData.detail.daily_status);
+            setShowLimitReachedModal(true);
+          } else {
+            setError(errorData.detail?.message || 'Rate limited. Please wait.');
+          }
+        } else {
+          throw new Error('Failed to create treat');
+        }
       }
     } catch (err) {
       setShowBrewingAnimation(false);
