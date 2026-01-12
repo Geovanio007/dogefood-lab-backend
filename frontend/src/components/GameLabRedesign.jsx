@@ -114,6 +114,10 @@ const GameLabRedesign = ({ playerAddress }) => {
   const [collectingTreat, setCollectingTreat] = useState(null);
   const [showCollectAnimation, setShowCollectAnimation] = useState(false);
   const [collectedTreat, setCollectedTreat] = useState(null);
+  
+  // Daily limit tracking
+  const [dailyStatus, setDailyStatus] = useState(null);
+  const [showLimitReachedModal, setShowLimitReachedModal] = useState(false);
 
   // Character data
   const characters = [
