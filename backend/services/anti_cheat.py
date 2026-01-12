@@ -1,6 +1,7 @@
 """
 Anti-cheat system for DogeFood Lab
 Monitors player behavior and detects suspicious activities
+Includes daily treat limit system (5 treats per 24h + purchasable extra lives)
 """
 
 import asyncio
@@ -11,6 +12,11 @@ import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 
 logger = logging.getLogger(__name__)
+
+# Daily limit constants
+DAILY_TREAT_LIMIT = 5  # Base limit per 24 hours
+EXTRA_LIFE_TREATS = 3  # Additional treats per extra life purchase
+EXTRA_LIFE_COST_LAB = 5000  # Cost in $LAB tokens (not active yet)
 
 @dataclass
 class SuspiciousActivity:
@@ -32,10 +38,100 @@ class AntiCheatSystem:
             "min_time_between_treats": 30,  # seconds
             "max_identical_treats": 5,  # same ingredients combo
             "max_rapid_level_ups": 3,  # levels per hour
+            "daily_treat_limit": DAILY_TREAT_LIMIT,  # New: daily limit
         }
         
         # Player activity cache
         self.player_cache = {}
+    
+    async def get_daily_treat_status(self, player_address: str) -> Dict:
+        """
+        Get player's daily treat creation status
+        Returns remaining treats, extra lives purchased, etc.
+        """
+        # Get treats created in the last 24 hours
+        daily_treats = await self._get_recent_treats(player_address, hours=24)
+        treats_created_today = len(daily_treats)
+        
+        # Get player's extra lives status
+        player = await self.db.players.find_one({"address": player_address})
+        extra_lives_purchased = 0
+        extra_lives_used = 0
+        
+        if player:
+            extra_lives_purchased = player.get("extra_lives_purchased_today", 0)
+            extra_lives_used = player.get("extra_lives_used_today", 0)
+            
+            # Check if we need to reset daily counters
+            last_reset = player.get("daily_reset_at")
+            if last_reset:
+                if isinstance(last_reset, str):
+                    last_reset = datetime.fromisoformat(last_reset.replace("Z", "+00:00").replace("+00:00", ""))
+                if datetime.utcnow() - last_reset > timedelta(hours=24):
+                    # Reset daily counters
+                    await self.db.players.update_one(
+                        {"address": player_address},
+                        {
+                            "$set": {
+                                "extra_lives_purchased_today": 0,
+                                "extra_lives_used_today": 0,
+                                "daily_reset_at": datetime.utcnow()
+                            }
+                        }
+                    )
+                    extra_lives_purchased = 0
+                    extra_lives_used = 0
+        
+        # Calculate total allowed treats
+        base_limit = DAILY_TREAT_LIMIT
+        extra_from_lives = extra_lives_purchased * EXTRA_LIFE_TREATS
+        total_limit = base_limit + extra_from_lives
+        
+        # Calculate remaining
+        remaining_treats = max(0, total_limit - treats_created_today)
+        
+        # Calculate time until reset
+        if daily_treats:
+            oldest_treat = min(daily_treats, key=lambda x: x.get("created_at", datetime.utcnow()))
+            oldest_time = oldest_treat.get("created_at", datetime.utcnow())
+            if isinstance(oldest_time, str):
+                oldest_time = datetime.fromisoformat(oldest_time.replace("Z", "+00:00").replace("+00:00", ""))
+            reset_time = oldest_time + timedelta(hours=24)
+            time_until_reset = max(0, (reset_time - datetime.utcnow()).total_seconds())
+        else:
+            time_until_reset = 0
+        
+        return {
+            "treats_created_today": treats_created_today,
+            "base_limit": base_limit,
+            "extra_lives_purchased": extra_lives_purchased,
+            "extra_treats_available": extra_from_lives,
+            "total_limit": total_limit,
+            "remaining_treats": remaining_treats,
+            "can_create_treat": remaining_treats > 0,
+            "time_until_reset_seconds": int(time_until_reset),
+            "extra_life_cost_lab": EXTRA_LIFE_COST_LAB,
+            "extra_life_treats": EXTRA_LIFE_TREATS,
+            "lab_token_active": False  # $LAB not live yet
+        }
+    
+    async def purchase_extra_life(self, player_address: str) -> Dict:
+        """
+        Purchase an extra life for 5000 $LAB (placeholder - not functional yet)
+        Returns purchase status
+        """
+        # Get current status
+        status = await self.get_daily_treat_status(player_address)
+        
+        # $LAB is not live yet - return placeholder response
+        return {
+            "success": False,
+            "reason": "lab_token_not_active",
+            "message": "$LAB token is not yet live. Extra lives will be available once $LAB launches!",
+            "cost": EXTRA_LIFE_COST_LAB,
+            "extra_treats": EXTRA_LIFE_TREATS,
+            "current_status": status
+        }
     
     async def validate_treat_creation(self, player_address: str, treat_data: Dict) -> Dict:
         """
@@ -47,6 +143,24 @@ class AntiCheatSystem:
         recent_treats = await self._get_recent_treats(player_address, hours=1)
         
         violations = []
+        
+        # NEW: Check daily limit first
+        daily_status = await self.get_daily_treat_status(player_address)
+        if not daily_status["can_create_treat"]:
+            violations.append({
+                "type": "daily_limit_reached",
+                "severity": "high",
+                "details": f"Daily treat limit reached ({daily_status['total_limit']} treats). Purchase extra lives or wait for reset.",
+                "daily_status": daily_status
+            })
+            # Return immediately for daily limit - this is a hard block
+            return {
+                "valid": False,
+                "reason": f"Daily limit reached! You've created {daily_status['treats_created_today']}/{daily_status['total_limit']} treats today. Purchase an extra life for {EXTRA_LIFE_COST_LAB} $LAB to create {EXTRA_LIFE_TREATS} more treats.",
+                "severity": "high",
+                "violations": violations,
+                "daily_status": daily_status
+            }
         
         # Check 1: Too many treats per hour
         if len(recent_treats) >= self.THRESHOLDS["max_treats_per_hour"]:
