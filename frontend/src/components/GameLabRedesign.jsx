@@ -670,6 +670,12 @@ const GameLabRedesign = ({ playerAddress }) => {
               </CardContent>
             </Card>
           </div>
+          
+          {/* Daily Limit Tracker */}
+          <DailyLimitTracker 
+            playerAddress={playerAddress} 
+            onStatusUpdate={setDailyStatus}
+          />
 
           {/* Back Button */}
           <Button 
