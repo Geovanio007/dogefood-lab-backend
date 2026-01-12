@@ -1283,19 +1283,19 @@ const GameLabRedesign = ({ playerAddress }) => {
               </div>
               
               {/* Extra Life Option */}
-              <div className="bg-yellow-400/20 border border-yellow-400/50 rounded-xl p-4 mb-6">
+              <div className="bg-rose-400/20 border border-rose-400/50 rounded-xl p-4 mb-6">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">💎</span>
+                  <span className="text-3xl">❤️</span>
                   <div className="text-left">
-                    <h3 className="text-yellow-300 font-bold">Want More Treats?</h3>
-                    <p className="text-yellow-200 text-sm">
+                    <h3 className="text-rose-300 font-bold">Want More Treats?</h3>
+                    <p className="text-rose-200 text-sm">
                       Purchase an Extra Life for {dailyStatus.extra_life_cost_lab.toLocaleString()} $LAB to get {dailyStatus.extra_life_treats} more treats!
                     </p>
                   </div>
                 </div>
                 
                 {!dailyStatus.lab_token_active && (
-                  <p className="text-yellow-300/70 text-xs mt-3 text-center">
+                  <p className="text-rose-300/70 text-xs mt-3 text-center">
                     ⚠️ $LAB token coming soon! Extra lives will be available after launch.
                   </p>
                 )}
@@ -1316,7 +1316,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                     // The DailyLimitTracker will handle showing the purchase modal
                   }}
                   disabled={!dailyStatus.lab_token_active}
-                  className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-white font-bold disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-rose-400 to-rose-500 hover:from-rose-300 hover:to-rose-400 text-white font-bold disabled:opacity-50"
                   data-testid="buy-extra-life-from-modal-btn"
                 >
                   <span className="mr-2">💎</span>
