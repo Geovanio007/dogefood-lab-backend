@@ -80,7 +80,6 @@ class AntiCheatSystem:
                         }
                     )
                     extra_lives_purchased = 0
-                    extra_lives_used = 0
         
         # Calculate total allowed treats
         base_limit = DAILY_TREAT_LIMIT
