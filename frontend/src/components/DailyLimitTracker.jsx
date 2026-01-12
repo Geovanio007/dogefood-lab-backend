@@ -6,10 +6,31 @@ import { Progress } from './ui/progress';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
+// Streak tier info
+const STREAK_TIERS = {
+  1: { emoji: '🌱', title: 'New Chef', color: 'text-gray-300' },
+  3: { emoji: '⭐', title: 'Rising Star', color: 'text-green-400' },
+  5: { emoji: '🔥', title: 'Dedicated Chef', color: 'text-orange-400' },
+  7: { emoji: '💪', title: 'Week Warrior', color: 'text-blue-400' },
+  14: { emoji: '🏆', title: 'Lab Legend', color: 'text-purple-400' },
+  30: { emoji: '👑', title: 'Master Scientist', color: 'text-yellow-400' },
+};
+
+const getStreakTier = (streak) => {
+  let tier = STREAK_TIERS[1];
+  for (const [threshold, tierInfo] of Object.entries(STREAK_TIERS)) {
+    if (streak >= parseInt(threshold)) {
+      tier = tierInfo;
+    }
+  }
+  return tier;
+};
+
 const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
   const [dailyStatus, setDailyStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showExtraLifeModal, setShowExtraLifeModal] = useState(false);
+  const [showStreakModal, setShowStreakModal] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseResult, setPurchaseResult] = useState(null);
   const [timeUntilReset, setTimeUntilReset] = useState(0);
@@ -47,7 +68,6 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
     const timer = setInterval(() => {
       setTimeUntilReset(prev => {
         if (prev <= 1) {
-          // Refresh status when timer hits 0
           fetchDailyStatus();
           return 0;
         }
@@ -85,7 +105,6 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
       setPurchaseResult(data);
       
       if (data.success) {
-        // Refresh status after successful purchase
         await fetchDailyStatus();
       }
     } catch (err) {
@@ -112,12 +131,18 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
   const remaining = dailyStatus.remaining_treats;
   const progress = (usedTreats / totalLimit) * 100;
   const isLimitReached = remaining === 0;
+  
+  // Streak info
+  const streak = dailyStatus.streak?.current_streak || 0;
+  const streakBonus = dailyStatus.streak_bonus || {};
+  const streakTier = getStreakTier(streak);
 
   return (
     <>
-      {/* Daily Limit Display */}
+      {/* Combined Daily Limit & Streak Display */}
       <Card className={`${isLimitReached ? 'bg-gradient-to-br from-red-600/90 to-red-700/90 border-red-400/50' : 'bg-gradient-to-br from-sky-600/90 to-blue-700/90 border-sky-400/50'} backdrop-blur-xl shadow-xl`}>
         <CardContent className="p-4">
+          {/* Top Row: Daily Treats + Streak */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="text-2xl">{isLimitReached ? '🚫' : '🧪'}</span>
@@ -129,12 +154,16 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
               </div>
             </div>
             
-            {/* Extra lives badge */}
-            {dailyStatus.extra_lives_purchased > 0 && (
-              <Badge className="bg-yellow-400/90 text-yellow-900 text-xs">
-                +{dailyStatus.extra_lives_purchased * dailyStatus.extra_life_treats} bonus
-              </Badge>
-            )}
+            {/* Streak Badge - Clickable */}
+            <button 
+              onClick={() => setShowStreakModal(true)}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500/80 to-red-500/80 hover:from-orange-400/80 hover:to-red-400/80 px-3 py-1.5 rounded-full transition-all hover:scale-105"
+              data-testid="streak-badge"
+            >
+              <span className="text-lg">{streakTier.emoji}</span>
+              <span className="text-white font-bold text-sm">{streak}</span>
+              <span className="text-orange-200 text-xs">day{streak !== 1 ? 's' : ''}</span>
+            </button>
           </div>
           
           {/* Progress bar */}
@@ -143,14 +172,23 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
             className={`h-3 mb-3 ${isLimitReached ? '[&>div]:bg-red-400' : ''}`}
           />
           
+          {/* Bottom Row: Timer + Extra Life */}
           <div className="flex items-center justify-between">
-            {/* Reset timer */}
-            {timeUntilReset > 0 && (
-              <div className="text-xs text-sky-200">
-                <span className="mr-1">⏱️</span>
-                Resets in {formatTime(timeUntilReset)}
-              </div>
-            )}
+            {/* Reset timer or streak bonus info */}
+            <div className="text-xs text-sky-200">
+              {streakBonus.bonus_treats > 0 ? (
+                <span className="text-green-300">
+                  🎁 +{streakBonus.bonus_treats} streak bonus
+                </span>
+              ) : timeUntilReset > 0 ? (
+                <>
+                  <span className="mr-1">⏱️</span>
+                  Resets in {formatTime(timeUntilReset)}
+                </>
+              ) : (
+                <span className={streakTier.color}>{streakTier.title}</span>
+              )}
+            </div>
             
             {/* Buy extra life button */}
             <Button
@@ -168,6 +206,97 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Streak Info Modal */}
+      {showStreakModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <Card className="max-w-md w-full bg-gradient-to-b from-orange-500 via-red-500 to-red-600 border-orange-400 overflow-hidden shadow-2xl" data-testid="streak-modal">
+            <CardContent className="p-6">
+              {/* Header */}
+              <div className="text-center mb-6">
+                <div className="text-7xl mb-2 animate-bounce">{streakTier.emoji}</div>
+                <h2 className="text-3xl font-bold text-white drop-shadow-lg">
+                  {streak} Day Streak!
+                </h2>
+                <p className={`text-lg font-semibold ${streakTier.color} mt-1`}>
+                  {streakTier.title}
+                </p>
+              </div>
+
+              {/* Current Bonuses */}
+              <div className="bg-white/10 rounded-xl p-4 mb-4">
+                <h3 className="text-white font-bold mb-3 text-center">Your Streak Bonuses</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-orange-200">🧪 Bonus Treats/Day</span>
+                    <span className="text-white font-bold">+{streakBonus.bonus_treats || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-orange-200">⭐ XP Multiplier</span>
+                    <span className="text-white font-bold">{((streakBonus.xp_multiplier || 1) * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-orange-200">⚡ Brewing Speed</span>
+                    <span className="text-white font-bold">-{streakBonus.brewing_reduction || 0}%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tier Progress */}
+              <div className="bg-white/10 rounded-xl p-4 mb-6">
+                <h3 className="text-white font-bold mb-3 text-center">Streak Tiers</h3>
+                <div className="space-y-1.5">
+                  {Object.entries(STREAK_TIERS).map(([days, tier]) => {
+                    const isAchieved = streak >= parseInt(days);
+                    const isCurrent = streak >= parseInt(days) && (
+                      Object.keys(STREAK_TIERS).indexOf(days) === Object.keys(STREAK_TIERS).length - 1 ||
+                      streak < parseInt(Object.keys(STREAK_TIERS)[Object.keys(STREAK_TIERS).indexOf(days) + 1])
+                    );
+                    return (
+                      <div 
+                        key={days} 
+                        className={`flex items-center justify-between px-3 py-1.5 rounded-lg ${
+                          isCurrent ? 'bg-yellow-400/30 border border-yellow-400' : 
+                          isAchieved ? 'bg-green-500/20' : 'bg-white/5'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{tier.emoji}</span>
+                          <span className={`text-sm ${isAchieved ? 'text-white' : 'text-white/50'}`}>{tier.title}</span>
+                        </div>
+                        <span className={`text-xs ${isAchieved ? 'text-green-300' : 'text-white/40'}`}>
+                          {days} days {isAchieved && '✓'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Motivational Message */}
+              <div className="text-center mb-4">
+                {streak === 0 ? (
+                  <p className="text-orange-200 text-sm">Create a treat to start your streak!</p>
+                ) : streak < 3 ? (
+                  <p className="text-orange-200 text-sm">Keep going! 3 days unlocks bonus treats!</p>
+                ) : streak < 7 ? (
+                  <p className="text-orange-200 text-sm">Amazing! Reach 7 days for Week Warrior!</p>
+                ) : (
+                  <p className="text-orange-200 text-sm">You&apos;re on fire! Keep the streak alive! 🔥</p>
+                )}
+              </div>
+
+              <Button
+                onClick={() => setShowStreakModal(false)}
+                className="w-full bg-white/20 hover:bg-white/30 text-white"
+                data-testid="close-streak-modal-btn"
+              >
+                Keep Cooking! 🧪
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Extra Life Modal */}
       {showExtraLifeModal && (
