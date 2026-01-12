@@ -280,6 +280,47 @@ async def purchase_extra_life(address: str):
         logger.error(f"Error purchasing extra life: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
+@api_router.get("/streak/{address}")
+async def get_player_streak(address: str):
+    """
+    Get player's current streak information and bonuses.
+    Streak bonuses include:
+    - Bonus daily treats
+    - XP multiplier
+    - Brewing time reduction
+    """
+    try:
+        from services.anti_cheat import get_streak_bonus
+        streak_info = await anti_cheat_system.get_player_streak(address)
+        streak_bonus = get_streak_bonus(streak_info["current_streak"])
+        return {
+            **streak_info,
+            "streak_bonus": streak_bonus,
+            "all_tiers": {
+                1: {"bonus_treats": 0, "xp_multiplier": 1.0, "title": "New Chef"},
+                3: {"bonus_treats": 1, "xp_multiplier": 1.1, "title": "Rising Star"},
+                5: {"bonus_treats": 1, "xp_multiplier": 1.15, "title": "Dedicated Chef"},
+                7: {"bonus_treats": 2, "xp_multiplier": 1.2, "title": "Week Warrior"},
+                14: {"bonus_treats": 2, "xp_multiplier": 1.3, "title": "Lab Legend"},
+                30: {"bonus_treats": 3, "xp_multiplier": 1.5, "title": "Master Scientist"},
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting streak: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@api_router.post("/streak/{address}/checkin")
+async def update_player_streak(address: str):
+    """
+    Update player's streak when they play. Called automatically on treat creation.
+    """
+    try:
+        result = await anti_cheat_system.update_player_streak(address)
+        return result
+    except Exception as e:
+        logger.error(f"Error updating streak: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
 # Treat Management Routes
 @api_router.post("/treats", response_model=DogeTreat)
 async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTasks):
