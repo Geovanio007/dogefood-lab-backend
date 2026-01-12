@@ -977,48 +977,125 @@ const GameLabRedesign = ({ playerAddress }) => {
         )}
       </div>
 
-      {/* Result Modal */}
+      {/* Result Modal with Video Celebration */}
       {showResult && brewResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <Card className="max-w-md w-full bg-gradient-to-b from-sky-500 via-sky-600 to-blue-700 border-sky-400 overflow-hidden animate-in zoom-in-95 duration-300 shadow-2xl shadow-sky-500/30">
-            <CardContent className="p-8 text-center">
-              <div className="text-6xl mb-4 animate-bounce">
-                {RARITY_STYLES[brewResult.outcome?.rarity]?.emoji || '🧪'}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm overflow-y-auto">
+          <Card className="max-w-lg w-full bg-gradient-to-b from-sky-500 via-sky-600 to-blue-700 border-sky-400 overflow-hidden animate-in zoom-in-95 duration-300 shadow-2xl shadow-sky-500/30 my-4">
+            <CardContent className="p-6 text-center">
+              {/* Video Celebration */}
+              <div className="relative w-full aspect-video mb-4 rounded-xl overflow-hidden bg-black/30 shadow-lg">
+                <video 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline
+                  className="w-full h-full object-cover"
+                  data-testid="treat-celebration-video"
+                >
+                  <source src="https://customer-assets.emergentagent.com/job_dogefood-game/artifacts/kq5xkxn7_grok_video_2026-01-09-23-54-31.mp4" type="video/mp4" />
+                </video>
+                {/* Rarity Badge Overlay */}
+                <div className="absolute top-2 right-2">
+                  <Badge className={`${RARITY_STYLES[brewResult.outcome?.rarity]?.bg || 'bg-gray-500'} text-white font-bold px-3 py-1 text-sm shadow-lg`}>
+                    {RARITY_STYLES[brewResult.outcome?.rarity]?.emoji} {brewResult.outcome?.rarity}
+                  </Badge>
+                </div>
               </div>
               
-              <h2 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">
+              <h2 className="text-2xl font-bold text-white mb-1 drop-shadow-lg">
                 {brewResult.outcome?.rarity} Treat Created!
               </h2>
               
-              <div className="grid grid-cols-2 gap-4 my-6">
-                <div className="bg-yellow-400/90 rounded-xl p-3 shadow-lg">
-                  <div className="text-3xl">🏆</div>
+              {/* Streak Badge */}
+              {brewResult.streak && (
+                <div className="mb-4">
+                  {brewResult.streak.streak_increased ? (
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 px-4 py-2 rounded-full animate-pulse">
+                      <span className="text-2xl">🔥</span>
+                      <span className="text-white font-bold">{brewResult.streak.message}</span>
+                    </div>
+                  ) : (
+                    <div className="text-orange-300 text-sm">
+                      🔥 {brewResult.streak.current_streak} day streak
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Rewards Grid */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-yellow-400/90 rounded-xl p-3 shadow-lg transform hover:scale-105 transition-transform">
+                  <div className="text-2xl">🏆</div>
                   <div className="text-white font-bold text-xl drop-shadow-md">
                     +{brewResult.outcome?.points_reward || 0}
                   </div>
                   <div className="text-yellow-100 text-xs">Points</div>
                 </div>
-                <div className="bg-sky-400/90 rounded-xl p-3 shadow-lg">
-                  <div className="text-3xl">⭐</div>
+                <div className="bg-sky-400/90 rounded-xl p-3 shadow-lg transform hover:scale-105 transition-transform">
+                  <div className="text-2xl">⭐</div>
                   <div className="text-white font-bold text-xl drop-shadow-md">
                     +{brewResult.outcome?.xp_reward || 0}
+                    {brewResult.outcome?.streak_xp_bonus > 0 && (
+                      <span className="text-green-300 text-sm ml-1">
+                        (+{brewResult.outcome.streak_xp_bonus})
+                      </span>
+                    )}
                   </div>
-                  <div className="text-sky-100 text-xs">XP</div>
+                  <div className="text-sky-100 text-xs">
+                    XP {brewResult.streak?.streak_bonus?.xp_multiplier > 1 && 
+                      <span className="text-green-300">({(brewResult.streak.streak_bonus.xp_multiplier * 100).toFixed(0)}%)</span>
+                    }
+                  </div>
                 </div>
               </div>
               
-              <div className="bg-white/20 rounded-xl p-4 mb-6">
-                <div className="text-sky-200 text-sm mb-2">Brewing Time</div>
-                <div className="text-white font-bold text-lg drop-shadow-md">
-                  ⏱️ {brewResult.outcome?.timer_duration_hours?.toFixed(1) || 0} hours
+              {/* Brewing Time + Streak Bonus */}
+              <div className="bg-white/20 rounded-xl p-3 mb-4">
+                <div className="flex items-center justify-center gap-4">
+                  <div>
+                    <div className="text-sky-200 text-xs mb-1">Brewing Time</div>
+                    <div className="text-white font-bold text-lg drop-shadow-md">
+                      ⏱️ {brewResult.outcome?.timer_duration_hours?.toFixed(1) || 0}h
+                    </div>
+                  </div>
+                  {brewResult.streak?.streak_bonus?.brewing_reduction > 0 && (
+                    <div className="text-green-300 text-sm">
+                      <div className="text-xs">Streak Bonus</div>
+                      <div className="font-bold">-{brewResult.streak.streak_bonus.brewing_reduction}% faster!</div>
+                    </div>
+                  )}
                 </div>
               </div>
+              
+              {/* Sack Progress */}
+              {brewResult.sack_progress && (
+                <div className="bg-white/10 rounded-xl p-3 mb-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-sky-200">Sack Progress</span>
+                    <span className="text-white font-bold">
+                      {brewResult.sack_progress.current_progress}/5
+                      {brewResult.sack_progress.just_completed && (
+                        <span className="ml-2 text-yellow-300 animate-pulse">🎉 +50 XP!</span>
+                      )}
+                    </span>
+                  </div>
+                  <Progress value={(brewResult.sack_progress.current_progress / 5) * 100} className="h-2 mt-2" />
+                </div>
+              )}
+              
+              {/* Daily Treats Remaining */}
+              {brewResult.daily_status && (
+                <div className="text-sky-200 text-sm mb-4">
+                  🧪 {brewResult.daily_status.remaining_treats} treats remaining today
+                </div>
+              )}
               
               <Button
                 onClick={() => setShowResult(false)}
                 className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-white font-bold shadow-lg shadow-yellow-500/40"
+                data-testid="close-result-modal-btn"
               >
-                Awesome! 🎉
+                Keep Cooking! 🧪
               </Button>
             </CardContent>
           </Card>
