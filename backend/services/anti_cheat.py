@@ -2,6 +2,7 @@
 Anti-cheat system for DogeFood Lab
 Monitors player behavior and detects suspicious activities
 Includes daily treat limit system (5 treats per 24h + purchasable extra lives)
+Includes streak bonus system for daily players
 """
 
 import asyncio
@@ -17,6 +18,25 @@ logger = logging.getLogger(__name__)
 DAILY_TREAT_LIMIT = 5  # Base limit per 24 hours
 EXTRA_LIFE_TREATS = 3  # Additional treats per extra life purchase
 EXTRA_LIFE_COST_LAB = 5000  # Cost in $LAB tokens (not active yet)
+
+# Streak bonus constants
+STREAK_BONUSES = {
+    1: {"bonus_treats": 0, "xp_multiplier": 1.0, "brewing_reduction": 0, "title": "New Chef"},
+    2: {"bonus_treats": 0, "xp_multiplier": 1.05, "brewing_reduction": 0, "title": "Apprentice"},
+    3: {"bonus_treats": 1, "xp_multiplier": 1.1, "brewing_reduction": 5, "title": "Rising Star"},
+    5: {"bonus_treats": 1, "xp_multiplier": 1.15, "brewing_reduction": 10, "title": "Dedicated Chef"},
+    7: {"bonus_treats": 2, "xp_multiplier": 1.2, "brewing_reduction": 15, "title": "Week Warrior"},
+    14: {"bonus_treats": 2, "xp_multiplier": 1.3, "brewing_reduction": 20, "title": "Lab Legend"},
+    30: {"bonus_treats": 3, "xp_multiplier": 1.5, "brewing_reduction": 25, "title": "Master Scientist"},
+}
+
+def get_streak_bonus(streak_days: int) -> Dict:
+    """Get the bonus tier for a given streak"""
+    bonus = {"bonus_treats": 0, "xp_multiplier": 1.0, "brewing_reduction": 0, "title": "New Chef", "streak_days": streak_days}
+    for threshold, tier_bonus in sorted(STREAK_BONUSES.items()):
+        if streak_days >= threshold:
+            bonus = {**tier_bonus, "streak_days": streak_days}
+    return bonus
 
 @dataclass
 class SuspiciousActivity:
