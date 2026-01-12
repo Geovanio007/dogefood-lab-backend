@@ -1354,13 +1354,19 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         if not validation["valid"]:
             raise HTTPException(status_code=400, detail=f"Invalid treat creation: {validation['errors']}")
         
-        # Anti-cheat validation
+        # Anti-cheat validation (includes daily limit check)
         cheat_check = await anti_cheat_system.validate_treat_creation(
             treat_data.creator_address,
             {"ingredients": treat_data.ingredients, "level": treat_data.player_level}
         )
         if not cheat_check["valid"]:
-            raise HTTPException(status_code=429, detail=f"Anti-cheat triggered: {cheat_check['reason']}")
+            # Return more detailed error for daily limit
+            daily_status = cheat_check.get("daily_status")
+            error_detail = {
+                "message": cheat_check['reason'],
+                "daily_status": daily_status
+            }
+            raise HTTPException(status_code=429, detail=error_detail)
         
         # Get player's character bonus (Rex gives +15% rare chance)
         rare_chance_bonus = 0.0
