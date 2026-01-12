@@ -120,18 +120,153 @@ class AntiCheatSystem:
         else:
             time_until_reset = 0
         
+        # Get streak bonus
+        streak_info = await self.get_player_streak(player_address)
+        streak_bonus = get_streak_bonus(streak_info["current_streak"])
+        
+        # Add streak bonus treats to total limit
+        total_limit_with_streak = total_limit + streak_bonus["bonus_treats"]
+        remaining_with_streak = max(0, total_limit_with_streak - treats_created_today)
+        
         return {
             "treats_created_today": treats_created_today,
             "base_limit": base_limit,
             "extra_lives_purchased": extra_lives_purchased,
             "extra_treats_available": extra_from_lives,
-            "total_limit": total_limit,
-            "remaining_treats": remaining_treats,
-            "can_create_treat": remaining_treats > 0,
+            "total_limit": total_limit_with_streak,
+            "remaining_treats": remaining_with_streak,
+            "can_create_treat": remaining_with_streak > 0,
             "time_until_reset_seconds": int(time_until_reset),
             "extra_life_cost_lab": EXTRA_LIFE_COST_LAB,
             "extra_life_treats": EXTRA_LIFE_TREATS,
-            "lab_token_active": False  # $LAB not live yet
+            "lab_token_active": False,  # $LAB not live yet
+            "streak": streak_info,
+            "streak_bonus": streak_bonus
+        }
+    
+    async def get_player_streak(self, player_address: str) -> Dict:
+        """
+        Get player's current streak information
+        """
+        player = await self.db.players.find_one({"address": player_address})
+        
+        if not player:
+            return {
+                "current_streak": 0,
+                "longest_streak": 0,
+                "last_play_date": None,
+                "streak_active": False
+            }
+        
+        current_streak = player.get("current_streak", 0)
+        longest_streak = player.get("longest_streak", 0)
+        last_play_date = player.get("last_play_date")
+        
+        # Check if streak is still active (played within last 48 hours to be lenient)
+        streak_active = False
+        if last_play_date:
+            if isinstance(last_play_date, str):
+                last_play_date = datetime.fromisoformat(last_play_date.replace("Z", "+00:00").replace("+00:00", ""))
+            hours_since_play = (datetime.utcnow() - last_play_date).total_seconds() / 3600
+            streak_active = hours_since_play < 48
+        
+        return {
+            "current_streak": current_streak if streak_active else 0,
+            "longest_streak": longest_streak,
+            "last_play_date": last_play_date.isoformat() if last_play_date else None,
+            "streak_active": streak_active
+        }
+    
+    async def update_player_streak(self, player_address: str) -> Dict:
+        """
+        Update player's streak when they play (create a treat)
+        Returns the updated streak info with bonuses
+        """
+        player = await self.db.players.find_one({"address": player_address})
+        now = datetime.utcnow()
+        today = now.date()
+        
+        if not player:
+            # Create new player streak record
+            await self.db.players.update_one(
+                {"address": player_address},
+                {
+                    "$set": {
+                        "current_streak": 1,
+                        "longest_streak": 1,
+                        "last_play_date": now,
+                        "streak_started_at": now
+                    }
+                },
+                upsert=True
+            )
+            streak_bonus = get_streak_bonus(1)
+            return {
+                "current_streak": 1,
+                "longest_streak": 1,
+                "streak_bonus": streak_bonus,
+                "streak_increased": True,
+                "message": "Welcome! Your streak begins! 🔥"
+            }
+        
+        last_play_date = player.get("last_play_date")
+        current_streak = player.get("current_streak", 0)
+        longest_streak = player.get("longest_streak", 0)
+        
+        streak_increased = False
+        message = ""
+        
+        if last_play_date:
+            if isinstance(last_play_date, str):
+                last_play_date = datetime.fromisoformat(last_play_date.replace("Z", "+00:00").replace("+00:00", ""))
+            
+            last_play_day = last_play_date.date()
+            days_diff = (today - last_play_day).days
+            
+            if days_diff == 0:
+                # Already played today, streak unchanged
+                message = f"Keep cooking! 🧪 Streak: {current_streak} days"
+            elif days_diff == 1:
+                # Played yesterday, streak continues!
+                current_streak += 1
+                streak_increased = True
+                if current_streak > longest_streak:
+                    longest_streak = current_streak
+                    message = f"🔥 NEW RECORD! {current_streak} day streak!"
+                else:
+                    message = f"🔥 Streak extended! {current_streak} days!"
+            else:
+                # Missed days, streak resets
+                current_streak = 1
+                streak_increased = True
+                message = f"Streak reset! Starting fresh! 💪"
+        else:
+            # First time playing
+            current_streak = 1
+            longest_streak = max(1, longest_streak)
+            streak_increased = True
+            message = "Welcome! Your streak begins! 🔥"
+        
+        # Update database
+        await self.db.players.update_one(
+            {"address": player_address},
+            {
+                "$set": {
+                    "current_streak": current_streak,
+                    "longest_streak": longest_streak,
+                    "last_play_date": now
+                }
+            }
+        )
+        
+        streak_bonus = get_streak_bonus(current_streak)
+        
+        return {
+            "current_streak": current_streak,
+            "longest_streak": longest_streak,
+            "streak_bonus": streak_bonus,
+            "streak_increased": streak_increased,
+            "message": message
         }
     
     async def purchase_extra_life(self, player_address: str) -> Dict:
