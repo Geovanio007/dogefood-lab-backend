@@ -1507,6 +1507,9 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         # Set the MongoDB inserted ID as the treat ID
         treat_response['id'] = str(result.inserted_id)
         
+        # Get updated daily status after treat creation
+        daily_status = await anti_cheat_system.get_daily_treat_status(treat_data.creator_address)
+        
         return {
             "treat": treat_response,
             "outcome": treat_outcome,
@@ -1519,6 +1522,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 "bonus_xp_awarded": sack_bonus_xp,
                 "total_treats": new_treats_count
             },
+            "daily_status": daily_status,
             "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']} hours. {'(Offchain storage)' if season_id == 1 else ''}{' 🎉 Sack completed! +50 XP bonus!' if sack_just_completed else ''}"
         }
         
