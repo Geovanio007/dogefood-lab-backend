@@ -247,6 +247,39 @@ async def update_player_progress(progress: PlayerProgress):
     
     return {"message": "Progress updated successfully"}
 
+# =====================================================
+# ANTI-CHEAT & DAILY LIMIT ENDPOINTS
+# =====================================================
+
+@api_router.get("/daily-status/{address}")
+async def get_daily_treat_status(address: str):
+    """
+    Get player's daily treat creation status including:
+    - Treats created today
+    - Remaining treats
+    - Extra lives purchased
+    - Time until reset
+    """
+    try:
+        status = await anti_cheat_system.get_daily_treat_status(address)
+        return status
+    except Exception as e:
+        logger.error(f"Error getting daily status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@api_router.post("/extra-life/{address}")
+async def purchase_extra_life(address: str):
+    """
+    Purchase an extra life for 5000 $LAB tokens.
+    NOTE: $LAB is not yet live - this will return a placeholder response.
+    """
+    try:
+        result = await anti_cheat_system.purchase_extra_life(address)
+        return result
+    except Exception as e:
+        logger.error(f"Error purchasing extra life: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
 # Treat Management Routes
 @api_router.post("/treats", response_model=DogeTreat)
 async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTasks):
