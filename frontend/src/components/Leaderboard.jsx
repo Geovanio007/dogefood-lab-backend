@@ -646,6 +646,14 @@ const Leaderboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Player Stats Modal */}
+      {selectedPlayerAddress && (
+        <PlayerStatsModal 
+          playerAddress={selectedPlayerAddress}
+          onClose={() => setSelectedPlayerAddress(null)}
+        />
+      )}
     </div>
   );
 };
