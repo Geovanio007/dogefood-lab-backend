@@ -7,7 +7,19 @@ Build and maintain a Web3-enabled game called "DogeFood Lab" where players creat
 
 ### Implemented Features
 
-#### 1. Streak Bonus System (Implemented: Jan 12, 2026)
+#### 1. Player Stats Modal (Implemented: Jan 13, 2026)
+- **Trigger**: Click on any player name in the Leaderboard
+- **Design**: NBA Player of the Week inspired, dark slate theme
+- **Stats shown (Last 7 Days)**:
+  - Treats created, Points earned, XP gained, Unique recipes
+  - Streak info (current, longest, title)
+  - Best rarity found
+  - Rarity breakdown (Common to Mythic)
+  - Daily activity bar chart
+  - Averages (treats/day, points/day)
+- **API**: `GET /api/player-stats/{address}`
+
+#### 2. Streak Bonus System (Implemented: Jan 12, 2026)
 - **Daily Streak Tracking**: Tracks consecutive days of play
 - **Streak Tiers with Bonuses**:
   - Day 1: New Chef - Base rewards
@@ -16,35 +28,21 @@ Build and maintain a Web3-enabled game called "DogeFood Lab" where players creat
   - Day 7: Week Warrior - +2 bonus treats, 1.2x XP, 15% faster brewing
   - Day 14: Lab Legend - +2 bonus treats, 1.3x XP, 20% faster brewing
   - Day 30: Master Scientist - +3 bonus treats, 1.5x XP, 25% faster brewing
-- **UI**: Clickable streak badge in game header, detailed streak modal with tier progress
-- **API**: `GET /api/streak/{address}` - Get player streak info
+- **UI**: Clickable streak badge (dark green theme), tier progress modal
 
-#### 2. Video Celebration on Treat Creation (Implemented: Jan 12, 2026)
-- Animated Shiba Inu eating from DOGEFOOD bowl plays on treat creation success
-- Shows streak progress, XP multiplier, brewing speed bonus
-- Displays sack progress and daily treats remaining
+#### 3. Video Celebration on Treat Creation (Implemented: Jan 12, 2026)
+- Animated Shiba Inu eating from DOGEFOOD bowl plays on success
 
-#### 3. Anti-Cheat System with Daily Treat Limit (Implemented: Jan 12, 2026)
+#### 4. Anti-Cheat System with Daily Treat Limit (Implemented: Jan 12, 2026)
 - **Daily Limit**: 5 treats per 24 hours + streak bonus treats
-- **Extra Life Purchase**: Option to buy 3 additional treats for 5,000 $LAB
-- **Status**: $LAB token not yet live - purchase shows "Coming Soon"
-- **API Endpoints**:
-  - `GET /api/daily-status/{address}` - Get player's daily treat status with streak bonus
-  - `POST /api/extra-life/{address}` - Purchase extra life (placeholder)
+- **Extra Life Purchase**: ❤️ 3 additional treats for 5,000 $LAB (Coming Soon)
 
-#### 4. Game Mechanics
+#### 5. Game Mechanics
 - Character selection (Max, Rex, Luna) with unique bonuses
 - Ingredient mixing system with 5 categories
 - Rarity tiers: Common, Uncommon, Rare, Epic, Legendary, Mythic
 - Treat brewing with timers (reduced by streak bonus)
 - Points and XP rewards (multiplied by streak bonus)
-- Sack completion bonus (every 5 treats = +50 XP)
-
-#### 5. Authentication
-- Firebase Auth (Email/Google)
-- Wallet connection (WalletConnect)
-- Telegram Mini App support
-- Guest mode
 
 #### 6. Web3 Integration
 - DogeOS Chikyū Testnet (Chain ID: 6281971)
@@ -63,7 +61,6 @@ Build and maintain a Web3-enabled game called "DogeFood Lab" where players creat
 
 #### P2 - Medium Priority
 - [ ] Merkle tree generation for rewards
-- [ ] Policy for returning unclaimed tokens
 - [ ] Discovery achievements for new treat combinations
 
 ## Technical Architecture
@@ -80,19 +77,10 @@ Build and maintain a Web3-enabled game called "DogeFood Lab" where players creat
 - Deployed on Render: https://dogefood-lab-api.onrender.com
 
 ### Key Files
-- `/app/backend/services/anti_cheat.py` - Daily limit & streak logic
+- `/app/backend/server.py` - API endpoints including player-stats
+- `/app/frontend/src/components/PlayerStatsModal.jsx` - Player stats modal
 - `/app/frontend/src/components/DailyLimitTracker.jsx` - Daily limit & streak UI
-- `/app/frontend/src/components/GameLabRedesign.jsx` - Main game interface with video celebration
-
-## Test Reports
-- `/app/test_reports/iteration_1.json` - Anti-cheat system tests (8/8 passed)
-
-## Deployment
-- Frontend: GitHub → Vercel (auto-deploy)
-- Backend: GitHub → Render (rootDir: backend/)
-
-## Assets
-- Celebration Video: https://customer-assets.emergentagent.com/job_dogefood-game/artifacts/kq5xkxn7_grok_video_2026-01-09-23-54-31.mp4
+- `/app/frontend/src/components/Leaderboard.jsx` - Leaderboard with clickable names
 
 ## Last Updated
-January 12, 2026
+January 13, 2026
