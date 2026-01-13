@@ -309,6 +309,127 @@ async def get_player_streak(address: str):
         logger.error(f"Error getting streak: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
+@api_router.get("/player-stats/{address}")
+async def get_player_weekly_stats(address: str):
+    """
+    Get player's stats for the last 7 days.
+    Includes treats created, points earned, XP gained, streak info, rarity breakdown, etc.
+    """
+    try:
+        from services.anti_cheat import get_streak_bonus
+        
+        # Get player data
+        player = await db.players.find_one({"address": address})
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        # Calculate 7 days ago
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        
+        # Get treats created in last 7 days
+        treats_cursor = db.treats.find({
+            "creator_address": address,
+            "created_at": {"$gte": seven_days_ago}
+        })
+        treats_list = await treats_cursor.to_list(length=500)
+        
+        # Calculate stats
+        total_treats = len(treats_list)
+        
+        # Rarity breakdown
+        rarity_counts = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
+        total_points = 0
+        total_xp = 0
+        unique_formulas = set()
+        
+        for treat in treats_list:
+            rarity = treat.get("rarity", "Common")
+            if rarity in rarity_counts:
+                rarity_counts[rarity] += 1
+            
+            total_points += treat.get("points_reward", 0)
+            total_xp += treat.get("xp_reward", 0)
+            
+            # Track unique ingredient combinations
+            ingredients = tuple(sorted(treat.get("ingredients", [])))
+            if ingredients:
+                unique_formulas.add(ingredients)
+        
+        # Get streak info
+        streak_info = await anti_cheat_system.get_player_streak(address)
+        streak_bonus = get_streak_bonus(streak_info.get("current_streak", 0))
+        
+        # Calculate best rarity found
+        best_rarity = "None"
+        rarity_order = ["Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]
+        for r in rarity_order:
+            if rarity_counts.get(r, 0) > 0:
+                best_rarity = r
+                break
+        
+        # Get daily breakdown
+        daily_stats = {}
+        for i in range(7):
+            day = (datetime.utcnow() - timedelta(days=i)).strftime("%Y-%m-%d")
+            daily_stats[day] = {"treats": 0, "points": 0}
+        
+        for treat in treats_list:
+            created_at = treat.get("created_at")
+            if created_at:
+                if isinstance(created_at, str):
+                    created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00").replace("+00:00", ""))
+                day = created_at.strftime("%Y-%m-%d")
+                if day in daily_stats:
+                    daily_stats[day]["treats"] += 1
+                    daily_stats[day]["points"] += treat.get("points_reward", 0)
+        
+        # Calculate averages
+        avg_treats_per_day = total_treats / 7 if total_treats > 0 else 0
+        avg_points_per_day = total_points / 7 if total_points > 0 else 0
+        
+        # Serialize player data (exclude _id)
+        player_data = {
+            "nickname": player.get("nickname", f"Scientist"),
+            "address": address,
+            "points": player.get("points", 0),
+            "xp": player.get("xp", 0),
+            "level": player.get("level", 1),
+            "selected_character": player.get("selected_character", "luna"),
+            "character_image": player.get("character_image"),
+            "is_nft_holder": player.get("is_nft_holder", False),
+            "total_treats_created": player.get("total_treats_created", len(player.get("created_treats", [])))
+        }
+        
+        return {
+            "player": player_data,
+            "period": "Last 7 Days",
+            "period_start": seven_days_ago.isoformat(),
+            "period_end": datetime.utcnow().isoformat(),
+            "stats": {
+                "treats_created": total_treats,
+                "points_earned": total_points,
+                "xp_gained": total_xp,
+                "unique_formulas": len(unique_formulas),
+                "best_rarity": best_rarity,
+                "avg_treats_per_day": round(avg_treats_per_day, 1),
+                "avg_points_per_day": round(avg_points_per_day, 1)
+            },
+            "rarity_breakdown": rarity_counts,
+            "streak": {
+                "current": streak_info.get("current_streak", 0),
+                "longest": streak_info.get("longest_streak", 0),
+                "title": streak_bonus.get("title", "New Chef"),
+                "bonus_treats": streak_bonus.get("bonus_treats", 0),
+                "xp_multiplier": streak_bonus.get("xp_multiplier", 1.0)
+            },
+            "daily_breakdown": daily_stats
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting player stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
 @api_router.post("/streak/{address}/checkin")
 async def update_player_streak(address: str):
     """
