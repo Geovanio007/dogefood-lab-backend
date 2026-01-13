@@ -460,10 +460,14 @@ const Leaderboard = () => {
                                     {entry.character_name}
                                   </div>
                                 )}
-                                {/* Player Nickname */}
-                                <div className="font-bold text-gray-800 dark:text-gray-100 truncate text-sm">
+                                {/* Player Nickname - Clickable */}
+                                <button
+                                  onClick={() => setSelectedPlayerAddress(entry.address)}
+                                  className="font-bold text-gray-800 dark:text-gray-100 truncate text-sm hover:text-sky-500 dark:hover:text-sky-400 transition-colors cursor-pointer text-left"
+                                  data-testid={`player-name-${rank}`}
+                                >
                                   {entry.nickname || `Scientist #${rank}`}
-                                </div>
+                                </button>
                                 <div className="font-mono text-xs text-slate-500 dark:text-slate-400">
                                   {formatAddress(entry.address)}
                                 </div>
