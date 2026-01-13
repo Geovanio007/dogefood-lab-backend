@@ -556,9 +556,13 @@ const Leaderboard = () => {
                             </div>
                           )}
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-gray-800 dark:text-gray-100 truncate text-sm">
+                            <button
+                              onClick={() => setSelectedPlayerAddress(entry.address)}
+                              className="font-bold text-gray-800 dark:text-gray-100 truncate text-sm hover:text-sky-500 dark:hover:text-sky-400 transition-colors cursor-pointer text-left"
+                              data-testid={`player-name-mobile-${rank}`}
+                            >
                               {entry.nickname || `Scientist #${rank}`}
-                            </span>
+                            </button>
                             {isCurrentUser && (
                               <Badge className="bg-blue-500 text-white text-[10px] px-1.5 py-0">You</Badge>
                             )}
