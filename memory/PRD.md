@@ -7,36 +7,44 @@ Build and maintain a Web3-enabled game called "DogeFood Lab" where players creat
 
 ### Implemented Features
 
-#### 1. Consistent Typography System (Implemented: Jan 13, 2026)
-- **Font Hierarchy**:
-  - Display/Titles: Fredoka (playful, bold)
-  - Headers: Fredoka (impactful)
-  - Body/UI: Nunito (clean, readable)
-  - Mono: System mono (addresses, codes)
-- **Applied across**: Landing page, loading screen, menu, game lab, leaderboard, modals
-- **Mobile responsive**: Scaled appropriately for all screen sizes
+#### 1. New Treat Limit System (Implemented: Jan 16, 2026)
+- **Window System**: 4 treats per 6-hour window
+- **Daily Cap**: Maximum 16 treats per 24 hours
+- **Reset**: Timer starts from first treat in window
+- **Extra Life**: ❤️ +3 treats for 5,000 $LAB (Coming Soon)
 
-#### 2. Player Stats Modal (Implemented: Jan 13, 2026)
-- **Trigger**: Click on any player name in the Leaderboard
-- **Fixed Layout**: X close button always visible (red, floating)
-- **Stats shown (Last 7 Days)**: Treats, Points, XP, Recipes, Streak, Rarity breakdown
+#### 2. Tips & Guide Section (Implemented: Jan 16, 2026)
+- **Location**: Collapsible section on Lab page
+- **Content**: 
+  - How Mixing Works (1-5 ingredients, combos, experimentation)
+  - Ingredient Secrets (Proteins, Vegetables, Fruits, Dairy, Grains effects)
+  - Rarity Hints (diversity = higher chance, 5 ingredients max potential)
+  - Pro Tips (streaks, rare treats, sack completion)
+- **Design**: Purple gradient, expandable
 
-#### 3. Streak Bonus System (Implemented: Jan 12, 2026)
-- **Streak Tiers**: New Chef → Master Scientist (30 days)
-- **Bonuses**: +1-3 treats, 1.0x-1.5x XP, 0-25% faster brewing
-- **UI**: Dark green modal, clickable badge
+#### 3. Your Stats on Lab Page (Implemented: Jan 16, 2026)
+- **Location**: XP bar area - "Your Stats" link
+- **Function**: Opens PlayerStatsModal for current player
+- **Same design as leaderboard stats modal
 
-#### 4. Video Celebration on Treat Creation (Implemented: Jan 12, 2026)
-- Animated Shiba Inu eating from DOGEFOOD bowl
+#### 4. Consistent Typography System (Implemented: Jan 13, 2026)
+- Fredoka (titles) + Nunito (body)
 
-#### 5. Anti-Cheat System with Daily Limit (Implemented: Jan 12, 2026)
-- 5 treats/day + streak bonus + extra life (❤️ 5000 $LAB - Coming Soon)
+#### 5. Player Stats Modal (Implemented: Jan 13, 2026)
+- Click player names on Leaderboard/Lab
+- 7-day stats, rarity breakdown, daily chart
 
-#### 6. Game Mechanics
-- Character selection, ingredient mixing, rarity tiers, brewing timers
+#### 6. Streak Bonus System (Implemented: Jan 12, 2026)
+- Tiers: New Chef → Master Scientist (30 days)
+- Bonuses: +treats, XP multiplier, faster brewing
 
-#### 7. Web3 Integration
-- DogeOS Chikyū Testnet, NFT verification, VIP bonus
+#### 7. Video Celebration on Treat Creation
+
+#### 8. Game Mechanics
+- Character selection, ingredient mixing, rarity tiers, brewing
+
+#### 9. Web3 Integration
+- DogeOS Chikyū Testnet, NFT verification
 
 ### Pending Features
 
@@ -45,19 +53,19 @@ Build and maintain a Web3-enabled game called "DogeFood Lab" where players creat
 
 #### P1 - High Priority
 - [ ] Points-to-$LAB token conversion
-- [ ] Activate $LAB token purchases
+- [ ] Activate $LAB purchases
 
 ## Deployment
 - Frontend: https://app-eight-bay-35.vercel.app
 - Backend: https://dogefood-lab-api.onrender.com
 
-## Typography System
-```css
---font-display: 'Fredoka' (titles, logos)
---font-heading: 'Fredoka' (headers, buttons)
---font-body: 'Nunito' (paragraphs, UI text)
---font-mono: system mono (addresses)
+## Limit System Details
+```
+Window: 4 treats / 6 hours
+Daily Max: 16 treats / 24 hours
+Streak Bonus: +1 to +3 treats per window
+Extra Life: +3 treats (5000 $LAB)
 ```
 
 ## Last Updated
-January 13, 2026
+January 16, 2026
