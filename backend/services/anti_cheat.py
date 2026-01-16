@@ -60,7 +60,8 @@ class AntiCheatSystem:
             "min_time_between_treats": 30,  # seconds
             "max_identical_treats": 5,  # same ingredients combo
             "max_rapid_level_ups": 3,  # levels per hour
-            "daily_treat_limit": DAILY_TREAT_LIMIT,  # New: daily limit
+            "window_treat_limit": WINDOW_TREAT_LIMIT,  # 4 per 6h window
+            "max_daily_treats": MAX_DAILY_TREATS,  # 16 per 24h
         }
         
         # Player activity cache
