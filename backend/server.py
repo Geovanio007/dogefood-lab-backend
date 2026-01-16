@@ -367,21 +367,30 @@ async def get_player_weekly_stats(address: str):
                 best_rarity = r
                 break
         
-        # Get daily breakdown
+        # Get daily breakdown - Last 7 days including today
         daily_stats = {}
+        now = datetime.utcnow()
         for i in range(7):
-            day = (datetime.utcnow() - timedelta(days=i)).strftime("%Y-%m-%d")
-            daily_stats[day] = {"treats": 0, "points": 0}
+            day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+            daily_stats[day] = {"treats": 0, "points": 0, "xp": 0}
         
         for treat in treats_list:
             created_at = treat.get("created_at")
             if created_at:
+                # Handle different datetime formats
                 if isinstance(created_at, str):
-                    created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00").replace("+00:00", ""))
+                    try:
+                        # Remove timezone info for comparison
+                        created_at = created_at.replace("Z", "").replace("+00:00", "").split(".")[0]
+                        created_at = datetime.fromisoformat(created_at)
+                    except:
+                        continue
+                
                 day = created_at.strftime("%Y-%m-%d")
                 if day in daily_stats:
                     daily_stats[day]["treats"] += 1
                     daily_stats[day]["points"] += treat.get("points_reward", 0)
+                    daily_stats[day]["xp"] += treat.get("xp_reward", 0)
         
         # Calculate averages
         avg_treats_per_day = total_treats / 7 if total_treats > 0 else 0
