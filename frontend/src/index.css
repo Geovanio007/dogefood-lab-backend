@@ -2,14 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ensure consistent font family across all devices */
-*, *::before, *::after {
-  font-family: 'Comic Sans MS', 'Arial', sans-serif !important;
-}
+/* ================================
+   DOGEFOOD LAB - TYPOGRAPHY SYSTEM
+   ================================ */
 
-/* CSS Variables for theme colors */
+/* Import Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
+
+/* Typography Scale:
+   - Display/Logo: Fredoka (fun, playful - for titles)
+   - Headers: Fredoka (bold, impactful)
+   - Body/UI: Nunito (clean, readable)
+   - Mono: System mono (for addresses, codes)
+*/
+
 :root {
-  /* Light mode colors (current theme) */
+  /* Font Families */
+  --font-display: 'Fredoka', 'Comic Sans MS', cursive;
+  --font-heading: 'Fredoka', 'Comic Sans MS', sans-serif;
+  --font-body: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  
+  /* Font Sizes */
+  --text-xs: 0.75rem;      /* 12px */
+  --text-sm: 0.875rem;     /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg: 1.125rem;     /* 18px */
+  --text-xl: 1.25rem;      /* 20px */
+  --text-2xl: 1.5rem;      /* 24px */
+  --text-3xl: 1.875rem;    /* 30px */
+  --text-4xl: 2.25rem;     /* 36px */
+  --text-5xl: 3rem;        /* 48px */
+  --text-6xl: 3.75rem;     /* 60px */
+  
+  /* Light mode colors */
   --bg-primary: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
   --bg-secondary: rgba(255, 255, 255, 0.9);
   --text-primary: #1f2937;
@@ -22,7 +48,7 @@
   --shadow-color: rgba(56, 189, 248, 0.4);
 }
 
-/* Dark mode colors - Dark Shiny Blue Theme */
+/* Dark mode colors */
 .dark-mode, .dark {
   --bg-primary: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
   --bg-secondary: rgba(15, 23, 42, 0.95);
@@ -36,9 +62,25 @@
   --shadow-color: rgba(37, 99, 235, 0.5);
 }
 
-/* Apply theme colors to body */
+/* ================================
+   BASE TYPOGRAPHY
+   ================================ */
+
+/* Global font reset */
+*, *::before, *::after {
+  font-family: var(--font-body);
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-  font-family: 'Comic Sans MS', 'Arial', sans-serif !important;
+  font-family: var(--font-body);
+  font-weight: 500;
+  line-height: 1.6;
   background: var(--bg-primary);
   min-height: 100vh;
   margin: 0;
@@ -47,71 +89,245 @@ body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
-/* Remove padding on mobile for better space usage */
-@media (max-width: 768px) {
-  body {
-    padding: 8px !important;
-  }
+/* Headings - Display Font */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
 }
 
-/* Force consistent playful titles on all devices with theme support */
+h1 {
+  font-size: var(--text-5xl);
+  font-weight: 700;
+}
+
+h2 {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+}
+
+h3 {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+}
+
+h4 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+h5 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+h6 {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+/* Paragraphs */
+p {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 500;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Small text */
+small, .text-sm {
+  font-size: var(--text-sm);
+}
+
+.text-xs {
+  font-size: var(--text-xs);
+}
+
+/* Mono text (addresses, codes) */
+.font-mono, code, pre {
+  font-family: var(--font-mono);
+}
+
+/* ================================
+   COMPONENT TYPOGRAPHY CLASSES
+   ================================ */
+
+/* Game Logo/Title - Big and playful */
+.game-title {
+  font-family: var(--font-display);
+  font-size: var(--text-6xl);
+  font-weight: 700;
+  text-shadow: 4px 4px 8px rgba(0,0,0,0.4);
+  letter-spacing: 1px;
+}
+
+/* Page Headers */
+.page-header {
+  font-family: var(--font-heading);
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Section Headers */
+.section-header {
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+/* Card Titles */
+.card-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+/* Button Text */
+button, .btn, [role="button"] {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Labels */
+label, .label {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* Stats/Numbers - Bold display */
+.stat-value {
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+/* ================================
+   LEGACY CLASS COMPATIBILITY
+   ================================ */
+
 .playful-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
-  font-weight: bold !important;
-  color: var(--text-accent) !important;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-accent);
   text-shadow: 4px 4px 8px rgba(0,0,0,0.4), 
                2px 2px 4px rgba(139, 69, 19, 0.3),
-               0 0 20px var(--text-accent) !important;
-  letter-spacing: 1px !important;
+               0 0 20px var(--text-accent);
+  letter-spacing: 1px;
 }
 
-/* Ensure bubble text styling is consistent with theme */
 .bubble-text {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
-  font-weight: bold !important;
-  color: var(--text-primary) !important;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--text-primary);
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
-/* Theme toggle button styling */
-.theme-toggle {
-  box-shadow: 0 4px 15px var(--shadow-color), 
-              inset 0 -2px 0 rgba(0, 0, 0, 0.2),
-              inset 0 2px 0 rgba(255, 255, 255, 0.2);
+.playful-text {
+  font-family: var(--font-heading);
+  font-weight: 600;
 }
 
-.dark-mode .theme-toggle {
-  box-shadow: 0 4px 15px var(--shadow-color), 
-              inset 0 -2px 0 rgba(0, 0, 0, 0.3),
-              inset 0 2px 0 rgba(255, 255, 255, 0.1);
+/* Welcome Screen */
+.welcome-title {
+  font-family: var(--font-display);
+  font-size: var(--text-6xl);
+  font-weight: 700;
+  text-shadow: 8px 8px 16px rgba(0,0,0,0.5);
+  letter-spacing: 2px;
 }
 
-/* Mobile-specific font consistency overrides */
+.welcome-subtitle {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  text-shadow: 4px 4px 8px rgba(0,0,0,0.3);
+}
+
+.welcome-description {
+  font-family: var(--font-body);
+  font-size: var(--text-lg);
+  font-weight: 500;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Loading Screen */
+.loading-title {
+  font-family: var(--font-display);
+  font-size: var(--text-5xl);
+  font-weight: 700;
+  text-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+}
+
+.loading-subtitle {
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: #93c5fd;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.loading-message {
+  font-family: var(--font-body);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: #93c5fd;
+}
+
+/* ================================
+   MOBILE RESPONSIVE TYPOGRAPHY
+   ================================ */
+
 @media (max-width: 768px) {
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
-    font-weight: bold !important;
+  body {
+    padding: 8px;
   }
   
-  /* Main menu title consistency */
-  h1 {
-    font-size: 3.5rem !important;
-    text-shadow: 4px 4px 8px rgba(0,0,0,0.5) !important;
+  h1, .game-title, .welcome-title {
+    font-size: var(--text-4xl);
   }
   
-  /* Card titles consistency */
-  .card-title, [class*="CardTitle"] {
-    font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
-    font-weight: bold !important;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3) !important;
+  h2, .page-header {
+    font-size: var(--text-2xl);
   }
   
-  /* Ensure all buttons maintain desktop styling */
-  button, .btn, [class*="button"], [role="button"] {
-    font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
-    font-weight: bold !important;
+  h3, .section-header {
+    font-size: var(--text-xl);
+  }
+  
+  .welcome-subtitle {
+    font-size: var(--text-xl);
+  }
+  
+  .welcome-description {
+    font-size: var(--text-base);
+  }
+  
+  .loading-title {
+    font-size: var(--text-4xl);
   }
 }
+
+@media (max-width: 480px) {
+  h1, .game-title, .welcome-title {
+    font-size: var(--text-3xl);
+  }
+  
+  h2, .page-header {
+    font-size: var(--text-xl);
+  }
+  
+  .loading-title {
+    font-size: var(--text-3xl);
+  }
+}
+
+/* ================================
+   COMPONENT STYLES
+   ================================ */
 
 @layer components {
   .glass-panel {
@@ -129,14 +345,14 @@ body {
   .doge-button {
     background: var(--button-gradient);
     color: white;
-    font-family: 'Patrick Hand', 'Comic Sans MS', 'Marker Felt', cursive !important;
-    font-weight: bold !important;
-    font-size: 16px !important;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: var(--text-base);
     padding: 1rem 2rem;
     border-radius: 25px;
     border: none;
     cursor: pointer;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
     box-shadow: 0 8px 25px var(--shadow-color),
                 inset 0 -2px 0 rgba(0, 0, 0, 0.2),
                 inset 0 2px 0 rgba(255, 255, 255, 0.2);
@@ -166,17 +382,6 @@ body {
     filter: drop-shadow(2px 2px 4px rgba(234, 88, 12, 0.4));
   }
   
-  /* Light mode - use solid color for better visibility */
-  .light .doge-gradient,
-  :not(.dark) .doge-gradient {
-    background: linear-gradient(to right, #ea580c, #dc2626, #b91c1c);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    filter: drop-shadow(2px 2px 4px rgba(185, 28, 28, 0.5));
-  }
-  
-  /* Dark mode gradient */
   .dark .doge-gradient {
     background: linear-gradient(to right, #fbbf24, #f97316, #fbbf24);
     -webkit-background-clip: text;
@@ -185,17 +390,9 @@ body {
     filter: drop-shadow(2px 2px 4px rgba(251, 191, 36, 0.4));
   }
   
-  .playful-title {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-    font-weight: bold;
-    text-shadow: 4px 4px 8px rgba(0,0,0,0.4), 
-                 2px 2px 4px rgba(139, 69, 19, 0.3),
-                 0 0 20px rgba(255, 193, 7, 0.2);
-    letter-spacing: 1px;
-  }
-  
   .vip-badge {
-    @apply bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold px-4 py-2 shadow-lg animate-pulse-slow;
+    @apply bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold px-4 py-2 shadow-lg;
+    font-family: var(--font-heading);
     border-radius: 20px;
     box-shadow: 0 5px 15px rgba(168, 85, 247, 0.4);
   }
@@ -206,15 +403,12 @@ body {
     border: 4px solid var(--card-border);
     border-radius: 25px;
     box-shadow: 
-      /* Main shadow for depth */
       0 25px 50px var(--shadow-color), 
       0 20px 30px var(--shadow-color),
-      /* 3D beveled edges */
       inset 0 -8px 0 rgba(30, 58, 138, 0.6),
       inset 0 8px 0 rgba(255, 255, 255, 0.4),
       inset -4px 0 0 rgba(30, 58, 138, 0.3),
       inset 4px 0 0 rgba(255, 255, 255, 0.2),
-      /* Cartoonish glow */
       0 0 30px var(--shadow-color);
     transform-style: preserve-3d;
     transition: all 0.3s ease;
@@ -224,71 +418,13 @@ body {
   .game-card:hover {
     transform: translateY(-10px) scale(1.05);
     box-shadow: 
-      /* Enhanced shadow on hover */
       0 35px 70px var(--shadow-color), 
       0 30px 50px var(--shadow-color),
-      /* Enhanced 3D beveled edges */
       inset 0 -10px 0 rgba(30, 58, 138, 0.7),
       inset 0 10px 0 rgba(255, 255, 255, 0.5),
       inset -6px 0 0 rgba(30, 58, 138, 0.4),
       inset 6px 0 0 rgba(255, 255, 255, 0.3),
-      /* Enhanced glow */
       0 0 50px var(--shadow-color);
-  }
-
-  /* Dark mode specific adjustments for game cards */
-  .dark-mode .game-card {
-    box-shadow: 
-      0 25px 50px rgba(37, 99, 235, 0.6), 
-      0 20px 30px rgba(37, 99, 235, 0.5),
-      inset 0 -8px 0 rgba(15, 23, 42, 0.8),
-      inset 0 8px 0 rgba(59, 130, 246, 0.3),
-      inset -4px 0 0 rgba(15, 23, 42, 0.6),
-      inset 4px 0 0 rgba(59, 130, 246, 0.2),
-      0 0 30px rgba(37, 99, 235, 0.4);
-  }
-  
-  .dark-mode .game-card:hover {
-    box-shadow: 
-      0 35px 70px rgba(37, 99, 235, 0.8), 
-      0 30px 50px rgba(37, 99, 235, 0.6),
-      inset 0 -10px 0 rgba(15, 23, 42, 0.9),
-      inset 0 10px 0 rgba(59, 130, 246, 0.4),
-      inset -6px 0 0 rgba(15, 23, 42, 0.7),
-      inset 6px 0 0 rgba(59, 130, 246, 0.3),
-      0 0 60px rgba(37, 99, 235, 0.6);
-  }
-  
-  /* 3D cartoonish button styling */
-  .doge-button {
-    @apply bg-gradient-to-b from-yellow-400 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 text-white font-bold py-4 px-8 shadow-lg transform transition-all duration-200 hover:scale-110;
-    border-radius: 25px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    box-shadow: 
-      /* Main 3D shadow */
-      0 12px 25px rgba(255, 193, 7, 0.4),
-      /* 3D beveled button */
-      inset 0 -4px 0 rgba(180, 83, 9, 0.8),
-      inset 0 4px 0 rgba(255, 255, 255, 0.3),
-      inset -2px 0 0 rgba(180, 83, 9, 0.3),
-      inset 2px 0 0 rgba(255, 255, 255, 0.2);
-  }
-  
-  .doge-button:hover {
-    box-shadow: 
-      0 15px 35px rgba(255, 193, 7, 0.5),
-      inset 0 -5px 0 rgba(180, 83, 9, 0.9),
-      inset 0 5px 0 rgba(255, 255, 255, 0.4),
-      inset -3px 0 0 rgba(180, 83, 9, 0.4),
-      inset 3px 0 0 rgba(255, 255, 255, 0.3);
-  }
-  
-  .doge-button:active {
-    @apply scale-95;
-    box-shadow: 
-      0 8px 15px rgba(255, 193, 7, 0.3),
-      inset 0 -2px 0 rgba(180, 83, 9, 0.6),
-      inset 0 2px 0 rgba(255, 255, 255, 0.2);
   }
   
   .ingredient-card {
@@ -308,1595 +444,39 @@ body {
     box-shadow: 0 15px 30px rgba(99, 102, 241, 0.3);
   }
   
-  .treat-card.legendary {
-    @apply bg-gradient-to-br from-yellow-400/95 to-orange-500/95 border-yellow-400/70 shadow-yellow-400/40;
-    box-shadow: 0 20px 40px rgba(255, 193, 7, 0.5);
-  }
-  
-  .treat-card.epic {
-    @apply bg-gradient-to-br from-purple-400/95 to-pink-500/95 border-purple-400/70 shadow-purple-400/40;
-    box-shadow: 0 20px 40px rgba(168, 85, 247, 0.5);
-  }
-  
-  .treat-card.rare {
-    @apply bg-gradient-to-br from-blue-400/95 to-cyan-500/95 border-blue-400/70 shadow-blue-400/40;
-    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.5);
-  }
-  
-  .treat-card.uncommon {
-    @apply bg-gradient-to-br from-green-400/95 to-emerald-500/95 border-green-400/70 shadow-green-400/40;
-    box-shadow: 0 20px 40px rgba(34, 197, 94, 0.5);
-  }
-  
-  .level-progress-bar {
-    @apply w-full bg-white/30 h-4 overflow-hidden;
-    border-radius: 15px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
-  }
-  
-  .level-progress-fill {
-    @apply h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-1000 ease-out shadow-sm;
-    border-radius: 15px;
-  }
-  
   .stat-card {
     @apply glass-panel p-5 text-center transition-all duration-300 hover:scale-105;
     border-radius: 18px;
   }
-  
-  .floating-ingredient {
-    @apply absolute pointer-events-none;
-    animation: float 3s ease-in-out infinite;
-  }
-  
-  .mixing-bowl {
-    @apply relative w-40 h-40 mx-auto mb-6 bg-gradient-to-br from-gray-200 to-gray-400 shadow-inner border-4 border-white/50;
-    border-radius: 50%;
-    box-shadow: inset 0 10px 20px rgba(0,0,0,0.3),
-                0 10px 30px rgba(156, 163, 175, 0.4);
-  }
-  
-  .mixing-animation {
-    animation: spin 2s linear infinite;
-  }
-  
-  .sparkle-effect {
-    @apply absolute inset-0 pointer-events-none;
-    background: radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.4) 0%, transparent 70%);
-    animation: sparkle 1.5s ease-in-out infinite;
-    border-radius: 50%;
-  }
-  
-  .notification-toast {
-    @apply glass-panel p-4 border-l-4;
-    border-radius: 15px;
-  }
-  
-  .notification-toast.success {
-    @apply border-green-400;
-  }
-  
-  .notification-toast.error {
-    @apply border-red-400;
-  }
-  
-  .notification-toast.info {
-    @apply border-blue-400;
-  }
-  
-  .leaderboard-row {
-    @apply glass-panel p-5 transition-all duration-300 hover:bg-sky-300/20;
-    border-radius: 15px;
-  }
-  
-  .leaderboard-row.rank-1 {
-    @apply bg-gradient-to-r from-yellow-400/50 to-yellow-500/40 border-yellow-400/70;
-  }
-  
-  .leaderboard-row.rank-2 {
-    @apply bg-gradient-to-r from-gray-400/50 to-gray-500/40 border-gray-400/70;
-  }
-  
-  .leaderboard-row.rank-3 {
-    @apply bg-gradient-to-r from-orange-400/50 to-orange-500/40 border-orange-400/70;
-  }
-  
-  .playful-text {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-    font-weight: bold;
-  }
-  
-  .bubble-text {
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-  }
-
-  /* Loading Screen Styles */
-  .loading-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #1d4ed8 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    overflow: hidden;
-  }
-
-  .loading-bg {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
-
-  .bubble {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    animation: floatUp 6s infinite ease-in-out;
-  }
-
-  .bubble-1 {
-    width: 80px;
-    height: 80px;
-    left: 10%;
-    animation-delay: 0s;
-  }
-
-  .bubble-2 {
-    width: 60px;
-    height: 60px;
-    left: 20%;
-    animation-delay: 2s;
-  }
-
-  .bubble-3 {
-    width: 40px;
-    height: 40px;
-    left: 70%;
-    animation-delay: 1s;
-  }
-
-  .bubble-4 {
-    width: 100px;
-    height: 100px;
-    left: 80%;
-    animation-delay: 3s;
-  }
-
-  .bubble-5 {
-    width: 50px;
-    height: 50px;
-    left: 50%;
-    animation-delay: 4s;
-  }
-
-  .loading-content {
-    text-align: center;
-    position: relative;
-    z-index: 10;
-  }
-
-  .loading-logo {
-    margin-bottom: 3rem;
-  }
-
-  .loading-title {
-    font-family: 'Comic Sans MS', cursive;
-    font-size: 4rem;
-    font-weight: bold;
-    text-shadow: 4px 4px 8px rgba(0,0,0,0.5);
-    margin-bottom: 1rem;
-  }
-
-  .loading-emoji {
-    font-size: 4rem;
-    margin-left: 1rem;
-    animation: bounce 2s infinite;
-  }
-
-  .loading-subtitle {
-    font-family: 'Comic Sans MS', cursive;
-    font-size: 1.5rem;
-    color: #93c5fd;
-    font-weight: bold;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-  }
-
-  .thermometer-container {
-    margin: 3rem 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .thermometer {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .thermometer-tube {
-    width: 60px;
-    height: 300px;
-    background: rgba(255, 255, 255, 0.2);
-    border: 4px solid #e5e7eb;
-    border-radius: 30px 30px 0 0;
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(10px);
-  }
-
-  .thermometer-scale {
-    position: absolute;
-    left: -60px;
-    top: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 20px 0;
-  }
-
-  .scale-line {
-    color: #93c5fd;
-    font-size: 0.875rem;
-    font-weight: bold;
-    position: relative;
-  }
-
-  .scale-line::after {
-    content: '';
-    position: absolute;
-    left: 40px;
-    top: 50%;
-    width: 15px;
-    height: 2px;
-    background: #93c5fd;
-    transform: translateY(-50%);
-  }
-
-  .liquid-container {
-    position: absolute;
-    bottom: 0;
-    left: 4px;
-    right: 4px;
-    top: 4px;
-    border-radius: 26px 26px 0 0;
-    overflow: hidden;
-  }
-
-  .liquid-fill {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(180deg, #10b981 0%, #059669 50%, #047857 100%);
-    transition: height 0.3s ease-out;
-    border-radius: 0 0 26px 26px;
-  }
-
-  .liquid-surface {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    animation: wave 2s ease-in-out infinite;
-  }
-
-  .bubble-inside {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.4);
-    animation: bubbleRise 3s infinite ease-in-out;
-  }
-
-  .bubble-inside-1 {
-    width: 8px;
-    height: 8px;
-    left: 20%;
-    animation-delay: 0s;
-  }
-
-  .bubble-inside-2 {
-    width: 6px;
-    height: 6px;
-    left: 60%;
-    animation-delay: 1s;
-  }
-
-  .bubble-inside-3 {
-    width: 10px;
-    height: 10px;
-    left: 80%;
-    animation-delay: 2s;
-  }
-
-  .thermometer-bulb {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    border-radius: 50%;
-    border: 4px solid #e5e7eb;
-    position: relative;
-    margin-top: -4px;
-    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
-  }
-
-  .bulb-inner {
-    width: 60%;
-    height: 60%;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: pulse 2s infinite;
-  }
-
-  .bulb-shine {
-    width: 30%;
-    height: 30%;
-    background: rgba(255, 255, 255, 0.6);
-    border-radius: 50%;
-    position: absolute;
-    top: 25%;
-    left: 25%;
-  }
-
-  .thermometer-label {
-    margin-top: 1rem;
-    color: #93c5fd;
-    font-family: 'Comic Sans MS', cursive;
-    font-weight: bold;
-    font-size: 1.125rem;
-  }
-
-  .progress-text {
-    margin-top: 2rem;
-  }
-
-  .progress-percentage {
-    font-size: 3rem;
-    font-weight: bold;
-    color: #fbbf24;
-    font-family: 'Comic Sans MS', cursive;
-    text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
-    margin-bottom: 1rem;
-  }
-
-  .progress-bar-container {
-    margin: 1rem 0;
-  }
-
-  .progress-bar-bg {
-    width: 400px;
-    height: 12px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
-    overflow: hidden;
-    border: 2px solid #e5e7eb;
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
-    border-radius: 4px;
-    transition: width 0.3s ease-out;
-    position: relative;
-  }
-
-  .progress-bar-fill::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
-    animation: shimmer 2s infinite;
-  }
-
-  .loading-message {
-    color: #93c5fd;
-    font-family: 'Comic Sans MS', cursive;
-    font-size: 1.25rem;
-    font-weight: bold;
-    margin-top: 1rem;
-    animation: fadeInOut 2s infinite;
-  }
-
-  .completion-animation {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    animation: completionPop 0.8s ease-out;
-    z-index: 100;
-  }
-
-  .success-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-  }
-
-  .success-icon img {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-  }
-
-  .success-text {
-    color: #fbbf24;
-    font-family: 'Comic Sans MS', cursive;
-    font-size: 2rem;
-    font-weight: bold;
-    text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
-  }
-
-  /* Loading Screen Animations */
-  @keyframes floatUp {
-    0% {
-      transform: translateY(100vh) scale(0);
-      opacity: 0;
-    }
-    10% {
-      opacity: 1;
-    }
-    90% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(-100vh) scale(1);
-      opacity: 0;
-    }
-  }
-
-  @keyframes wave {
-    0%, 100% {
-      transform: scaleX(1);
-    }
-    50% {
-      transform: scaleX(1.1);
-    }
-  }
-
-  @keyframes bubbleRise {
-    0% {
-      transform: translateY(0) scale(0);
-      opacity: 0;
-    }
-    10% {
-      opacity: 1;
-    }
-    90% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(-300px) scale(1);
-      opacity: 0;
-    }
-  }
-
-  @keyframes pulse {
-    0%, 100% {
-      transform: translate(-50%, -50%) scale(1);
-      opacity: 0.7;
-    }
-    50% {
-      transform: translate(-50%, -50%) scale(1.1);
-      opacity: 1;
-    }
-  }
-
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(100%);
-    }
-  }
-
-  @keyframes fadeInOut {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.7;
-    }
-  }
-
-  @keyframes completionPop {
-    0% {
-      transform: translate(-50%, -50%) scale(0);
-      opacity: 0;
-    }
-    50% {
-      transform: translate(-50%, -50%) scale(1.2);
-    }
-    100% {
-      transform: translate(-50%, -50%) scale(1);
-      opacity: 1;
-    }
-  }
-
-  @keyframes rotate {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* 3D Glass Timer Styles */
-  .treat-timer-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 1rem;
-  }
-
-  .treat-timer {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
-  }
-
-  .timer-glass {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: linear-gradient(135deg, 
-      rgba(255,255,255,0.9) 0%, 
-      rgba(255,255,255,0.7) 50%, 
-      rgba(255,255,255,0.9) 100%);
-    border: 2px solid rgba(255,255,255,0.8);
-    border-radius: 20px 20px 4px 4px;
-    backdrop-filter: blur(10px);
-    box-shadow: 
-      inset 0 2px 4px rgba(255,255,255,0.5),
-      inset 0 -2px 4px rgba(0,0,0,0.1),
-      0 8px 32px rgba(0,0,0,0.1);
-  }
-
-  .timer-top-bulb {
-    width: 80%;
-    height: 45%;
-    background: transparent;
-    border-radius: 50% 50% 10px 10px;
-    position: relative;
-    overflow: hidden;
-    border-bottom: 1px solid rgba(255,255,255,0.3);
-  }
-
-  .sand-remaining {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(180deg, 
-      #fbbf24 0%, 
-      #f59e0b 50%, 
-      #d97706 100%);
-    border-radius: 50% 50% 10px 10px;
-    transition: height 0.5s ease-out;
-  }
-
-  .sand-surface {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: rgba(255,255,255,0.3);
-    border-radius: 50%;
-    animation: sandWave 3s ease-in-out infinite;
-  }
-
-  .sand-particles {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
-
-  .particle {
-    position: absolute;
-    width: 2px;
-    height: 2px;
-    background: rgba(255,255,255,0.6);
-    border-radius: 50%;
-    animation: floatParticle 4s infinite ease-in-out;
-  }
-
-  .particle-1 {
-    left: 20%;
-    animation-delay: 0s;
-  }
-
-  .particle-2 {
-    left: 50%;
-    animation-delay: 1.5s;
-  }
-
-  .particle-3 {
-    left: 80%;
-    animation-delay: 3s;
-  }
-
-  .timer-neck {
-    width: 20%;
-    height: 10%;
-    background: transparent;
-    position: relative;
-    display: flex;
-    justify-content: center;
-  }
-
-  .sand-stream {
-    width: 2px;
-    height: 100%;
-    background: linear-gradient(180deg, 
-      #fbbf24 0%, 
-      #f59e0b 100%);
-    position: relative;
-    animation: streamFlow 0.8s infinite;
-  }
-
-  .sand-drop {
-    position: absolute;
-    width: 3px;
-    height: 3px;
-    background: #f59e0b;
-    border-radius: 50%;
-    animation: dropFall 1.2s infinite ease-in;
-  }
-
-  .sand-drop-1 {
-    animation-delay: 0s;
-  }
-
-  .sand-drop-2 {
-    animation-delay: 0.6s;
-  }
-
-  .timer-bottom-bulb {
-    width: 80%;
-    height: 45%;
-    background: transparent;
-    border-radius: 10px 10px 50% 50%;
-    position: relative;
-    overflow: hidden;
-    border-top: 1px solid rgba(255,255,255,0.3);
-  }
-
-  .sand-collected {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(180deg, 
-      #d97706 0%, 
-      #b45309 50%, 
-      #92400e 100%);
-    border-radius: 10px 10px 50% 50%;
-    transition: height 0.5s ease-out;
-  }
-
-  .sand-surface-bottom {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 50%;
-    animation: sandWave 3s ease-in-out infinite reverse;
-  }
-
-  .glass-shine {
-    position: absolute;
-    top: 10%;
-    left: 15%;
-    width: 30%;
-    height: 60%;
-    background: linear-gradient(135deg, 
-      rgba(255,255,255,0.6) 0%, 
-      rgba(255,255,255,0.2) 50%, 
-      transparent 100%);
-    border-radius: 50% 20% 50% 20%;
-    pointer-events: none;
-  }
-
-  .timer-base {
-    width: 90%;
-    height: 12px;
-    background: linear-gradient(135deg, 
-      #6b7280 0%, 
-      #9ca3af 50%, 
-      #6b7280 100%);
-    border-radius: 6px;
-    position: relative;
-    margin-top: -2px;
-    box-shadow: 
-      0 2px 4px rgba(0,0,0,0.2),
-      inset 0 1px 2px rgba(255,255,255,0.3);
-  }
-
-  .base-inner {
-    position: absolute;
-    top: 2px;
-    left: 10%;
-    right: 10%;
-    height: 60%;
-    background: rgba(255,255,255,0.2);
-    border-radius: 3px;
-  }
-
-  .base-shine {
-    position: absolute;
-    top: 1px;
-    left: 20%;
-    width: 40%;
-    height: 2px;
-    background: rgba(255,255,255,0.5);
-    border-radius: 1px;
-  }
-
-  .completion-sparkles {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-  }
-
-  .sparkle {
-    position: absolute;
-    font-size: 1.2rem;
-    animation: sparkleFloat 2s infinite ease-in-out;
-  }
-
-  .sparkle-1 {
-    top: 10%;
-    left: 10%;
-    animation-delay: 0s;
-  }
-
-  .sparkle-2 {
-    top: 20%;
-    right: 10%;
-    animation-delay: 0.5s;
-  }
-
-  .sparkle-3 {
-    bottom: 20%;
-    left: 15%;
-    animation-delay: 1s;
-  }
-
-  .sparkle-4 {
-    bottom: 10%;
-    right: 15%;
-    animation-delay: 1.5s;
-  }
-
-  .timer-complete {
-    animation: completionPulse 2s infinite;
-  }
-
-  .timer-info {
-    text-align: center;
-    margin-top: 0.5rem;
-    font-family: 'Comic Sans MS', cursive;
-  }
-
-  .treat-name {
-    font-weight: bold;
-    color: #374151;
-    margin-bottom: 0.25rem;
-  }
-
-  .time-display {
-    font-weight: bold;
-    margin-bottom: 0.25rem;
-  }
-
-  .countdown-text {
-    color: #f59e0b;
-  }
-
-  .ready-text {
-    color: #10b981;
-    animation: readyPulse 1s infinite;
-  }
-
-  .time-complete {
-    animation: completeGlow 2s infinite;
-  }
-
-  .progress-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-  }
-
-  .progress-bar {
-    flex: 1;
-    height: 6px;
-    background: rgba(0,0,0,0.1);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, 
-      #fbbf24 0%, 
-      #f59e0b 50%, 
-      #d97706 100%);
-    border-radius: 3px;
-    transition: width 0.5s ease-out;
-    position: relative;
-  }
-
-  .progress-fill::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, 
-      transparent 0%, 
-      rgba(255,255,255,0.4) 50%, 
-      transparent 100%);
-    animation: progressShimmer 2s infinite;
-  }
-
-  .progress-text {
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: #6b7280;
-    min-width: 3rem;
-  }
-
-  /* Timer Animations */
-  @keyframes sandWave {
-    0%, 100% {
-      transform: scaleX(1);
-    }
-    50% {
-      transform: scaleX(1.1);
-    }
-  }
-
-  @keyframes floatParticle {
-    0%, 100% {
-      transform: translateY(0) scale(1);
-      opacity: 0.6;
-    }
-    50% {
-      transform: translateY(-5px) scale(1.2);
-      opacity: 1;
-    }
-  }
-
-  @keyframes streamFlow {
-    0% {
-      opacity: 1;
-      transform: scaleY(1);
-    }
-    50% {
-      opacity: 0.7;
-      transform: scaleY(0.8);
-    }
-    100% {
-      opacity: 1;
-      transform: scaleY(1);
-    }
-  }
-
-  @keyframes dropFall {
-    0% {
-      transform: translateY(-10px);
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-  }
-
-  @keyframes sparkleFloat {
-    0%, 100% {
-      transform: translateY(0) scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: translateY(-10px) scale(1.2);
-      opacity: 0.8;
-    }
-  }
-
-  @keyframes completionPulse {
-    0%, 100% {
-      transform: scale(1);
-      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
-    }
-    50% {
-      transform: scale(1.05);
-      filter: drop-shadow(0 15px 30px rgba(16, 185, 129, 0.3));
-    }
-  }
-
-  @keyframes readyPulse {
-    0%, 100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.8;
-      transform: scale(1.1);
-    }
-  }
-
-  @keyframes completeGlow {
-    0%, 100% {
-      text-shadow: 0 0 5px #10b981;
-    }
-    50% {
-      text-shadow: 0 0 15px #10b981, 0 0 25px #10b981;
-    }
-  }
-
-  @keyframes progressShimmer {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(100%);
-    }
-  }
-
-  /* Wallet Registration Styles */
-  .wallet-registration {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 60vh;
-    padding: 2rem;
-  }
-
-  .registration-container {
-    max-width: 500px;
-    width: 100%;
-  }
-
-  .connect-step,
-  .nickname-step,
-  .registration-complete,
-  .registration-success {
-    background: linear-gradient(135deg, 
-      rgba(255,255,255,0.95) 0%, 
-      rgba(248,250,252,0.95) 100%);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(59, 130, 246, 0.2);
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.1);
-    text-align: center;
-  }
-
-  .step-header {
-    margin-bottom: 2rem;
-  }
-
-  .step-title {
-    font-family: 'Comic Sans MS', cursive;
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #1e40af;
-    margin-bottom: 1rem;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-  }
-
-  .step-description {
-    color: #64748b;
-    font-size: 1.1rem;
-    line-height: 1.5;
-  }
-
-  .connect-button-container {
-    margin: 2rem 0;
-    display: flex;
-    justify-content: center;
-  }
-
-  .benefits-list {
-    margin-top: 2rem;
-    text-align: left;
-    background: rgba(59, 130, 246, 0.05);
-    border-radius: 15px;
-    padding: 1.5rem;
-    border: 1px solid rgba(59, 130, 246, 0.1);
-  }
-
-  .benefits-list h4 {
-    font-family: 'Comic Sans MS', cursive;
-    color: #1e40af;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-    text-align: center;
-  }
-
-  .benefits-list ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .benefits-list li {
-    margin: 0.75rem 0;
-    color: #475569;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .nickname-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .form-group {
-    text-align: left;
-  }
-
-  .form-label {
-    display: block;
-    font-family: 'Comic Sans MS', cursive;
-    font-weight: bold;
-    color: #1e40af;
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-  }
-
-  .nickname-input {
-    width: 100%;
-    padding: 1rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 15px;
-    font-size: 1.1rem;
-    font-family: 'Comic Sans MS', cursive;
-    transition: all 0.3s ease;
-    background: rgba(255,255,255,0.8);
-  }
-
-  .nickname-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    background: rgba(255,255,255,1);
-  }
-
-  .character-count {
-    text-align: right;
-    font-size: 0.875rem;
-    color: #64748b;
-    margin-top: 0.25rem;
-  }
-
-  .wallet-info {
-    background: rgba(34, 197, 94, 0.1);
-    border: 1px solid rgba(34, 197, 94, 0.2);
-    border-radius: 10px;
-    padding: 1rem;
-  }
-
-  .wallet-address {
-    color: #059669;
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
-    margin: 0;
-  }
-
-  .register-button {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    color: white;
-    border: none;
-    padding: 1rem 2rem;
-    border-radius: 15px;
-    font-size: 1.1rem;
-    font-family: 'Comic Sans MS', cursive;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-  }
-
-  .register-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-  }
-
-  .register-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  .loading-text {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-
-  .spinner {
-    width: 1rem;
-    height: 1rem;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top: 2px solid white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  .success-animation {
-    animation: successPop 0.8s ease-out;
-  }
-
-  .success-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    animation: bounce 2s infinite;
-  }
-
-  .success-title {
-    font-family: 'Comic Sans MS', cursive;
-    font-size: 1.8rem;
-    color: #059669;
-    margin-bottom: 1rem;
-    font-weight: bold;
-  }
-
-  .success-message {
-    color: #64748b;
-    font-size: 1.1rem;
-    line-height: 1.5;
-    margin-bottom: 2rem;
-  }
-
-  .start-button {
-    margin-top: 1.5rem;
-  }
-
-  .player-stats {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 1.5rem;
-    padding: 1rem;
-    background: rgba(59, 130, 246, 0.05);
-    border-radius: 15px;
-    border: 1px solid rgba(59, 130, 246, 0.1);
-  }
-
-  .stat-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  .stat-label {
-    font-size: 0.875rem;
-    color: #64748b;
-    font-weight: 500;
-  }
-
-  .stat-value {
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: #1e40af;
-    font-family: 'Comic Sans MS', cursive;
-  }
-
-  .wallet-registration-complete {
-    margin: 2rem 0;
-  }
-
-  @keyframes successPop {
-    0% {
-      transform: scale(0.8);
-      opacity: 0;
-    }
-    50% {
-      transform: scale(1.05);
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Mobile Responsiveness for Registration */
-  @media (max-width: 768px) {
-    .wallet-registration {
-      padding: 1rem;
-      min-height: 50vh;
-    }
-    
-    .registration-container {
-      max-width: 100%;
-    }
-    
-    .connect-step,
-    .nickname-step,
-    .registration-complete,
-    .registration-success {
-      padding: 1.5rem;
-    }
-    
-    /* Keep desktop font sizes on mobile */
-    .step-title {
-      font-size: 2rem; /* Keep larger font size */
-    }
-    
-    .step-description {
-      font-size: 1.125rem; /* Keep larger font size */
-    }
-    
-    .player-stats {
-      flex-direction: column;
-      gap: 1rem;
-    }
-    
-    .stat-item {
-      flex-direction: row;
-      justify-content: space-between;
-    }
-  }
-
-  /* Enhanced Mobile Responsiveness for Game Lab */
-  @media (max-width: 768px) {
-    body {
-      padding: 10px;
-    }
-    
-    .container {
-      padding: 0 1rem;
-    }
-    
-    .game-card {
-      margin-bottom: 1rem;
-    }
-    
-    .game-card .CardContent {
-      padding: 1rem;
-    }
-    
-    .ingredient-card {
-      padding: 0.75rem;
-      min-height: 80px;
-    }
-    
-    .mixing-bowl {
-      width: 100px;
-      height: 100px;
-    }
-    
-    .stat-card {
-      min-width: auto;
-      padding: 0.75rem;
-    }
-    
-    .playful-title {
-      font-size: 1.5rem;
-    }
-    
-    .timer-info {
-      font-size: 0.875rem;
-    }
-    
-    .treat-timer {
-      width: 100%;
-      max-width: 200px;
-      margin: 0 auto;
-    }
-  }
-
-  @media (max-width: 480px) {
-    /* Keep desktop font sizes on mobile */
-    .loading-title {
-      font-size: 3.5rem; /* Keep desktop size */
-    }
-    
-    .loading-subtitle {
-      font-size: 1.125rem; /* Keep larger size */
-    }
-    
-    .thermometer-container {
-      margin: 2rem 0;
-    }
-    
-    .progress-bar-bg {
-      width: 280px;
-    }
-    
-    .game-card {
-      border-radius: 15px;
-    }
-    
-    .ingredient-card {
-      padding: 0.5rem;
-      min-height: 70px;
-    }
-    
-    /* Keep desktop button styling on mobile */
-    .doge-button {
-      padding: 1rem 2rem; /* Keep larger padding */
-      font-size: 1rem; /* Keep desktop font size */
-      font-family: 'Comic Sans MS', 'Marker Felt', cursive;
-      font-weight: bold;
-    }
-  }
-
-  /* Notification System Styles */
-  .notification-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-width: 400px;
-  }
-
-  .notification {
-    background: linear-gradient(135deg, 
-      rgba(255,255,255,0.95) 0%, 
-      rgba(248,250,252,0.95) 100%);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
-    padding: 1rem;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    border-left: 4px solid;
-    animation: slideInRight 0.3s ease-out;
-    position: relative;
-    font-family: 'Comic Sans MS', cursive;
-  }
-
-  .notification.success {
-    border-left-color: #10b981;
-  }
-
-  .notification.error {
-    border-left-color: #ef4444;
-  }
-
-  .notification.warning {
-    border-left-color: #f59e0b;
-  }
-
-  .notification.info {
-    border-left-color: #3b82f6;
-  }
-
-  .notification-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.5rem;
-  }
-
-  .notification-title {
-    font-weight: bold;
-    color: #1f2937;
-    font-size: 1rem;
-  }
-
-  .notification-close {
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-    cursor: pointer;
-    color: #6b7280;
-    line-height: 1;
-    padding: 0;
-  }
-
-  .notification-message {
-    color: #4b5563;
-    font-size: 0.875rem;
-    line-height: 1.4;
-  }
-
-  .notification-icon {
-    display: inline-block;
-    width: 1.25rem;
-    height: 1.25rem;
-    margin-right: 0.5rem;
-    vertical-align: middle;
-  }
-
-  .notification.success .notification-icon {
-    color: #10b981;
-  }
-
-  .notification.error .notification-icon {
-    color: #ef4444;
-  }
-
-  .notification.warning .notification-icon {
-    color: #f59e0b;
-  }
-
-  .notification.info .notification-icon {
-    color: #3b82f6;
-  }
-
-  @keyframes slideInRight {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes slideOutRight {
-    from {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-  }
-
-  .notification.removing {
-    animation: slideOutRight 0.3s ease-out forwards;
-  }
-
-  /* Mobile Notifications */
-  @media (max-width: 768px) {
-    .notification-container {
-      top: 10px;
-      right: 10px;
-      left: 10px;
-      max-width: none;
-    }
-    
-    .notification {
-      padding: 0.875rem;
-    }
-    
-    /* Keep desktop notification font sizes */
-    .notification-title {
-      font-size: 1rem; /* Keep larger font size */
-      font-family: 'Comic Sans MS', 'Marker Felt', cursive;
-      font-weight: bold;
-    }
-    
-    .notification-message {
-      font-size: 0.9rem; /* Keep readable size */
-      font-family: 'Comic Sans MS', 'Arial', sans-serif;
-    }
-  }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  25% { transform: translateY(-10px) rotate(2deg); }
-  50% { transform: translateY(-5px) rotate(-1deg); }
-  75% { transform: translateY(-15px) rotate(1deg); }
+/* ================================
+   THEME TOGGLE & DARK MODE
+   ================================ */
+
+.theme-toggle {
+  box-shadow: 0 4px 15px var(--shadow-color), 
+              inset 0 -2px 0 rgba(0, 0, 0, 0.2),
+              inset 0 2px 0 rgba(255, 255, 255, 0.2);
 }
 
-@keyframes sparkle {
-  0%, 100% { opacity: 0; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.2); }
-}
-
-@keyframes mixingBowlGlow {
-  0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
-}
-
-/* Loading states */
-.loading-spinner {
-  @apply inline-block w-6 h-6 border-2 border-current border-t-transparent rounded-full;
-  animation: spin 1s linear infinite;
-}
-
-/* Custom scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  @apply bg-white/10 rounded-full;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-white/40 rounded-full hover:bg-white/60;
-}
-
-/* Responsive design helpers */
-@media (max-width: 640px) {
-  .glass-panel {
-    @apply mx-2;
-  }
-  
-  .treat-card {
-    @apply p-4;
-  }
-  
-  /* Keep desktop button styling on mobile */
-  .doge-button {
-    padding: 1rem 2rem !important; /* Force desktop padding */
-    font-size: 1rem !important; /* Force desktop font size */
-    font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
-    font-weight: bold !important;
-  }
-}
-
-/* Dark mode text adjustments for better contrast */
 .dark-mode .playful-title {
-  color: #fbbf24 !important; /* Brighter gold for dark mode */
+  color: #fbbf24;
   text-shadow: 4px 4px 8px rgba(0,0,0,0.8), 
                2px 2px 4px rgba(251, 191, 36, 0.5),
-               0 0 20px rgba(251, 191, 36, 0.3) !important;
+               0 0 20px rgba(251, 191, 36, 0.3);
 }
 
 .dark-mode .bubble-text {
-  color: #f1f5f9 !important; /* Light text for dark mode */
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.8) !important;
+  color: #f1f5f9;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
 }
 
-/* Dark mode adjustments for various components */
 .dark-mode .glass-panel, .dark .glass-panel {
   color: #f1f5f9;
   border-color: rgba(59, 130, 246, 0.6);
 }
 
-.dark-mode .vip-badge, .dark .vip-badge {
-  background: linear-gradient(to right, #3b82f6, #1e40af);
-  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.5);
-}
-
-/* Dark mode button styling */
 .dark-mode .doge-button, .dark .doge-button {
   background: linear-gradient(to bottom, #3b82f6, #2563eb, #1d4ed8);
   box-shadow: 0 8px 25px rgba(37, 99, 235, 0.5),
@@ -1904,14 +484,6 @@ body {
               inset 0 2px 0 rgba(59, 130, 246, 0.2);
 }
 
-.dark-mode .doge-button:hover, .dark .doge-button:hover {
-  background: linear-gradient(to bottom, #2563eb, #1d4ed8, #1e3a8a);
-  box-shadow: 0 15px 35px rgba(37, 99, 235, 0.7),
-              inset 0 -3px 0 rgba(0, 0, 0, 0.4),
-              inset 0 3px 0 rgba(59, 130, 246, 0.3);
-}
-
-/* Dark mode text colors for GameLab */
 .dark-mode h1, .dark-mode h2, .dark-mode h3, .dark-mode h4, .dark-mode h5, .dark-mode h6,
 .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
   color: var(--text-primary);
@@ -1919,16 +491,6 @@ body {
 
 .dark-mode p, .dark p {
   color: var(--text-secondary);
-}
-
-/* Dark mode table and card text fix */
-.dark-mode table, .dark table {
-  color: var(--text-primary);
-}
-
-.dark-mode td, .dark td,
-.dark-mode th, .dark th {
-  color: var(--text-primary);
 }
 
 .dark-mode .text-gray-600, .dark .text-gray-600,
@@ -1942,71 +504,167 @@ body {
   color: #f1f5f9 !important;
 }
 
-/* Welcome Screen Styles */
-.welcome-screen {
-  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+/* ================================
+   LOADING SCREEN STYLES
+   ================================ */
+
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #1d4ed8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
 }
 
-.welcome-title {
-  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
-  text-shadow: 8px 8px 16px rgba(0,0,0,0.5);
-  letter-spacing: 2px;
+.progress-percentage {
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  color: #fbbf24;
+  text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
 }
 
-.welcome-subtitle {
-  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
-  text-shadow: 4px 4px 8px rgba(0,0,0,0.3);
+.thermometer-label {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: #93c5fd;
+  font-size: var(--text-lg);
 }
 
-.welcome-description {
-  font-family: 'Comic Sans MS', 'Arial', sans-serif !important;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-}
+/* ================================
+   PLAY NOW BUTTON
+   ================================ */
 
 .play-now-button {
-  position: relative !important;
-  font-family: 'Comic Sans MS', 'Marker Felt', cursive !important;
+  position: relative;
+  font-family: var(--font-display);
+  font-weight: 700;
   border: none;
-  cursor: pointer !important;
+  cursor: pointer;
   transform: scale(1);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  margin: 20px !important;
+  margin: 20px;
   background: none;
   outline: none;
-  z-index: 999 !important;
-  display: inline-flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  /* Force the button to be visible */
-  min-height: 80px !important;
-  min-width: 200px !important;
+  z-index: 999;
+  display: inline-flex;
+  visibility: visible;
+  opacity: 1;
+  min-height: 80px;
+  min-width: 200px;
 }
 
 .play-now-button:hover {
   transform: scale(1.1) translateY(-5px);
-  cursor: pointer !important;
 }
 
 .play-now-button:active {
   transform: scale(0.95);
 }
 
-.play-now-button:focus {
-  outline: none;
-}
-
-/* Ensure yellow text is visible */
 .play-now-button span {
-  color: #facc15 !important; /* Force yellow color */
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.5) !important;
+  font-family: var(--font-display);
+  color: #facc15;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
-.welcome-button-container {
-  position: relative;
-  display: inline-block;
+/* ================================
+   TIMER & NOTIFICATION STYLES
+   ================================ */
+
+.timer-info {
+  font-family: var(--font-body);
+  text-align: center;
 }
 
-/* Enhanced Animations */
+.treat-name {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: #374151;
+}
+
+.time-display {
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+.notification {
+  font-family: var(--font-body);
+  border-radius: 15px;
+}
+
+.notification-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.notification-message {
+  font-family: var(--font-body);
+  font-weight: 500;
+  color: #4b5563;
+}
+
+/* ================================
+   FORM STYLES
+   ================================ */
+
+.step-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: #1e40af;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.step-description {
+  font-family: var(--font-body);
+  font-size: var(--text-lg);
+  color: #64748b;
+}
+
+.form-label {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: #1e40af;
+  font-size: var(--text-lg);
+}
+
+.nickname-input {
+  font-family: var(--font-body);
+  font-size: var(--text-lg);
+  font-weight: 500;
+}
+
+.register-button {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--text-lg);
+}
+
+.success-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: #059669;
+}
+
+.success-message {
+  font-family: var(--font-body);
+  font-size: var(--text-lg);
+  color: #64748b;
+}
+
+/* ================================
+   ANIMATIONS
+   ================================ */
+
 @keyframes float {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
   25% { transform: translateY(-15px) rotate(5deg); }
@@ -2014,151 +672,67 @@ body {
   75% { transform: translateY(-20px) rotate(3deg); }
 }
 
-@keyframes float-delayed {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  25% { transform: translateY(-20px) rotate(-5deg); }
-  50% { transform: translateY(-5px) rotate(3deg); }
-  75% { transform: translateY(-15px) rotate(-3deg); }
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 
-@keyframes bounce-slow {
+@keyframes bounce {
   0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
   40% { transform: translateY(-10px); }
   60% { transform: translateY(-5px); }
 }
 
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.1); opacity: 1; }
 }
 
-.animate-float {
-  animation: float 4s ease-in-out infinite;
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-.animate-float-delayed {
-  animation: float-delayed 5s ease-in-out infinite;
-  animation-delay: 1s;
+@keyframes confetti-fall {
+  0% { top: -20px; opacity: 1; transform: translateX(0) rotate(0deg); }
+  100% { top: 100vh; opacity: 0; transform: translateX(100px) rotate(720deg); }
 }
 
-.animate-bounce-slow {
-  animation: bounce-slow 3s ease-in-out infinite;
+.animate-float { animation: float 4s ease-in-out infinite; }
+.animate-bounce { animation: bounce 2s infinite; }
+.animate-pulse { animation: pulse 2s infinite; }
+
+/* Loading Spinner */
+.loading-spinner {
+  @apply inline-block w-6 h-6 border-2 border-current border-t-transparent rounded-full;
+  animation: spin 1s linear infinite;
 }
 
-.animate-spin-slow {
-  animation: spin-slow 8s linear infinite;
-}
-
-/* ================================
-   MOBILE & TELEGRAM MINI APP OPTIMIZATIONS
-   ================================ */
-
-/* Ensure PLAY NOW button is always visible */
-.play-now-button {
-  display: inline-flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  position: relative !important;
-  z-index: 999 !important;
-}
-
-.welcome-button-container {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  position: relative !important;
-  z-index: 998 !important;
-}
-
-/* Mobile Font Override - Remove Comic Sans on mobile but keep button visible */
-@media (max-width: 768px) {
-  /* Override all cursive fonts on mobile */
-  *, *::before, *::after {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
-  }
-  
-  /* Force system fonts for all text elements */
-  h1, h2, h3, h4, h5, h6, p, span, div, button, input, textarea, select {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
-  }
-  
-  /* Specific overrides for elements that use cursive fonts */
-  .playful-title,
-  .game-title,
-  .welcome-title,
-  .welcome-subtitle,
-  .welcome-description,
-  .play-now-button,
-  .playful-subtitle,
-  .floating-text,
-  .game-button,
-  .card-title,
-  .menu-item,
-  .stats-label,
-  .ingredient-name,
-  .treat-name,
-  .rarity-text,
-  .level-text,
-  .points-text,
-  .timer-text,
-  .notification-text {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
-  }
-  
-  /* Override any Comic Sans usage */
-  *[style*="Comic Sans"], 
-  *[style*="cursive"] {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
-  }
-  
-  /* Welcome screen mobile responsiveness */
-  .welcome-title {
-    font-size: 3.5rem !important;
-    line-height: 1.1 !important;
-  }
-  
-  .welcome-subtitle {
-    font-size: 2rem !important;
-    line-height: 1.2 !important;
-  }
-  
-  .welcome-description {
-    font-size: 1.25rem !important;
-    padding: 0 1rem;
-    line-height: 1.4 !important;
-  }
-  
-  /* Ensure button is always visible on mobile */
-  .play-now-button,
-  .welcome-button-container {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    position: relative !important;
-    z-index: 999 !important;
-  }
-  
-  .play-now-button span {
-    font-size: 2rem !important;
-    color: #facc15 !important;
-    display: inline !important;
-  }
-  
-  .play-now-button div {
-    font-size: 2.5rem !important;
-    display: inline !important;
-  }
-  
-  .floating-elements {
-    display: none; /* Hide floating elements on mobile for cleaner look */
-  }
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* ================================
-   TELEGRAM MINI APP SPECIFIC STYLES
+   SCROLLBAR STYLES
    ================================ */
 
-/* CSS Variables for Telegram viewport */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-white/10 rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-white/40 rounded-full hover:bg-white/60;
+}
+
+/* ================================
+   TELEGRAM MINI APP STYLES
+   ================================ */
+
 :root {
   --tg-viewport-height: 100vh;
   --app-height: 100vh;
@@ -2166,314 +740,120 @@ body {
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Telegram WebApp container styles */
 html.telegram-webapp,
 body.telegram-webapp {
-  height: var(--tg-viewport-height, 100vh) !important;
-  min-height: var(--tg-viewport-height, 100vh) !important;
-  max-height: var(--tg-viewport-height, 100vh) !important;
-  overflow: hidden !important;
-  position: fixed !important;
-  width: 100% !important;
-  top: 0 !important;
-  left: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
+  height: var(--tg-viewport-height, 100vh);
+  min-height: var(--tg-viewport-height, 100vh);
+  max-height: var(--tg-viewport-height, 100vh);
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
 }
 
 body.telegram-webapp {
-  padding-top: var(--safe-area-top) !important;
-  padding-bottom: var(--safe-area-bottom) !important;
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
 }
 
-/* Main app container in Telegram */
 .telegram-webapp #root {
-  height: var(--tg-viewport-height, 100vh) !important;
-  min-height: var(--tg-viewport-height, 100vh) !important;
-  max-height: var(--tg-viewport-height, 100vh) !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
+  height: var(--tg-viewport-height, 100vh);
+  min-height: var(--tg-viewport-height, 100vh);
+  max-height: var(--tg-viewport-height, 100vh);
+  overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: none;
 }
 
-/* Telegram mobile specific */
 body.telegram-mobile {
-  font-size: 16px !important;
+  font-size: 16px;
 }
 
-body.telegram-mobile #root {
-  padding: 8px !important;
-}
-
-/* Compact layout for Telegram mobile */
-body.telegram-mobile .glass-panel {
-  margin: 4px !important;
-  padding: 12px !important;
-  border-radius: 12px !important;
-}
-
-body.telegram-mobile .game-card {
-  margin: 4px 0 !important;
-  padding: 8px !important;
-  border-radius: 12px !important;
-}
-
-/* Smaller buttons for Telegram mobile */
 body.telegram-mobile button,
 body.telegram-mobile .doge-button {
-  min-height: 44px !important;
-  padding: 10px 16px !important;
-  font-size: 16px !important;
-  font-family: 'Patrick Hand', 'Comic Sans MS', 'Marker Felt', cursive !important;
-  font-weight: bold !important;
-  -webkit-font-smoothing: antialiased !important;
-  -moz-osx-font-smoothing: grayscale !important;
+  min-height: 44px;
+  font-family: var(--font-heading);
+  font-weight: 700;
 }
 
-/* Mobile button consistency - ensure same font as desktop */
+/* ================================
+   MOBILE OPTIMIZATIONS
+   ================================ */
+
 @media (max-width: 640px) {
-  .doge-button,
-  button.doge-button,
-  .doge-button * {
-    font-family: 'Patrick Hand', 'Comic Sans MS', 'Marker Felt', cursive !important;
-    font-weight: bold !important;
-    font-size: 16px !important;
-    padding: 0.75rem 1.25rem !important;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
-    -webkit-font-smoothing: antialiased !important;
-    letter-spacing: 0.5px !important;
+  .glass-panel {
+    @apply mx-2;
   }
   
-  /* Menu card titles */
-  .game-card h3,
-  .game-card .text-base {
-    font-size: 1rem !important;
-    font-weight: bold !important;
+  .treat-card {
+    @apply p-4;
   }
   
-  /* Improve mobile card layout */
-  .game-card {
-    padding: 12px !important;
+  button {
+    min-height: 44px;
+    min-width: 44px;
   }
   
-  .game-card .p-3 {
-    padding: 8px !important;
+  input, textarea, select {
+    font-size: 16px; /* Prevent zoom on iOS */
   }
 }
 
-/* Compact ingredient grid for Telegram */
-body.telegram-mobile .ingredient-card {
-  padding: 8px !important;
-  min-height: 60px !important;
-}
-
-body.telegram-mobile .ingredient-card .text-4xl {
-  font-size: 1.5rem !important;
-}
-
-body.telegram-mobile .ingredient-card .font-bold {
-  font-size: 0.75rem !important;
-}
-
-/* Compact active treats for Telegram */
-body.telegram-mobile .treat-card {
-  padding: 8px !important;
-}
-
-/* Hide floating elements on Telegram mobile for cleaner UI */
-body.telegram-mobile .floating-elements {
-  display: none !important;
-}
-
-/* Ensure full width on Telegram */
-body.telegram-webapp .container {
-  max-width: 100% !important;
-  padding: 0 8px !important;
-}
-
-/* Fix scrolling issues in Telegram */
-body.telegram-webapp .overflow-y-auto {
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-}
-
-/* Detect Telegram WebApp environment */
-.telegram-webapp {
-  /* Ensure full viewport usage in Telegram */
-  min-height: 100vh !important;
-  height: 100vh !important;
-  overflow-x: hidden;
-  
-  /* Remove any margins that might cause issues in Telegram */
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Mobile-specific scaling for Telegram */
 @media (max-width: 480px) {
-  /* Extra small screens (Telegram mobile) */
   body {
     font-size: 14px;
     line-height: 1.5;
   }
   
   .glass-panel {
-    margin: 0.5rem !important;
-    padding: 1rem !important;
+    margin: 0.5rem;
+    padding: 1rem;
   }
   
-  .card {
-    margin: 0.25rem !important;
-    border-radius: 0.75rem !important;
+  .game-card {
+    margin: 0.25rem;
+    border-radius: 15px;
   }
   
-  /* Button optimizations for touch */
   button {
-    min-height: 44px !important; /* Apple's recommended touch target size */
-    min-width: 44px !important;
-    padding: 0.75rem 1rem !important;
-  }
-  
-  /* Input optimizations */
-  input, textarea, select {
-    font-size: 16px !important; /* Prevent zoom on iOS */
-    padding: 0.75rem !important;
-  }
-  
-  /* Game lab optimizations */
-  .ingredient-card {
-    flex: 1 1 calc(50% - 0.5rem) !important; /* 2 columns on mobile */
-    min-width: 140px !important;
-  }
-  
-  .sack-container {
-    margin: 1rem 0.5rem !important;
-  }
-  
-  /* Treat cards optimization */
-  .treat-card {
-    margin: 0.25rem !important;
-    padding: 0.75rem !important;
-  }
-  
-  /* Navigation optimization */
-  .nav-button {
-    padding: 0.5rem !important;
-    font-size: 0.875rem !important;
+    padding: 0.75rem 1rem;
   }
 }
 
-/* Landscape mobile optimization */
-@media (max-width: 768px) and (orientation: landscape) {
-  .welcome-screen {
-    padding: 1rem !important;
-  }
-  
-  .welcome-title {
-    font-size: 2.5rem !important;
-  }
-  
-  .welcome-subtitle {
-    font-size: 1.5rem !important;
-  }
-}
-
-/* ================================
-   TELEGRAM THEME INTEGRATION
-   ================================ */
-
-/* Telegram's theme integration */
-@media (prefers-color-scheme: dark) {
-  /* Match Telegram's dark theme */
-  :root {
-    --tg-bg-color: var(--tg-theme-bg-color, #212121);
-    --tg-text-color: var(--tg-theme-text-color, #ffffff);
-    --tg-hint-color: var(--tg-theme-hint-color, #aaaaaa);
-    --tg-link-color: var(--tg-theme-link-color, #62bcf9);
-    --tg-button-color: var(--tg-theme-button-color, #62bcf9);
-    --tg-button-text-color: var(--tg-theme-button-text-color, #ffffff);
-  }
-}
-
-/* ================================
-   PERFORMANCE OPTIMIZATIONS FOR MOBILE
-   ================================ */
-
-/* Reduce animations on mobile for better performance */
-@media (max-width: 768px) {
-  /* Disable complex animations on mobile */
+/* Reduce animations on mobile for performance */
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
   .animate-bounce,
-  .animate-pulse,
-  .animate-spin {
-    animation: none !important;
+  .animate-pulse {
+    animation-duration: 0s;
   }
   
-  /* Reduce transform effects */
-  .transform {
-    will-change: auto !important;
-  }
-  
-  /* Optimize scrolling */
-  .overflow-scroll {
-    -webkit-overflow-scrolling: touch;
+  .floating-elements {
+    display: none;
   }
 }
 
 /* ================================
-   ACCESSIBILITY IMPROVEMENTS
+   ACCESSIBILITY
    ================================ */
 
-/* Improve contrast for mobile */
 @media (max-width: 768px) {
   .text-white\/90 {
-    color: rgba(255, 255, 255, 0.95) !important;
+    color: rgba(255, 255, 255, 0.95);
   }
   
   .text-white\/80 {
-    color: rgba(255, 255, 255, 0.9) !important;
+    color: rgba(255, 255, 255, 0.9);
   }
   
-  /* Ensure buttons are easily tappable */
   .touch-target {
     min-height: 44px;
     min-width: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-}
-
-/* Collect Treat Animation */
-@keyframes sparkle-burst {
-  0% {
-    opacity: 1;
-    transform: rotate(var(--rotation, 0deg)) translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: rotate(var(--rotation, 0deg)) translateY(-100px) scale(0);
-  }
-}
-
-@keyframes confetti-fall {
-  0% {
-    top: -20px;
-    opacity: 1;
-    transform: translateX(0) rotate(0deg);
-  }
-  100% {
-    top: 100vh;
-    opacity: 0;
-    transform: translateX(100px) rotate(720deg);
-  }
-}
-
-@keyframes collect-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 60px rgba(251, 191, 36, 0.9), 0 0 100px rgba(251, 191, 36, 0.5);
   }
 }
