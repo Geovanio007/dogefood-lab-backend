@@ -1421,6 +1421,14 @@ const GameLabRedesign = ({ playerAddress }) => {
           </Card>
         </div>
       )}
+
+      {/* Player Stats Modal */}
+      {showPlayerStats && (
+        <PlayerStatsModal 
+          playerAddress={playerAddress}
+          onClose={() => setShowPlayerStats(false)}
+        />
+      )}
     </div>
   );
 };
