@@ -1,7 +1,7 @@
 """
 Anti-cheat system for DogeFood Lab
 Monitors player behavior and detects suspicious activities
-Includes daily treat limit system (5 treats per 24h + purchasable extra lives)
+Includes treat limit system (4 treats per 6h, max 16 per 24h + purchasable extra lives)
 Includes streak bonus system for daily players
 """
 
@@ -14,8 +14,10 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 logger = logging.getLogger(__name__)
 
-# Daily limit constants
-DAILY_TREAT_LIMIT = 5  # Base limit per 24 hours
+# Treat limit constants - NEW SYSTEM
+WINDOW_TREAT_LIMIT = 4  # Base limit per 6-hour window
+WINDOW_HOURS = 6  # Hours per window
+MAX_DAILY_TREATS = 16  # Maximum treats per 24 hours (4 windows x 4 treats)
 EXTRA_LIFE_TREATS = 3  # Additional treats per extra life purchase
 EXTRA_LIFE_COST_LAB = 5000  # Cost in $LAB tokens (not active yet)
 
