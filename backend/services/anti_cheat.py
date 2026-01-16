@@ -308,19 +308,24 @@ class AntiCheatSystem:
         
         violations = []
         
-        # NEW: Check daily limit first
+        # Check limit first (4 per 6h, max 16 per 24h)
         daily_status = await self.get_daily_treat_status(player_address)
         if not daily_status["can_create_treat"]:
+            # Determine which limit was hit
+            if daily_status["remaining_in_window"] <= 0:
+                reason = f"Window limit reached! You've created {daily_status['treats_in_window']}/{daily_status['window_limit']} treats in the last {WINDOW_HOURS} hours."
+            else:
+                reason = f"Daily limit reached! You've created {daily_status['treats_today']}/{daily_status['daily_limit']} treats today."
+            
             violations.append({
-                "type": "daily_limit_reached",
+                "type": "limit_reached",
                 "severity": "high",
-                "details": f"Daily treat limit reached ({daily_status['total_limit']} treats). Purchase extra lives or wait for reset.",
+                "details": reason,
                 "daily_status": daily_status
             })
-            # Return immediately for daily limit - this is a hard block
             return {
                 "valid": False,
-                "reason": f"Daily limit reached! You've created {daily_status['treats_created_today']}/{daily_status['total_limit']} treats today. Purchase an extra life for {EXTRA_LIFE_COST_LAB} $LAB to create {EXTRA_LIFE_TREATS} more treats.",
+                "reason": reason + f" Wait for reset or get an extra life!",
                 "severity": "high",
                 "violations": violations,
                 "daily_status": daily_status
