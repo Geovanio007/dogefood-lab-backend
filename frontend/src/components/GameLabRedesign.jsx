@@ -120,6 +120,10 @@ const GameLabRedesign = ({ playerAddress }) => {
   // Daily limit tracking
   const [dailyStatus, setDailyStatus] = useState(null);
   const [showLimitReachedModal, setShowLimitReachedModal] = useState(false);
+  
+  // Tips guide and player stats
+  const [showTipsGuide, setShowTipsGuide] = useState(false);
+  const [showPlayerStats, setShowPlayerStats] = useState(false);
 
   // Character data
   const characters = [
