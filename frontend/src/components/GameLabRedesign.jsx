@@ -7,6 +7,8 @@ import { Card, CardContent } from './ui/card';
 import INGREDIENT_ICONS from '../config/ingredientIcons';
 import { useAudio } from '../contexts/AudioContext';
 import DailyLimitTracker from './DailyLimitTracker';
+import PlayerStatsModal from './PlayerStatsModal';
+import { HelpCircle, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
