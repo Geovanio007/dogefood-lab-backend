@@ -643,7 +643,14 @@ const GameLabRedesign = ({ playerAddress }) => {
                   <div className="mt-2">
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-yellow-300 font-semibold">XP</span>
-                      <span className="text-white">{playerXP % xpForNextLevel}/{xpForNextLevel}</span>
+                      <button 
+                        onClick={() => setShowPlayerStats(true)}
+                        className="text-white hover:text-yellow-300 transition-colors flex items-center gap-1"
+                        data-testid="your-stats-btn"
+                      >
+                        <BarChart3 className="w-3 h-3" />
+                        <span className="underline">Your Stats</span>
+                      </button>
                     </div>
                     {/* Custom XP Progress Bar */}
                     <div className="h-3 w-full bg-sky-900/50 rounded-full overflow-hidden border border-sky-400/30">
@@ -652,6 +659,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                         style={{ width: `${Math.max(0, Math.min(100, xpProgress))}%` }}
                       />
                     </div>
+                    <div className="text-right text-[10px] text-sky-200 mt-0.5">{playerXP % xpForNextLevel}/{xpForNextLevel} to next level</div>
                   </div>
                 </div>
               </div>
