@@ -238,26 +238,45 @@ const PlayerStatsModal = ({ playerAddress, onClose }) => {
 
                 {/* Daily Activity Chart */}
                 <div className="bg-slate-800/30 rounded-lg p-2 sm:p-3 mb-3">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
-                    <span className="text-xs sm:text-sm font-semibold text-white">Daily Activity</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
+                      <span className="text-xs sm:text-sm font-semibold text-white">Daily Activity</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400">Last 7 days</span>
                   </div>
-                  <div className="flex items-end justify-between gap-1 h-12 sm:h-14">
+                  <div className="flex items-end justify-between gap-1 h-16 sm:h-20">
                     {Object.entries(stats.daily_breakdown)
-                      .sort(([a], [b]) => a.localeCompare(b))
-                      .map(([day, data]) => {
-                        const maxTreats = Math.max(...Object.values(stats.daily_breakdown).map(d => d.treats), 1);
-                        const height = (data.treats / maxTreats) * 100;
-                        const dayLabel = new Date(day).toLocaleDateString('en', { weekday: 'narrow' });
+                      .sort(([a], [b]) => new Date(a) - new Date(b))
+                      .map(([day, data], index) => {
+                        const maxTreats = Math.max(...Object.values(stats.daily_breakdown).map(d => d.treats || 0), 1);
+                        const treats = data.treats || 0;
+                        const height = maxTreats > 0 ? (treats / maxTreats) * 100 : 0;
+                        const dateObj = new Date(day + 'T12:00:00');
+                        const dayLabel = dateObj.toLocaleDateString('en', { weekday: 'short' }).slice(0, 2);
+                        const isToday = new Date().toDateString() === dateObj.toDateString();
                         
                         return (
-                          <div key={day} className="flex-1 flex flex-col items-center gap-0.5">
-                            <div 
-                              className="w-full bg-gradient-to-t from-sky-500 to-sky-400 rounded-t-sm transition-all duration-300 min-h-[2px]"
-                              style={{ height: `${Math.max(height, 4)}%` }}
-                              title={`${data.treats} treats`}
-                            />
-                            <span className="text-[9px] sm:text-[10px] text-slate-500">{dayLabel}</span>
+                          <div key={day} className="flex-1 flex flex-col items-center gap-1" title={`${day}: ${treats} treats, ${data.points || 0} pts`}>
+                            {/* Treat count on top */}
+                            <span className={`text-[9px] font-bold ${treats > 0 ? 'text-sky-300' : 'text-slate-600'}`}>
+                              {treats > 0 ? treats : '-'}
+                            </span>
+                            {/* Bar */}
+                            <div className="w-full h-10 sm:h-12 bg-slate-700/50 rounded-sm flex items-end overflow-hidden">
+                              <div 
+                                className={`w-full rounded-t-sm transition-all duration-500 ${
+                                  isToday 
+                                    ? 'bg-gradient-to-t from-yellow-500 to-yellow-400' 
+                                    : 'bg-gradient-to-t from-sky-500 to-sky-400'
+                                }`}
+                                style={{ height: `${Math.max(height, treats > 0 ? 10 : 0)}%` }}
+                              />
+                            </div>
+                            {/* Day label */}
+                            <span className={`text-[9px] sm:text-[10px] ${isToday ? 'text-yellow-400 font-bold' : 'text-slate-500'}`}>
+                              {isToday ? 'Today' : dayLabel}
+                            </span>
                           </div>
                         );
                       })}
