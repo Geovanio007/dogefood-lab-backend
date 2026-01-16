@@ -68,82 +68,90 @@ class AntiCheatSystem:
     
     async def get_daily_treat_status(self, player_address: str) -> Dict:
         """
-        Get player's daily treat creation status
-        Returns remaining treats, extra lives purchased, etc.
+        Get player's treat creation status.
+        NEW SYSTEM: 4 treats per 6-hour window, max 16 per 24 hours.
+        Timer resets 6 hours after the FIRST treat in the current window.
         """
-        # Get treats created in the last 24 hours
-        daily_treats = await self._get_recent_treats(player_address, hours=24)
-        treats_created_today = len(daily_treats)
+        now = datetime.utcnow()
+        
+        # Get treats created in different time windows
+        treats_last_6h = await self._get_recent_treats(player_address, hours=WINDOW_HOURS)
+        treats_last_24h = await self._get_recent_treats(player_address, hours=24)
+        
+        treats_in_window = len(treats_last_6h)
+        treats_today = len(treats_last_24h)
         
         # Get player's extra lives status
         player = await self.db.players.find_one({"address": player_address})
         extra_lives_purchased = 0
-        extra_lives_used = 0
         
         if player:
             extra_lives_purchased = player.get("extra_lives_purchased_today", 0)
-            extra_lives_used = player.get("extra_lives_used_today", 0)
             
-            # Check if we need to reset daily counters
+            # Check if we need to reset daily counters (every 24h)
             last_reset = player.get("daily_reset_at")
             if last_reset:
                 if isinstance(last_reset, str):
                     last_reset = datetime.fromisoformat(last_reset.replace("Z", "+00:00").replace("+00:00", ""))
-                if datetime.utcnow() - last_reset > timedelta(hours=24):
-                    # Reset daily counters
+                if now - last_reset > timedelta(hours=24):
                     await self.db.players.update_one(
                         {"address": player_address},
-                        {
-                            "$set": {
-                                "extra_lives_purchased_today": 0,
-                                "extra_lives_used_today": 0,
-                                "daily_reset_at": datetime.utcnow()
-                            }
-                        }
+                        {"$set": {"extra_lives_purchased_today": 0, "daily_reset_at": now}}
                     )
                     extra_lives_purchased = 0
-        
-        # Calculate total allowed treats
-        base_limit = DAILY_TREAT_LIMIT
-        extra_from_lives = extra_lives_purchased * EXTRA_LIFE_TREATS
-        total_limit = base_limit + extra_from_lives
-        
-        # Calculate remaining
-        remaining_treats = max(0, total_limit - treats_created_today)
-        
-        # Calculate time until reset
-        if daily_treats:
-            oldest_treat = min(daily_treats, key=lambda x: x.get("created_at", datetime.utcnow()))
-            oldest_time = oldest_treat.get("created_at", datetime.utcnow())
-            if isinstance(oldest_time, str):
-                oldest_time = datetime.fromisoformat(oldest_time.replace("Z", "+00:00").replace("+00:00", ""))
-            reset_time = oldest_time + timedelta(hours=24)
-            time_until_reset = max(0, (reset_time - datetime.utcnow()).total_seconds())
-        else:
-            time_until_reset = 0
         
         # Get streak bonus
         streak_info = await self.get_player_streak(player_address)
         streak_bonus = get_streak_bonus(streak_info["current_streak"])
         
-        # Add streak bonus treats to total limit
-        total_limit_with_streak = total_limit + streak_bonus["bonus_treats"]
-        remaining_with_streak = max(0, total_limit_with_streak - treats_created_today)
+        # Calculate limits
+        window_limit = WINDOW_TREAT_LIMIT + streak_bonus["bonus_treats"]
+        daily_limit = MAX_DAILY_TREATS + (streak_bonus["bonus_treats"] * 4)  # Bonus applies to each window
+        extra_from_lives = extra_lives_purchased * EXTRA_LIFE_TREATS
+        
+        # Calculate remaining in current window
+        remaining_in_window = max(0, window_limit - treats_in_window + extra_from_lives)
+        
+        # Check daily cap
+        remaining_daily = max(0, daily_limit - treats_today + extra_from_lives)
+        
+        # Actual remaining is the minimum of window and daily limits
+        remaining_treats = min(remaining_in_window, remaining_daily)
+        can_create = remaining_treats > 0
+        
+        # Calculate time until window reset (6h from first treat in window)
+        time_until_reset = 0
+        if treats_last_6h:
+            # Find the oldest treat in the 6h window
+            oldest_treat = min(treats_last_6h, key=lambda x: x.get("created_at", now))
+            oldest_time = oldest_treat.get("created_at", now)
+            if isinstance(oldest_time, str):
+                oldest_time = datetime.fromisoformat(oldest_time.replace("Z", "+00:00").replace("+00:00", ""))
+            window_reset_time = oldest_time + timedelta(hours=WINDOW_HOURS)
+            time_until_reset = max(0, (window_reset_time - now).total_seconds())
         
         return {
-            "treats_created_today": treats_created_today,
-            "base_limit": base_limit,
+            "treats_in_window": treats_in_window,
+            "treats_today": treats_today,
+            "window_limit": window_limit,
+            "daily_limit": daily_limit,
+            "window_hours": WINDOW_HOURS,
+            "remaining_in_window": remaining_in_window,
+            "remaining_daily": remaining_daily,
+            "remaining_treats": remaining_treats,
+            "can_create_treat": can_create,
+            "time_until_reset_seconds": int(time_until_reset),
             "extra_lives_purchased": extra_lives_purchased,
             "extra_treats_available": extra_from_lives,
-            "total_limit": total_limit_with_streak,
-            "remaining_treats": remaining_with_streak,
-            "can_create_treat": remaining_with_streak > 0,
-            "time_until_reset_seconds": int(time_until_reset),
             "extra_life_cost_lab": EXTRA_LIFE_COST_LAB,
             "extra_life_treats": EXTRA_LIFE_TREATS,
-            "lab_token_active": False,  # $LAB not live yet
+            "lab_token_active": False,
             "streak": streak_info,
-            "streak_bonus": streak_bonus
+            "streak_bonus": streak_bonus,
+            # Legacy fields for compatibility
+            "treats_created_today": treats_today,
+            "base_limit": WINDOW_TREAT_LIMIT,
+            "total_limit": daily_limit
         }
     
     async def get_player_streak(self, player_address: str) -> Dict:
