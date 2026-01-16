@@ -700,6 +700,86 @@ const GameLabRedesign = ({ playerAddress }) => {
           </Button>
         </div>
 
+        {/* Tips & Guide Section - Collapsible */}
+        <Card className="mb-6 bg-gradient-to-br from-purple-600/90 to-indigo-700/90 backdrop-blur-xl border-purple-400/50 shadow-lg">
+          <CardContent className="p-0">
+            <button 
+              onClick={() => setShowTipsGuide(!showTipsGuide)}
+              className="w-full p-4 flex items-center justify-between text-white hover:bg-white/5 transition-colors rounded-t-lg"
+              data-testid="tips-guide-toggle"
+            >
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-yellow-400" />
+                <span className="font-bold">Lab Secrets & Tips</span>
+              </div>
+              {showTipsGuide ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+            
+            {showTipsGuide && (
+              <div className="p-4 pt-0 border-t border-purple-400/30">
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* How It Works */}
+                  <div className="bg-black/20 rounded-xl p-4">
+                    <h3 className="text-yellow-400 font-bold mb-2 flex items-center gap-2">
+                      <span>🧪</span> How Mixing Works
+                    </h3>
+                    <ul className="text-purple-100 text-sm space-y-1.5">
+                      <li>• Combine 1-5 ingredients to create treats</li>
+                      <li>• Each ingredient belongs to a category</li>
+                      <li>• Different combos = different outcomes</li>
+                      <li>• Experiment to discover rare recipes!</li>
+                    </ul>
+                  </div>
+                  
+                  {/* Ingredient Effects */}
+                  <div className="bg-black/20 rounded-xl p-4">
+                    <h3 className="text-yellow-400 font-bold mb-2 flex items-center gap-2">
+                      <span>✨</span> Ingredient Secrets
+                    </h3>
+                    <ul className="text-purple-100 text-sm space-y-1.5">
+                      <li>• <span className="text-amber-300">Proteins</span> boost treat quality</li>
+                      <li>• <span className="text-emerald-300">Vegetables</span> add special effects</li>
+                      <li>• <span className="text-rose-300">Fruits</span> increase sweetness bonus</li>
+                      <li>• <span className="text-cyan-300">Dairy</span> enhances creaminess</li>
+                      <li>• <span className="text-orange-300">Grains</span> improve consistency</li>
+                    </ul>
+                  </div>
+                  
+                  {/* Rarity Tips */}
+                  <div className="bg-black/20 rounded-xl p-4">
+                    <h3 className="text-yellow-400 font-bold mb-2 flex items-center gap-2">
+                      <span>💎</span> Rarity Hints
+                    </h3>
+                    <ul className="text-purple-100 text-sm space-y-1.5">
+                      <li>• More diverse categories = higher rarity chance</li>
+                      <li>• Using 5 ingredients unlocks max potential</li>
+                      <li>• Some combos trigger special bonuses</li>
+                      <li>• Higher player level = better luck!</li>
+                    </ul>
+                  </div>
+                  
+                  {/* Strategy */}
+                  <div className="bg-black/20 rounded-xl p-4">
+                    <h3 className="text-yellow-400 font-bold mb-2 flex items-center gap-2">
+                      <span>🎯</span> Pro Tips
+                    </h3>
+                    <ul className="text-purple-100 text-sm space-y-1.5">
+                      <li>• Keep a streak for bonus treats!</li>
+                      <li>• Rare treats = more points</li>
+                      <li>• Complete sacks for XP bonus</li>
+                      <li>• Check the leaderboard for inspiration</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <p className="text-center text-purple-300 text-xs mt-4 italic">
+                  The best recipes are discovered through experimentation... 🔮
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left: Mixing Cauldron */}
           <div className="lg:col-span-1">
