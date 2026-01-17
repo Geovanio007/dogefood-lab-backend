@@ -655,6 +655,9 @@ const Leaderboard = () => {
           onClose={() => setSelectedPlayerAddress(null)}
         />
       )}
+      
+      {/* Music Player */}
+      <MusicPlayer />
     </div>
   );
 };
