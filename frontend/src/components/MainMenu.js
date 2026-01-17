@@ -766,6 +766,9 @@ const MainMenu = () => {
           </p>
         </div>
       </div>
+      
+      {/* Music Player */}
+      <MusicPlayer />
     </div>
   );
 };
