@@ -261,12 +261,12 @@ const PlayerStatsModal = ({ playerAddress, onClose }) => {
                     <div className="text-[8px] text-slate-400">Avg/Day</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-sm font-bold text-green-400">{Math.round(stats.stats.avg_points_per_day).toLocaleString()}</div>
-                    <div className="text-[8px] text-slate-400">Pts/Day</div>
+                    <div className="text-sm font-bold text-sky-400">{stats.stats.points_earned.toLocaleString()}</div>
+                    <div className="text-[8px] text-slate-400">7d Pts</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-sm font-bold text-yellow-400">{stats.player.points.toLocaleString()}</div>
-                    <div className="text-[8px] text-slate-400">Total Pts</div>
+                    <div className="text-sm font-bold text-green-400">{Math.round(stats.stats.avg_points_per_day).toLocaleString()}</div>
+                    <div className="text-[8px] text-slate-400">Pts/Day</div>
                   </div>
                 </div>
               </div>
