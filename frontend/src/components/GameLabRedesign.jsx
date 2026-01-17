@@ -74,7 +74,7 @@ const RARITY_STYLES = {
 
 const GameLabRedesign = ({ playerAddress }) => {
   const navigate = useNavigate();
-  const { playClick, playBrewing, playMix, playSuccess, playCollect, playRare, playLevelUp, startLabAmbient, stopLabAmbient } = useAudio();
+  const { playClick, playBrewing, playMix, playSuccess, playCollect, playRare, playLevelUp, startLabAmbient, stopLabAmbient, soundEnabled, toggleSound } = useAudio();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
