@@ -393,6 +393,9 @@ const MyTreats = () => {
       
       {/* Music Player */}
       <MusicPlayer />
+      
+      {/* Scientist Chat */}
+      <ScientistChat />
     </div>
   );
 };
