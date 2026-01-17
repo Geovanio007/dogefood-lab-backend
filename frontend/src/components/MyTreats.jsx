@@ -8,6 +8,7 @@ import { ArrowLeft, Calendar, Trophy, Target, Sparkles, Star, Crown } from 'luci
 import { useGame } from '../contexts/GameContext';
 import { useTelegram } from '../contexts/TelegramContext';
 import TreatIcon from './TreatIcon';
+import MusicPlayer from './MusicPlayer';
 
 const MyTreats = () => {
   const { isConnected, address } = useAccount();
