@@ -594,89 +594,82 @@ const MainMenu = () => {
           </Card>
         </div>
 
-        {/* Main Menu Cards - Mobile Optimized */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-8 mb-6 sm:mb-12">
+        {/* Main Menu Cards - Compact Square Design for Telegram */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-6 mb-4 sm:mb-12">
           {/* Enter Lab */}
-          <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
-            <Link to="/lab">
-              <CardHeader className="text-center p-3 sm:p-6">
-                <div className="mx-auto w-14 h-14 sm:w-24 sm:h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-2 sm:mb-4 shadow-xl">
-                  <Beaker className="w-7 h-7 sm:w-12 sm:h-12 text-white drop-shadow-lg" />
+          <Link to="/lab" className="block">
+            <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full">
+              <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto">
+                <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
+                  <Beaker className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
                 </div>
-                <CardTitle className="text-base sm:text-3xl font-bold text-white">🧪 Lab</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
-                  Start mixing magical Dogetreats and unlock new recipes!
+                <h3 className="text-sm sm:text-2xl font-bold text-white mb-1 sm:mb-2">Lab</h3>
+                <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
+                  Mix magical Dogetreats!
                 </p>
-                <Button className="doge-button w-full text-sm sm:text-lg py-2 sm:py-2 font-bold">
-                  Mix 🧪
+                <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto">
+                  🧪 Mix
                 </Button>
               </CardContent>
-            </Link>
-          </Card>
+            </Card>
+          </Link>
 
-          {/* My NFTs */}
-          <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
-            <Link to="/nfts">
-              <CardHeader className="text-center p-3 sm:p-6">
-                <div className="mx-auto w-14 h-14 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center mb-2 sm:mb-4 shadow-xl">
-                  <Palette className="w-7 h-7 sm:w-12 sm:h-12 text-white drop-shadow-lg" />
+          {/* My Treats */}
+          <Link to="/nfts" className="block">
+            <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full">
+              <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto">
+                <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
+                  <Palette className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
                 </div>
-                <CardTitle className="text-base sm:text-3xl font-bold text-white flex items-center justify-center gap-1">
-                  <TreatIcon size="lg" className="sm:w-8 sm:h-8" /> Treats
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
-                  View your created Dogetreats and rare collections!
+                <h3 className="text-sm sm:text-2xl font-bold text-white mb-1 sm:mb-2 flex items-center gap-1">
+                  <TreatIcon size="sm" className="sm:hidden" />
+                  Treats
+                </h3>
+                <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
+                  View your collections!
                 </p>
-                <Button className="doge-button w-full text-sm sm:text-lg py-2 sm:py-2 font-bold flex items-center justify-center gap-1">
-                  View <TreatIcon size="sm" />
+                <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto flex items-center justify-center gap-1">
+                  <TreatIcon size="xs" /> View
                 </Button>
               </CardContent>
-            </Link>
-          </Card>
+            </Card>
+          </Link>
 
           {/* Leaderboard */}
-          <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
-            <Link to="/leaderboard">
-              <CardHeader className="text-center p-3 sm:p-6">
-                <div className="mx-auto w-14 h-14 sm:w-24 sm:h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mb-2 sm:mb-4 shadow-xl">
-                  <Trophy className="w-7 h-7 sm:w-12 sm:h-12 text-white drop-shadow-lg" />
+          <Link to="/leaderboard" className="block">
+            <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full">
+              <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto">
+                <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
+                  <Trophy className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
                 </div>
-                <CardTitle className="text-base sm:text-3xl font-bold text-white">🏆 Ranks</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
-                  Compete with other VIP Scientists for $LAB rewards!
+                <h3 className="text-sm sm:text-2xl font-bold text-white mb-1 sm:mb-2">Ranks</h3>
+                <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
+                  Compete for $LAB rewards!
                 </p>
-                <Button className="doge-button w-full text-sm sm:text-lg py-2 sm:py-2 font-bold">
-                  Compete 🏆
+                <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto">
+                  🏆 Compete
                 </Button>
               </CardContent>
-            </Link>
-          </Card>
+            </Card>
+          </Link>
 
           {/* Settings */}
-          <Card className="game-card hover:scale-105 transition-all duration-300 cursor-pointer">
-            <Link to="/settings">
-              <CardHeader className="text-center p-3 sm:p-6">
-                <div className="mx-auto w-14 h-14 sm:w-24 sm:h-24 bg-gradient-to-br from-slate-400 to-slate-600 rounded-full flex items-center justify-center mb-2 sm:mb-4 shadow-xl">
-                  <Settings className="w-7 h-7 sm:w-12 sm:h-12 text-white drop-shadow-lg" />
+          <Link to="/settings" className="block">
+            <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full">
+              <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto">
+                <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-slate-400 to-slate-600 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
+                  <Settings className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
                 </div>
-                <CardTitle className="text-base sm:text-3xl font-bold text-white">⚙️ Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-white/90 mb-3 sm:mb-6 text-xs sm:text-lg hidden sm:block">
-                  Customize your experience and manage your account
+                <h3 className="text-sm sm:text-2xl font-bold text-white mb-1 sm:mb-2">Settings</h3>
+                <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
+                  Manage your account
                 </p>
-                <Button className="doge-button w-full text-sm sm:text-lg py-2 sm:py-2 font-bold">
-                  Manage ⚙️
+                <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto">
+                  ⚙️ Manage
                 </Button>
               </CardContent>
-            </Link>
-          </Card>
+            </Card>
+          </Link>
         </div>
 
         {/* Doge Scientist Avatar */}
