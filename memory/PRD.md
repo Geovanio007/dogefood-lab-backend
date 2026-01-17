@@ -7,60 +7,58 @@ Build and maintain a Web3-enabled game called "DogeFood Lab" where players creat
 - **Frontend (Vercel)**: https://app-eight-bay-35.vercel.app
 - **Backend (Render)**: https://dogefood-lab-api.onrender.com
 
-## Recent Updates (Jan 17, 2026)
+## Recent Updates
 
-### UI Improvements for Telegram Mini App
-1. **Menu Cards Redesign**: Changed from tall vertical cards to compact square cards
-   - Smaller icons (w-10 h-10 on mobile)
-   - `aspect-square` layout on mobile
-   - Reduced padding and margins
-   - Professional compact buttons
+### Music Player Feature (Jan 17, 2026)
+- **Playlist**: 5 game music tracks (electronic, ambient, sci-fi)
+- **Pages**: Displays on Menu, Leaderboard, and Treats pages
+- **Autoplay**: Starts when player joins the game
+- **Controls**: Play/Pause, Skip, Volume, Progress bar
+- **Minimize**: Can be minimized to a floating button
+- **Transparent Design**: On-theme glass-morphism styling
 
-2. **Modal Compactness**: 
-   - PlayerStatsModal: max-w-sm, max-h-[85vh], compact stats layout
-   - StreakModal: max-w-xs, compact tier list
-   - ExtraLifeModal: max-w-xs, condensed info
+### Points Consistency Fix (Jan 17, 2026)
+- Fixed PlayerStatsModal to show total points matching leaderboard
+- Labels clarified: "Total Pts", "7d XP", "7d Pts"
 
-3. **Audio System Fix**: Rewrote AudioContext.jsx with proper Web Audio API handling
+### UI Improvements for Telegram (Jan 17, 2026)
+- Menu cards redesigned to compact square layout
+- All modals made more compact for mobile/Telegram
+- Audio system fixed with proper Web Audio API
 
-## Auto-Deploy Setup
-Both repositories have native GitHub integrations:
-- **Vercel**: Auto-deploys on push to `main` branch of DogeFoodLab repo
-- **Render**: Auto-deploys on push to `main` branch of dogefood-lab-backend repo
+## Core Features
 
-### Manual Deploy via API:
+### Implemented
+- ✅ Music Player with 5-track playlist
+- ✅ Treat creation with 4/6h window limit (max 16/day)
+- ✅ Streak bonus system
+- ✅ Player Stats Modal with 7-day activity chart
+- ✅ Compact mobile UI for Telegram Mini App
+- ✅ Leaderboard with $LAB rewards display
+- ✅ NFT verification and VIP status
+
+### Pending
+- ⏳ Points-to-$LAB token conversion
+- ⏳ Activate $LAB purchases for Extra Life
+
+## Technical Components
+
+### Music System
+- **MusicContext.jsx**: State management for playlist, playback
+- **MusicPlayer.jsx**: UI component with controls
+- Tracks stored on customer-assets CDN
+
+## Deploy Commands
 ```bash
 # Vercel
 curl -X POST -H "Authorization: Bearer $VERCEL_TOKEN" \
-  -d '{"project":"prj_qZTKov7tn0gLSoP7Dw9scqPtyfVf","target":"production","gitSource":{"type":"github","ref":"main"}}' \
+  -d '{"project":"prj_qZTKov7tn0gLSoP7Dw9scqPtyfVf","target":"production","gitSource":{"type":"github","repoId":"1124230948","ref":"main"}}' \
   "https://api.vercel.com/v13/deployments"
 
 # Render
 curl -X POST -H "Authorization: Bearer $RENDER_TOKEN" \
   "https://api.render.com/v1/services/srv-d595m3khg0os73c5cil0/deploys"
 ```
-
-## Core Features
-
-### Implemented
-- ✅ Treat creation with 4/6h window limit (max 16/day)
-- ✅ Streak bonus system (tiers from New Chef to Master Scientist)
-- ✅ Player Stats Modal with 7-day activity chart
-- ✅ Compact mobile UI for Telegram Mini App
-- ✅ Audio system with Web Audio API
-- ✅ Leaderboard with $LAB rewards display
-- ✅ NFT verification and VIP status
-
-### Pending
-- ⏳ Test sound effects on live deployment
-- ⏳ Points-to-$LAB token conversion
-- ⏳ Activate $LAB purchases for Extra Life
-
-## Technical Stack
-- Frontend: React, Tailwind CSS, Shadcn UI
-- Backend: FastAPI, MongoDB
-- Deployment: Vercel (FE), Render (BE)
-- Blockchain: DogeOS Chikyū Testnet
 
 ## Last Updated
 January 17, 2026
