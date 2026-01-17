@@ -9,6 +9,7 @@ import { useGame } from '../contexts/GameContext';
 import { useTelegram } from '../contexts/TelegramContext';
 import TreatIcon from './TreatIcon';
 import MusicPlayer from './MusicPlayer';
+import ScientistChat from './ScientistChat';
 
 const MyTreats = () => {
   const { isConnected, address } = useAccount();
