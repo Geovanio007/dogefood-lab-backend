@@ -2826,6 +2826,141 @@ async def get_nft_contract_info():
         "description": "DogeFood Lab NFT holders receive VIP Scientist status with 500 bonus points on signup!"
     }
 
+# ================================
+# CHAT SYSTEM ENDPOINTS
+# ================================
+
+@api_router.get("/chat/messages")
+async def get_chat_messages(limit: int = 50, before: Optional[str] = None):
+    """Get recent chat messages"""
+    try:
+        query = {}
+        if before:
+            # Get messages before a certain message ID for pagination
+            ref_message = await db.chat_messages.find_one({"id": before})
+            if ref_message:
+                query["created_at"] = {"$lt": ref_message["created_at"]}
+        
+        cursor = db.chat_messages.find(query, {"_id": 0}).sort("created_at", -1).limit(limit)
+        messages = await cursor.to_list(length=limit)
+        
+        # Return in chronological order
+        messages.reverse()
+        return messages
+    except Exception as e:
+        logger.error(f"Error fetching chat messages: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/chat/messages")
+async def create_chat_message(message_data: ChatMessageCreate):
+    """Create a new chat message"""
+    try:
+        # Get sender info
+        player = await db.players.find_one({"address": message_data.sender_address})
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        # Get reply preview if replying
+        reply_preview = None
+        if message_data.reply_to:
+            replied_msg = await db.chat_messages.find_one({"id": message_data.reply_to})
+            if replied_msg:
+                reply_preview = replied_msg.get("content", "")[:50]
+                if len(replied_msg.get("content", "")) > 50:
+                    reply_preview += "..."
+        
+        # Create message
+        message = ChatMessage(
+            sender_address=message_data.sender_address,
+            sender_nickname=player.get("nickname") or player.get("telegram_username") or f"Scientist #{player.get('address', '')[:6]}",
+            sender_character=player.get("selected_character"),
+            content=message_data.content[:500],  # Limit to 500 chars
+            reply_to=message_data.reply_to,
+            reply_preview=reply_preview,
+            upvotes=[],
+            upvote_count=0
+        )
+        
+        await db.chat_messages.insert_one(message.dict())
+        
+        return {**message.dict(), "_id": None}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating chat message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/chat/upvote")
+async def upvote_chat_message(upvote_data: ChatUpvoteRequest):
+    """Upvote a chat message - gives 1 XP to message author"""
+    try:
+        # Get the message
+        message = await db.chat_messages.find_one({"id": upvote_data.message_id})
+        if not message:
+            raise HTTPException(status_code=404, detail="Message not found")
+        
+        # Check if already upvoted
+        if upvote_data.voter_address in message.get("upvotes", []):
+            # Remove upvote (toggle)
+            await db.chat_messages.update_one(
+                {"id": upvote_data.message_id},
+                {
+                    "$pull": {"upvotes": upvote_data.voter_address},
+                    "$inc": {"upvote_count": -1}
+                }
+            )
+            # Remove XP from message author
+            await db.players.update_one(
+                {"address": message["sender_address"]},
+                {"$inc": {"experience": -1}}
+            )
+            return {"action": "removed", "new_count": message.get("upvote_count", 1) - 1}
+        
+        # Can't upvote own message
+        if upvote_data.voter_address == message["sender_address"]:
+            raise HTTPException(status_code=400, detail="Cannot upvote your own message")
+        
+        # Add upvote
+        await db.chat_messages.update_one(
+            {"id": upvote_data.message_id},
+            {
+                "$push": {"upvotes": upvote_data.voter_address},
+                "$inc": {"upvote_count": 1}
+            }
+        )
+        
+        # Award 1 XP to message author
+        await db.players.update_one(
+            {"address": message["sender_address"]},
+            {"$inc": {"experience": 1}}
+        )
+        
+        return {"action": "added", "new_count": message.get("upvote_count", 0) + 1, "xp_awarded": 1}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error upvoting message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/chat/messages/{message_id}")
+async def delete_chat_message(message_id: str, sender_address: str):
+    """Delete own chat message"""
+    try:
+        message = await db.chat_messages.find_one({"id": message_id})
+        if not message:
+            raise HTTPException(status_code=404, detail="Message not found")
+        
+        if message["sender_address"] != sender_address:
+            raise HTTPException(status_code=403, detail="Can only delete your own messages")
+        
+        await db.chat_messages.delete_one({"id": message_id})
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 
