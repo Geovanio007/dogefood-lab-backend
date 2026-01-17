@@ -29,7 +29,10 @@ const MusicPlayer = () => {
     showPlayer();
   }, [showPlayer]);
 
-  if (!shouldShowPlayer) return null;
+  // Hide player on Lab page (it has its own background sound)
+  const isLabPage = location.pathname === '/lab';
+  
+  if (!shouldShowPlayer || isLabPage) return null;
 
   const formatTime = (seconds) => {
     if (!seconds || isNaN(seconds)) return '0:00';
