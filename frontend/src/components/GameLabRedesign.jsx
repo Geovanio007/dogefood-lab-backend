@@ -8,7 +8,7 @@ import INGREDIENT_ICONS from '../config/ingredientIcons';
 import { useAudio } from '../contexts/AudioContext';
 import DailyLimitTracker from './DailyLimitTracker';
 import PlayerStatsModal from './PlayerStatsModal';
-import { HelpCircle, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronUp, BarChart3, Volume2, VolumeX } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
