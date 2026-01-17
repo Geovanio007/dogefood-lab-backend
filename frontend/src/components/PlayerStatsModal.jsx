@@ -159,13 +159,13 @@ const PlayerStatsModal = ({ playerAddress, onClose }) => {
                     <div className="text-base font-black text-white">{stats.stats.treats_created}</div>
                     <div className="text-[8px] text-slate-400 uppercase">Treats</div>
                   </div>
-                  <div className="text-center p-1.5 bg-slate-800/50 rounded">
-                    <div className="text-base font-black text-green-400">{stats.stats.points_earned.toLocaleString()}</div>
-                    <div className="text-[8px] text-slate-400 uppercase">Points</div>
+                  <div className="text-center p-1.5 bg-gradient-to-br from-green-900/50 to-emerald-900/50 rounded border border-green-500/30">
+                    <div className="text-base font-black text-green-400">{stats.player.points.toLocaleString()}</div>
+                    <div className="text-[8px] text-green-300 uppercase">Total Pts</div>
                   </div>
                   <div className="text-center p-1.5 bg-slate-800/50 rounded">
                     <div className="text-base font-black text-blue-400">{stats.stats.xp_gained.toLocaleString()}</div>
-                    <div className="text-[8px] text-slate-400 uppercase">XP</div>
+                    <div className="text-[8px] text-slate-400 uppercase">7d XP</div>
                   </div>
                   <div className="text-center p-1.5 bg-slate-800/50 rounded">
                     <div className="text-base font-black text-purple-400">{stats.stats.unique_formulas}</div>
