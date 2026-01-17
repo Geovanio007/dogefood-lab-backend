@@ -188,6 +188,28 @@ class TreatSimulationRequest(BaseModel):
     is_nft_holder: bool
     rank: int
 
+# Chat Models
+class ChatMessage(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    sender_address: str
+    sender_nickname: Optional[str] = None
+    sender_character: Optional[str] = None
+    content: str
+    reply_to: Optional[str] = None  # ID of message being replied to
+    reply_preview: Optional[str] = None  # Preview of replied message
+    upvotes: List[str] = []  # List of addresses who upvoted
+    upvote_count: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class ChatMessageCreate(BaseModel):
+    sender_address: str
+    content: str
+    reply_to: Optional[str] = None
+
+class ChatUpvoteRequest(BaseModel):
+    message_id: str
+    voter_address: str
+
 # Player Management Routes
 @api_router.post("/player", response_model=Player)
 async def create_player(player_data: PlayerCreate):
