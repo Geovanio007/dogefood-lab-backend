@@ -389,6 +389,9 @@ const MyTreats = () => {
           </Card>
         </div>
       )}
+      
+      {/* Music Player */}
+      <MusicPlayer />
     </div>
   );
 };
