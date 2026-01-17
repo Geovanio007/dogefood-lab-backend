@@ -512,8 +512,8 @@ const Leaderboard = () => {
                 </table>
               </div>
 
-              {/* Mobile Card View */}
-              <div className="md:hidden space-y-3">
+              {/* Mobile Card View - Improved Layout */}
+              <div className="md:hidden space-y-2">
                 {leaderboard.map((entry, index) => {
                   const rank = index + 1;
                   const isCurrentUser = address && entry.address.toLowerCase() === address.toLowerCase();
@@ -527,15 +527,16 @@ const Leaderboard = () => {
                           : 'bg-white/50 dark:bg-slate-800/50 border-gray-200 dark:border-gray-700'
                       } ${rank <= 3 ? 'ring-2 ring-yellow-400/50' : ''}`}
                     >
-                      <div className="flex items-center gap-3">
-                        {/* Rank */}
-                        <div className="flex flex-col items-center min-w-[40px]">
-                          <span className="text-2xl">{getRankIcon(rank)}</span>
-                          <span className={`font-bold text-sm ${getRankColor(rank)}`}>#{rank}</span>
+                      {/* Top Row: Rank, Avatar, Name, Points */}
+                      <div className="flex items-center gap-2">
+                        {/* Rank Badge */}
+                        <div className="flex flex-col items-center w-10 flex-shrink-0">
+                          <span className="text-xl">{getRankIcon(rank)}</span>
+                          <span className={`font-bold text-xs ${getRankColor(rank)}`}>#{rank}</span>
                         </div>
                         
                         {/* Character Avatar */}
-                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-yellow-400 shadow-md flex-shrink-0">
                           {entry.character_image ? (
                             <img 
                               src={entry.character_image} 
@@ -544,55 +545,63 @@ const Leaderboard = () => {
                             />
                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-500 to-sky-400 flex items-center justify-center">
-                              <span className="text-xl">🧪</span>
+                              <span className="text-lg">🧪</span>
                             </div>
                           )}
                         </div>
                         
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          {/* Character Name */}
-                          {entry.character_name && (
-                            <div className="text-[10px] text-purple-500 dark:text-purple-400 font-semibold truncate">
-                              {entry.character_name}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setSelectedPlayerAddress(entry.address)}
-                              className="font-bold text-gray-800 dark:text-gray-100 truncate text-sm hover:text-sky-500 dark:hover:text-sky-400 transition-colors cursor-pointer text-left"
-                              data-testid={`player-name-mobile-${rank}`}
-                            >
-                              {entry.nickname || `Scientist #${rank}`}
-                            </button>
+                        {/* Name & Info - Takes remaining space */}
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <button
+                            onClick={() => setSelectedPlayerAddress(entry.address)}
+                            className="font-bold text-gray-800 dark:text-gray-100 text-sm hover:text-sky-500 dark:hover:text-sky-400 transition-colors cursor-pointer text-left block w-full truncate"
+                            data-testid={`player-name-mobile-${rank}`}
+                            title={entry.nickname || `Scientist #${rank}`}
+                          >
+                            {entry.nickname || `Scientist #${rank}`}
+                          </button>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                              {formatAddress(entry.address)}
+                            </span>
                             {isCurrentUser && (
-                              <Badge className="bg-blue-500 text-white text-[10px] px-1.5 py-0">You</Badge>
-                            )}
-                          </div>
-                          <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                            {formatAddress(entry.address)}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">Lv {entry.level}</Badge>
-                            {entry.is_nft_holder && (
-                              <Badge className="vip-badge text-[10px] px-1.5 py-0">VIP</Badge>
+                              <Badge className="bg-blue-500 text-white text-[9px] px-1 py-0">You</Badge>
                             )}
                           </div>
                         </div>
                         
-                        {/* Points & Rewards */}
+                        {/* Points */}
                         <div className="text-right flex-shrink-0">
-                          <div className="font-bold text-green-600 dark:text-green-400 text-lg">
+                          <div className="font-bold text-green-600 dark:text-green-400 text-base">
                             {entry.points.toLocaleString()}
                           </div>
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400">points</div>
-                          <div className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 mt-1">
+                          <div className="text-[9px] text-slate-500">pts</div>
+                        </div>
+                      </div>
+                      
+                      {/* Bottom Row: Badges & Rewards */}
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {entry.character_name && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-purple-600 dark:text-purple-400 border-purple-300">
+                              {entry.character_name}
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0">
+                            Lv {entry.level}
+                          </Badge>
+                          {entry.is_nft_holder && (
+                            <Badge className="vip-badge text-[9px] px-1.5 py-0">VIP</Badge>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-bold text-yellow-600 dark:text-yellow-400">
                             {rank <= 50 ? `${formatNumber(calculateRewards(rank, leaderboard.length).tokens)} $LAB` : '0 $LAB'}
-                          </div>
+                          </span>
                           {rank <= 50 && (
-                            <div className="text-[9px] text-slate-500 dark:text-slate-400">
-                              {calculateRewards(rank, leaderboard.length).multiplier}
-                            </div>
+                            <span className="text-[9px] text-slate-500 dark:text-slate-400 ml-1">
+                              ({calculateRewards(rank, leaderboard.length).multiplier})
+                            </span>
                           )}
                         </div>
                       </div>
