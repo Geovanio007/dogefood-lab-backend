@@ -92,3 +92,11 @@ frontend/node_modules/.cache/default-development/5.pack
 *.env.*
 .env*.local
 deploy.sh
+-e 
+# Environment files
+*.env
+*.env.*
+-e 
+# Environment files
+*.env
+*.env.*
