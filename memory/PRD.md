@@ -1,83 +1,66 @@
 # DogeFood Lab Game - Product Requirements Document
 
 ## Original Problem Statement
-Build and maintain a Web3-enabled game called "DogeFood Lab" where players create treats, earn points, compete on leaderboards, and earn $LAB tokens. The game runs on DogeOS Chikyū Testnet.
+Build and maintain a Web3-enabled game called "DogeFood Lab" where players create treats, earn points, compete on leaderboards, and earn $LAB tokens.
+
+## Deployment URLs
+- **Frontend (Vercel)**: https://app-eight-bay-35.vercel.app
+- **Backend (Render)**: https://dogefood-lab-api.onrender.com
+
+## Recent Updates (Jan 17, 2026)
+
+### UI Improvements for Telegram Mini App
+1. **Menu Cards Redesign**: Changed from tall vertical cards to compact square cards
+   - Smaller icons (w-10 h-10 on mobile)
+   - `aspect-square` layout on mobile
+   - Reduced padding and margins
+   - Professional compact buttons
+
+2. **Modal Compactness**: 
+   - PlayerStatsModal: max-w-sm, max-h-[85vh], compact stats layout
+   - StreakModal: max-w-xs, compact tier list
+   - ExtraLifeModal: max-w-xs, condensed info
+
+3. **Audio System Fix**: Rewrote AudioContext.jsx with proper Web Audio API handling
+
+## Auto-Deploy Setup
+Both repositories have native GitHub integrations:
+- **Vercel**: Auto-deploys on push to `main` branch of DogeFoodLab repo
+- **Render**: Auto-deploys on push to `main` branch of dogefood-lab-backend repo
+
+### Manual Deploy via API:
+```bash
+# Vercel
+curl -X POST -H "Authorization: Bearer $VERCEL_TOKEN" \
+  -d '{"project":"prj_qZTKov7tn0gLSoP7Dw9scqPtyfVf","target":"production","gitSource":{"type":"github","ref":"main"}}' \
+  "https://api.vercel.com/v13/deployments"
+
+# Render
+curl -X POST -H "Authorization: Bearer $RENDER_TOKEN" \
+  "https://api.render.com/v1/services/srv-d595m3khg0os73c5cil0/deploys"
+```
 
 ## Core Features
 
-### Implemented Features
+### Implemented
+- ✅ Treat creation with 4/6h window limit (max 16/day)
+- ✅ Streak bonus system (tiers from New Chef to Master Scientist)
+- ✅ Player Stats Modal with 7-day activity chart
+- ✅ Compact mobile UI for Telegram Mini App
+- ✅ Audio system with Web Audio API
+- ✅ Leaderboard with $LAB rewards display
+- ✅ NFT verification and VIP status
 
-#### 1. New Treat Limit System (Implemented: Jan 16, 2026)
-- **Window System**: 4 treats per 6-hour window
-- **Daily Cap**: Maximum 16 treats per 24 hours
-- **Reset**: Timer starts from first treat in window
-- **Extra Life**: ❤️ +3 treats for 5,000 $LAB (Coming Soon)
+### Pending
+- ⏳ Test sound effects on live deployment
+- ⏳ Points-to-$LAB token conversion
+- ⏳ Activate $LAB purchases for Extra Life
 
-#### 2. Tips & Guide Section (Implemented: Jan 16, 2026)
-- **Location**: Collapsible section on Lab page
-- **Content**: Mixing, Ingredients, Rarity, Pro Tips
-- **Design**: Purple gradient, expandable
-
-#### 3. Your Stats on Lab Page (Implemented: Jan 16, 2026)
-- **Location**: XP bar area - "Your Stats" link
-- **Function**: Opens PlayerStatsModal for current player
-
-#### 4. Compact Modal UI for Telegram (Implemented: Jan 17, 2026)
-- **PlayerStatsModal**: Reduced height, compact layout, fits on 320x500 viewport
-- **StreakModal**: Smaller emoji, compact tier list, reduced padding
-- **ExtraLifeModal**: Compact design, mobile-first layout
-- All modals now centered and professional-looking on small screens
-
-#### 5. Audio System Improvements (Implemented: Jan 17, 2026)
-- **Web Audio API**: Proper browser audio context handling
-- **Unlock on interaction**: Audio unlocked on first user interaction
-- **Sound effects**: click, brewing, success, rare, collect, levelUp
-
-#### 6. Player Stats Modal (Implemented: Jan 13, 2026)
-- Click player names on Leaderboard/Lab
-- 7-day stats, rarity breakdown, daily chart
-
-#### 7. Streak Bonus System (Implemented: Jan 12, 2026)
-- Tiers: New Chef → Master Scientist (30 days)
-- Bonuses: +treats, XP multiplier, faster brewing
-
-#### 8. Game Mechanics
-- Character selection, ingredient mixing, rarity tiers, brewing
-
-#### 9. Web3 Integration
-- DogeOS Chikyū Testnet, NFT verification
-
-### Pending Features
-
-#### P0 - Critical
-- [ ] Test sound effects on live deployment
-
-#### P1 - High Priority  
-- [ ] Points-to-$LAB token conversion
-- [ ] Activate $LAB purchases
-
-## Deployment
-- Frontend: Vercel (via GitHub)
-- Backend: Render
-- Database: MongoDB Atlas
-
-## Limit System Details
-```
-Window: 4 treats / 6 hours
-Daily Max: 16 treats / 24 hours
-Streak Bonus: +1 to +3 treats per window
-Extra Life: +3 treats (5000 $LAB)
-```
-
-## Recent Changes (Jan 17, 2026)
-1. **Modal UI Improvements**: Made PlayerStatsModal, StreakModal, and ExtraLifeModal more compact for Telegram Mini App
-2. **Audio System Fix**: Rewrote AudioContext.jsx with proper Web Audio API and browser unlock handling
-3. **Daily Activity Chart**: Verified working - data aggregation from backend is functional
-
-## Technical Notes
-- Daily Activity chart data comes from `/api/player-stats/{address}` endpoint
-- Sound files located at `/app/frontend/public/sounds/`
-- Modals use `max-w-xs` and `max-w-sm` for compact mobile-first design
+## Technical Stack
+- Frontend: React, Tailwind CSS, Shadcn UI
+- Backend: FastAPI, MongoDB
+- Deployment: Vercel (FE), Render (BE)
+- Blockchain: DogeOS Chikyū Testnet
 
 ## Last Updated
 January 17, 2026
