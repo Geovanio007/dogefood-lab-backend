@@ -204,52 +204,52 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
         </CardContent>
       </Card>
 
-      {/* Streak Modal */}
+      {/* Streak Modal - Compact for Telegram */}
       {showStreakModal && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-sm my-2 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-xs relative">
             <button
               onClick={() => setShowStreakModal(false)}
-              className="absolute -top-1 -right-1 z-10 bg-red-500 hover:bg-red-400 rounded-full p-1.5 shadow-lg"
+              className="absolute -top-2 -right-2 z-10 bg-red-500 hover:bg-red-400 rounded-full p-1 shadow-lg"
             >
               <X className="w-4 h-4 text-white" />
             </button>
             
             <Card className="bg-gradient-to-b from-emerald-700 via-emerald-800 to-green-900 border-emerald-500/50 shadow-2xl">
-              <CardContent className="p-4">
-                <div className="text-center mb-3">
-                  <div className="text-5xl mb-1">{streakTier.emoji}</div>
-                  <h2 className="text-2xl font-bold text-white">{streak} Day Streak!</h2>
-                  <p className={`text-sm font-semibold ${streakTier.color}`}>{streakTier.title}</p>
+              <CardContent className="p-3">
+                <div className="text-center mb-2">
+                  <div className="text-4xl mb-0.5">{streakTier.emoji}</div>
+                  <h2 className="text-xl font-bold text-white">{streak} Day Streak!</h2>
+                  <p className={`text-xs font-semibold ${streakTier.color}`}>{streakTier.title}</p>
                 </div>
 
-                <div className="bg-black/20 rounded-lg p-3 mb-3">
-                  <h3 className="text-white font-bold mb-2 text-center text-xs">Your Bonuses</h3>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-emerald-600/30 rounded p-2">
-                      <div className="text-white font-bold">+{streakBonus.bonus_treats || 0}</div>
-                      <div className="text-emerald-300 text-[10px]">Treats</div>
+                <div className="bg-black/20 rounded-lg p-2 mb-2">
+                  <h3 className="text-white font-bold mb-1.5 text-center text-[10px]">Your Bonuses</h3>
+                  <div className="grid grid-cols-3 gap-1.5 text-center">
+                    <div className="bg-emerald-600/30 rounded p-1.5">
+                      <div className="text-white font-bold text-sm">+{streakBonus.bonus_treats || 0}</div>
+                      <div className="text-emerald-300 text-[9px]">Treats</div>
                     </div>
-                    <div className="bg-emerald-600/30 rounded p-2">
-                      <div className="text-white font-bold">{((streakBonus.xp_multiplier || 1) * 100).toFixed(0)}%</div>
-                      <div className="text-emerald-300 text-[10px]">XP</div>
+                    <div className="bg-emerald-600/30 rounded p-1.5">
+                      <div className="text-white font-bold text-sm">{((streakBonus.xp_multiplier || 1) * 100).toFixed(0)}%</div>
+                      <div className="text-emerald-300 text-[9px]">XP</div>
                     </div>
-                    <div className="bg-emerald-600/30 rounded p-2">
-                      <div className="text-white font-bold">-{streakBonus.brewing_reduction || 0}%</div>
-                      <div className="text-emerald-300 text-[10px]">Brew</div>
+                    <div className="bg-emerald-600/30 rounded p-1.5">
+                      <div className="text-white font-bold text-sm">-{streakBonus.brewing_reduction || 0}%</div>
+                      <div className="text-emerald-300 text-[9px]">Brew</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-black/20 rounded-lg p-3 mb-3">
-                  <h3 className="text-white font-bold mb-2 text-center text-xs">Streak Tiers</h3>
-                  <div className="grid grid-cols-2 gap-1">
+                <div className="bg-black/20 rounded-lg p-2 mb-2">
+                  <h3 className="text-white font-bold mb-1 text-center text-[10px]">Streak Tiers</h3>
+                  <div className="grid grid-cols-2 gap-0.5">
                     {Object.entries(STREAK_TIERS).map(([days, tier]) => {
                       const isAchieved = streak >= parseInt(days);
                       return (
-                        <div key={days} className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${isAchieved ? 'bg-emerald-500/30' : 'bg-white/5'}`}>
+                        <div key={days} className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] ${isAchieved ? 'bg-emerald-500/30' : 'bg-white/5'}`}>
                           <span>{tier.emoji}</span>
-                          <span className={isAchieved ? 'text-white' : 'text-white/50'}>{tier.title}</span>
+                          <span className={`truncate ${isAchieved ? 'text-white' : 'text-white/50'}`}>{tier.title}</span>
                           <span className={`ml-auto ${isAchieved ? 'text-emerald-300' : 'text-white/40'}`}>{days}d</span>
                         </div>
                       );
@@ -257,7 +257,7 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
                   </div>
                 </div>
 
-                <Button onClick={() => setShowStreakModal(false)} className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm">
+                <Button onClick={() => setShowStreakModal(false)} className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs h-8">
                   Keep Cooking! 🧪
                 </Button>
               </CardContent>
@@ -266,31 +266,31 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
         </div>
       )}
 
-      {/* Extra Life Modal */}
+      {/* Extra Life Modal - Compact for Telegram */}
       {showExtraLifeModal && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-sm my-2 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-xs relative">
             <button
               onClick={() => { setShowExtraLifeModal(false); setPurchaseResult(null); }}
-              className="absolute -top-1 -right-1 z-10 bg-red-500 hover:bg-red-400 rounded-full p-1.5 shadow-lg"
+              className="absolute -top-2 -right-2 z-10 bg-red-500 hover:bg-red-400 rounded-full p-1 shadow-lg"
             >
               <X className="w-4 h-4 text-white" />
             </button>
             
             <Card className="bg-gradient-to-b from-rose-500 via-rose-600 to-red-700 border-rose-400 shadow-2xl">
-              <CardContent className="p-4">
-                <div className="text-center mb-4">
-                  <div className="text-5xl mb-2">❤️</div>
-                  <h2 className="text-xl font-bold text-white">Extra Life</h2>
-                  <p className="text-rose-200 text-sm">Get {dailyStatus.extra_life_treats} more treats!</p>
+              <CardContent className="p-3">
+                <div className="text-center mb-3">
+                  <div className="text-4xl mb-1">❤️</div>
+                  <h2 className="text-lg font-bold text-white">Extra Life</h2>
+                  <p className="text-rose-200 text-xs">Get {dailyStatus.extra_life_treats} more treats!</p>
                 </div>
 
-                <div className="bg-black/20 rounded-lg p-3 mb-3 text-sm">
-                  <div className="flex justify-between mb-2">
+                <div className="bg-black/20 rounded-lg p-2 mb-2 text-xs">
+                  <div className="flex justify-between mb-1">
                     <span className="text-white">Cost:</span>
                     <span className="text-yellow-300 font-bold">{dailyStatus.extra_life_cost_lab?.toLocaleString()} $LAB</span>
                   </div>
-                  <div className="flex justify-between mb-2">
+                  <div className="flex justify-between mb-1">
                     <span className="text-white">You get:</span>
                     <span className="text-green-300 font-bold">+{dailyStatus.extra_life_treats} treats</span>
                   </div>
@@ -301,31 +301,31 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
                 </div>
 
                 {!dailyStatus.lab_token_active && (
-                  <div className="bg-yellow-400/20 border border-yellow-400/50 rounded-lg p-3 mb-3">
-                    <div className="flex items-start gap-2">
-                      <span className="text-lg">⚠️</span>
+                  <div className="bg-yellow-400/20 border border-yellow-400/50 rounded-lg p-2 mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-base">⚠️</span>
                       <div>
-                        <h3 className="text-yellow-300 font-bold text-xs">$LAB Not Active</h3>
-                        <p className="text-yellow-200 text-[10px]">Available after token launch!</p>
+                        <h3 className="text-yellow-300 font-bold text-[10px]">$LAB Not Active</h3>
+                        <p className="text-yellow-200 text-[9px]">Available after token launch!</p>
                       </div>
                     </div>
                   </div>
                 )}
 
                 {purchaseResult && (
-                  <div className={`rounded-lg p-2 mb-3 text-xs ${purchaseResult.success ? 'bg-green-500/30' : 'bg-red-500/30'}`}>
+                  <div className={`rounded-lg p-1.5 mb-2 text-[10px] ${purchaseResult.success ? 'bg-green-500/30' : 'bg-red-500/30'}`}>
                     <p className={purchaseResult.success ? 'text-green-300' : 'text-red-300'}>{purchaseResult.message}</p>
                   </div>
                 )}
 
-                <div className="flex gap-2">
-                  <Button onClick={() => { setShowExtraLifeModal(false); setPurchaseResult(null); }} className="flex-1 bg-white/20 hover:bg-white/30 text-white text-sm">
+                <div className="flex gap-1.5">
+                  <Button onClick={() => { setShowExtraLifeModal(false); setPurchaseResult(null); }} className="flex-1 bg-white/20 hover:bg-white/30 text-white text-xs h-8">
                     Close
                   </Button>
                   <Button
                     onClick={handlePurchaseExtraLife}
                     disabled={purchasing || !dailyStatus.lab_token_active}
-                    className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-white font-bold disabled:opacity-50 text-sm"
+                    className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-white font-bold disabled:opacity-50 text-xs h-8"
                   >
                     {purchasing ? '⏳' : '❤️'} {dailyStatus.lab_token_active ? 'Buy' : 'Soon'}
                   </Button>
