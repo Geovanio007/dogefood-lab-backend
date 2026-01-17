@@ -643,14 +643,25 @@ const GameLabRedesign = ({ playerAddress }) => {
                   <div className="mt-2">
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-yellow-300 font-semibold">XP</span>
-                      <button 
-                        onClick={() => setShowPlayerStats(true)}
-                        className="text-white hover:text-yellow-300 transition-colors flex items-center gap-1"
-                        data-testid="your-stats-btn"
-                      >
-                        <BarChart3 className="w-3 h-3" />
-                        <span className="underline">Your Stats</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {/* Sound Toggle */}
+                        <button
+                          onClick={toggleSound}
+                          className={`p-1 rounded-full transition-colors ${soundEnabled ? 'bg-green-500/30 text-green-300' : 'bg-red-500/30 text-red-300'}`}
+                          title={soundEnabled ? 'Sound ON' : 'Sound OFF'}
+                          data-testid="sound-toggle-btn"
+                        >
+                          {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                        </button>
+                        <button 
+                          onClick={() => setShowPlayerStats(true)}
+                          className="text-white hover:text-yellow-300 transition-colors flex items-center gap-1"
+                          data-testid="your-stats-btn"
+                        >
+                          <BarChart3 className="w-3 h-3" />
+                          <span className="underline">Your Stats</span>
+                        </button>
+                      </div>
                     </div>
                     {/* Custom XP Progress Bar */}
                     <div className="h-3 w-full bg-sky-900/50 rounded-full overflow-hidden border border-sky-400/30">
