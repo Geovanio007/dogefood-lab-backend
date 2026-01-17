@@ -537,6 +537,160 @@ label, .label {
   font-size: var(--text-lg);
 }
 
+/* Thermometer Styles */
+.thermometer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 2rem 0;
+}
+
+.thermometer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.thermometer-tube {
+  width: 40px;
+  height: 180px;
+  background: linear-gradient(to right, #1e293b, #334155, #1e293b);
+  border-radius: 20px 20px 0 0;
+  border: 3px solid #64748b;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+
+.thermometer-scale {
+  position: absolute;
+  left: -35px;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: space-between;
+  padding: 5px 0;
+}
+
+.scale-line {
+  font-size: 10px;
+  color: #94a3b8;
+  font-family: var(--font-body);
+}
+
+.liquid-container {
+  position: absolute;
+  bottom: 0;
+  left: 4px;
+  right: 4px;
+  top: 4px;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+}
+
+.liquid-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, #ef4444, #f97316, #eab308);
+  border-radius: 12px 12px 0 0;
+  transition: height 0.3s ease-out;
+}
+
+.liquid-surface {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
+  border-radius: 50%;
+  animation: liquidWave 1s ease-in-out infinite;
+}
+
+@keyframes liquidWave {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.2); }
+}
+
+.bubble-inside {
+  position: absolute;
+  background: rgba(255,255,255,0.3);
+  border-radius: 50%;
+  animation: bubbleRise 2s ease-in-out infinite;
+}
+
+.bubble-inside-1 {
+  width: 6px;
+  height: 6px;
+  left: 20%;
+  bottom: 10%;
+  animation-delay: 0s;
+}
+
+.bubble-inside-2 {
+  width: 4px;
+  height: 4px;
+  left: 50%;
+  bottom: 20%;
+  animation-delay: 0.5s;
+}
+
+.bubble-inside-3 {
+  width: 5px;
+  height: 5px;
+  left: 70%;
+  bottom: 5%;
+  animation-delay: 1s;
+}
+
+@keyframes bubbleRise {
+  0% { transform: translateY(0); opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { transform: translateY(-60px); opacity: 0; }
+}
+
+.thermometer-bulb {
+  width: 55px;
+  height: 55px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-radius: 50%;
+  border: 3px solid #64748b;
+  position: relative;
+  margin-top: -10px;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), inset 0 0 20px rgba(0,0,0,0.3);
+}
+
+.bulb-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 35px;
+  height: 35px;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  border-radius: 50%;
+  animation: bulbPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes bulbPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
+}
+
+.bulb-shine {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  width: 12px;
+  height: 12px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 50%;
+}
+
 /* ================================
    PLAY NOW BUTTON
    ================================ */
