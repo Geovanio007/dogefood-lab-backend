@@ -232,11 +232,13 @@ function App() {
   return (
     <ThemeProvider>
       <AudioProvider>
-        <TelegramProvider>
-          <Web3Provider>
-            <InnerApp />
-          </Web3Provider>
-        </TelegramProvider>
+        <MusicProvider>
+          <TelegramProvider>
+            <Web3Provider>
+              <InnerApp />
+            </Web3Provider>
+          </TelegramProvider>
+        </MusicProvider>
       </AudioProvider>
     </ThemeProvider>
   );
