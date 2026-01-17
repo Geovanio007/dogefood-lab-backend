@@ -35,7 +35,7 @@ export const MusicProvider = ({ children }) => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [volume, setVolume] = useState(() => {
     const saved = localStorage.getItem('dogefood_music_volume');
-    return saved ? parseFloat(saved) : 0.5;
+    return saved ? parseFloat(saved) : 0.2; // Default to 20% volume
   });
   const [isMinimized, setIsMinimized] = useState(false);
   const [duration, setDuration] = useState(0);
