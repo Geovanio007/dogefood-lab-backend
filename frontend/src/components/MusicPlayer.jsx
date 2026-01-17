@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useMusic } from '../contexts/MusicContext';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Minimize2, Maximize2, Music } from 'lucide-react';
 
 const MusicPlayer = () => {
+  const location = useLocation();
   const {
     isPlaying,
     currentTrack,
