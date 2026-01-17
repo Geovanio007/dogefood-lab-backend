@@ -7,6 +7,7 @@ import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
 import { ArrowLeft, Trophy, Crown, Star, Users, TrendingUp, Clock, Sparkles } from 'lucide-react';
 import PlayerStatsModal from './PlayerStatsModal';
+import MusicPlayer from './MusicPlayer';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
