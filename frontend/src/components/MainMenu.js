@@ -770,6 +770,9 @@ const MainMenu = () => {
       
       {/* Music Player */}
       <MusicPlayer />
+      
+      {/* Scientist Chat */}
+      <ScientistChat />
     </div>
   );
 };
