@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Button } from './ui/button';
@@ -8,12 +8,13 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { useGame } from '../contexts/GameContext';
 import { useNFTVerification } from '../hooks/useNFTVerification';
+import { useTelegram } from '../contexts/TelegramContext';
 import ThemeToggle from './ThemeToggle';
 import DogeFoodLogo from './DogeFoodLogo';
 import TreatIcon from './TreatIcon';
 import MusicPlayer from './MusicPlayer';
 import ScientistChat from './ScientistChat';
-import { Beaker, Trophy, Settings, Palette, Clock, User, Check, Edit2 } from 'lucide-react';
+import { Beaker, Trophy, Settings, Palette, Clock, User, Check, Edit2, X, Wallet, UserPlus } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
