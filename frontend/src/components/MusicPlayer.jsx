@@ -125,7 +125,17 @@ const MusicPlayer = () => {
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-center gap-3 px-3 py-2">
+      <div className="flex items-center justify-center gap-2 px-3 py-2">
+        {/* Shuffle button */}
+        <button
+          onClick={toggleShuffle}
+          className={`p-1.5 rounded-full transition-colors ${isShuffled ? 'bg-purple-500/30 text-purple-400' : 'hover:bg-white/10 text-white/50'}`}
+          data-testid="music-shuffle"
+          title={isShuffled ? 'Shuffle On' : 'Shuffle Off'}
+        >
+          <Shuffle className="w-3.5 h-3.5" />
+        </button>
+
         <button
           onClick={prevTrack}
           className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
@@ -153,6 +163,11 @@ const MusicPlayer = () => {
         >
           <SkipForward className="w-4 h-4 text-white" />
         </button>
+
+        {/* Track counter */}
+        <span className="text-[10px] text-white/50 min-w-[28px] text-center">
+          {currentTrackIndex + 1}/{playlist.length}
+        </span>
       </div>
 
       {/* Volume control */}
