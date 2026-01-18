@@ -27,9 +27,14 @@ const PLAYLIST = [
 export const MusicProvider = ({ children }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [volume, setVolume] = useState(() => {
-    const saved = localStorage.getItem('dogefood_music_volume');
-    return saved ? parseFloat(saved) : 0.2; // Default to 20% volume
+  const [volume, setVolumeState] = useState(() => {
+    const saved = localStorage.getItem('dogefood_music_player_volume');
+    if (saved !== null) {
+      const val = parseFloat(saved);
+      // Ensure volume is in 0-1 range
+      return val > 1 ? val / 100 : val;
+    }
+    return 0.2; // Default to 20% volume
   });
   const [isMinimized, setIsMinimized] = useState(true); // Start minimized by default
   const [duration, setDuration] = useState(0);
