@@ -34,7 +34,7 @@ export const MusicProvider = ({ children }) => {
       // Ensure volume is in 0-1 range
       return val > 1 ? val / 100 : val;
     }
-    return 0.2; // Default to 20% volume
+    return 0.1; // Default to 10% volume
   });
   const [isMinimized, setIsMinimized] = useState(true); // Start minimized by default
   const [duration, setDuration] = useState(0);
