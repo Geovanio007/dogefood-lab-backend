@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useRef, useEffect, useCallb
 
 const MusicContext = createContext(null);
 
-// Playlist with the provided songs (excluding lab ambient music and Tell Me What)
+// Playlist with all songs
 const PLAYLIST = [
   {
     id: 1,
@@ -21,12 +21,54 @@ const PLAYLIST = [
     title: "Deep Abstract",
     artist: "Snowcap Ambient",
     url: "https://customer-assets.emergentagent.com/job_e7bcdee9-252d-418c-ba9f-7ff6fd76e17b/artifacts/3ifm13fl_deep-abstract-ambient_snowcap-401656.mp3"
+  },
+  {
+    id: 4,
+    title: "Vlog Background",
+    artist: "Vibes",
+    url: "https://customer-assets.emergentagent.com/job_audiorank-verify/artifacts/7eywl1jf_vlog-vlogs-music-background-347934.mp3"
+  },
+  {
+    id: 5,
+    title: "Lose Control",
+    artist: "Old School",
+    url: "https://customer-assets.emergentagent.com/job_audiorank-verify/artifacts/yme3nq91_lose-control-old-school-music-339344.mp3"
+  },
+  {
+    id: 6,
+    title: "Blues Rock",
+    artist: "Rock",
+    url: "https://customer-assets.emergentagent.com/job_audiorank-verify/artifacts/m9puvpit_blues-rock-music-free-464181.mp3"
+  },
+  {
+    id: 7,
+    title: "American Blues",
+    artist: "Blues",
+    url: "https://customer-assets.emergentagent.com/job_audiorank-verify/artifacts/c8xbpca9_american-blues-314911.mp3"
+  },
+  {
+    id: 8,
+    title: "Slow Blues",
+    artist: "Instrumental",
+    url: "https://customer-assets.emergentagent.com/job_audiorank-verify/artifacts/0b2szrnx_slow-blues-instrumental-207866.mp3"
   }
 ];
+
+// Fisher-Yates shuffle algorithm
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
 export const MusicProvider = ({ children }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [isShuffled, setIsShuffled] = useState(true); // Shuffle ON by default
+  const [shuffledPlaylist, setShuffledPlaylist] = useState(() => shuffleArray(PLAYLIST));
   const [volume, setVolumeState] = useState(() => {
     const saved = localStorage.getItem('dogefood_music_player_volume');
     if (saved !== null) {
@@ -45,7 +87,9 @@ export const MusicProvider = ({ children }) => {
   const audioRef = useRef(null);
   const hasAutoplayedRef = useRef(false);
 
-  const currentTrack = PLAYLIST[currentTrackIndex];
+  // Get current playlist based on shuffle state
+  const playlist = isShuffled ? shuffledPlaylist : PLAYLIST;
+  const currentTrack = playlist[currentTrackIndex];
 
   // Safe volume setter that ensures value is in 0-1 range
   const setVolume = useCallback((newVolume) => {
