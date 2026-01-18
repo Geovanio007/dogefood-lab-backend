@@ -188,7 +188,7 @@ export const AudioProvider = ({ children }) => {
   }, [effectsVolume]);
 
   useEffect(() => {
-    localStorage.setItem('dogefood_music_volume', musicVolume.toString());
+    localStorage.setItem('dogefood_lab_music_volume', musicVolume.toString());
     if (labMusicRef.current) {
       labMusicRef.current.volume = (musicVolume / 100) * 0.3;
     }
