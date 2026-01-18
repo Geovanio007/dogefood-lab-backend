@@ -378,14 +378,6 @@ const Leaderboard = () => {
                 )}
               </div>
             </div>
-            
-            {!isNFTHolder && (
-              <div className="mt-4 p-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg">
-                <p className="text-yellow-800 dark:text-yellow-200 text-sm">
-                  💡 <strong>Pro Tip:</strong> Only DogeFood NFT holders can earn points and compete for $LAB rewards!
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
