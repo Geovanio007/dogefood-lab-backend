@@ -242,8 +242,10 @@ function App() {
           <MusicProvider>
             <TelegramProvider>
               <Web3Provider>
-                <InnerApp />
-                <UpdateNotification />
+                <NotificationProvider>
+                  <InnerApp />
+                  <UpdateNotification />
+                </NotificationProvider>
               </Web3Provider>
             </TelegramProvider>
           </MusicProvider>
