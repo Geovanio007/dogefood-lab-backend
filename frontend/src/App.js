@@ -32,6 +32,7 @@ import './App.css';
 const InnerApp = () => {
   const { address, isConnected } = useAccount();
   const { isTelegram, telegramUser, isAuthenticated: isTelegramAuthenticated, isLoading: isTelegramLoading } = useTelegram();
+  const { showPermissionPrompt, setShowPermissionPrompt, notificationsEnabled, permissionStatus } = useNotifications();
   
   const [showWelcome, setShowWelcome] = useState(true); // Start with true, will be updated
   const [isLoading, setIsLoading] = useState(false);
@@ -40,6 +41,7 @@ const InnerApp = () => {
   const [userRegistered, setUserRegistered] = useState(false);
   const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
   const [authType, setAuthType] = useState(null); // 'wallet', 'telegram', or 'linked'
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   
   // Guest user state - read from localStorage
   const [guestUser, setGuestUser] = useState(() => {
