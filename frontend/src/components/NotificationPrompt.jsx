@@ -6,7 +6,8 @@ const NotificationPrompt = ({ onClose }) => {
   const { 
     requestPermission, 
     isTelegramNotifications,
-    permissionStatus 
+    permissionStatus,
+    isLoading: contextLoading
   } = useNotifications();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -14,13 +15,18 @@ const NotificationPrompt = ({ onClose }) => {
 
   const handleEnable = async () => {
     setIsLoading(true);
-    const success = await requestPermission();
-    setResult(success ? 'success' : 'failed');
-    setIsLoading(false);
-    
-    if (success) {
-      setTimeout(() => onClose?.(), 1500);
+    try {
+      const success = await requestPermission();
+      setResult(success ? 'success' : 'failed');
+      
+      if (success) {
+        setTimeout(() => onClose?.(), 1500);
+      }
+    } catch (error) {
+      console.error('Error enabling notifications:', error);
+      setResult('failed');
     }
+    setIsLoading(false);
   };
 
   if (result === 'success') {
@@ -32,7 +38,9 @@ const NotificationPrompt = ({ onClose }) => {
           </div>
           <h3 className="text-xl font-bold text-white mb-2">Notifications Enabled!</h3>
           <p className="text-white/80 text-sm">
-            You'll be notified when your treats are ready and when you can create more.
+            {isTelegramNotifications 
+              ? "You'll receive messages from our bot when your treats are ready!"
+              : "You'll be notified when your treats are ready and when you can create more."}
           </p>
         </div>
       </div>
@@ -41,7 +49,7 @@ const NotificationPrompt = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-700">
+      <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-700 relative">
         {/* Close button */}
         <button 
           onClick={onClose}
@@ -86,12 +94,12 @@ const NotificationPrompt = ({ onClose }) => {
           {isTelegramNotifications ? (
             <>
               <Smartphone className="w-4 h-4" />
-              <span>Via Telegram</span>
+              <span>Via Telegram Bot Message</span>
             </>
           ) : (
             <>
               <Monitor className="w-4 h-4" />
-              <span>Via Browser Push</span>
+              <span>Via Browser Notification</span>
             </>
           )}
         </div>
@@ -106,11 +114,11 @@ const NotificationPrompt = ({ onClose }) => {
           </button>
           <button
             onClick={handleEnable}
-            disabled={isLoading}
+            disabled={isLoading || contextLoading}
             className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold hover:from-amber-600 hover:to-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isLoading ? (
-              <span className="animate-spin">⏳</span>
+            {isLoading || contextLoading ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
                 <Bell className="w-4 h-4" />
@@ -122,7 +130,9 @@ const NotificationPrompt = ({ onClose }) => {
 
         {result === 'failed' && (
           <p className="text-red-400 text-xs text-center mt-3">
-            Failed to enable notifications. Please try again or check your browser settings.
+            {isTelegramNotifications 
+              ? "Failed to enable notifications. Please make sure you haven't blocked our bot."
+              : "Failed to enable notifications. Please check your browser settings."}
           </p>
         )}
       </div>
@@ -137,32 +147,38 @@ export const NotificationSettings = () => {
     treatReadyNotify,
     limitResetNotify,
     permissionStatus,
+    isLoading,
     isTelegramNotifications,
     requestPermission,
     disableNotifications,
-    updatePreferences,
-    setShowPermissionPrompt
+    updatePreferences
   } = useNotifications();
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
 
   const handleToggleNotifications = async () => {
-    setIsLoading(true);
-    if (notificationsEnabled) {
-      await disableNotifications();
-    } else {
-      await requestPermission();
+    setLocalLoading(true);
+    try {
+      if (notificationsEnabled) {
+        await disableNotifications();
+      } else {
+        await requestPermission();
+      }
+    } catch (error) {
+      console.error('Error toggling notifications:', error);
     }
-    setIsLoading(false);
+    setLocalLoading(false);
   };
 
-  const handleToggleTreatReady = () => {
-    updatePreferences(!treatReadyNotify, limitResetNotify);
+  const handleToggleTreatReady = async () => {
+    await updatePreferences(!treatReadyNotify, limitResetNotify);
   };
 
-  const handleToggleLimitReset = () => {
-    updatePreferences(treatReadyNotify, !limitResetNotify);
+  const handleToggleLimitReset = async () => {
+    await updatePreferences(treatReadyNotify, !limitResetNotify);
   };
+
+  const isAnyLoading = isLoading || localLoading;
 
   return (
     <div className="space-y-4">
@@ -176,20 +192,26 @@ export const NotificationSettings = () => {
           <div>
             <h4 className="text-white font-medium">Push Notifications</h4>
             <p className="text-slate-400 text-xs">
-              {isTelegramNotifications ? 'Via Telegram' : 'Via Browser'}
+              {isTelegramNotifications ? 'Via Telegram Bot' : 'Via Browser'}
             </p>
           </div>
         </div>
         <button
           onClick={handleToggleNotifications}
-          disabled={isLoading}
+          disabled={isAnyLoading}
           className={`w-12 h-7 rounded-full transition-colors relative ${
             notificationsEnabled ? 'bg-green-500' : 'bg-slate-600'
-          }`}
+          } ${isAnyLoading ? 'opacity-50' : ''}`}
         >
-          <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
-            notificationsEnabled ? 'translate-x-6' : 'translate-x-1'
-          }`} />
+          {isAnyLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
+              notificationsEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`} />
+          )}
         </button>
       </div>
 
@@ -233,7 +255,7 @@ export const NotificationSettings = () => {
         </div>
       )}
 
-      {!notificationsEnabled && permissionStatus === 'denied' && (
+      {!notificationsEnabled && !isTelegramNotifications && permissionStatus === 'denied' && (
         <p className="text-red-400 text-xs">
           Notifications are blocked. Please enable them in your browser settings.
         </p>
