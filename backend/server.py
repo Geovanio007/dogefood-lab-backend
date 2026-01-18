@@ -2977,6 +2977,298 @@ async def delete_chat_message(message_id: str, sender_address: str):
         logger.error(f"Error deleting message: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============================================
+# NOTIFICATION SYSTEM ENDPOINTS
+# ============================================
+
+# VAPID keys for web push (generate once and store)
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+
+class NotificationSubscription(BaseModel):
+    player_address: Optional[str] = None
+    telegram_id: Optional[int] = None
+    subscription: Optional[dict] = None
+    treat_ready: bool = True
+    limit_reset: bool = True
+
+class ScheduleNotification(BaseModel):
+    player_address: Optional[str] = None
+    telegram_id: Optional[int] = None
+    treat_name: Optional[str] = None
+    ready_time: Optional[str] = None
+    reset_time: Optional[str] = None
+
+@api_router.get("/notifications/vapid-key")
+async def get_vapid_key():
+    """Get VAPID public key for web push subscription"""
+    return {"publicKey": VAPID_PUBLIC_KEY}
+
+@api_router.post("/notifications/telegram/subscribe")
+async def subscribe_telegram_notifications(data: NotificationSubscription):
+    """Subscribe to Telegram notifications"""
+    try:
+        if not data.telegram_id:
+            raise HTTPException(status_code=400, detail="Telegram ID required")
+        
+        await db.notification_subscriptions.update_one(
+            {"telegram_id": data.telegram_id},
+            {
+                "$set": {
+                    "telegram_id": data.telegram_id,
+                    "type": "telegram",
+                    "treat_ready": data.treat_ready,
+                    "limit_reset": data.limit_reset,
+                    "subscribed_at": datetime.utcnow(),
+                    "active": True
+                }
+            },
+            upsert=True
+        )
+        
+        # Send confirmation message via Telegram
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+        if bot_token:
+            try:
+                bot = Bot(token=bot_token)
+                await bot.send_message(
+                    chat_id=data.telegram_id,
+                    text="🔔 Notifications enabled!\n\nYou'll be notified when:\n✅ Your treats are ready to collect\n🔄 Your daily limit resets\n\nHappy brewing! 🧪"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to send Telegram confirmation: {e}")
+        
+        return {"success": True, "message": "Telegram notifications enabled"}
+    except Exception as e:
+        logger.error(f"Error subscribing to Telegram notifications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/telegram/unsubscribe")
+async def unsubscribe_telegram_notifications(data: NotificationSubscription):
+    """Unsubscribe from Telegram notifications"""
+    try:
+        if not data.telegram_id:
+            raise HTTPException(status_code=400, detail="Telegram ID required")
+        
+        await db.notification_subscriptions.update_one(
+            {"telegram_id": data.telegram_id},
+            {"$set": {"active": False}}
+        )
+        
+        return {"success": True, "message": "Telegram notifications disabled"}
+    except Exception as e:
+        logger.error(f"Error unsubscribing from Telegram notifications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/telegram/preferences")
+async def update_telegram_preferences(data: NotificationSubscription):
+    """Update Telegram notification preferences"""
+    try:
+        if not data.telegram_id:
+            raise HTTPException(status_code=400, detail="Telegram ID required")
+        
+        await db.notification_subscriptions.update_one(
+            {"telegram_id": data.telegram_id},
+            {
+                "$set": {
+                    "treat_ready": data.treat_ready,
+                    "limit_reset": data.limit_reset
+                }
+            }
+        )
+        
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error updating Telegram preferences: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/web/subscribe")
+async def subscribe_web_notifications(data: NotificationSubscription):
+    """Subscribe to web push notifications"""
+    try:
+        if not data.player_address or not data.subscription:
+            raise HTTPException(status_code=400, detail="Player address and subscription required")
+        
+        await db.notification_subscriptions.update_one(
+            {"player_address": data.player_address},
+            {
+                "$set": {
+                    "player_address": data.player_address,
+                    "type": "web",
+                    "subscription": data.subscription,
+                    "treat_ready": data.treat_ready,
+                    "limit_reset": data.limit_reset,
+                    "subscribed_at": datetime.utcnow(),
+                    "active": True
+                }
+            },
+            upsert=True
+        )
+        
+        return {"success": True, "message": "Web push notifications enabled"}
+    except Exception as e:
+        logger.error(f"Error subscribing to web notifications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/web/unsubscribe")
+async def unsubscribe_web_notifications(data: NotificationSubscription):
+    """Unsubscribe from web push notifications"""
+    try:
+        if not data.player_address:
+            raise HTTPException(status_code=400, detail="Player address required")
+        
+        await db.notification_subscriptions.update_one(
+            {"player_address": data.player_address},
+            {"$set": {"active": False}}
+        )
+        
+        return {"success": True, "message": "Web push notifications disabled"}
+    except Exception as e:
+        logger.error(f"Error unsubscribing from web notifications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/web/preferences")
+async def update_web_preferences(data: NotificationSubscription):
+    """Update web push notification preferences"""
+    try:
+        if not data.player_address:
+            raise HTTPException(status_code=400, detail="Player address required")
+        
+        await db.notification_subscriptions.update_one(
+            {"player_address": data.player_address},
+            {
+                "$set": {
+                    "treat_ready": data.treat_ready,
+                    "limit_reset": data.limit_reset
+                }
+            }
+        )
+        
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error updating web preferences: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/schedule/treat-ready")
+async def schedule_treat_ready_notification(data: ScheduleNotification, background_tasks: BackgroundTasks):
+    """Schedule a notification for when a treat is ready"""
+    try:
+        notification_data = {
+            "id": str(uuid.uuid4()),
+            "type": "treat_ready",
+            "treat_name": data.treat_name,
+            "ready_time": data.ready_time,
+            "created_at": datetime.utcnow(),
+            "sent": False
+        }
+        
+        if data.telegram_id:
+            notification_data["telegram_id"] = data.telegram_id
+        elif data.player_address:
+            notification_data["player_address"] = data.player_address
+        else:
+            raise HTTPException(status_code=400, detail="Telegram ID or player address required")
+        
+        await db.scheduled_notifications.insert_one(notification_data)
+        
+        # Schedule background task to send notification
+        background_tasks.add_task(send_scheduled_notification, notification_data["id"])
+        
+        return {"success": True, "notification_id": notification_data["id"]}
+    except Exception as e:
+        logger.error(f"Error scheduling treat notification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/schedule/limit-reset")
+async def schedule_limit_reset_notification(data: ScheduleNotification, background_tasks: BackgroundTasks):
+    """Schedule a notification for when daily limit resets"""
+    try:
+        notification_data = {
+            "id": str(uuid.uuid4()),
+            "type": "limit_reset",
+            "reset_time": data.reset_time,
+            "created_at": datetime.utcnow(),
+            "sent": False
+        }
+        
+        if data.telegram_id:
+            notification_data["telegram_id"] = data.telegram_id
+        elif data.player_address:
+            notification_data["player_address"] = data.player_address
+        else:
+            raise HTTPException(status_code=400, detail="Telegram ID or player address required")
+        
+        await db.scheduled_notifications.insert_one(notification_data)
+        
+        # Schedule background task to send notification
+        background_tasks.add_task(send_scheduled_notification, notification_data["id"])
+        
+        return {"success": True, "notification_id": notification_data["id"]}
+    except Exception as e:
+        logger.error(f"Error scheduling limit reset notification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def send_scheduled_notification(notification_id: str):
+    """Background task to send scheduled notification"""
+    import asyncio
+    
+    try:
+        notification = await db.scheduled_notifications.find_one({"id": notification_id})
+        if not notification or notification.get("sent"):
+            return
+        
+        # Calculate delay
+        if notification["type"] == "treat_ready" and notification.get("ready_time"):
+            ready_time = datetime.fromisoformat(notification["ready_time"].replace("Z", "+00:00"))
+            delay = (ready_time - datetime.utcnow()).total_seconds()
+        elif notification["type"] == "limit_reset" and notification.get("reset_time"):
+            reset_time = datetime.fromisoformat(notification["reset_time"].replace("Z", "+00:00"))
+            delay = (reset_time - datetime.utcnow()).total_seconds()
+        else:
+            delay = 0
+        
+        # Wait until notification time
+        if delay > 0:
+            await asyncio.sleep(min(delay, 86400))  # Max 24 hours
+        
+        # Check if subscription is still active
+        if notification.get("telegram_id"):
+            sub = await db.notification_subscriptions.find_one({
+                "telegram_id": notification["telegram_id"],
+                "active": True
+            })
+            if not sub:
+                return
+            
+            # Check preference
+            if notification["type"] == "treat_ready" and not sub.get("treat_ready", True):
+                return
+            if notification["type"] == "limit_reset" and not sub.get("limit_reset", True):
+                return
+            
+            # Send Telegram notification
+            bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+            if bot_token:
+                bot = Bot(token=bot_token)
+                if notification["type"] == "treat_ready":
+                    message = f"🍖 Your {notification.get('treat_name', 'treat')} is ready!\n\nHead to the lab to collect it before it gets cold! 🧪"
+                else:
+                    message = "🔄 Daily limit reset!\n\nYou can now create more treats. Time to brew! 🧪"
+                
+                try:
+                    await bot.send_message(chat_id=notification["telegram_id"], text=message)
+                except Exception as e:
+                    logger.warning(f"Failed to send Telegram notification: {e}")
+        
+        # Mark as sent
+        await db.scheduled_notifications.update_one(
+            {"id": notification_id},
+            {"$set": {"sent": True, "sent_at": datetime.utcnow()}}
+        )
+        
+    except Exception as e:
+        logger.error(f"Error sending scheduled notification: {e}")
+
 # Include the router in the main app
 app.include_router(api_router)
 
