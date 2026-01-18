@@ -275,6 +275,84 @@ const MainMenu = () => {
     }
   };
 
+  // Check if user is authenticated
+  const isAuthenticated = isConnected || isTelegram || guestUser;
+  
+  // Handle lab access - check authentication first
+  const handleLabAccess = (e) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      setShowAuthModal(true);
+    }
+  };
+  
+  // Handle guest signup
+  const handleGuestSignup = async () => {
+    if (!guestUsername || guestUsername.length < 3) {
+      setGuestSignupError('Username must be at least 3 characters');
+      return;
+    }
+    
+    if (guestUsername.length > 20) {
+      setGuestSignupError('Username must be 20 characters or less');
+      return;
+    }
+    
+    if (!/^[a-zA-Z0-9_]+$/.test(guestUsername)) {
+      setGuestSignupError('Username can only contain letters, numbers, and underscores');
+      return;
+    }
+    
+    setGuestSignupLoading(true);
+    setGuestSignupError('');
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/players/guest-register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: guestUsername })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        setGuestSignupError(data.detail || 'Registration failed');
+        setGuestSignupLoading(false);
+        return;
+      }
+      
+      // Save to localStorage
+      localStorage.setItem('dogefood_player', JSON.stringify({
+        id: data.player_id,
+        guest_id: data.guest_id,
+        username: data.username,
+        auth_type: 'guest'
+      }));
+      
+      // Update state
+      setGuestUser({
+        id: data.player_id,
+        guest_id: data.guest_id,
+        username: data.username,
+        auth_type: 'guest'
+      });
+      
+      // Dispatch event
+      window.dispatchEvent(new Event('dogefood_player_registered'));
+      
+      // Close modals and navigate to lab
+      setShowAuthModal(false);
+      setShowGuestSignup(false);
+      setGuestSignupLoading(false);
+      navigate('/lab');
+      
+    } catch (error) {
+      console.error('Guest signup error:', error);
+      setGuestSignupError('Network error. Please try again.');
+      setGuestSignupLoading(false);
+    }
+  };
+
   // Update game state when wallet connects and NFT status is determined
   useEffect(() => {
     if (isConnected && address && !nftLoading) {
