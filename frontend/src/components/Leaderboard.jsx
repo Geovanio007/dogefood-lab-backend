@@ -521,7 +521,7 @@ const Leaderboard = () => {
               <div className="md:hidden space-y-2">
                 {leaderboard.map((entry, index) => {
                   const rank = index + 1;
-                  const isCurrentUser = address && entry.address.toLowerCase() === address.toLowerCase();
+                  const isCurrentUser = playerAddress && entry.address.toLowerCase() === playerAddress.toLowerCase();
                   
                   return (
                     <div 
