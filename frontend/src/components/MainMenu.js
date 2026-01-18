@@ -687,7 +687,7 @@ const MainMenu = () => {
         {/* Main Menu Cards - Compact Square Design for Telegram */}
         <div className="grid grid-cols-2 gap-2 sm:gap-6 mb-4 sm:mb-12">
           {/* Enter Lab */}
-          <Link to="/lab" className="block">
+          <Link to="/lab" className="block" onClick={handleLabAccess}>
             <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full">
               <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto">
                 <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
