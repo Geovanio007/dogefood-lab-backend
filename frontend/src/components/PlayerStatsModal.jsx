@@ -153,6 +153,23 @@ const PlayerStatsModal = ({ playerAddress, onClose }) => {
 
               {/* Stats Content - Compact layout */}
               <div className="p-2">
+                {/* Rank Banner */}
+                {stats.rank && (
+                  <div className="bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-yellow-500/20 border border-yellow-500/30 rounded-lg p-2 mb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-yellow-400" />
+                      <div>
+                        <div className="text-yellow-300 text-[10px] uppercase font-semibold">Leaderboard Rank</div>
+                        <div className="text-2xl font-black text-white">#{stats.rank}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] text-slate-400">out of</div>
+                      <div className="text-lg font-bold text-slate-300">{stats.total_players} players</div>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Primary Stats Row - 4 compact boxes */}
                 <div className="grid grid-cols-4 gap-1 mb-2">
                   <div className="text-center p-1.5 bg-slate-800/50 rounded">
