@@ -5,7 +5,7 @@ const AudioContext = createContext(null);
 // Use hosted sound URLs for reliable playback
 const SOUND_URLS = {
   click: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
-  brewing: 'https://assets.mixkit.co/active_storage/sfx/2462/2462-preview.mp3',
+  brewing: 'https://customer-assets.emergentagent.com/job_audiorank-verify/artifacts/rndhcfwa_cauldron-boiling-173607.mp3',
   success: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3',
   rare: 'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3',
   collect: 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3',
