@@ -337,7 +337,7 @@ const Leaderboard = () => {
       </Card>
 
       {/* Current User Status */}
-      {address && (
+      {playerAddress && (
         <Card className="glass-panel mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
