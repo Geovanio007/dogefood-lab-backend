@@ -146,8 +146,8 @@ export const MusicProvider = ({ children }) => {
 
   // Handle track end - play next
   const handleTrackEnd = useCallback(() => {
-    setCurrentTrackIndex((prev) => (prev + 1) % PLAYLIST.length);
-  }, []);
+    setCurrentTrackIndex((prev) => (prev + 1) % playlist.length);
+  }, [playlist.length]);
 
   // Attempt autoplay after user interaction
   const attemptAutoplay = useCallback(async () => {
