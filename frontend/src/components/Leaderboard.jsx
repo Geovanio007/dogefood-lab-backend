@@ -145,9 +145,9 @@ const Leaderboard = () => {
 
   useEffect(() => {
     // Find current user's rank if they have an address
-    if (address && leaderboard && leaderboard.length > 0) {
+    if (playerAddress && leaderboard && leaderboard.length > 0) {
       const userIndex = leaderboard.findIndex(entry => 
-        entry.address && entry.address.toLowerCase() === address.toLowerCase()
+        entry.address && entry.address.toLowerCase() === playerAddress.toLowerCase()
       );
       if (userIndex !== -1) {
         setCurrentUserRank(userIndex + 1);
@@ -160,7 +160,7 @@ const Leaderboard = () => {
       ...prev, 
       participants: leaderboard ? leaderboard.length : 0
     }));
-  }, [address, leaderboard]);
+  }, [playerAddress, leaderboard]);
 
   const getRankIcon = (rank) => {
     switch (rank) {
