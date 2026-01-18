@@ -84,6 +84,15 @@ const MainMenu = () => {
   const { address, isConnected } = useAccount();
   const { nftBalance, isNFTHolder, loading: nftLoading } = useNFTVerification();
   const { user, currentLevel, points, dispatch, loadPlayerData } = useGame();
+  const { telegramUser, isTelegram } = useTelegram();
+  const navigate = useNavigate();
+  
+  // Auth modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showGuestSignup, setShowGuestSignup] = useState(false);
+  const [guestUsername, setGuestUsername] = useState('');
+  const [guestSignupError, setGuestSignupError] = useState('');
+  const [guestSignupLoading, setGuestSignupLoading] = useState(false);
   
   // Username state
   const [username, setUsername] = useState('');
