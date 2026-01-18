@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMusic } from '../contexts/MusicContext';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Minimize2, Maximize2, Music } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Minimize2, Maximize2, Music, Shuffle } from 'lucide-react';
 
 const MusicPlayer = () => {
   const location = useLocation();
@@ -10,6 +10,7 @@ const MusicPlayer = () => {
     currentTrack,
     currentTrackIndex,
     playlist,
+    isShuffled,
     volume,
     isMinimized,
     duration,
@@ -21,7 +22,8 @@ const MusicPlayer = () => {
     nextTrack,
     prevTrack,
     seekTo,
-    showPlayer
+    showPlayer,
+    toggleShuffle
   } = useMusic();
 
   // Show player when component mounts
