@@ -861,6 +861,137 @@ const MainMenu = () => {
       
       {/* Scientist Chat */}
       <ScientistChat />
+      
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-700 relative">
+            {/* Close button */}
+            <button 
+              onClick={() => { setShowAuthModal(false); setShowGuestSignup(false); }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {!showGuestSignup ? (
+              <>
+                {/* Icon */}
+                <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <Beaker className="w-8 h-8 text-white" />
+                </div>
+
+                {/* Title */}
+                <h3 className="text-xl font-bold text-white text-center mb-2">
+                  Join the Lab! 🧪
+                </h3>
+
+                {/* Description */}
+                <p className="text-slate-300 text-sm text-center mb-6">
+                  Connect your wallet or sign up to start mixing treats and earning points!
+                </p>
+
+                {/* Options */}
+                <div className="space-y-3">
+                  {/* Connect Wallet */}
+                  <div className="connect-wallet-wrapper">
+                    <ConnectButton.Custom>
+                      {({ openConnectModal }) => (
+                        <button
+                          onClick={() => {
+                            setShowAuthModal(false);
+                            openConnectModal();
+                          }}
+                          className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold hover:from-blue-600 hover:to-indigo-600 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Wallet className="w-5 h-5" />
+                          Connect Wallet
+                        </button>
+                      )}
+                    </ConnectButton.Custom>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-slate-600" />
+                    <span className="text-slate-400 text-sm">or</span>
+                    <div className="flex-1 h-px bg-slate-600" />
+                  </div>
+                  
+                  {/* Guest Sign Up */}
+                  <button
+                    onClick={() => setShowGuestSignup(true)}
+                    className="w-full py-3 px-4 rounded-xl bg-slate-700 text-white font-semibold hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <UserPlus className="w-5 h-5" />
+                    Sign Up as Guest
+                  </button>
+                </div>
+
+                <p className="text-slate-400 text-xs text-center mt-4">
+                  NFT holders get bonus points and VIP status!
+                </p>
+              </>
+            ) : (
+              <>
+                {/* Guest Signup Form */}
+                <button 
+                  onClick={() => setShowGuestSignup(false)}
+                  className="text-slate-400 hover:text-white transition-colors mb-4 flex items-center gap-1 text-sm"
+                >
+                  ← Back
+                </button>
+
+                <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-green-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <UserPlus className="w-7 h-7 text-white" />
+                </div>
+
+                <h3 className="text-lg font-bold text-white text-center mb-2">
+                  Create Guest Account
+                </h3>
+
+                <p className="text-slate-300 text-xs text-center mb-4">
+                  Choose a username to get started
+                </p>
+
+                <div className="space-y-4">
+                  <div>
+                    <Input
+                      type="text"
+                      placeholder="Enter username"
+                      value={guestUsername}
+                      onChange={(e) => setGuestUsername(e.target.value)}
+                      className="w-full bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                      maxLength={20}
+                    />
+                    {guestSignupError && (
+                      <p className="text-red-400 text-xs mt-1">{guestSignupError}</p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleGuestSignup}
+                    disabled={guestSignupLoading || !guestUsername}
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 text-white font-semibold hover:from-emerald-600 hover:to-green-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {guestSignupLoading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Check className="w-5 h-5" />
+                        Create Account
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <p className="text-slate-400 text-xs text-center mt-4">
+                  You can connect a wallet later to verify NFT ownership
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
