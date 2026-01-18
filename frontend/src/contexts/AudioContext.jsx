@@ -2,14 +2,14 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 
 const AudioContext = createContext(null);
 
-// Sound effect configurations
-const SOUND_CONFIG = {
-  click: { url: '/sounds/click.wav', volume: 0.4 },
-  brewing: { url: '/sounds/brewing.wav', volume: 0.5 },
-  success: { url: '/sounds/success.wav', volume: 0.6 },
-  rare: { url: '/sounds/rare.wav', volume: 0.7 },
-  collect: { url: '/sounds/collect.wav', volume: 0.5 },
-  levelUp: { url: '/sounds/levelup.wav', volume: 0.7 },
+// Use hosted sound URLs for reliable playback
+const SOUND_URLS = {
+  click: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
+  brewing: 'https://assets.mixkit.co/active_storage/sfx/2462/2462-preview.mp3',
+  success: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3',
+  rare: 'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3',
+  collect: 'https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3',
+  levelUp: 'https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3',
 };
 
 // Lab ambient music
@@ -34,44 +34,50 @@ export const AudioProvider = ({ children }) => {
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
   
-  // Audio buffers cache
-  const audioBuffersRef = useRef({});
-  const webAudioContextRef = useRef(null);
+  // Audio elements cache
+  const soundsRef = useRef({});
   const labMusicRef = useRef(null);
-  const gainNodeRef = useRef(null);
 
-  // Get or create Web Audio Context
-  const getAudioContext = useCallback(() => {
-    if (!webAudioContextRef.current) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      webAudioContextRef.current = new AudioCtx();
-      
-      // Create master gain node
-      gainNodeRef.current = webAudioContextRef.current.createGain();
-      gainNodeRef.current.connect(webAudioContextRef.current.destination);
-      gainNodeRef.current.gain.value = effectsVolume / 100;
-    }
-    return webAudioContextRef.current;
-  }, [effectsVolume]);
+  // Preload sounds using Audio elements
+  const preloadSounds = useCallback(() => {
+    console.log('🔊 Preloading game sounds...');
+    Object.entries(SOUND_URLS).forEach(([key, url]) => {
+      if (!soundsRef.current[key]) {
+        const audio = new Audio(url);
+        audio.preload = 'auto';
+        audio.volume = 0.5;
+        soundsRef.current[key] = audio;
+        
+        audio.addEventListener('canplaythrough', () => {
+          console.log(`✅ Sound ready: ${key}`);
+        });
+        
+        audio.addEventListener('error', (e) => {
+          console.error(`❌ Failed to load ${key}:`, e);
+        });
+      }
+    });
+  }, []);
 
   // Unlock audio on user interaction
   const unlockAudio = useCallback(async () => {
     if (isUnlocked) return true;
     
     try {
-      const ctx = getAudioContext();
+      // Play and immediately pause each sound to unlock
+      const unlockPromises = Object.values(soundsRef.current).map(async (audio) => {
+        try {
+          audio.volume = 0;
+          await audio.play();
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = 0.5;
+        } catch (e) {
+          // Ignore errors during unlock
+        }
+      });
       
-      if (ctx.state === 'suspended') {
-        await ctx.resume();
-      }
-      
-      // Play a silent buffer to fully unlock
-      const buffer = ctx.createBuffer(1, 1, 22050);
-      const source = ctx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(ctx.destination);
-      source.start(0);
-      
+      await Promise.all(unlockPromises);
       setIsUnlocked(true);
       console.log('🔓 Audio system unlocked!');
       return true;
@@ -79,88 +85,58 @@ export const AudioProvider = ({ children }) => {
       console.warn('Failed to unlock audio:', error);
       return false;
     }
-  }, [isUnlocked, getAudioContext]);
+  }, [isUnlocked]);
 
-  // Load audio buffer
-  const loadAudioBuffer = useCallback(async (soundKey) => {
-    if (audioBuffersRef.current[soundKey]) {
-      return audioBuffersRef.current[soundKey];
-    }
+  // Initialize on mount
+  useEffect(() => {
+    preloadSounds();
+  }, [preloadSounds]);
+
+  // Listen for user interaction to unlock audio
+  useEffect(() => {
+    const handleInteraction = async () => {
+      await unlockAudio();
+    };
     
-    const config = SOUND_CONFIG[soundKey];
-    if (!config) return null;
+    const events = ['click', 'touchstart', 'keydown', 'mousedown'];
+    events.forEach(event => {
+      document.addEventListener(event, handleInteraction, { once: true, passive: true });
+    });
     
-    try {
-      const ctx = getAudioContext();
-      const response = await fetch(config.url);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-      
-      audioBuffersRef.current[soundKey] = audioBuffer;
-      console.log(`✅ Loaded sound: ${soundKey}`);
-      return audioBuffer;
-    } catch (error) {
-      console.error(`Failed to load ${soundKey}:`, error);
-      return null;
-    }
-  }, [getAudioContext]);
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleInteraction);
+      });
+    };
+  }, [unlockAudio]);
 
-  // Preload all sounds
-  const preloadSounds = useCallback(async () => {
-    console.log('🔊 Preloading game sounds...');
-    const promises = Object.keys(SOUND_CONFIG).map(key => loadAudioBuffer(key));
-    await Promise.all(promises);
-    console.log('✅ All sounds preloaded');
-  }, [loadAudioBuffer]);
-
-  // Play sound effect using Web Audio API
+  // Play sound effect
   const playSound = useCallback(async (soundKey) => {
     if (!soundEnabled) {
-      console.log(`Sound disabled, skipping: ${soundKey}`);
       return;
     }
     
     try {
-      const ctx = getAudioContext();
-      
-      // Resume if suspended
-      if (ctx.state === 'suspended') {
-        await ctx.resume();
-      }
-      
-      // Load buffer if not cached
-      let buffer = audioBuffersRef.current[soundKey];
-      if (!buffer) {
-        buffer = await loadAudioBuffer(soundKey);
-      }
-      
-      if (!buffer) {
-        console.warn(`No buffer for sound: ${soundKey}`);
+      const audio = soundsRef.current[soundKey];
+      if (!audio) {
+        console.warn(`Sound not found: ${soundKey}`);
         return;
       }
       
-      // Create source and gain nodes
-      const source = ctx.createBufferSource();
-      const gainNode = ctx.createGain();
+      // Clone for overlapping sounds
+      const clone = audio.cloneNode();
+      clone.volume = (effectsVolume / 100) * 0.6;
       
-      source.buffer = buffer;
-      
-      // Set volume based on config and user settings
-      const config = SOUND_CONFIG[soundKey] || { volume: 0.5 };
-      gainNode.gain.value = config.volume * (effectsVolume / 100);
-      
-      // Connect: source -> gain -> destination
-      source.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      
-      // Play
-      source.start(0);
-      console.log(`🔊 Playing: ${soundKey}`);
+      clone.play().then(() => {
+        console.log(`🔊 Playing: ${soundKey}`);
+      }).catch((e) => {
+        console.warn(`Sound play failed: ${soundKey}`, e.message);
+      });
       
     } catch (error) {
       console.error(`Error playing ${soundKey}:`, error);
     }
-  }, [soundEnabled, effectsVolume, getAudioContext, loadAudioBuffer]);
+  }, [soundEnabled, effectsVolume]);
 
   // Sound effect shortcuts
   const playClick = useCallback(() => playSound('click'), [playSound]);
@@ -177,14 +153,12 @@ export const AudioProvider = ({ children }) => {
     if (!soundEnabled) return false;
     
     try {
-      await unlockAudio();
-      
       if (!labMusicRef.current) {
         labMusicRef.current = new Audio(LAB_AMBIENT_URL);
         labMusicRef.current.loop = true;
       }
       
-      labMusicRef.current.volume = (musicVolume / 100) * 0.4;
+      labMusicRef.current.volume = (musicVolume / 100) * 0.3;
       await labMusicRef.current.play();
       setIsMusicPlaying(true);
       console.log('🎵 Lab ambient started');
@@ -193,7 +167,7 @@ export const AudioProvider = ({ children }) => {
       console.warn('Failed to start lab ambient:', error);
       return false;
     }
-  }, [soundEnabled, musicVolume, unlockAudio]);
+  }, [soundEnabled, musicVolume]);
 
   const stopLabAmbient = useCallback(() => {
     if (labMusicRef.current) {
@@ -204,41 +178,19 @@ export const AudioProvider = ({ children }) => {
     }
   }, []);
 
-  // Listen for user interaction to unlock audio
-  useEffect(() => {
-    const handleInteraction = async () => {
-      await unlockAudio();
-      preloadSounds();
-    };
-    
-    const events = ['click', 'touchstart', 'keydown', 'mousedown'];
-    events.forEach(event => {
-      document.addEventListener(event, handleInteraction, { once: true, passive: true });
-    });
-    
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, handleInteraction);
-      });
-    };
-  }, [unlockAudio, preloadSounds]);
-
-  // Update volumes
+  // Save settings
   useEffect(() => {
     localStorage.setItem('dogefood_sound_enabled', JSON.stringify(soundEnabled));
   }, [soundEnabled]);
 
   useEffect(() => {
     localStorage.setItem('dogefood_effects_volume', effectsVolume.toString());
-    if (gainNodeRef.current) {
-      gainNodeRef.current.gain.value = effectsVolume / 100;
-    }
   }, [effectsVolume]);
 
   useEffect(() => {
     localStorage.setItem('dogefood_music_volume', musicVolume.toString());
     if (labMusicRef.current) {
-      labMusicRef.current.volume = (musicVolume / 100) * 0.4;
+      labMusicRef.current.volume = (musicVolume / 100) * 0.3;
     }
   }, [musicVolume]);
 
@@ -297,7 +249,6 @@ export const AudioProvider = ({ children }) => {
 export const useAudio = () => {
   const context = useContext(AudioContext);
   if (!context) {
-    // Return safe defaults when not inside provider
     return {
       soundEnabled: false,
       effectsVolume: 80,
