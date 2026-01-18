@@ -27,7 +27,7 @@ export const AudioProvider = ({ children }) => {
   });
   
   const [musicVolume, setMusicVolume] = useState(() => {
-    const saved = localStorage.getItem('dogefood_music_volume');
+    const saved = localStorage.getItem('dogefood_lab_music_volume');
     return saved !== null ? parseInt(saved) : 50;
   });
 
