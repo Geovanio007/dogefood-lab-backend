@@ -32,7 +32,7 @@ import './App.css';
 const InnerApp = () => {
   const { address, isConnected } = useAccount();
   const { isTelegram, telegramUser, isAuthenticated: isTelegramAuthenticated, isLoading: isTelegramLoading } = useTelegram();
-  const { showPermissionPrompt, setShowPermissionPrompt, notificationsEnabled, permissionStatus } = useNotifications();
+  const { notificationsEnabled, permissionStatus } = useNotifications();
   
   const [showWelcome, setShowWelcome] = useState(true); // Start with true, will be updated
   const [isLoading, setIsLoading] = useState(false);
