@@ -447,6 +447,8 @@ async def get_player_weekly_stats(address: str):
         
         return {
             "player": player_data,
+            "rank": player_rank,
+            "total_players": total_players,
             "period": "Last 7 Days",
             "period_start": seven_days_ago.isoformat(),
             "period_end": datetime.utcnow().isoformat(),
