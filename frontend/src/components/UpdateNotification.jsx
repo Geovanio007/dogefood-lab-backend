@@ -64,8 +64,8 @@ const UpdateNotification = () => {
         {/* Action buttons */}
         <div className="flex gap-2 mt-3">
           <button
-            onClick={applyUpdate}
-            className="flex-1 bg-white text-amber-600 font-bold py-2 px-4 rounded-xl text-sm hover:bg-amber-50 transition-colors shadow-lg"
+            onClick={handleRefresh}
+            className="flex-1 bg-white text-emerald-600 font-bold py-2 px-4 rounded-xl text-sm hover:bg-emerald-50 transition-colors shadow-lg"
           >
             🔄 Refresh Now
           </button>
