@@ -47,11 +47,18 @@ export const MusicProvider = ({ children }) => {
 
   const currentTrack = PLAYLIST[currentTrackIndex];
 
+  // Safe volume setter that ensures value is in 0-1 range
+  const setVolume = useCallback((newVolume) => {
+    const safeVolume = Math.max(0, Math.min(1, newVolume > 1 ? newVolume / 100 : newVolume));
+    setVolumeState(safeVolume);
+  }, []);
+
   // Initialize audio element
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
-      audioRef.current.volume = volume;
+      // Ensure volume is in valid range before setting
+      audioRef.current.volume = Math.max(0, Math.min(1, volume));
       audioRef.current.preload = 'auto';
       
       // Event listeners
