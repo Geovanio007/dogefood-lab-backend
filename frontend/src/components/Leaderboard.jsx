@@ -85,6 +85,10 @@ const Leaderboard = () => {
     currentLevel, 
     player
   } = useGame();
+  const { telegramUser } = useTelegram();
+  
+  // Get player address (wallet or telegram)
+  const playerAddress = address || (telegramUser ? `tg_${telegramUser.id}` : null);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
