@@ -243,6 +243,11 @@ const InnerApp = () => {
             <TreatNotifications />
           </Router>
         )}
+
+        {/* Notification Permission Prompt */}
+        {showNotificationPrompt && (
+          <NotificationPrompt onClose={() => setShowNotificationPrompt(false)} />
+        )}
       </div>
     </GameProvider>
   );
