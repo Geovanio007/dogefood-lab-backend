@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
-import { X, TrendingUp, Flame, Beaker, Sparkles } from 'lucide-react';
+import { X, TrendingUp, Flame, Beaker, Sparkles, Trophy } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
