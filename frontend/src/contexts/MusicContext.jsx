@@ -206,13 +206,23 @@ export const MusicProvider = ({ children }) => {
 
   // Next track
   const nextTrack = useCallback(() => {
-    setCurrentTrackIndex((prev) => (prev + 1) % PLAYLIST.length);
-  }, []);
+    setCurrentTrackIndex((prev) => (prev + 1) % playlist.length);
+  }, [playlist.length]);
 
   // Previous track
   const prevTrack = useCallback(() => {
-    setCurrentTrackIndex((prev) => (prev - 1 + PLAYLIST.length) % PLAYLIST.length);
-  }, []);
+    setCurrentTrackIndex((prev) => (prev - 1 + playlist.length) % playlist.length);
+  }, [playlist.length]);
+
+  // Toggle shuffle
+  const toggleShuffle = useCallback(() => {
+    if (!isShuffled) {
+      // Turning shuffle ON - create new shuffled playlist
+      setShuffledPlaylist(shuffleArray(PLAYLIST));
+      setCurrentTrackIndex(0);
+    }
+    setIsShuffled(prev => !prev);
+  }, [isShuffled]);
 
   // Seek to position
   const seekTo = useCallback((time) => {
