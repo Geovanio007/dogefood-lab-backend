@@ -94,6 +94,7 @@ const Leaderboard = () => {
   const [error, setError] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [currentUserRank, setCurrentUserRank] = useState(null);
+  const [currentUserPoints, setCurrentUserPoints] = useState(0);
   const [selectedPlayerAddress, setSelectedPlayerAddress] = useState(null);
   const [seasonInfo, setSeasonInfo] = useState({
     current: 1,
