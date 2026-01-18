@@ -10,7 +10,8 @@ import { useGame } from '../contexts/GameContext';
 import { useAudio } from '../contexts/AudioContext';
 import { useTelegram } from '../contexts/TelegramContext';
 import { useNFTVerification } from '../hooks/useNFTVerification';
-import { ArrowLeft, Volume2, VolumeX, Palette, Zap, Settings as SettingsIcon, Play, Pause, User, Edit2, Check, X } from 'lucide-react';
+import { NotificationSettings } from './NotificationPrompt';
+import { ArrowLeft, Volume2, VolumeX, Palette, Zap, Settings as SettingsIcon, Play, Pause, User, Edit2, Check, X, Bell } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
