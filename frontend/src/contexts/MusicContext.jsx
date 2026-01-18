@@ -94,9 +94,10 @@ export const MusicProvider = ({ children }) => {
   // Update volume
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = volume;
+      // Ensure volume is in valid 0-1 range
+      audioRef.current.volume = Math.max(0, Math.min(1, volume));
     }
-    localStorage.setItem('dogefood_music_volume', volume.toString());
+    localStorage.setItem('dogefood_music_player_volume', volume.toString());
   }, [volume]);
 
   // Handle track end - play next
