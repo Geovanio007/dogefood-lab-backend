@@ -292,8 +292,9 @@ export const useMusic = () => {
       isPlaying: false,
       currentTrack: null,
       playlist: [],
-      volume: 0.5,
-      isMinimized: false,
+      isShuffled: true,
+      volume: 0.1,
+      isMinimized: true,
       duration: 0,
       currentTime: 0,
       shouldShowPlayer: false,
@@ -305,7 +306,8 @@ export const useMusic = () => {
       seekTo: () => {},
       showPlayer: () => {},
       hidePlayer: () => {},
-      stopMusic: () => {}
+      stopMusic: () => {},
+      toggleShuffle: () => {}
     };
   }
   return context;
