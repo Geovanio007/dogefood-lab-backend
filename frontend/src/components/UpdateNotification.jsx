@@ -4,6 +4,13 @@ import { useVersion } from '../contexts/VersionContext';
 const UpdateNotification = () => {
   const { updateAvailable, applyUpdate, dismissUpdate } = useVersion();
 
+  const handleRefresh = () => {
+    // Dismiss first so card disappears immediately
+    dismissUpdate();
+    // Then apply update (reload page)
+    setTimeout(() => applyUpdate(), 100);
+  };
+
   if (!updateAvailable) {
     return null;
   }
@@ -13,7 +20,7 @@ const UpdateNotification = () => {
       className="fixed bottom-4 left-4 right-4 z-[9999] animate-slide-up"
       style={{ maxWidth: '400px', margin: '0 auto' }}
     >
-      <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl shadow-2xl p-4 border-2 border-amber-300">
+      <div className="bg-gradient-to-r from-emerald-500 to-green-500 rounded-2xl shadow-2xl p-4 border-2 border-emerald-300">
         <div className="flex items-start gap-3">
           {/* Icon */}
           <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
