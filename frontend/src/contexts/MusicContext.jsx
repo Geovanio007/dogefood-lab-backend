@@ -258,7 +258,8 @@ export const MusicProvider = ({ children }) => {
     isPlaying,
     currentTrack,
     currentTrackIndex,
-    playlist: PLAYLIST,
+    playlist,
+    isShuffled,
     volume,
     isMinimized,
     duration,
@@ -273,7 +274,8 @@ export const MusicProvider = ({ children }) => {
     seekTo,
     showPlayer,
     hidePlayer,
-    stopMusic
+    stopMusic,
+    toggleShuffle
   };
 
   return (
