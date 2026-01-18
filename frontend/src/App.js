@@ -73,6 +73,21 @@ const InnerApp = () => {
     return () => window.removeEventListener('dogefood_player_registered', handlePlayerRegistered);
   }, []);
 
+  // Show notification prompt after user is ready to play (after 10 seconds, once per session)
+  useEffect(() => {
+    const hasSeenPrompt = sessionStorage.getItem('dogefood_notification_prompt_shown');
+    const isUserReady = !showWelcome && !isLoading && !isCheckingRegistration;
+    
+    if (isUserReady && !notificationsEnabled && permissionStatus !== 'denied' && !hasSeenPrompt) {
+      const timer = setTimeout(() => {
+        setShowNotificationPrompt(true);
+        sessionStorage.setItem('dogefood_notification_prompt_shown', 'true');
+      }, 10000); // Show after 10 seconds of gameplay
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showWelcome, isLoading, isCheckingRegistration, notificationsEnabled, permissionStatus]);
+
   // Handle welcome screen visibility based on Telegram status
   useEffect(() => {
     if (!isTelegramLoading) {
