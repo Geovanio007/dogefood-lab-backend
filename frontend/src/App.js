@@ -7,6 +7,7 @@ import { TelegramProvider, useTelegram } from './contexts/TelegramContext';
 import { AudioProvider } from './contexts/AudioContext';
 import { MusicProvider } from './contexts/MusicContext';
 import { VersionProvider } from './contexts/VersionContext';
+import { NotificationProvider, useNotifications } from './contexts/NotificationContext';
 import { Web3Provider } from './components/Web3Provider';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
@@ -23,6 +24,7 @@ import TreatNotifications from './components/TreatNotifications';
 import UserRegistration from './components/UserRegistration';
 import TelegramAuth from './components/TelegramAuth';
 import UpdateNotification from './components/UpdateNotification';
+import NotificationPrompt from './components/NotificationPrompt';
 // import PointsToBlockchain from './components/PointsToBlockchain';
 import './App.css';
 
