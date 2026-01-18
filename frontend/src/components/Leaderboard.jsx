@@ -357,7 +357,7 @@ const Leaderboard = () => {
                 <div className="text-sm text-slate-600 dark:text-slate-200">Current Rank</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{points}</div>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{currentUserPoints.toLocaleString()}</div>
                 <div className="text-sm text-slate-600 dark:text-slate-200">Points</div>
               </div>
               <div className="text-center">
