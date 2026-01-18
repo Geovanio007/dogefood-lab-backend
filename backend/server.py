@@ -3269,6 +3269,113 @@ async def send_scheduled_notification(notification_id: str):
     except Exception as e:
         logger.error(f"Error sending scheduled notification: {e}")
 
+# ============================================
+# GUEST REGISTRATION ENDPOINT
+# ============================================
+
+class GuestRegisterRequest(BaseModel):
+    username: str
+
+@api_router.post("/players/guest-register")
+async def register_guest_player(request: GuestRegisterRequest):
+    """Register a new guest player with unique ID"""
+    try:
+        username = request.username.strip()
+        
+        # Validate username
+        if len(username) < 3:
+            raise HTTPException(status_code=400, detail="Username must be at least 3 characters")
+        if len(username) > 20:
+            raise HTTPException(status_code=400, detail="Username must be 20 characters or less")
+        if not username.replace('_', '').isalnum():
+            raise HTTPException(status_code=400, detail="Username can only contain letters, numbers, and underscores")
+        
+        # Check if username is taken
+        existing = await db.players.find_one({"nickname": {"$regex": f"^{username}$", "$options": "i"}})
+        if existing:
+            raise HTTPException(status_code=400, detail="Username is already taken")
+        
+        # Generate unique guest ID
+        guest_id = f"GUEST_{uuid.uuid4().hex[:12].upper()}"
+        player_id = str(uuid.uuid4())
+        
+        # Create player document
+        player_data = {
+            "id": player_id,
+            "guest_id": guest_id,
+            "address": guest_id,  # Use guest_id as address for consistency
+            "nickname": username,
+            "auth_type": "guest",
+            "points": 0,
+            "level": 1,
+            "experience": 0,
+            "treats_created": 0,
+            "streak_days": 0,
+            "last_activity": datetime.utcnow(),
+            "created_at": datetime.utcnow(),
+            "daily_treats_count": 0,
+            "daily_treats_last_reset": datetime.utcnow(),
+            "is_nft_holder": False
+        }
+        
+        await db.players.insert_one(player_data)
+        
+        logger.info(f"New guest player registered: {username} ({guest_id})")
+        
+        return {
+            "success": True,
+            "player_id": player_id,
+            "guest_id": guest_id,
+            "username": username
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Guest registration failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================
+# ADMIN ENDPOINTS
+# ============================================
+
+class DeleteTestPlayersRequest(BaseModel):
+    addresses: List[str]
+    admin_key: Optional[str] = None
+
+@api_router.post("/admin/delete-test-players")
+async def delete_test_players(request: DeleteTestPlayersRequest):
+    """Delete test players from the database"""
+    try:
+        # Delete players with matching addresses
+        addresses_to_delete = request.addresses + [
+            "GUEST_USER",
+            "0x123test",
+            "0xTestWallet123", 
+            "0xTestNFTHolder",
+            "test_user",
+            "Test User"
+        ]
+        
+        result = await db.players.delete_many({
+            "$or": [
+                {"address": {"$in": addresses_to_delete}},
+                {"guest_id": "GUEST_USER"},
+                {"nickname": {"$regex": "^test", "$options": "i"}}
+            ]
+        })
+        
+        logger.info(f"Deleted {result.deleted_count} test players")
+        
+        return {
+            "success": True,
+            "deleted_count": result.deleted_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to delete test players: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 
