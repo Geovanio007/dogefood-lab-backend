@@ -6,6 +6,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { TelegramProvider, useTelegram } from './contexts/TelegramContext';
 import { AudioProvider } from './contexts/AudioContext';
 import { MusicProvider } from './contexts/MusicContext';
+import { VersionProvider } from './contexts/VersionContext';
 import { Web3Provider } from './components/Web3Provider';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
@@ -21,6 +22,7 @@ import ActiveTreatsStatus from './components/ActiveTreatsStatus';
 import TreatNotifications from './components/TreatNotifications';
 import UserRegistration from './components/UserRegistration';
 import TelegramAuth from './components/TelegramAuth';
+import UpdateNotification from './components/UpdateNotification';
 // import PointsToBlockchain from './components/PointsToBlockchain';
 import './App.css';
 
@@ -231,17 +233,20 @@ const InnerApp = () => {
 function App() {
   return (
     <ThemeProvider>
-      <AudioProvider>
-        <MusicProvider>
-          <TelegramProvider>
-            <Web3Provider>
-              <InnerApp />
-            </Web3Provider>
-          </TelegramProvider>
-        </MusicProvider>
-      </AudioProvider>
+      <VersionProvider>
+        <AudioProvider>
+          <MusicProvider>
+            <TelegramProvider>
+              <Web3Provider>
+                <InnerApp />
+                <UpdateNotification />
+              </Web3Provider>
+            </TelegramProvider>
+          </MusicProvider>
+        </AudioProvider>
+      </VersionProvider>
     </ThemeProvider>
   );
-};
+}
 
 export default App;
