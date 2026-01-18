@@ -2,28 +2,22 @@ import React, { createContext, useContext, useState, useRef, useEffect, useCallb
 
 const MusicContext = createContext(null);
 
-// Playlist with the provided songs (excluding lab ambient music)
+// Playlist with the provided songs (excluding lab ambient music and Tell Me What)
 const PLAYLIST = [
   {
     id: 1,
-    title: "Tell Me What",
-    artist: "Chill Beats",
-    url: "https://customer-assets.emergentagent.com/job_e7bcdee9-252d-418c-ba9f-7ff6fd76e17b/artifacts/a1g37reo_tell-me-what-379638.mp3"
-  },
-  {
-    id: 2,
     title: "Running Night",
     artist: "Electronic",
     url: "https://customer-assets.emergentagent.com/job_e7bcdee9-252d-418c-ba9f-7ff6fd76e17b/artifacts/sf4enghz_running-night-393139.mp3"
   },
   {
-    id: 3,
+    id: 2,
     title: "The Last Point",
     artist: "Digital Beat",
     url: "https://customer-assets.emergentagent.com/job_e7bcdee9-252d-418c-ba9f-7ff6fd76e17b/artifacts/drtewuwr_the-last-point-beat-electronic-digital-394291.mp3"
   },
   {
-    id: 4,
+    id: 3,
     title: "Deep Abstract",
     artist: "Snowcap Ambient",
     url: "https://customer-assets.emergentagent.com/job_e7bcdee9-252d-418c-ba9f-7ff6fd76e17b/artifacts/3ifm13fl_deep-abstract-ambient_snowcap-401656.mp3"
