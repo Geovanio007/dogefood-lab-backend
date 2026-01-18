@@ -280,6 +280,19 @@ const Settings = () => {
           </CardContent>
         </Card>
 
+        {/* Notification Settings */}
+        <Card className="glass-panel">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="w-5 h-5" />
+              Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NotificationSettings />
+          </CardContent>
+        </Card>
+
         {/* Visual Settings */}
         <Card className="glass-panel">
           <CardHeader>
