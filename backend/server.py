@@ -3376,6 +3376,341 @@ async def delete_test_players(request: DeleteTestPlayersRequest):
         logger.error(f"Failed to delete test players: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ============================================
+# TOURNAMENT SYSTEM ENDPOINTS
+# ============================================
+
+class TournamentCreate(BaseModel):
+    name: str
+    season: int = 1
+    start_date: str
+    match_duration_hours: int = 48
+
+class MatchUpdate(BaseModel):
+    match_id: str
+    player1_treats: Optional[int] = None
+    player1_points: Optional[int] = None
+    player2_treats: Optional[int] = None
+    player2_points: Optional[int] = None
+
+@api_router.get("/tournament/current")
+async def get_current_tournament():
+    """Get the current active tournament"""
+    try:
+        # Find active or upcoming tournament
+        tournament = await db.tournaments.find_one(
+            {"status": {"$in": ["active", "upcoming", "qualification"]}},
+            {"_id": 0}
+        )
+        
+        if not tournament:
+            # Return default tournament info for Season 1
+            # Tournament starts 2 weeks before season end (March 1, 2026)
+            # So tournament starts around Feb 15, 2026
+            return {
+                "id": "season1_championship",
+                "name": "Treat Masters Champions League",
+                "season": 1,
+                "status": "qualification",
+                "qualification_ends": "2026-02-15T00:00:00Z",
+                "tournament_starts": "2026-02-15T00:00:00Z",
+                "matches": [],
+                "prize_pool": "$LAB / DOGE Rewards",
+                "champion": None
+            }
+        
+        # Get matches for this tournament
+        matches = await db.tournament_matches.find(
+            {"tournament_id": tournament["id"]},
+            {"_id": 0}
+        ).to_list(100)
+        
+        # Enrich matches with player data
+        for match in matches:
+            if match.get("player1_id"):
+                player1 = await db.players.find_one({"id": match["player1_id"]}, {"_id": 0})
+                if player1:
+                    match["player1"] = {
+                        "id": player1["id"],
+                        "nickname": player1.get("nickname", "Anonymous"),
+                        "seed": match.get("player1_seed", 0)
+                    }
+            
+            if match.get("player2_id"):
+                player2 = await db.players.find_one({"id": match["player2_id"]}, {"_id": 0})
+                if player2:
+                    match["player2"] = {
+                        "id": player2["id"],
+                        "nickname": player2.get("nickname", "Anonymous"),
+                        "seed": match.get("player2_seed", 0)
+                    }
+        
+        tournament["matches"] = matches
+        return tournament
+        
+    except Exception as e:
+        logger.error(f"Error fetching tournament: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/tournament/create")
+async def create_tournament(data: TournamentCreate):
+    """Create a new tournament (admin only)"""
+    try:
+        tournament_id = f"season{data.season}_championship_{uuid.uuid4().hex[:8]}"
+        
+        # Get top 8 players from leaderboard
+        top_players = await db.players.find(
+            {},
+            {"_id": 0, "id": 1, "nickname": 1, "points": 1, "address": 1}
+        ).sort("points", -1).limit(8).to_list(8)
+        
+        if len(top_players) < 8:
+            raise HTTPException(status_code=400, detail="Not enough players for tournament (need 8)")
+        
+        # Create tournament
+        tournament = {
+            "id": tournament_id,
+            "name": data.name,
+            "season": data.season,
+            "status": "upcoming",
+            "start_date": data.start_date,
+            "match_duration_hours": data.match_duration_hours,
+            "qualified_players": [p["id"] for p in top_players],
+            "created_at": datetime.utcnow(),
+            "champion": None
+        }
+        
+        await db.tournaments.insert_one(tournament)
+        
+        # Create quarterfinal matches based on seeding
+        # #1 vs #8, #2 vs #7, #3 vs #6, #4 vs #5
+        matchups = [(0, 7), (1, 6), (2, 5), (3, 4)]
+        
+        start_time = datetime.fromisoformat(data.start_date.replace("Z", "+00:00"))
+        end_time = start_time + timedelta(hours=data.match_duration_hours)
+        
+        for i, (seed1_idx, seed2_idx) in enumerate(matchups):
+            match = {
+                "id": f"{tournament_id}_qf_{i+1}",
+                "tournament_id": tournament_id,
+                "stage": "quarterfinal",
+                "match_number": i + 1,
+                "player1_id": top_players[seed1_idx]["id"],
+                "player1_seed": seed1_idx + 1,
+                "player2_id": top_players[seed2_idx]["id"],
+                "player2_seed": seed2_idx + 1,
+                "player1_treats": 0,
+                "player1_points": 0,
+                "player2_treats": 0,
+                "player2_points": 0,
+                "status": "upcoming",
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "winner_id": None,
+                "created_at": datetime.utcnow()
+            }
+            await db.tournament_matches.insert_one(match)
+        
+        logger.info(f"Tournament created: {tournament_id}")
+        
+        return {
+            "success": True,
+            "tournament_id": tournament_id,
+            "matches_created": 4
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating tournament: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/tournament/start/{tournament_id}")
+async def start_tournament(tournament_id: str):
+    """Start a tournament (activate quarterfinal matches)"""
+    try:
+        tournament = await db.tournaments.find_one({"id": tournament_id})
+        if not tournament:
+            raise HTTPException(status_code=404, detail="Tournament not found")
+        
+        # Update tournament status
+        await db.tournaments.update_one(
+            {"id": tournament_id},
+            {"$set": {"status": "active", "started_at": datetime.utcnow()}}
+        )
+        
+        # Activate quarterfinal matches
+        now = datetime.utcnow()
+        end_time = now + timedelta(hours=tournament.get("match_duration_hours", 48))
+        
+        await db.tournament_matches.update_many(
+            {"tournament_id": tournament_id, "stage": "quarterfinal"},
+            {"$set": {
+                "status": "active",
+                "start_time": now.isoformat(),
+                "end_time": end_time.isoformat()
+            }}
+        )
+        
+        logger.info(f"Tournament started: {tournament_id}")
+        
+        return {"success": True, "message": "Tournament started"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting tournament: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/tournament/match/update")
+async def update_match_scores(data: MatchUpdate):
+    """Update match scores during a tournament match"""
+    try:
+        update_data = {}
+        if data.player1_treats is not None:
+            update_data["player1_treats"] = data.player1_treats
+        if data.player1_points is not None:
+            update_data["player1_points"] = data.player1_points
+        if data.player2_treats is not None:
+            update_data["player2_treats"] = data.player2_treats
+        if data.player2_points is not None:
+            update_data["player2_points"] = data.player2_points
+        
+        if update_data:
+            await db.tournament_matches.update_one(
+                {"id": data.match_id},
+                {"$set": update_data}
+            )
+        
+        return {"success": True}
+        
+    except Exception as e:
+        logger.error(f"Error updating match: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/tournament/match/complete/{match_id}")
+async def complete_match(match_id: str):
+    """Complete a match and determine winner"""
+    try:
+        match = await db.tournament_matches.find_one({"id": match_id})
+        if not match:
+            raise HTTPException(status_code=404, detail="Match not found")
+        
+        # Calculate combined scores
+        player1_score = (match.get("player1_treats", 0) * 10) + match.get("player1_points", 0)
+        player2_score = (match.get("player2_treats", 0) * 10) + match.get("player2_points", 0)
+        
+        # Determine winner (treats count more - 10 points each)
+        if player1_score >= player2_score:
+            winner_id = match["player1_id"]
+            winner_seed = match.get("player1_seed", 0)
+        else:
+            winner_id = match["player2_id"]
+            winner_seed = match.get("player2_seed", 0)
+        
+        # Update match
+        await db.tournament_matches.update_one(
+            {"id": match_id},
+            {"$set": {
+                "status": "completed",
+                "winner_id": winner_id,
+                "completed_at": datetime.utcnow()
+            }}
+        )
+        
+        # Check if we need to create next stage matches
+        tournament = await db.tournaments.find_one({"id": match["tournament_id"]})
+        
+        # Get all completed matches in current stage
+        stage = match["stage"]
+        completed_matches = await db.tournament_matches.find({
+            "tournament_id": match["tournament_id"],
+            "stage": stage,
+            "status": "completed"
+        }).to_list(100)
+        
+        # If all quarterfinals done, create semifinals
+        if stage == "quarterfinal" and len(completed_matches) == 4:
+            await create_next_stage_matches(match["tournament_id"], "semifinal", tournament)
+        
+        # If all semifinals done, create final
+        elif stage == "semifinal" and len(completed_matches) == 2:
+            await create_next_stage_matches(match["tournament_id"], "final", tournament)
+        
+        # If final is complete, crown champion
+        elif stage == "final":
+            await db.tournaments.update_one(
+                {"id": match["tournament_id"]},
+                {"$set": {
+                    "status": "completed",
+                    "champion": winner_id,
+                    "completed_at": datetime.utcnow()
+                }}
+            )
+        
+        logger.info(f"Match completed: {match_id}, Winner: {winner_id}")
+        
+        return {"success": True, "winner_id": winner_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error completing match: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def create_next_stage_matches(tournament_id: str, stage: str, tournament: dict):
+    """Helper function to create next stage matches from winners"""
+    try:
+        previous_stage = "quarterfinal" if stage == "semifinal" else "semifinal"
+        
+        # Get winners from previous stage
+        previous_matches = await db.tournament_matches.find({
+            "tournament_id": tournament_id,
+            "stage": previous_stage,
+            "status": "completed"
+        }).sort("match_number", 1).to_list(100)
+        
+        winners = [(m["winner_id"], m.get("player1_seed") if m["winner_id"] == m["player1_id"] else m.get("player2_seed")) 
+                   for m in previous_matches]
+        
+        duration = tournament.get("match_duration_hours", 48)
+        start_time = datetime.utcnow()
+        end_time = start_time + timedelta(hours=duration)
+        
+        if stage == "semifinal":
+            # SF1: QF1 winner vs QF2 winner
+            # SF2: QF3 winner vs QF4 winner
+            matchups = [(0, 1), (2, 3)]
+        else:  # final
+            matchups = [(0, 1)]
+        
+        for i, (idx1, idx2) in enumerate(matchups):
+            match = {
+                "id": f"{tournament_id}_{stage[:2]}_{i+1}",
+                "tournament_id": tournament_id,
+                "stage": stage,
+                "match_number": i + 1,
+                "player1_id": winners[idx1][0],
+                "player1_seed": winners[idx1][1],
+                "player2_id": winners[idx2][0],
+                "player2_seed": winners[idx2][1],
+                "player1_treats": 0,
+                "player1_points": 0,
+                "player2_treats": 0,
+                "player2_points": 0,
+                "status": "active",
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "winner_id": None,
+                "created_at": datetime.utcnow()
+            }
+            await db.tournament_matches.insert_one(match)
+        
+        logger.info(f"Created {stage} matches for tournament {tournament_id}")
+        
+    except Exception as e:
+        logger.error(f"Error creating next stage matches: {e}")
+
 # Include the router in the main app
 app.include_router(api_router)
 
