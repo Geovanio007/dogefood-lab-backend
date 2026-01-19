@@ -9,55 +9,44 @@ Build and maintain a Web3-enabled game called "DogeFood Lab" where players creat
 
 ## Recent Updates
 
+### Tournament System (Jan 18, 2026) - NEW
+- **Treat Masters Champions League**: In-season knockout tournament
+- **Qualification**: Top 8 leaderboard players qualify
+- **Format**: Knockout bracket (QF → SF → Final)
+- **Match Rules**: 48-hour battles, Treats + Points determine winner
+- **Stages**: Quarterfinals (8→4), Semifinals (4→2), Grand Final (2→1)
+- **Prizes**: $LAB/DOGE rewards + Champion title
+- **Frontend**: Full tournament page with bracket visualization
+- **Backend**: Complete tournament API with match management
+
+### Music Player Expanded (Jan 18, 2026)
+- **8 tracks** now in playlist (added 5 new songs)
+- **Shuffle enabled by default**
+- **Shuffle button** added to player controls
+- **Track counter** shows position (e.g., "3/8")
+
+### Guest User Auth Fix (Jan 18, 2026)
+- Users must now connect wallet OR sign up as guest
+- Each guest gets unique ID (GUEST_XXXXXX)
+- Auth modal when accessing Lab without authentication
+- Removed shared "GUEST_USER" issue
+
 ### Notification System (Jan 18, 2026)
-- **Push Notifications**: Users can opt-in to receive notifications
-- **Telegram Notifications**: Sends via Telegram bot for TG users
-- **Web Push**: Browser push notifications for desktop/mobile
-- **Notification Types**:
-  - Treat ready to collect
-  - Daily limit reset (can create more treats)
-- **Settings Page**: Full control over notification preferences
-- **Permission Prompt**: Shows after 10 seconds of gameplay (once per session)
+- Push notifications for treat ready & limit reset
+- Telegram bot notifications for TG users
+- Settings page with notification controls
 
-### Leaderboard Points Fix (Jan 18, 2026)
-- Fixed "Your Performance" card to show actual points from leaderboard data
-- Removed outdated NFT holder tip message
-
-### Update Notification System (Jan 18, 2026)
-- Green-themed update notification card
-- Card disappears immediately on tap
-- Only appears when new version is detected
-- Zero hard-refresh needed for users
-
-### Brewing Sound Update (Jan 18, 2026)
-- Custom cauldron-boiling sound for mixing ingredients
-
-### Volume Bug Fix (Jan 18, 2026)
-- Fixed critical IndexSizeError with HTML5 audio volume
-- Separated localStorage keys for different audio contexts
-
-### Music Player Feature (Jan 17, 2026)
-- **Playlist**: 3 game music tracks (electronic, ambient, sci-fi)
-- **Pages**: Displays on Menu, Leaderboard, and Treats pages
-- **Autoplay**: Starts when player joins the game
-- **Controls**: Play/Pause, Skip, Volume, Progress bar
-- **Minimize**: Starts minimized by default
-- **Transparent Design**: On-theme glass-morphism styling
-
-### Points Consistency Fix (Jan 17, 2026)
-- Fixed PlayerStatsModal to show total points matching leaderboard
-- Labels clarified: "Total Pts", "7d XP", "7d Pts"
-
-### UI Improvements for Telegram (Jan 17, 2026)
-- Menu cards redesigned to compact square layout
-- All modals made more compact for mobile/Telegram
-- Audio system fixed with proper Web Audio API
+### Update Notification (Jan 18, 2026)
+- Green-themed card, 24h cooldown per version
+- Only shows for actual new deployments
 
 ## Core Features
 
 ### Implemented
+- ✅ **Tournament System** - Treat Masters Champions League
 - ✅ Push Notification System (Telegram + Web)
 - ✅ Zero Hard-Refresh Update System
+- ✅ Music Player with 8-track shuffled playlist
 - ✅ Music Player with 3-track playlist
 - ✅ Treat creation with 4/6h window limit (max 16/day)
 - ✅ Streak bonus system
