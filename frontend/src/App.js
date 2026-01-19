@@ -25,6 +25,7 @@ import UserRegistration from './components/UserRegistration';
 import TelegramAuth from './components/TelegramAuth';
 import UpdateNotification from './components/UpdateNotification';
 import NotificationPrompt from './components/NotificationPrompt';
+import Tournament from './components/Tournament';
 // import PointsToBlockchain from './components/PointsToBlockchain';
 import './App.css';
 
