@@ -725,6 +725,28 @@ const MainMenu = () => {
             </Card>
           </Link>
 
+          {/* Tournament */}
+          <Link to="/tournament" className="block">
+            <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full relative overflow-hidden">
+              {/* Special tournament glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10 animate-pulse" />
+              <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto relative">
+                <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-amber-400 to-orange-600 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
+                  <Crown className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
+                </div>
+                <h3 className="text-sm sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400 mb-1 sm:mb-2">
+                  Tournament
+                </h3>
+                <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
+                  Champions League
+                </p>
+                <Button className="w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+                  🏆 Enter
+                </Button>
+              </CardContent>
+            </Card>
+          </Link>
+
           {/* Leaderboard */}
           <Link to="/leaderboard" className="block">
             <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full">
