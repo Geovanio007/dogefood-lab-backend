@@ -228,6 +228,7 @@ const MyTreats = () => {
   const [playerPoints, setPlayerPoints] = useState(0);
   const [playerLevel, setPlayerLevel] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [ingredientMap, setIngredientMap] = useState({});
   
   // Get effective player address
   const getEffectiveAddress = () => {
