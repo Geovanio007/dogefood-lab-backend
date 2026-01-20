@@ -315,17 +315,21 @@ const MyTreats = () => {
   );
 
   const rarityStats = {
+    mythic: treats.filter(t => t.rarity?.toLowerCase() === 'mythic').length,
     legendary: treats.filter(t => t.rarity?.toLowerCase() === 'legendary').length,
     epic: treats.filter(t => t.rarity?.toLowerCase() === 'epic').length,
     rare: treats.filter(t => t.rarity?.toLowerCase() === 'rare').length,
+    uncommon: treats.filter(t => t.rarity?.toLowerCase() === 'uncommon').length,
     common: treats.filter(t => !t.rarity || t.rarity?.toLowerCase() === 'common').length,
   };
 
   const rarities = [
     { id: 'all', label: 'All', count: treats.length },
+    { id: 'mythic', label: 'Mythic', count: rarityStats.mythic, color: 'rose' },
     { id: 'legendary', label: 'Legendary', count: rarityStats.legendary, color: 'amber' },
     { id: 'epic', label: 'Epic', count: rarityStats.epic, color: 'purple' },
     { id: 'rare', label: 'Rare', count: rarityStats.rare, color: 'blue' },
+    { id: 'uncommon', label: 'Uncommon', count: rarityStats.uncommon, color: 'cyan' },
     { id: 'common', label: 'Common', count: rarityStats.common, color: 'green' },
   ];
 
