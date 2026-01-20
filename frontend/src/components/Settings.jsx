@@ -8,10 +8,11 @@ import { Slider } from './ui/slider';
 import { Input } from './ui/input';
 import { useGame } from '../contexts/GameContext';
 import { useAudio } from '../contexts/AudioContext';
+import { useMusic } from '../contexts/MusicContext';
 import { useTelegram } from '../contexts/TelegramContext';
 import { useNFTVerification } from '../hooks/useNFTVerification';
 import { NotificationSettings } from './NotificationPrompt';
-import { ArrowLeft, Volume2, VolumeX, Palette, Zap, Settings as SettingsIcon, Play, Pause, User, Edit2, Check, X, Bell } from 'lucide-react';
+import { ArrowLeft, Volume2, VolumeX, Palette, Zap, Settings as SettingsIcon, Play, Pause, User, Edit2, Check, X, Bell, Music } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -40,6 +41,9 @@ const Settings = () => {
     playClick,
     playSuccess
   } = useAudio();
+
+  // Music context for background music enabled setting
+  const { musicEnabled, setMusicEnabled } = useMusic();
 
   const [visualSettings, setVisualSettings] = useState({
     particleEffects: true,
@@ -212,6 +216,22 @@ const Settings = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Music On/Off Toggle - NEW */}
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl border border-purple-500/30">
+              <div className="flex items-center gap-3">
+                <Music className="w-5 h-5 text-purple-400" />
+                <div>
+                  <div className="font-medium">Background Music</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-300">Play music when entering the game</div>
+                </div>
+              </div>
+              <Switch
+                data-testid="music-enabled-toggle"
+                checked={musicEnabled}
+                onCheckedChange={setMusicEnabled}
+              />
+            </div>
+            
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Sound Effects</div>
