@@ -246,8 +246,8 @@ const InnerApp = () => {
           </Router>
         )}
 
-        {/* Notification Permission Prompt */}
-        {showNotificationPrompt && (
+        {/* Notification Permission Prompt - Hide for Telegram users */}
+        {showNotificationPrompt && !isTelegram && (
           <NotificationPrompt onClose={() => setShowNotificationPrompt(false)} />
         )}
       </div>

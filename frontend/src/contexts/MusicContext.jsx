@@ -78,6 +78,12 @@ export const MusicProvider = ({ children }) => {
     }
     return 0.1; // Default to 10% volume
   });
+  // Music enabled setting - persisted in localStorage (default: true/ON)
+  const [musicEnabled, setMusicEnabledState] = useState(() => {
+    const saved = localStorage.getItem('dogefood_music_enabled');
+    // Default to true (music ON) if not set
+    return saved === null ? true : saved === 'true';
+  });
   const [isMinimized, setIsMinimized] = useState(true); // Start minimized by default
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -149,9 +155,9 @@ export const MusicProvider = ({ children }) => {
     setCurrentTrackIndex((prev) => (prev + 1) % playlist.length);
   }, [playlist.length]);
 
-  // Attempt autoplay after user interaction
+  // Attempt autoplay after user interaction (only if music is enabled)
   const attemptAutoplay = useCallback(async () => {
-    if (hasAutoplayedRef.current || !audioRef.current) return;
+    if (hasAutoplayedRef.current || !audioRef.current || !musicEnabled) return;
     
     try {
       audioRef.current.src = currentTrack.url;
@@ -162,7 +168,7 @@ export const MusicProvider = ({ children }) => {
     } catch (error) {
       console.log('Autoplay blocked, waiting for user interaction');
     }
-  }, [currentTrack]);
+  }, [currentTrack, musicEnabled]);
 
   // Listen for first user interaction to enable autoplay
   useEffect(() => {
@@ -254,6 +260,20 @@ export const MusicProvider = ({ children }) => {
     }
   }, []);
 
+  // Set music enabled preference (persists to localStorage)
+  const setMusicEnabled = useCallback((enabled) => {
+    setMusicEnabledState(enabled);
+    localStorage.setItem('dogefood_music_enabled', enabled.toString());
+    
+    // If disabling music, stop playback immediately
+    if (!enabled && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+      hasAutoplayedRef.current = false; // Reset autoplay flag
+    }
+  }, []);
+
   const value = {
     isPlaying,
     currentTrack,
@@ -265,6 +285,7 @@ export const MusicProvider = ({ children }) => {
     duration,
     currentTime,
     shouldShowPlayer,
+    musicEnabled,
     
     setVolume,
     setIsMinimized,
@@ -275,7 +296,8 @@ export const MusicProvider = ({ children }) => {
     showPlayer,
     hidePlayer,
     stopMusic,
-    toggleShuffle
+    toggleShuffle,
+    setMusicEnabled
   };
 
   return (
@@ -298,6 +320,7 @@ export const useMusic = () => {
       duration: 0,
       currentTime: 0,
       shouldShowPlayer: false,
+      musicEnabled: true,
       setVolume: () => {},
       setIsMinimized: () => {},
       togglePlay: () => {},
@@ -307,7 +330,8 @@ export const useMusic = () => {
       showPlayer: () => {},
       hidePlayer: () => {},
       stopMusic: () => {},
-      toggleShuffle: () => {}
+      toggleShuffle: () => {},
+      setMusicEnabled: () => {}
     };
   }
   return context;
