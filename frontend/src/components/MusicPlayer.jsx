@@ -16,6 +16,7 @@ const MusicPlayer = () => {
     duration,
     currentTime,
     shouldShowPlayer,
+    musicEnabled,
     setVolume,
     setIsMinimized,
     togglePlay,
@@ -26,15 +27,17 @@ const MusicPlayer = () => {
     toggleShuffle
   } = useMusic();
 
-  // Show player when component mounts
+  // Show player when component mounts (only if music is enabled)
   useEffect(() => {
-    showPlayer();
-  }, [showPlayer]);
+    if (musicEnabled) {
+      showPlayer();
+    }
+  }, [showPlayer, musicEnabled]);
 
-  // Hide player on Lab page (it has its own background sound)
+  // Hide player on Lab page (it has its own background sound) or if music is disabled
   const isLabPage = location.pathname === '/lab';
   
-  if (!shouldShowPlayer || isLabPage) return null;
+  if (!shouldShowPlayer || isLabPage || !musicEnabled) return null;
 
   const formatTime = (seconds) => {
     if (!seconds || isNaN(seconds)) return '0:00';
