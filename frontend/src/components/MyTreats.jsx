@@ -258,10 +258,21 @@ const MyTreats = () => {
       try {
         setLoading(true);
         
-        const [playerResponse, treatsResponse] = await Promise.all([
+        const [playerResponse, treatsResponse, ingredientsResponse] = await Promise.all([
           fetch(`${BACKEND_URL}/api/player/${effectiveAddress}`),
-          fetch(`${BACKEND_URL}/api/treats/${effectiveAddress}`)
+          fetch(`${BACKEND_URL}/api/treats/${effectiveAddress}`),
+          fetch(`${BACKEND_URL}/api/ingredients/catalog`)
         ]);
+        
+        // Build ingredient ID to name mapping
+        if (ingredientsResponse.ok) {
+          const ingredientsData = await ingredientsResponse.json();
+          const ingMap = {};
+          (ingredientsData.ingredients || []).forEach(ing => {
+            ingMap[ing.id] = ing.name;
+          });
+          setIngredientMap(ingMap);
+        }
         
         if (playerResponse.ok) {
           const playerData = await playerResponse.json();
