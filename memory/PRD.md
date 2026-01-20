@@ -9,7 +9,17 @@ Build and maintain a Web3-enabled game called "DogeFood Lab" where players creat
 
 ## Recent Updates
 
-### Tournament System (Jan 18, 2026) - NEW
+### Music Settings Enhancement (Jan 20, 2026) - NEW
+- **Music On/Off Toggle**: Users can now toggle background music on/off in Settings
+- **Persistent Preference**: Setting saved to localStorage, survives page refresh
+- **Default**: Music ON by default
+- **Location**: Settings > Audio Settings (top of section with purple gradient)
+
+### Telegram Notification Prompt Fix (Jan 20, 2026) - NEW
+- **Disabled for Telegram**: Notification permission prompt no longer shows for Telegram Mini App users
+- **Reason**: Notification permissions don't work properly in Telegram WebView
+
+### Tournament System (Jan 18, 2026)
 - **Treat Masters Champions League**: In-season knockout tournament
 - **Qualification**: Top 8 leaderboard players qualify
 - **Format**: Knockout bracket (QF → SF → Final)
@@ -87,4 +97,4 @@ curl -X POST -H "Authorization: Bearer $RENDER_TOKEN" \
 ```
 
 ## Last Updated
-January 17, 2026
+January 20, 2026
