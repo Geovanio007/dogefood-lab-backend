@@ -142,6 +142,9 @@ class DogeTreat(BaseModel):
     timer_duration: Optional[int] = None  # Enhanced: Timer in seconds
     brewing_status: str = "ready"  # Enhanced: "brewing" or "ready"
     ready_at: Optional[datetime] = None  # Enhanced: When treat will be ready
+    points_reward: Optional[int] = 0  # Points earned from this treat
+    xp_reward: Optional[int] = 0  # XP earned from this treat
+    season_id: Optional[int] = None  # Season when treat was created
 
 class TreatCreate(BaseModel):
     name: str
