@@ -171,14 +171,14 @@ const TreatCard = ({ treat, index, ingredientMap = {} }) => {
             <div className="flex justify-center gap-4 mt-3">
               <div className="text-center">
                 <div className={`text-lg font-bold ${config.text}`}>
-                  {treat.points || 0}
+                  {treat.points_reward || treat.points || 0}
                 </div>
                 <div className="text-xs text-slate-400">Points</div>
               </div>
               <div className="w-px bg-slate-600/50" />
               <div className="text-center">
                 <div className="text-lg font-bold text-white">
-                  {treat.xp || 0}
+                  {treat.xp_reward || treat.xp || 0}
                 </div>
                 <div className="text-xs text-slate-400">XP</div>
               </div>
