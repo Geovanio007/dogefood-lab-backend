@@ -5,6 +5,13 @@ test_*.py
 **/__pycache__/
 *.pyc
 
+# Python backend folders - CRITICAL: prevents Vercel from detecting Python
+api/
+render-backend/
+backend/
+requirements.txt
+*.py
+
 # Dev tools
 .git/
 .github/
