@@ -13,11 +13,31 @@ import MusicPlayer from './MusicPlayer';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // Glass Treat Card Component
-const TreatCard = ({ treat, index }) => {
+const TreatCard = ({ treat, index, ingredientMap = {} }) => {
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Helper to get ingredient name from ID
+  const getIngredientName = (ing) => {
+    // If it's an ID like "ING001", look it up in the map
+    if (ing && ing.startsWith('ING')) {
+      return ingredientMap[ing] || ing;
+    }
+    // Otherwise return as-is (already a name)
+    return ing;
+  };
   
   const getRarityConfig = (rarity) => {
     switch (rarity?.toLowerCase()) {
+      case 'mythic':
+        return {
+          gradient: 'from-rose-400 via-pink-500 to-red-500',
+          glow: 'shadow-rose-400/40',
+          border: 'border-rose-400/60',
+          bg: 'from-rose-500/15 to-pink-500/10',
+          text: 'text-rose-400',
+          icon: '🔮',
+          shine: 'bg-gradient-to-r from-transparent via-rose-200/40 to-transparent'
+        };
       case 'legendary':
         return {
           gradient: 'from-amber-400 via-yellow-300 to-amber-500',
@@ -47,6 +67,16 @@ const TreatCard = ({ treat, index }) => {
           text: 'text-blue-400',
           icon: '✨',
           shine: 'bg-gradient-to-r from-transparent via-blue-200/30 to-transparent'
+        };
+      case 'uncommon':
+        return {
+          gradient: 'from-cyan-400 via-teal-400 to-cyan-500',
+          glow: 'shadow-cyan-400/25',
+          border: 'border-cyan-400/40',
+          bg: 'from-cyan-500/10 to-teal-500/5',
+          text: 'text-cyan-400',
+          icon: '🌟',
+          shine: 'bg-gradient-to-r from-transparent via-cyan-200/25 to-transparent'
         };
       default:
         return {
