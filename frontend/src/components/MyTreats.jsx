@@ -188,12 +188,15 @@ const TreatCard = ({ treat, index, ingredientMap = {} }) => {
           {/* Ingredients */}
           {treat.ingredients && treat.ingredients.length > 0 && (
             <div className="mt-3 pt-3 border-t border-white/10">
-              <div className="flex justify-center gap-1 flex-wrap">
+              <div className="text-xs text-slate-400 mb-1.5 text-center">Ingredients:</div>
+              <div className="flex justify-center gap-1.5 flex-wrap">
                 {treat.ingredients.slice(0, 4).map((ing, i) => (
-                  <span key={i} className="text-sm opacity-80">{ing}</span>
+                  <span key={i} className="text-xs bg-white/10 px-2 py-0.5 rounded-full text-slate-300">
+                    {getIngredientName(ing)}
+                  </span>
                 ))}
                 {treat.ingredients.length > 4 && (
-                  <span className="text-xs text-slate-400">+{treat.ingredients.length - 4}</span>
+                  <span className="text-xs text-slate-400 px-2 py-0.5">+{treat.ingredients.length - 4} more</span>
                 )}
               </div>
             </div>
