@@ -3752,6 +3752,291 @@ async def create_next_stage_matches(tournament_id: str, stage: str, tournament: 
     except Exception as e:
         logger.error(f"Error creating next stage matches: {e}")
 
+# ============================================
+# MARKETPLACE SYSTEM ENDPOINTS
+# ============================================
+
+@api_router.post("/marketplace/list")
+async def create_marketplace_listing(data: CreateListingRequest):
+    """List a treat for sale on the marketplace"""
+    try:
+        # Verify the treat exists and belongs to the seller
+        treat = await db.treats.find_one({"id": data.treat_id})
+        if not treat:
+            raise HTTPException(status_code=404, detail="Treat not found")
+        
+        if treat.get("creator_address") != data.seller_address:
+            raise HTTPException(status_code=403, detail="You can only list your own treats")
+        
+        # Check if treat is already listed
+        existing_listing = await db.marketplace_listings.find_one({
+            "treat_id": data.treat_id,
+            "status": "active"
+        })
+        if existing_listing:
+            raise HTTPException(status_code=400, detail="Treat is already listed on marketplace")
+        
+        # Validate pricing - at least one price must be set
+        if data.price_doge is None and data.price_lab is None:
+            raise HTTPException(status_code=400, detail="At least one price (DOGE or LAB) must be set")
+        
+        # Get seller info
+        seller = await db.players.find_one({"address": data.seller_address})
+        seller_nickname = seller.get("nickname") if seller else None
+        
+        # Create listing
+        listing = MarketplaceListing(
+            treat_id=data.treat_id,
+            treat_name=treat.get("name", "Unknown Treat"),
+            treat_rarity=treat.get("rarity", "Common"),
+            treat_image=treat.get("image", ""),
+            treat_ingredients=treat.get("ingredients", []),
+            treat_points_reward=treat.get("points_reward", 0),
+            treat_xp_reward=treat.get("xp_reward", 0),
+            seller_address=data.seller_address,
+            seller_nickname=seller_nickname,
+            price_doge=data.price_doge,
+            price_lab=data.price_lab,
+            payment_options=data.payment_options,
+            status="active"
+        )
+        
+        await db.marketplace_listings.insert_one(listing.dict())
+        
+        logger.info(f"Treat listed on marketplace: {data.treat_id} by {data.seller_address}")
+        
+        return {
+            "success": True,
+            "listing_id": listing.id,
+            "message": "Treat listed successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating marketplace listing: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/marketplace/listings")
+async def get_marketplace_listings(
+    rarity: Optional[str] = None,
+    min_price_doge: Optional[float] = None,
+    max_price_doge: Optional[float] = None,
+    min_price_lab: Optional[float] = None,
+    max_price_lab: Optional[float] = None,
+    payment_option: Optional[str] = None,
+    sort_by: str = "newest",  # "newest", "oldest", "price_low", "price_high"
+    limit: int = 50,
+    skip: int = 0
+):
+    """Get active marketplace listings with filters"""
+    try:
+        # Build query
+        query = {"status": "active"}
+        
+        if rarity and rarity.lower() != "all":
+            query["treat_rarity"] = {"$regex": f"^{rarity}$", "$options": "i"}
+        
+        if payment_option and payment_option != "all":
+            if payment_option == "doge":
+                query["price_doge"] = {"$ne": None}
+            elif payment_option == "lab":
+                query["price_lab"] = {"$ne": None}
+        
+        if min_price_doge is not None:
+            query["price_doge"] = query.get("price_doge", {})
+            query["price_doge"]["$gte"] = min_price_doge
+        
+        if max_price_doge is not None:
+            query["price_doge"] = query.get("price_doge", {})
+            query["price_doge"]["$lte"] = max_price_doge
+        
+        if min_price_lab is not None:
+            query["price_lab"] = query.get("price_lab", {})
+            query["price_lab"]["$gte"] = min_price_lab
+        
+        if max_price_lab is not None:
+            query["price_lab"] = query.get("price_lab", {})
+            query["price_lab"]["$lte"] = max_price_lab
+        
+        # Build sort
+        sort_options = {
+            "newest": [("listed_at", -1)],
+            "oldest": [("listed_at", 1)],
+            "price_low": [("price_doge", 1), ("price_lab", 1)],
+            "price_high": [("price_doge", -1), ("price_lab", -1)]
+        }
+        sort = sort_options.get(sort_by, [("listed_at", -1)])
+        
+        # Get total count
+        total = await db.marketplace_listings.count_documents(query)
+        
+        # Get listings
+        listings = await db.marketplace_listings.find(
+            query,
+            {"_id": 0}
+        ).sort(sort).skip(skip).limit(limit).to_list(limit)
+        
+        return {
+            "listings": listings,
+            "total": total,
+            "limit": limit,
+            "skip": skip,
+            "marketplace_fee": MARKETPLACE_FEE,
+            "trading_live": False  # Set to True when $LAB is live
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching marketplace listings: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/marketplace/listing/{listing_id}")
+async def get_marketplace_listing(listing_id: str):
+    """Get a single marketplace listing by ID"""
+    try:
+        listing = await db.marketplace_listings.find_one(
+            {"id": listing_id},
+            {"_id": 0}
+        )
+        
+        if not listing:
+            raise HTTPException(status_code=404, detail="Listing not found")
+        
+        return listing
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching listing: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/marketplace/my-listings/{address}")
+async def get_my_listings(address: str):
+    """Get all listings for a specific seller"""
+    try:
+        listings = await db.marketplace_listings.find(
+            {"seller_address": address},
+            {"_id": 0}
+        ).sort("listed_at", -1).to_list(100)
+        
+        return {"listings": listings}
+        
+    except Exception as e:
+        logger.error(f"Error fetching seller listings: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/marketplace/listing/{listing_id}")
+async def cancel_marketplace_listing(listing_id: str, seller_address: str):
+    """Cancel/remove a marketplace listing"""
+    try:
+        # Find the listing
+        listing = await db.marketplace_listings.find_one({"id": listing_id})
+        
+        if not listing:
+            raise HTTPException(status_code=404, detail="Listing not found")
+        
+        if listing.get("seller_address") != seller_address:
+            raise HTTPException(status_code=403, detail="You can only cancel your own listings")
+        
+        if listing.get("status") != "active":
+            raise HTTPException(status_code=400, detail="Listing is not active")
+        
+        # Update listing status
+        await db.marketplace_listings.update_one(
+            {"id": listing_id},
+            {"$set": {"status": "cancelled"}}
+        )
+        
+        logger.info(f"Marketplace listing cancelled: {listing_id}")
+        
+        return {"success": True, "message": "Listing cancelled"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling listing: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/marketplace/buy/{listing_id}")
+async def buy_marketplace_listing(listing_id: str, data: BuyListingRequest):
+    """Buy a treat from the marketplace (disabled until $LAB is live)"""
+    try:
+        # Trading is not live yet
+        raise HTTPException(
+            status_code=503, 
+            detail="Trading is not live yet. $LAB token launch coming soon!"
+        )
+        
+        # Future implementation when trading goes live:
+        # 1. Verify listing exists and is active
+        # 2. Verify buyer has sufficient funds
+        # 3. Transfer payment (minus fee) to seller
+        # 4. Transfer treat ownership to buyer
+        # 5. Update listing status to "sold"
+        # 6. Deduct MARKETPLACE_FEE from sale
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing purchase: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/marketplace/stats")
+async def get_marketplace_stats():
+    """Get marketplace statistics"""
+    try:
+        # Count active listings
+        active_count = await db.marketplace_listings.count_documents({"status": "active"})
+        
+        # Count total sold
+        sold_count = await db.marketplace_listings.count_documents({"status": "sold"})
+        
+        # Get listings by rarity
+        pipeline = [
+            {"$match": {"status": "active"}},
+            {"$group": {"_id": "$treat_rarity", "count": {"$sum": 1}}}
+        ]
+        rarity_stats = await db.marketplace_listings.aggregate(pipeline).to_list(10)
+        
+        # Calculate average prices
+        avg_pipeline = [
+            {"$match": {"status": "active", "price_doge": {"$ne": None}}},
+            {"$group": {"_id": None, "avg_doge": {"$avg": "$price_doge"}}}
+        ]
+        avg_result = await db.marketplace_listings.aggregate(avg_pipeline).to_list(1)
+        avg_price_doge = avg_result[0]["avg_doge"] if avg_result else 0
+        
+        return {
+            "active_listings": active_count,
+            "total_sold": sold_count,
+            "marketplace_fee": MARKETPLACE_FEE,
+            "trading_live": False,
+            "rarity_breakdown": {r["_id"]: r["count"] for r in rarity_stats},
+            "average_price_doge": round(avg_price_doge, 2) if avg_price_doge else 0
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching marketplace stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/marketplace/check-listed/{treat_id}")
+async def check_treat_listed(treat_id: str):
+    """Check if a treat is listed on the marketplace"""
+    try:
+        listing = await db.marketplace_listings.find_one({
+            "treat_id": treat_id,
+            "status": "active"
+        }, {"_id": 0})
+        
+        return {
+            "is_listed": listing is not None,
+            "listing": listing
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking listing status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 
