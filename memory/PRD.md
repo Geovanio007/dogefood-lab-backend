@@ -68,11 +68,11 @@ Build and maintain a Web3-enabled game called "DogeFood Lab" where players creat
 ## Core Features
 
 ### Implemented
+- ✅ **Marketplace System** - Buy/sell treats with DOGE/LAB
 - ✅ **Tournament System** - Treat Masters Champions League
 - ✅ Push Notification System (Telegram + Web)
 - ✅ Zero Hard-Refresh Update System
 - ✅ Music Player with 8-track shuffled playlist
-- ✅ Music Player with 3-track playlist
 - ✅ Treat creation with 4/6h window limit (max 16/day)
 - ✅ Streak bonus system
 - ✅ Player Stats Modal with 7-day activity chart
