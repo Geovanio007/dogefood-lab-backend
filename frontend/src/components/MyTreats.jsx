@@ -211,6 +211,29 @@ const TreatCard = ({ treat, index, ingredientMap = {}, onListForSale, isListed =
               </span>
             </div>
           )}
+          
+          {/* List for Sale Button / Listed Badge */}
+          <div className="mt-3 pt-3 border-t border-white/10">
+            {isListed ? (
+              <div className="flex items-center justify-center gap-2 py-2 px-3 bg-sky-500/20 rounded-lg border border-sky-500/30">
+                <Store className="w-4 h-4 text-sky-400" />
+                <span className="text-xs font-medium text-sky-400">Listed on Marketplace</span>
+              </div>
+            ) : (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onListForSale && onListForSale(treat);
+                }}
+                className="w-full bg-gradient-to-r from-yellow-500/20 to-sky-500/20 hover:from-yellow-500/30 hover:to-sky-500/30 text-white text-xs border border-yellow-500/30 hover:border-sky-500/50"
+                size="sm"
+                data-testid={`list-btn-${treat.id}`}
+              >
+                <Tag className="w-3 h-3 mr-1" />
+                List for Sale
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
