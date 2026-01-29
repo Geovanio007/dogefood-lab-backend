@@ -14,7 +14,7 @@ import MusicPlayer from './MusicPlayer';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // Glass Treat Card Component
-const TreatCard = ({ treat, index, ingredientMap = {} }) => {
+const TreatCard = ({ treat, index, ingredientMap = {}, onListForSale, isListed = false }) => {
   const [isHovered, setIsHovered] = useState(false);
   
   // Helper to get ingredient name from ID
