@@ -683,6 +683,126 @@ const MyTreats = () => {
         )}
       </div>
       
+      {/* Listing Modal */}
+      {showListingModal && selectedTreat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 max-w-md w-full p-6 shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Tag className="w-5 h-5 text-yellow-400" />
+                List for Sale
+              </h2>
+              <button 
+                onClick={() => setShowListingModal(false)}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Treat Preview */}
+            <div className="flex items-center gap-4 p-4 bg-slate-700/50 rounded-xl mb-6">
+              <img 
+                src={selectedTreat.image}
+                alt={selectedTreat.name}
+                className="w-16 h-16 object-contain"
+              />
+              <div>
+                <h3 className="font-bold text-white">{selectedTreat.name}</h3>
+                <p className="text-sm text-slate-400">{selectedTreat.rarity}</p>
+              </div>
+            </div>
+            
+            {/* Payment Options */}
+            <div className="mb-4">
+              <label className="text-sm text-slate-400 mb-2 block">Accept Payment In</label>
+              <div className="flex gap-2">
+                {['doge', 'lab', 'both'].map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => setPaymentOption(opt)}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                      paymentOption === opt
+                        ? 'bg-gradient-to-r from-yellow-500 to-sky-500 text-slate-900'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    {opt === 'both' ? 'DOGE or LAB' : opt.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Price Inputs */}
+            <div className="space-y-4 mb-6">
+              {(paymentOption === 'doge' || paymentOption === 'both') && (
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Price in DOGE</label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      value={listingPrice.doge}
+                      onChange={(e) => setListingPrice(prev => ({ ...prev, doge: e.target.value }))}
+                      className="bg-slate-700 border-slate-600 text-white pr-16"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-yellow-400 font-bold text-sm">
+                      DOGE
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {(paymentOption === 'lab' || paymentOption === 'both') && (
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Price in $LAB</label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      value={listingPrice.lab}
+                      onChange={(e) => setListingPrice(prev => ({ ...prev, lab: e.target.value }))}
+                      className="bg-slate-700 border-slate-600 text-white pr-16"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sky-400 font-bold text-sm">
+                      $LAB
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Fee Notice */}
+            <div className="text-xs text-slate-500 mb-4 p-3 bg-slate-700/30 rounded-lg">
+              <span className="text-yellow-400">Note:</span> A marketplace fee of 0.420 DOGE will be deducted from successful sales.
+            </div>
+            
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setShowListingModal(false)}
+                variant="outline"
+                className="flex-1 border-slate-600 text-slate-300"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmitListing}
+                disabled={listingLoading || (!listingPrice.doge && !listingPrice.lab)}
+                className="flex-1 bg-gradient-to-r from-yellow-500 to-sky-500 text-slate-900 font-bold"
+              >
+                {listingLoading ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Listing...</>
+                ) : (
+                  <><Check className="w-4 h-4 mr-2" /> List Treat</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Music Player */}
       <MusicPlayer />
     </div>
