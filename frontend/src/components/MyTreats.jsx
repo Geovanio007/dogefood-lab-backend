@@ -287,6 +287,14 @@ const MyTreats = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [ingredientMap, setIngredientMap] = useState({});
   
+  // Marketplace listing state
+  const [showListingModal, setShowListingModal] = useState(false);
+  const [selectedTreat, setSelectedTreat] = useState(null);
+  const [listingPrice, setListingPrice] = useState({ doge: '', lab: '' });
+  const [paymentOption, setPaymentOption] = useState('both');
+  const [listingLoading, setListingLoading] = useState(false);
+  const [listedTreats, setListedTreats] = useState(new Set());
+  
   // Get effective player address
   const getEffectiveAddress = () => {
     if (address) return address;
