@@ -372,6 +372,72 @@ const MyTreats = () => {
     fetchData();
   }, [effectiveAddress, dispatch]);
   
+  // Fetch which treats are already listed
+  useEffect(() => {
+    const fetchListedTreats = async () => {
+      if (!effectiveAddress) return;
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/marketplace/my-listings/${effectiveAddress}`);
+        if (response.ok) {
+          const data = await response.json();
+          const listedIds = new Set((data.listings || []).filter(l => l.status === 'active').map(l => l.treat_id));
+          setListedTreats(listedIds);
+        }
+      } catch (err) {
+        console.error('Error fetching listed treats:', err);
+      }
+    };
+    fetchListedTreats();
+  }, [effectiveAddress]);
+  
+  // Handle opening the listing modal
+  const handleListForSale = (treat) => {
+    setSelectedTreat(treat);
+    setListingPrice({ doge: '', lab: '' });
+    setPaymentOption('both');
+    setShowListingModal(true);
+  };
+  
+  // Handle listing submission
+  const handleSubmitListing = async () => {
+    if (!selectedTreat || !effectiveAddress) return;
+    
+    // Validate at least one price is set
+    if (!listingPrice.doge && !listingPrice.lab) {
+      alert('Please set at least one price (DOGE or LAB)');
+      return;
+    }
+    
+    setListingLoading(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/marketplace/list`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          treat_id: selectedTreat.id,
+          seller_address: effectiveAddress,
+          price_doge: listingPrice.doge ? parseFloat(listingPrice.doge) : null,
+          price_lab: listingPrice.lab ? parseFloat(listingPrice.lab) : null,
+          payment_options: paymentOption
+        })
+      });
+      
+      if (response.ok) {
+        setListedTreats(prev => new Set([...prev, selectedTreat.id]));
+        setShowListingModal(false);
+        alert('Treat listed successfully!');
+      } else {
+        const error = await response.json();
+        alert(error.detail || 'Failed to list treat');
+      }
+    } catch (err) {
+      console.error('Error listing treat:', err);
+      alert('Failed to list treat. Please try again.');
+    } finally {
+      setListingLoading(false);
+    }
+  };
+  
   const effectiveNFTStatus = playerNFTStatus || isNFTHolder;
   const effectivePoints = playerPoints || contextPoints || 0;
   
