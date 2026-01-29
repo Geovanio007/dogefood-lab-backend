@@ -759,7 +759,28 @@ const MainMenu = () => {
                   Compete for $LAB rewards!
                 </p>
                 <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto">
-                  🏆 Compete
+                  <Trophy className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Compete
+                </Button>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Marketplace */}
+          <Link to="/marketplace" className="block">
+            <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full relative overflow-hidden">
+              <div className="absolute top-2 right-2 px-2 py-0.5 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-[10px] text-yellow-400 font-medium">
+                NEW
+              </div>
+              <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto">
+                <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-yellow-400 to-sky-500 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
+                  <Store className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
+                </div>
+                <h3 className="text-sm sm:text-2xl font-bold text-white mb-1 sm:mb-2">Market</h3>
+                <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
+                  Buy & sell treats
+                </p>
+                <Button className="w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto bg-gradient-to-r from-yellow-500 to-sky-500 text-slate-900">
+                  <Store className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Browse
                 </Button>
               </CardContent>
             </Card>
