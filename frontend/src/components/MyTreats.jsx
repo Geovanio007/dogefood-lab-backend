@@ -304,7 +304,9 @@ const MyTreats = () => {
       try {
         const player = JSON.parse(storedPlayer);
         return player.guest_id || player.id || player.address;
-      } catch (e) {}
+      } catch (e) {
+        // Failed to parse stored player
+      }
     }
     return null;
   };
