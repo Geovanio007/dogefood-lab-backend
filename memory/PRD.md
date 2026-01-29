@@ -9,13 +9,28 @@ Build and maintain a Web3-enabled game called "DogeFood Lab" where players creat
 
 ## Recent Updates
 
-### Music Settings Enhancement (Jan 20, 2026) - NEW
+### Marketplace System (Jan 29, 2026) - NEW
+- **Treat Marketplace**: Players can buy and sell treats from each other
+- **Listing**: Players can list treats from My Treats page with custom prices
+- **Payment Options**: Sellers choose to accept DOGE only, LAB only, or both
+- **Filters**: By rarity, price range, sort by newest/oldest/price
+- **Marketplace Fee**: 0.420 DOGE per successful sale
+- **Trading Status**: LISTING ENABLED, BUYING DISABLED until $LAB launches
+- **UI**: Modern glass-morphism design in yellow/sky blue game colors
+
+### My Treats Page Updates (Jan 20, 2026)
+- **Ingredient Names**: Now shows actual names (e.g., "Crunchy Kibble") instead of IDs
+- **Points/XP Display**: Each treat card shows points_reward and xp_reward earned
+- **All Rarities**: Filters now include Mythic, Legendary, Epic, Rare, Uncommon, Common
+- **List for Sale**: Button on each treat card to list on marketplace
+
+### Music Settings Enhancement (Jan 20, 2026)
 - **Music On/Off Toggle**: Users can now toggle background music on/off in Settings
 - **Persistent Preference**: Setting saved to localStorage, survives page refresh
 - **Default**: Music ON by default
 - **Location**: Settings > Audio Settings (top of section with purple gradient)
 
-### Telegram Notification Prompt Fix (Jan 20, 2026) - NEW
+### Telegram Notification Prompt Fix (Jan 20, 2026)
 - **Disabled for Telegram**: Notification permission prompt no longer shows for Telegram Mini App users
 - **Reason**: Notification permissions don't work properly in Telegram WebView
 
