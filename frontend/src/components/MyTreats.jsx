@@ -663,7 +663,14 @@ const MyTreats = () => {
               : 'flex flex-col gap-3'}
           `}>
             {filteredTreats.map((treat, index) => (
-              <TreatCard key={treat.id || index} treat={treat} index={index} ingredientMap={ingredientMap} />
+              <TreatCard 
+                key={treat.id || index} 
+                treat={treat} 
+                index={index} 
+                ingredientMap={ingredientMap}
+                onListForSale={handleListForSale}
+                isListed={listedTreats.has(treat.id)}
+              />
             ))}
           </div>
         )}
