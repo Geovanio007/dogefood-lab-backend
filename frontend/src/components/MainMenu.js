@@ -14,7 +14,7 @@ import DogeFoodLogo from './DogeFoodLogo';
 import TreatIcon from './TreatIcon';
 import MusicPlayer from './MusicPlayer';
 import ScientistChat from './ScientistChat';
-import { Beaker, Trophy, Settings, Palette, Clock, User, Check, Edit2, X, Wallet, UserPlus, Crown } from 'lucide-react';
+import { Beaker, Trophy, Settings, Palette, Clock, User, Check, Edit2, X, Wallet, UserPlus, Crown, Store } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
