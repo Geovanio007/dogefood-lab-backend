@@ -241,6 +241,7 @@ const InnerApp = () => {
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/tournament" element={<Tournament />} />
+              <Route path="/marketplace" element={<Marketplace />} />
             </Routes>
             {/* Global Treat Notifications */}
             <TreatNotifications />
