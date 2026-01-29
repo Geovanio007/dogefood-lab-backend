@@ -213,6 +213,44 @@ class ChatUpvoteRequest(BaseModel):
     message_id: str
     voter_address: str
 
+# =====================================================
+# MARKETPLACE MODELS
+# =====================================================
+
+class MarketplaceListing(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    treat_id: str
+    treat_name: str
+    treat_rarity: str
+    treat_image: str
+    treat_ingredients: List[str] = []
+    treat_points_reward: Optional[int] = 0
+    treat_xp_reward: Optional[int] = 0
+    seller_address: str
+    seller_nickname: Optional[str] = None
+    price_doge: Optional[float] = None  # Price in DOGE (if seller accepts DOGE)
+    price_lab: Optional[float] = None   # Price in LAB (if seller accepts LAB)
+    payment_options: str = "both"  # "doge", "lab", or "both"
+    status: str = "active"  # "active", "sold", "cancelled"
+    listed_at: datetime = Field(default_factory=datetime.utcnow)
+    sold_at: Optional[datetime] = None
+    buyer_address: Optional[str] = None
+
+class CreateListingRequest(BaseModel):
+    treat_id: str
+    seller_address: str
+    price_doge: Optional[float] = None
+    price_lab: Optional[float] = None
+    payment_options: str = "both"  # "doge", "lab", or "both"
+
+class BuyListingRequest(BaseModel):
+    listing_id: str
+    buyer_address: str
+    payment_currency: str  # "doge" or "lab"
+
+# Marketplace fee constant
+MARKETPLACE_FEE = 0.420  # Fee for successful sales
+
 # Player Management Routes
 @api_router.post("/player", response_model=Player)
 async def create_player(player_data: PlayerCreate):
