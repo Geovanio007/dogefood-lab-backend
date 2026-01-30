@@ -125,6 +125,10 @@ const GameLabRedesign = ({ playerAddress }) => {
   // Tips guide and player stats
   const [showTipsGuide, setShowTipsGuide] = useState(false);
   const [showPlayerStats, setShowPlayerStats] = useState(false);
+  
+  // Kernel of Wow special ingredient
+  const [hasKernelOfWow, setHasKernelOfWow] = useState(false);
+  const [kernelBonusResult, setKernelBonusResult] = useState(null);
 
   // Character data
   const characters = [
