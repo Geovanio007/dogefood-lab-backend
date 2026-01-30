@@ -4253,6 +4253,54 @@ async def preview_kernel_bonus(ingredients: str):
         logger.error(f"Error previewing bonus: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/special-ingredient/scheduler-status")
+async def get_scheduler_status():
+    """Get the status of the Kernel of Wow scheduler"""
+    try:
+        jobs = scheduler.get_jobs()
+        job_info = []
+        for job in jobs:
+            job_info.append({
+                "id": job.id,
+                "name": job.name,
+                "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
+                "trigger": str(job.trigger)
+            })
+        
+        return {
+            "scheduler_running": scheduler.running,
+            "jobs": job_info,
+            "selection_interval_hours": 24,
+            "ingredient_duration_hours": 16
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting scheduler status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/special-ingredient/force-expire")
+async def force_expire_kernel(address: str = None):
+    """Force expire current Kernel of Wow holder (admin endpoint)"""
+    try:
+        query = {"is_active": True}
+        if address:
+            query["player_address"] = address
+            
+        result = await db.special_ingredient_holders.update_many(
+            query,
+            {"$set": {"is_active": False, "expires_at": datetime.utcnow()}}
+        )
+        
+        return {
+            "success": True,
+            "expired_count": result.modified_count,
+            "message": f"Expired {result.modified_count} active holder(s)"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error force expiring kernel: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ============================================
 # MARKETPLACE SYSTEM ENDPOINTS
 # ============================================
