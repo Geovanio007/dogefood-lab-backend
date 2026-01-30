@@ -3829,6 +3829,292 @@ async def create_next_stage_matches(tournament_id: str, stage: str, tournament: 
         logger.error(f"Error creating next stage matches: {e}")
 
 # ============================================
+# KERNEL OF WOW - SPECIAL INGREDIENT ENDPOINTS
+# ============================================
+
+def calculate_kernel_bonus(ingredients: List[str]) -> dict:
+    """Calculate bonus tier based on ingredients used with Kernel of Wow"""
+    ingredient_set = set(ingredients)
+    
+    # Check for legendary combo
+    for combo in KERNEL_BONUS_COMBOS["legendary"]["combos"]:
+        if combo.issubset(ingredient_set):
+            return {
+                "tier": "legendary",
+                "bonus_percent": 30,
+                "description": KERNEL_BONUS_COMBOS["legendary"]["description"]
+            }
+    
+    # Check for epic combo
+    for combo in KERNEL_BONUS_COMBOS["epic"]["combos"]:
+        if combo.issubset(ingredient_set):
+            return {
+                "tier": "epic",
+                "bonus_percent": 20,
+                "description": KERNEL_BONUS_COMBOS["epic"]["description"]
+            }
+    
+    # Check for rare combo
+    for combo in KERNEL_BONUS_COMBOS["rare"]["combos"]:
+        if combo.issubset(ingredient_set):
+            return {
+                "tier": "rare",
+                "bonus_percent": 15,
+                "description": KERNEL_BONUS_COMBOS["rare"]["description"]
+            }
+    
+    # Default to common bonus
+    return {
+        "tier": "common",
+        "bonus_percent": 5,
+        "description": KERNEL_BONUS_COMBOS["common"]["description"]
+    }
+
+@api_router.get("/special-ingredient/current")
+async def get_current_special_ingredient_holder():
+    """Get the current holder of the Kernel of Wow"""
+    try:
+        now = datetime.utcnow()
+        
+        # Find active holder
+        holder = await db.special_ingredient_holders.find_one({
+            "is_active": True,
+            "expires_at": {"$gt": now}
+        }, {"_id": 0})
+        
+        if holder:
+            # Calculate time remaining
+            expires_at = holder.get("expires_at")
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+            time_remaining = (expires_at - now).total_seconds()
+            
+            return {
+                "has_holder": True,
+                "holder": holder,
+                "ingredient": KERNEL_OF_WOW,
+                "time_remaining_seconds": max(0, time_remaining),
+                "bonus_combos": KERNEL_BONUS_COMBOS
+            }
+        
+        return {
+            "has_holder": False,
+            "holder": None,
+            "ingredient": KERNEL_OF_WOW,
+            "next_selection_info": "A new holder will be selected soon!"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting special ingredient holder: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/special-ingredient/check/{address}")
+async def check_player_has_special_ingredient(address: str):
+    """Check if a specific player currently has the Kernel of Wow"""
+    try:
+        now = datetime.utcnow()
+        
+        holder = await db.special_ingredient_holders.find_one({
+            "player_address": address,
+            "is_active": True,
+            "expires_at": {"$gt": now}
+        }, {"_id": 0})
+        
+        if holder:
+            expires_at = holder.get("expires_at")
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+            time_remaining = (expires_at - now).total_seconds()
+            
+            return {
+                "has_ingredient": True,
+                "ingredient": KERNEL_OF_WOW,
+                "expires_at": holder.get("expires_at"),
+                "time_remaining_seconds": max(0, time_remaining),
+                "bonus_combos": KERNEL_BONUS_COMBOS,
+                "used_count": len(holder.get("used_in_treats", [])),
+                "total_bonus_earned": holder.get("total_bonus_earned", 0)
+            }
+        
+        return {
+            "has_ingredient": False,
+            "ingredient": KERNEL_OF_WOW
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking special ingredient: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/special-ingredient/select-random")
+async def select_random_special_ingredient_holder():
+    """Select a random active player to receive the Kernel of Wow (admin/cron endpoint)"""
+    try:
+        now = datetime.utcnow()
+        
+        # Check if there's already an active holder
+        existing_holder = await db.special_ingredient_holders.find_one({
+            "is_active": True,
+            "expires_at": {"$gt": now}
+        })
+        
+        if existing_holder:
+            return {
+                "success": False,
+                "message": "There is already an active holder",
+                "current_holder": existing_holder.get("player_address")
+            }
+        
+        # Deactivate any expired holders
+        await db.special_ingredient_holders.update_many(
+            {"is_active": True, "expires_at": {"$lte": now}},
+            {"$set": {"is_active": False}}
+        )
+        
+        # Get active players (players who have created treats in last 7 days)
+        seven_days_ago = now - timedelta(days=7)
+        
+        active_players = await db.players.find({
+            "last_active": {"$gte": seven_days_ago}
+        }).to_list(1000)
+        
+        # Fallback: get players with treats
+        if not active_players:
+            treat_creators = await db.treats.distinct("creator_address", {
+                "created_at": {"$gte": seven_days_ago}
+            })
+            active_players = await db.players.find({
+                "address": {"$in": treat_creators}
+            }).to_list(1000)
+        
+        # Final fallback: get any players with points
+        if not active_players:
+            active_players = await db.players.find({
+                "points": {"$gt": 0}
+            }).to_list(100)
+        
+        if not active_players:
+            return {
+                "success": False,
+                "message": "No eligible players found"
+            }
+        
+        # Select random player
+        import random
+        selected_player = random.choice(active_players)
+        
+        # Create new holder record
+        expires_at = now + timedelta(hours=KERNEL_OF_WOW["duration_hours"])
+        
+        new_holder = SpecialIngredientHolder(
+            player_address=selected_player.get("address"),
+            player_nickname=selected_player.get("nickname"),
+            ingredient_id="KERNEL_WOW",
+            granted_at=now,
+            expires_at=expires_at,
+            is_active=True
+        )
+        
+        await db.special_ingredient_holders.insert_one(new_holder.dict())
+        
+        # Update player record
+        await db.players.update_one(
+            {"address": selected_player.get("address")},
+            {"$set": {"has_special_ingredient": True, "special_ingredient_expires": expires_at}}
+        )
+        
+        logger.info(f"Kernel of Wow granted to {selected_player.get('address')} until {expires_at}")
+        
+        return {
+            "success": True,
+            "message": "Kernel of Wow granted!",
+            "holder": {
+                "address": selected_player.get("address"),
+                "nickname": selected_player.get("nickname"),
+                "expires_at": expires_at.isoformat()
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error selecting special ingredient holder: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/special-ingredient/history")
+async def get_special_ingredient_history(limit: int = 20):
+    """Get history of Kernel of Wow holders"""
+    try:
+        history = await db.special_ingredient_holders.find(
+            {},
+            {"_id": 0}
+        ).sort("granted_at", -1).limit(limit).to_list(limit)
+        
+        return {
+            "history": history,
+            "ingredient": KERNEL_OF_WOW
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching special ingredient history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/special-ingredient/use")
+async def use_special_ingredient_in_treat(treat_id: str, player_address: str, ingredients: List[str]):
+    """Record usage of Kernel of Wow in a treat and calculate bonus"""
+    try:
+        now = datetime.utcnow()
+        
+        # Check if player has active special ingredient
+        holder = await db.special_ingredient_holders.find_one({
+            "player_address": player_address,
+            "is_active": True,
+            "expires_at": {"$gt": now}
+        })
+        
+        if not holder:
+            return {
+                "success": False,
+                "message": "You don't have the Kernel of Wow"
+            }
+        
+        # Calculate bonus
+        bonus_info = calculate_kernel_bonus(ingredients)
+        
+        # Update holder record
+        await db.special_ingredient_holders.update_one(
+            {"id": holder.get("id")},
+            {
+                "$push": {"used_in_treats": treat_id},
+                "$inc": {"total_bonus_earned": bonus_info["bonus_percent"]}
+            }
+        )
+        
+        return {
+            "success": True,
+            "bonus": bonus_info,
+            "message": f"Kernel of Wow activated! {bonus_info['description']}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error using special ingredient: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/special-ingredient/bonus-preview")
+async def preview_kernel_bonus(ingredients: str):
+    """Preview bonus for a set of ingredients (comma-separated)"""
+    try:
+        ingredient_list = [ing.strip() for ing in ingredients.split(",")]
+        bonus_info = calculate_kernel_bonus(ingredient_list)
+        
+        return {
+            "ingredients": ingredient_list,
+            "bonus": bonus_info,
+            "all_combos": KERNEL_BONUS_COMBOS
+        }
+        
+    except Exception as e:
+        logger.error(f"Error previewing bonus: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================
 # MARKETPLACE SYSTEM ENDPOINTS
 # ============================================
 
