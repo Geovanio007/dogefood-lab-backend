@@ -36,6 +36,7 @@ const InnerApp = () => {
   const { address, isConnected } = useAccount();
   const { isTelegram, telegramUser, isAuthenticated: isTelegramAuthenticated, isLoading: isTelegramLoading } = useTelegram();
   const { notificationsEnabled, permissionStatus } = useNotifications();
+  const { currentHolder: kernelHolder } = useKernelOfWow();
   
   const [showWelcome, setShowWelcome] = useState(true); // Start with true, will be updated
   const [isLoading, setIsLoading] = useState(false);
