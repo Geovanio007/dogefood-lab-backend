@@ -251,6 +251,82 @@ class BuyListingRequest(BaseModel):
 # Marketplace fee constant
 MARKETPLACE_FEE = 0.420  # Fee for successful sales
 
+# =====================================================
+# KERNEL OF WOW - SPECIAL INGREDIENT SYSTEM
+# =====================================================
+
+# Special Ingredient Configuration
+KERNEL_OF_WOW = {
+    "id": "KERNEL_WOW",
+    "name": "Kernel of Wow",
+    "icon": "https://customer-assets.emergentagent.com/job_treatlabgame/artifacts/pt9v6fui_file_00000000a6ec7230a03b126d8939507c.png",
+    "description": "Forged deep inside the DogeOS kernel, this legendary byte-sized snack runs on pure WOW logic.",
+    "duration_hours": 16,
+    "selection_interval_hours": 24,
+    "rarity": "Legendary",
+    "category": "Special"
+}
+
+# Combo configurations for bonus tiers
+# Each combo is a set of ingredient IDs that, when combined with Kernel of Wow, gives bonus
+KERNEL_BONUS_COMBOS = {
+    # 30% bonus - Legendary combo (hardest to get)
+    "legendary": {
+        "bonus_percent": 30,
+        "combos": [
+            {"ING001", "ING008", "ING015"},  # Crunchy Kibble + Cosmic Catnip + Moonrock Salt
+            {"ING005", "ING012", "ING018"},  # Shiba Crunch + Doge Dust + Stellar Syrup
+        ],
+        "description": "Legendary WOW Combo - Maximum boost!"
+    },
+    # 20% bonus - Epic combo
+    "epic": {
+        "bonus_percent": 20,
+        "combos": [
+            {"ING002", "ING007"},  # Golden Bone Dust + Love Potion
+            {"ING004", "ING011"},  # Meme Meat + Rainbow Sprinkles
+            {"ING003", "ING009"},  # Bacon Bits + Honey Glaze
+        ],
+        "description": "Epic WOW Combo - Strong boost!"
+    },
+    # 15% bonus - Rare combo
+    "rare": {
+        "bonus_percent": 15,
+        "combos": [
+            {"ING001", "ING006"},  # Crunchy Kibble + Peanut Butter
+            {"ING002", "ING003"},  # Golden Bone Dust + Bacon Bits
+            {"ING005", "ING010"},  # Shiba Crunch + Cheese Powder
+        ],
+        "description": "Rare WOW Combo - Good boost!"
+    },
+    # 5% bonus - Common combo (any combo with kernel)
+    "common": {
+        "bonus_percent": 5,
+        "combos": [],  # Any combo not matching above gets 5%
+        "description": "Basic WOW Combo - Small boost!"
+    }
+}
+
+class SpecialIngredientHolder(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    player_address: str
+    player_nickname: Optional[str] = None
+    ingredient_id: str = "KERNEL_WOW"
+    granted_at: datetime = Field(default_factory=datetime.utcnow)
+    expires_at: datetime
+    used_in_treats: List[str] = []  # Treat IDs where this was used
+    total_bonus_earned: int = 0
+    is_active: bool = True
+
+class SpecialIngredientHistory(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    player_address: str
+    player_nickname: Optional[str] = None
+    granted_at: datetime
+    expired_at: datetime
+    treats_created: int = 0
+    total_bonus_earned: int = 0
+
 # Player Management Routes
 @api_router.post("/player", response_model=Player)
 async def create_player(player_data: PlayerCreate):
