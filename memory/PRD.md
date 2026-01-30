@@ -9,7 +9,24 @@ Build and maintain a Web3-enabled game called "DogeFood Lab" where players creat
 
 ## Recent Updates
 
-### Marketplace System (Jan 29, 2026) - NEW
+### Kernel of Wow - Special Ingredient System (Jan 29, 2026) - NEW
+- **Random Selection**: Every 24 hours, one random active player is selected
+- **Duration**: The special ingredient lasts 16 hours with the selected player
+- **Bonus Tiers**: Based on ingredient combos:
+  - Common (any combo): +5% bonus
+  - Rare (specific combos): +15% bonus  
+  - Epic (specific combos): +20% bonus
+  - Legendary (specific combos): +30% bonus
+- **UI Components**:
+  - Global banner showing current holder
+  - Status card in Lab for holder
+  - Bonus result display after treat creation
+- **API Endpoints**:
+  - `GET /api/special-ingredient/current` - Get current holder
+  - `GET /api/special-ingredient/check/{address}` - Check if player has it
+  - `POST /api/special-ingredient/select-random` - Select new holder (admin)
+
+### Marketplace System (Jan 29, 2026)
 - **Treat Marketplace**: Players can buy and sell treats from each other
 - **Listing**: Players can list treats from My Treats page with custom prices
 - **Payment Options**: Sellers choose to accept DOGE only, LAB only, or both
