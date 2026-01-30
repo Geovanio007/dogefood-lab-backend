@@ -90,6 +90,88 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Initialize the scheduler for background tasks
+scheduler = AsyncIOScheduler()
+
+# Kernel of Wow automatic selection job
+async def auto_select_kernel_holder():
+    """Automatically select a new Kernel of Wow holder every 24 hours"""
+    try:
+        now = datetime.utcnow()
+        
+        # Check if there's already an active holder
+        existing_holder = await db.special_ingredient_holders.find_one({
+            "is_active": True,
+            "expires_at": {"$gt": now}
+        })
+        
+        if existing_holder:
+            logger.info(f"Kernel of Wow already active with {existing_holder.get('player_address')}")
+            return
+        
+        # Deactivate any expired holders
+        await db.special_ingredient_holders.update_many(
+            {"is_active": True, "expires_at": {"$lte": now}},
+            {"$set": {"is_active": False}}
+        )
+        
+        # Get active players (players who have created treats in last 7 days)
+        seven_days_ago = now - timedelta(days=7)
+        
+        active_players = await db.players.find({
+            "last_active": {"$gte": seven_days_ago}
+        }).to_list(1000)
+        
+        # Fallback: get players with treats
+        if not active_players:
+            treat_creators = await db.treats.distinct("creator_address", {
+                "created_at": {"$gte": seven_days_ago}
+            })
+            active_players = await db.players.find({
+                "address": {"$in": treat_creators}
+            }).to_list(1000)
+        
+        # Final fallback: get any players with points
+        if not active_players:
+            active_players = await db.players.find({
+                "points": {"$gt": 0}
+            }).to_list(100)
+        
+        if not active_players:
+            logger.warning("No eligible players found for Kernel of Wow")
+            return
+        
+        # Select random player
+        selected_player = random.choice(active_players)
+        
+        # Create new holder record (16 hour duration)
+        expires_at = now + timedelta(hours=16)
+        
+        new_holder = {
+            "id": str(uuid.uuid4()),
+            "player_address": selected_player.get("address"),
+            "player_nickname": selected_player.get("nickname"),
+            "ingredient_id": "KERNEL_WOW",
+            "granted_at": now,
+            "expires_at": expires_at,
+            "used_in_treats": [],
+            "total_bonus_earned": 0,
+            "is_active": True
+        }
+        
+        await db.special_ingredient_holders.insert_one(new_holder)
+        
+        # Update player record
+        await db.players.update_one(
+            {"address": selected_player.get("address")},
+            {"$set": {"has_special_ingredient": True, "special_ingredient_expires": expires_at}}
+        )
+        
+        logger.info(f"🌟 Kernel of Wow auto-granted to {selected_player.get('nickname') or selected_player.get('address')} until {expires_at}")
+        
+    except Exception as e:
+        logger.error(f"Error in auto_select_kernel_holder: {e}")
+
 # Game Models
 class Player(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
