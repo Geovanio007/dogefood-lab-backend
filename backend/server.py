@@ -89,12 +89,12 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# Initialize the scheduler for background tasks
-scheduler = AsyncIOScheduler()
+# Background task flag
+background_task_started = False
 
 # Kernel of Wow automatic selection job
 async def auto_select_kernel_holder():
-    """Automatically select a new Kernel of Wow holder every 24 hours"""
+    """Automatically select a new Kernel of Wow holder"""
     try:
         now = datetime.utcnow()
         
@@ -106,7 +106,7 @@ async def auto_select_kernel_holder():
         
         if existing_holder:
             logger.info(f"Kernel of Wow already active with {existing_holder.get('player_address')}")
-            return
+            return False
         
         # Deactivate any expired holders
         await db.special_ingredient_holders.update_many(
@@ -138,7 +138,7 @@ async def auto_select_kernel_holder():
         
         if not active_players:
             logger.warning("No eligible players found for Kernel of Wow")
-            return
+            return False
         
         # Select random player
         selected_player = random.choice(active_players)
@@ -167,9 +167,27 @@ async def auto_select_kernel_holder():
         )
         
         logger.info(f"🌟 Kernel of Wow auto-granted to {selected_player.get('nickname') or selected_player.get('address')} until {expires_at}")
+        return True
         
     except Exception as e:
         logger.error(f"Error in auto_select_kernel_holder: {e}")
+        return False
+
+async def kernel_scheduler_loop():
+    """Background loop that checks every hour if a new holder needs to be selected"""
+    global background_task_started
+    background_task_started = True
+    logger.info("🚀 Kernel of Wow scheduler loop started")
+    
+    while True:
+        try:
+            # Check and select holder if needed
+            await auto_select_kernel_holder()
+        except Exception as e:
+            logger.error(f"Error in scheduler loop: {e}")
+        
+        # Sleep for 1 hour before checking again
+        await asyncio.sleep(3600)
 
 # Game Models
 class Player(BaseModel):
