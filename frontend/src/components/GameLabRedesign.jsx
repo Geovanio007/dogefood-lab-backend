@@ -1204,6 +1204,13 @@ const GameLabRedesign = ({ playerAddress }) => {
                 </div>
               )}
               
+              {/* Kernel of Wow Bonus */}
+              {brewResult.kernel_bonus && (
+                <div className="mb-4">
+                  <KernelBonusResult bonusInfo={brewResult.kernel_bonus} />
+                </div>
+              )}
+              
               {/* Daily Treats Remaining */}
               {brewResult.daily_status && (
                 <div className="text-sky-200 text-sm mb-4">
