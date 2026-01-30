@@ -1911,6 +1911,11 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         if streak_result.get("streak_increased"):
             streak_message = f" {streak_result.get('message', '')}"
         
+        # Build kernel bonus message
+        kernel_message = ""
+        if kernel_bonus:
+            kernel_message = f" 🌟 KERNEL OF WOW {kernel_bonus['tier'].upper()}! +{kernel_bonus['bonus_percent']}% bonus!"
+        
         return {
             "treat": treat_response,
             "outcome": treat_outcome,
@@ -1925,7 +1930,8 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             },
             "daily_status": daily_status,
             "streak": streak_result,
-            "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']:.1f} hours.{streak_message}{'(Offchain storage)' if season_id == 1 else ''}{' 🎉 Sack completed! +50 XP bonus!' if sack_just_completed else ''}"
+            "kernel_bonus": kernel_bonus,
+            "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']:.1f} hours.{streak_message}{kernel_message}{'(Offchain storage)' if season_id == 1 else ''}{' 🎉 Sack completed! +50 XP bonus!' if sack_just_completed else ''}"
         }
         
     except Exception as e:
