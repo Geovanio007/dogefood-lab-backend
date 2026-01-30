@@ -233,6 +233,11 @@ const InnerApp = () => {
         {/* Main Application - After loading screen, show main menu */}
         {!showWelcome && !isLoading && !isCheckingRegistration && !showTelegramAuth && (
           <Router>
+            {/* Kernel of Wow Banner - Shows current holder globally */}
+            {kernelHolder?.has_holder && (
+              <KernelOfWowBanner currentHolder={kernelHolder} />
+            )}
+            
             {/* Always show main routes after loading - authentication is optional */}
             <Routes>
               <Route path="/" element={<MainMenu />} />
