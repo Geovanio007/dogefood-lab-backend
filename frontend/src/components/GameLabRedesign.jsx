@@ -357,6 +357,11 @@ const GameLabRedesign = ({ playerAddress }) => {
           setShowResult(true);
           setSelectedIngredients([]);
           
+          // Check for Kernel of Wow bonus
+          if (data.kernel_bonus) {
+            setKernelBonusResult(data.kernel_bonus);
+          }
+          
           // Play success sound - rare sound for rare+ treats
           const isRareOrBetter = ['Rare', 'Epic', 'Legendary', 'Mythic'].includes(data.outcome?.rarity);
           if (isRareOrBetter) {
