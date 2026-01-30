@@ -4556,6 +4556,31 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@app.on_event("startup")
+async def startup_event():
+    """Start background scheduler on app startup"""
+    # Schedule Kernel of Wow selection every 24 hours
+    scheduler.add_job(
+        auto_select_kernel_holder,
+        IntervalTrigger(hours=24),
+        id="kernel_of_wow_selection",
+        name="Select Kernel of Wow Holder",
+        replace_existing=True
+    )
+    
+    # Also run immediately on startup to check if we need a holder
+    scheduler.add_job(
+        auto_select_kernel_holder,
+        "date",  # Run once immediately
+        id="kernel_of_wow_initial",
+        name="Initial Kernel of Wow Check"
+    )
+    
+    scheduler.start()
+    logger.info("🚀 Background scheduler started - Kernel of Wow selection scheduled every 24 hours")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    scheduler.shutdown()
     client.close()
+    logger.info("Scheduler and database connection closed")
