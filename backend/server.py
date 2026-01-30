@@ -14,10 +14,9 @@ import hmac
 import json
 import urllib.parse
 import random
+import asyncio
 from telegram import Bot
 import httpx  # For Firebase verification
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
 
 # Import Phase 2 services
 from services.anti_cheat import AntiCheatSystem
