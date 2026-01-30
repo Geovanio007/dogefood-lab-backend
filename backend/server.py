@@ -1754,12 +1754,60 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         
         # Add Season 1 specific metadata for future NFT compatibility
         treat_dict = treat.dict()
+        
+        # Check if player has Kernel of Wow and apply bonus
+        kernel_bonus = None
+        now = datetime.utcnow()
+        kernel_holder = await db.special_ingredient_holders.find_one({
+            "player_address": treat_data.creator_address,
+            "is_active": True,
+            "expires_at": {"$gt": now}
+        })
+        
+        base_points_reward = treat_outcome.get("points_reward", 10)
+        base_xp_reward = treat_outcome.get("xp_reward", 5)
+        
+        if kernel_holder:
+            # Calculate bonus based on ingredients
+            kernel_bonus = calculate_kernel_bonus(treat_outcome.get("ingredients_used", []))
+            bonus_multiplier = 1 + (kernel_bonus["bonus_percent"] / 100)
+            
+            # Apply bonus to rewards
+            boosted_points = int(base_points_reward * bonus_multiplier)
+            boosted_xp = int(base_xp_reward * bonus_multiplier)
+            
+            kernel_bonus["base_points"] = base_points_reward
+            kernel_bonus["boosted_points"] = boosted_points
+            kernel_bonus["base_xp"] = base_xp_reward
+            kernel_bonus["boosted_xp"] = boosted_xp
+            kernel_bonus["points_bonus"] = boosted_points - base_points_reward
+            kernel_bonus["xp_bonus"] = boosted_xp - base_xp_reward
+            
+            # Use boosted values
+            final_points_reward = boosted_points
+            final_xp_reward = boosted_xp
+            
+            # Update kernel holder record
+            await db.special_ingredient_holders.update_one(
+                {"id": kernel_holder.get("id")},
+                {
+                    "$push": {"used_in_treats": treat.id},
+                    "$inc": {"total_bonus_earned": kernel_bonus["points_bonus"]}
+                }
+            )
+            
+            logger.info(f"Kernel of Wow bonus applied: {kernel_bonus['bonus_percent']}% ({kernel_bonus['tier']})")
+        else:
+            final_points_reward = base_points_reward
+            final_xp_reward = base_xp_reward
+        
         treat_dict.update({
             "season_id": season_id,
             "created_at": datetime.utcnow(),
             "is_offchain": season_id == 1,  # Season 1 is offchain only
-            "points_reward": treat_outcome.get("points_reward", 10),
-            "xp_reward": treat_outcome.get("xp_reward", 5),
+            "points_reward": final_points_reward,
+            "xp_reward": final_xp_reward,
+            "kernel_bonus": kernel_bonus,  # Store bonus info in treat
             "rarity_emoji": treat_outcome.get("rarity_emoji", "⚪"),
             "rarity_color": treat_outcome.get("rarity_color", "#9CA3AF"),
             "nft_metadata": {
