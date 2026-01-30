@@ -720,6 +720,12 @@ const GameLabRedesign = ({ playerAddress }) => {
             ← Menu
           </Button>
         </div>
+        
+        {/* Kernel of Wow Status - Shows if player has special ingredient */}
+        <KernelOfWowStatus 
+          playerAddress={playerAddress}
+          onStatusChange={setHasKernelOfWow}
+        />
 
         {/* Tips & Guide Section - Collapsible */}
         <Card className="mb-6 bg-gradient-to-br from-purple-600/90 to-indigo-700/90 backdrop-blur-xl border-purple-400/50 shadow-lg">
