@@ -761,14 +761,14 @@ const GameLabRedesign = ({ playerAddress }) => {
                   {/* Ingredient Effects */}
                   <div className="bg-black/20 rounded-xl p-4">
                     <h3 className="text-yellow-400 font-bold mb-2 flex items-center gap-2">
-                      <span>✨</span> Ingredient Secrets
+                      <span>✨</span> Ingredient Categories
                     </h3>
                     <ul className="text-purple-100 text-sm space-y-1.5">
-                      <li>• <span className="text-amber-300">Proteins</span> boost treat quality</li>
-                      <li>• <span className="text-emerald-300">Vegetables</span> add special effects</li>
-                      <li>• <span className="text-rose-300">Fruits</span> increase sweetness bonus</li>
-                      <li>• <span className="text-cyan-300">Dairy</span> enhances creaminess</li>
-                      <li>• <span className="text-orange-300">Grains</span> improve consistency</li>
+                      <li>• <span className="text-amber-300">Core</span> - Basic starter ingredients (Lv 1-5)</li>
+                      <li>• <span className="text-blue-300">Elonverse</span> - Tech-powered boosts (Lv 6-10)</li>
+                      <li>• <span className="text-purple-300">Space</span> - Cosmic ingredients (Lv 11-15)</li>
+                      <li>• <span className="text-emerald-300">Lab</span> - Experimental effects (Lv 11-15)</li>
+                      <li>• <span className="text-yellow-300">Mythic</span> - Ultra-rare, Mythic treats (Lv 16+)</li>
                     </ul>
                   </div>
                   
