@@ -128,5 +128,15 @@ curl -X POST -H "Authorization: Bearer $RENDER_TOKEN" \
   "https://api.render.com/v1/services/srv-d595m3khg0os73c5cil0/deploys"
 ```
 
+### Kernel of Wow Scheduler Fix (Feb 1, 2026) - DEPLOYMENT FIX
+- **Issue:** Render backend deployments were failing due to `APScheduler` library issues
+- **Solution:** Replaced APScheduler with native Python `asyncio` background task
+- **Changes:**
+  - Removed `APScheduler` from requirements.txt
+  - Removed `emergent-plugins` local wheelhouse reference (Render-incompatible)
+  - Refactored `/api/special-ingredient/scheduler-status` endpoint to work with asyncio
+  - Background task runs in 1-hour check intervals
+- **Result:** Backend deployment now succeeds, scheduler runs automatically on startup
+
 ## Last Updated
-January 20, 2026
+February 1, 2026
