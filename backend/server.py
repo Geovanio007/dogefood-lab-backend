@@ -969,6 +969,91 @@ async def credit_existing_nft_holders():
         logger.error(f"Error crediting NFT holders: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/admin/credit-nft-holder/{address}")
+async def credit_single_nft_holder(address: str):
+    """
+    Admin endpoint to manually credit a specific NFT holder with VIP bonus.
+    Use this for players who should have received the bonus but didn't.
+    """
+    try:
+        # Find the player
+        player = await db.players.find_one({"address": address})
+        
+        if not player:
+            # Create new VIP player
+            new_player = {
+                "id": str(uuid.uuid4()),
+                "address": address,
+                "nickname": None,
+                "is_nft_holder": True,
+                "is_vip": True,
+                "vip_bonus_claimed": True,
+                "points": 500,
+                "level": 1,
+                "experience": 0,
+                "created_treats": [],
+                "last_active": datetime.utcnow(),
+                "leaderboard_eligible": True,
+                "can_convert_points": True
+            }
+            await db.players.insert_one(new_player)
+            logger.info(f"🌟 Created new VIP player with bonus: {address}")
+            return {
+                "success": True,
+                "address": address,
+                "action": "created_new_player",
+                "points_credited": 500,
+                "is_vip": True
+            }
+        
+        # Player exists
+        current_points = player.get("points", 0)
+        already_claimed = player.get("vip_bonus_claimed", False)
+        
+        if already_claimed:
+            # Just ensure VIP status is set
+            await db.players.update_one(
+                {"address": address},
+                {"$set": {"is_nft_holder": True, "is_vip": True}}
+            )
+            return {
+                "success": True,
+                "address": address,
+                "action": "already_credited",
+                "message": "Player already received VIP bonus",
+                "current_points": current_points,
+                "is_vip": True
+            }
+        
+        # Credit the bonus
+        await db.players.update_one(
+            {"address": address},
+            {
+                "$set": {
+                    "is_nft_holder": True,
+                    "is_vip": True,
+                    "vip_bonus_claimed": True
+                },
+                "$inc": {"points": 500}
+            }
+        )
+        
+        logger.info(f"🌟 Manually credited VIP bonus to {address}: {current_points} -> {current_points + 500}")
+        
+        return {
+            "success": True,
+            "address": address,
+            "action": "credited",
+            "old_points": current_points,
+            "new_points": current_points + 500,
+            "points_credited": 500,
+            "is_vip": True
+        }
+        
+    except Exception as e:
+        logger.error(f"Error crediting NFT holder {address}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.get("/treats", response_model=List[DogeTreat])
 async def get_all_treats(limit: int = 50):
     treats = await db.treats.find().sort("created_at", -1).limit(limit).to_list(limit)
