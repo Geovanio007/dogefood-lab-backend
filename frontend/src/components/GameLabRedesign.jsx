@@ -778,10 +778,10 @@ const GameLabRedesign = ({ playerAddress }) => {
                       <span>💎</span> Rarity Hints
                     </h3>
                     <ul className="text-purple-100 text-sm space-y-1.5">
-                      <li>• More diverse categories = higher rarity chance</li>
-                      <li>• Using 5 ingredients unlocks max potential</li>
-                      <li>• Some combos trigger special bonuses</li>
-                      <li>• Higher player level = better luck!</li>
+                      <li>• More ingredients = higher rarity potential</li>
+                      <li>• 5 ingredients unlocks Legendary/Mythic</li>
+                      <li>• Starship Alloy & Mars Regolith = Legendary Gate</li>
+                      <li>• Zero-G Gel + Mythic ingredient = Mythic chance!</li>
                     </ul>
                   </div>
                   
