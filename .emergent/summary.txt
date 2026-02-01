@@ -1,56 +1,60 @@
 <analysis>**original_problem_statement:**
-The user's initial goal was to fix bugs and add features to their DogeFood Lab Game. Throughout the session, requests evolved from bug fixes (sound effects, point sync) to significant feature development and UI overhauls. Key requests included:
-- Implementing a robust zero-hard-refresh system to ensure users always have the latest version without manual cache clearing.
-- Fixing a critical volume control bug causing the app to crash.
-- Overhauling the guest user system to require authentication (wallet connect or unique guest signup) instead of a shared guest account.
-- Cleaning the leaderboard by removing test players.
-- Adding new songs to the music player and enabling shuffle by default.
-- Scaffolding and designing a complete In-Season Tournament feature, including a professional bracket visualization UI.
-- Redesigning the My Treats page with a modern, glass-morphism UI.
-- Disabling the notification permission prompt for users on the Telegram Mini App.
+The user's initial goal was to fix bugs and add features to their DogeFood Lab Game. The session covered a wide range of tasks, including:
+- Fixing a Vercel deployment issue where the build was failing due to Python detection.
+- Resolving a critical issue where the production domain () was pointing to the wrong Vercel project, resulting in a different website being displayed.
+- Adding a music on/off toggle in the settings and improving the visibility of all settings controls (toggles, sliders).
+- Updating the My Treats page to show actual ingredient names (not IDs) and expanding rarity filters up to Mythic.
+- Fixing a bug on the My Treats card where XP and Points were not displaying correctly. This involved a multi-step debugging process that traced the issue from the frontend component to the backend Pydantic model and finally to a misconfigured Render deployment pointing to the wrong repository.
+- Implementing a full-featured Marketplace where players can list their treats for sale. This included backend models, API endpoints, a new frontend page, and functionality on the My Treats page to list an item.
+- Implementing a Kernel of Wow special ingredient feature, where a random player gets a special ingredient every 24 hours that can boost their points. This included backend logic, a scheduler, and frontend UI to display the ingredient holder and any bonuses.
+- Setting up an automated cron job to trigger the Kernel of Wow selection daily.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack DogeFood Lab Game with a React frontend and FastAPI backend, deployed on Vercel and Render respectively. It features core gameplay, a leaderboard, a music player, and an in-game chat. Significant recent additions include a complete zero-hard-refresh system using a service worker, a redesigned tournament page with a bracket view, and a revamped guest authentication flow. Most UI elements have been updated for a modern, consistent look.
+The application is a full-stack DogeFood Lab Game with a React frontend and a FastAPI backend. The frontend is deployed on Vercel and the backend on Render. The game includes core mechanics, a leaderboard, a music player, and chat.
+
+Recent major additions include:
+- A fully functional Marketplace with UI/UX for listing and viewing treats.
+- The Kernel of Wow daily special ingredient system, which is integrated into the game's lab and has a global banner to show the current holder.
+- A redesigned My Treats page with correct data display (ingredient names, points, XP) and complete rarity filters.
+- A redesigned Settings page with improved visibility for audio controls.
+- Resolved, complex deployment issues across both Vercel and Render, ensuring the correct projects are deployed to the correct domains with the right environment variables.
+
+The backend  file has been significantly expanded with marketplace and special ingredient logic but remains a monolithic file in need of refactoring.
 
 **Last working item**:
-- **Last item agent was working:** The agent was working on two user requests simultaneously:
-    1.  Redesign the My Treats page () to have a professional, clean, glass-morphism aesthetic.
-    2.  Disable the notification permission prompt specifically for users on the Telegram Mini App, as it was not functioning correctly in that environment.
+- **Last item agent was working:** The agent was attempting to implement an automated daily cron job to select the Kernel of Wow holder. The initial approach using  caused the Render deployment to fail repeatedly. The agent identified this and was in the process of pivoting to a simpler solution using Python's built-in  library to create a background task.
 - **Status:** IN PROGRESS
 - **Agent Testing Done:** N
-- **Which testing method agent to use?** Frontend testing agent
-    - The agent should take a screenshot of the  page to verify the new glassmorphism design.
-    - It must also verify the logic for hiding the notification prompt. This involves checking  or related components to ensure that the prompt is conditionally rendered and does not appear when the  flag from the Telegram context is true.
+- **Which testing method agent to use?** Backend testing agent. The agent must verify that the new -based scheduler starts correctly on application startup, runs the selection function, and then waits for the 24-hour interval before running again. The  endpoint (if kept) should be used to confirm the job is scheduled.
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1:** Complete the implementation and verification of the user's last request (Priority: P0).
--   **Issue 2:** The notification system for treat readiness/limit resets has been buggy and was refactored multiple times. The latest implementation needs thorough user testing to confirm it works reliably on desktop browsers. (Priority: P1)
--   **Issue 3:** The new version available notification card had an issue where it appeared too frequently. A fix was implemented to only show it once every 24 hours for the same version. This fix requires user verification. (Priority: P1)
+-   **Issue 1:** The Render backend deployment is failing due to the newly added scheduling logic. (Priority: P0)
 
 **Issues Detail:**
--   **Issue 1: Finish 'My Treats' Redesign & Telegram Notification Prompt Removal**
-    -   **Attempted fixes:** The agent successfully overwrote  with a new glass-morphism design. It was in the process of modifying the frontend logic to hide the notification prompt for Telegram users when the session ended.
+-   **Issue 1: Fix failing Render deployment for the automated cron job.**
+    -   **Attempted fixes:** An initial implementation with  was pushed, but it consistently caused the Render build to fail. The agent has correctly identified that this approach is problematic in the Render environment and has started refactoring the code to use a simpler  background task instead.
     -   **Next debug checklist:**
-        1.  Locate where the  component is rendered (likely in ).
-        2.  Import and use the  hook to get the  status.
-        3.  Wrap the rendering of  in a condition: .
-        4.  Deploy the changes to Vercel.
-        5.  Test the live site: verify the new design on the  page and confirm the notification prompt does not appear for Telegram users.
-    -   **Why fix this issue and what will be achieved with the fix?** To complete the user's latest UI/UX requests and improve the experience on the Telegram platform.
+        1.  Complete the refactoring in  to remove all traces of .
+        2.  Implement the  logic within the FastAPI startup event () to run the  function in a continuous loop with a 24-hour sleep interval.
+        3.  Ensure the  is cleaned of  and its dependencies.
+        4.  Push the updated backend code to the  GitHub repository.
+        5.  Manually trigger a new deployment on Render and monitor the build logs to ensure it succeeds.
+        6.  Once deployed, use  to test the  endpoint to confirm a holder is selected automatically.
+    -   **Why fix this issue and what will be achieved with the fix?** This will make the Kernel of Wow feature fully autonomous as per the user's request, automatically assigning the special ingredient every 24 hours without manual intervention.
     -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Frontend.
+    -   **Is recurring issue?** Y (Deployment failures on Render have been a recurring theme).
+    -   **Should Test frontend/backend/both after fix?** Backend.
     -   **Blocked on other issue:** None.
 
 **In progress Task List**:
--   **Task 1: Implement logic to hide notification prompt for Telegram users**
-    -   **Where to resume:** The agent needs to modify the frontend application's main component, likely , where the  is being rendered.
-    -   **What will be achieved with this?** It will fulfill the user's request to tailor the app's behavior for the Telegram Mini App environment, preventing a non-functional prompt from being shown.
+-   **Task 1: Implement  scheduler for Kernel of Wow**
+    -   **Where to resume:** The agent has already started editing . The task is to complete the implementation of the  background task that runs on a 24-hour loop.
+    -   **What will be achieved with this?** A stable, working automated job that fulfills the user's requirement for the special ingredient feature.
     -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Frontend.
+    -   **Should Test frontend/backend/both after fix?** Backend.
     -   **Blocked on something:** None.
 
 **Upcoming and Future Tasks**
@@ -63,110 +67,116 @@ The application is a full-stack DogeFood Lab Game with a React frontend and Fast
     -   P1: Implement a more robust anti-cheat system beyond the current rate-limiting.
     -   P1: Implement the points-to-blockchain conversion system for redeeming  tokens.
 -   **Future Tasks:**
+    -   P2: Create a leaderboard for Kernel of Wow bonus points.
+    -   P2: Implement a Make Offer or bidding feature for the Marketplace.
     -   P2: Implement a historical tournament results page.
     -   P2: Implement Merkle tree generation for Web3 rewards.
-    -   P2: Implement a policy for returning unclaimed tokens.
     -   P2: Add discovery achievements for creating new treat combinations.
 
 **Completed work in this session**
-- **Feature Implementation:**
-  - **Zero Hard-Refresh System:** Implemented a service worker, , and cache-control headers to ensure users get app updates automatically.
-  - **Guest Authentication Overhaul:** Replaced the shared  with a mandatory auth modal, requiring wallet connection or a unique guest signup.
-  - **Tournament Scaffolding:** Created backend models, API endpoints, and a fully redesigned frontend page () with a professional bracket visualization.
-  - **Music Player Enhancements:** Added 5 new songs to the playlist and enabled shuffle-by-default functionality.
-- **Bug Fixes & UX/UI Improvements:**
-  - **Critical Volume Bug:** Fixed an  crash by isolating  keys for music and effects volume.
-  - **My Treats Page Redesign:** Implemented a new glass-morphism UI for the  page.
-  - **Leaderboard Fixes:** Corrected the Your Performance card to show synced points and removed an unnecessary NFT holders only tip.
-  - **Database Cleanup:** Removed 9 test players from the leaderboard via a new admin endpoint.
-  - **Update Notification UX:** Changed the notification card theme to green and adjusted its logic to only reappear for new versions or after 24 hours.
-  - **Deployment Management:** Successfully triggered deployments to Vercel and Render using user-provided API tokens.
+-   **Feature Implementation:**
+    -   **Marketplace:** Scaffolding and implementation of a full marketplace feature (backend & frontend) where users can list their treats for sale.
+    -   **Kernel of Wow:** Implemented the daily special ingredient feature, including backend logic, API endpoints, and frontend UI components in the Lab and a global banner.
+    -   **Music Toggle:** Added a functional on/off toggle for background music in the Settings page.
+-   **Bug Fixes & UX/UI Improvements:**
+    -   **Deployment Hell Resolved:** Diagnosed and fixed multiple critical deployment issues:
+        -   Fixed Vercel builds failing due to incorrect Python detection by adding a  file and framework hints in .
+        -   Corrected the production domain () which was pointing to the wrong Vercel project by re-assigning the domain.
+        -   Fixed a blank white screen issue on production by adding all missing environment variables to the Vercel project settings.
+        -   Fixed the Render backend deployment which was pointing to the wrong GitHub repository and had an incorrect root directory configured.
+    -   **My Treats Page Data:** Fixed a bug where Points and XP were not showing on treat cards by adding the missing fields (, ) to the backend's  Pydantic model.
+    -   **My Treats Page UI:** Updated rarity filters to include all tiers up to Mythic and implemented logic to show full ingredient names instead of IDs.
+    -   **Settings UI:** Increased the visibility and contrast of all toggles and sliders on the Settings page for better usability.
 
 **Earlier issues found/mentioned but not fixed**
--   None. All issues raised by the user during this session were addressed.
+-   None.
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** Sound effects not working. This was addressed and resolved early in this session.
+-   **Issue recurrence in previous fork:** None from the previous fork summary.
 -   **New recurring issues this session:**
-    -   **Notification System:** The system for treat-ready notifications was buggy and required multiple refactors. Its current state is pending user verification.
-    -   **Update Notification Card:** The new version card was appearing too frequently. A fix was deployed, but it is also pending final user verification.
--   **Status:** IN PROGRESS (pending user verification for the new recurring issues).
+    -   **Deployment Configuration:** A major recurring issue was incorrect deployment configurations for both Vercel and Render. This included wrong Git repos, wrong root directories, missing environment variables, and incorrect build framework detection. This has been resolved but indicates the deployment setup is fragile.
+-   **Status:** RESOLVED (but remains a high-risk area).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Zero-Refresh Deployments:** Using a combination of a **Service Worker** (), a version file () generated at build time, and specific  headers in  to prompt users to refresh seamlessly.
--   **UI/UX Design:** Implemented a **glass-morphism** aesthetic using  and transparent/gradient backgrounds for a modern look.
--   **State Management:** Heavy use of React's Context API to manage global state for audio, music, notifications, and app versioning.
--   **Authentication Flow:** Created a conditional authentication modal to gate access to game features, improving the user onboarding flow for non-authenticated users.
--   **Deployment Automation:** Manually triggered deployments to Vercel (frontend) and Render (backend) using  with user-provided API tokens.
+-   **Deployment Debugging (Vercel & Render):** Extensive debugging of CI/CD pipelines, including domain aliasing, environment variable management, build command configuration, and root directory settings.
+-   **Monorepo Deployment Strategy:** The project uses a single mono-repo but deploys the frontend and backend to different services (Vercel, Render) from different sub-directories or even separate mirrored repositories, which has been a source of complexity and errors.
+-   **Pydantic Model Validation:** The issue with missing points/XP was caused by fields being stripped out by a Pydantic  that did not include them.
+-   **Background Task Scheduling:** Attempted to use  for a cron job, which failed on Render. Now pivoting to using  for a simpler, more portable background loop.
 
 **key DB schema**
--   **tournaments (NEW):**
-    -   : Stores the static structure and rules for a tournament. The  object contains the bracket layout.
--   **players (MODIFIED):**
-    -   Guest users are now created with a unique  (e.g., ), a , and , preventing data collision between anonymous users.
+-   **marketplace_listings (NEW):**
+    -   
+-   **special_ingredient_status (NEW):**
+    -   : A singleton document tracking the current holder of the Kernel of Wow.
+-   **treats (MODIFIED):**
+    -   Added  field to track if a treat is on the marketplace.
+    -   Confirmed that  and  are stored.
 
 **changes in tech stack**
--   No changes to the core technologies (React, FastAPI, MongoDB).
+-    was temporarily added to  but should be removed.
 
 **All files of reference**
--   : Contains the newly implemented glass-morphism UI. It is complete but needs verification.
--   : The next file to be modified to hide the notification prompt for Telegram users.
--   : Contains the logic for handling notification permissions.
--   : Contains the redesigned tournament bracket UI.
--   : Contains all new backend logic for tournaments, guest registration, and admin functions.
+-   : The monolithic backend file where the  scheduler needs to be correctly implemented.
+-   : Needs to be cleaned of the  dependency.
+-   : Contains the UI for listing treats.
+-   : The main marketplace UI.
+-   : Contains the UI for the Kernel of Wow feature.
 
 **Areas that need refactoring**:
--    has become extremely large and monolithic. It now contains logic for auth, gameplay, chat, notifications, guest registration, admin actions, and tournaments. It should be urgently broken down into separate FastAPI router files (e.g., , ) to improve maintainability.
+-   ** is critically monolithic.** It now handles auth, gameplay, chat, tournaments, marketplace, and special events. It MUST be broken down into separate FastAPI routers (e.g., , ) to ensure the project remains maintainable.
 
 **key api endpoints**
--   ****: **NEW** - Creates a unique guest player with a given username.
--   ****: **NEW** - An admin endpoint to clean up test data from the  collection.
--   ****: **NEW** - Fetches the static data for a tournament, including the bracket structure.
--   ****: **MODIFIED** - Endpoint to save a user's notification preference/token.
+-   **Marketplace (NEW):**
+    -   : List a treat for sale.
+    -   : Get all active listings.
+    -   : Remove a treat from the marketplace.
+    -   : (Logic not yet live) Purchase a treat.
+-   **Special Ingredient (NEW):**
+    -   : Get the current holder of the special ingredient.
+    -   : Manually trigger the selection process.
 
 **Critical Info for New Agent**
--   **Immediate Priority:** Your first task is to complete the user's last request: disable the notification prompt for Telegram users. This involves a small code change in the frontend, likely in , to conditionally render the prompt based on the  context.
--   **Verification is Key:** After deploying the fix, you must verify both parts of the last request: the new UI on the  page and that the notification prompt is gone for Telegram users. The user is very detail-oriented about UI/UX.
--   **Tournament is a Shell:** The new tournament feature is currently a UI mockup. The backend sends static data. The next major task will be to make this feature dynamic, with real-time score tracking, countdowns, and automated bracket progression.
+-   **IMMEDIATE BLOCKER:** The Render backend deployment is failing. Your first and only priority is to fix this. The  library is the cause. You must complete the refactor to a simple  background task in , remove the  dependency from , push the changes to the correct backend repository (), and trigger a new deployment on Render.
+-   **Deployment Complexity:** Be aware that the backend is deployed from a separate repository (). Any changes to  in the main repo must be pushed there. The previous agent used , which can be complex. Ensure you are pushing to the correct place.
+-   **Verification:** After the backend is successfully deployed, you must  the production API to confirm that the  scheduler is running and has selected a Kernel of Wow holder.
 
 **documents and test reports created in this job**
--    (Updated with new features)
--    (Created and updated for the zero-refresh system)
+-    (Updated with Marketplace and Kernel of Wow features)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Requested setup of an in-season tournament feature with detailed rules and provided a logo. (Status: **Completed**, initial version deployed)
-2.  **Agent:** Deployed the initial tournament structure. (Status: Completed)
-3.  **User:** Noted the tournament page was missing the bracket visualization and asked for a more professional, on-brand design. (Status: **Completed**)
-4.  **Agent:** Redesigned and deployed the new tournament page with a full bracket view. (Status: Completed)
-5.  **User:** Requested a redesign of the My Treats page with a glass-morphism UI and to remove the notification prompt for Telegram users. (Status: **In Progress**)
-6.  **Agent:** Started work on the redesign and notification removal. (Status: In Progress)
-7.  **(Last Message)** The agent was in the middle of implementing the changes when the session ended. (Status: Incomplete)
+1.  **User:** Requested the Kernel of Wow special ingredient feature. (Status: **Completed**)
+2.  **Agent:** Implemented the Kernel of Wow feature (backend & frontend). (Status: Completed)
+3.  **User:** Requested an automated cron job to trigger the special ingredient selection daily. (Status: **In Progress**)
+4.  **Agent:** Began implementing the cron job with . (Status: In Progress)
+5.  **Agent:** Pushed  changes and deployed to Render. The build failed. (Status: In Progress/Blocked)
+6.  **Agent:** Investigated the build failure, confirmed local syntax was ok, but the Render build kept failing. (Status: In Progress/Blocked)
+7.  **Agent:** Realized the issue might be  itself and started refactoring to a simpler  background task. (Status: **In Progress**)
+8.  **(Last Message)** The agent was in the middle of replacing the  logic with an  implementation when the session ended.
 
 **Project Health Check:**
--   **Broken:** None. The most recent bugs (volume crash, guest user issue) have been fixed.
--   **Working:** Core gameplay, authentication, leaderboard, chat, music player, zero hard-refresh system, deployment pipelines.
--   **Mocked:** The **Tournament Page** is currently mocked. It displays a static bracket structure from the backend and does not yet have live scoring, countdowns, or logic to advance winners.
+-   **Broken:** The **backend deployment** is currently broken. The  service on Render is running an old, pre-scheduler version of the code. All new deployments are failing.
+-   **Working:** The frontend on Vercel is stable and running the latest code. All features up to and including the Kernel of Wow UI are present. The core gameplay loop and marketplace function on the preview environment.
+-   **Mocked:** The **Tournament Page** remains a UI mockup with no dynamic logic.
 
 **3rd Party Integrations**
 -   **Vercel:** Frontend Deployment
 -   **Render:** Backend Deployment
 -   **MongoDB Atlas:** Database
--   **GitHub:** Source Control & CI/CD
--   **Telegram Mini App:** Platform integration for user identification.
--   **Firebase Authentication:** For Google and Email/Password login.
--   **Google Fonts:** (, ) For typography.
+-   **GitHub:** Source Control (Note: uses two repos,  and )
+-   **Telegram Mini App:** Platform integration.
+-   **Firebase Authentication:** Social login.
 
 **Testing status**
 -   **Testing agent used after significant changes:** NO
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None.
--   **Known regressions:** The notification system and update card behavior have been recurring issues in this session, with fixes deployed but pending final user validation.
+-   **Known regressions:** The backend deployment is non-functional for the latest features.
 
 **Credentials to test flow:**
--   User provided Vercel and Render tokens during the session for manual deployments. They are available in the chat history if needed but using the platform's Save to GitHub feature is the recommended path.
+-   User has provided GitHub, Vercel, and Render tokens in the chat history. The recommended path is to use the platform's integrated Git features.
 
 **What agent forgot to execute**
--   The agent did not forget but was unable to complete the user's last request due to the session ending. The task to disable the notification prompt for Telegram users is halfway done and is the immediate next step.</analysis>
+-   The agent did not forget but was stopped mid-task. The primary unfinished work is completing the pivot from  to  for the daily cron job and successfully deploying this fix to Render.</analysis>
