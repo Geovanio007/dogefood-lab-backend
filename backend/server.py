@@ -3494,56 +3494,79 @@ async def schedule_limit_reset_notification(data: ScheduleNotification, backgrou
         raise HTTPException(status_code=500, detail=str(e))
 
 async def send_scheduled_notification(notification_id: str):
-    """Background task to send scheduled notification"""
-    import asyncio
-    
+    """Background task to send scheduled notification immediately when ready"""
     try:
         notification = await db.scheduled_notifications.find_one({"id": notification_id})
         if not notification or notification.get("sent"):
             return
         
-        # Calculate delay
+        # Calculate if notification should be sent now
+        now = datetime.utcnow()
+        should_send = False
+        
         if notification["type"] == "treat_ready" and notification.get("ready_time"):
-            ready_time = datetime.fromisoformat(notification["ready_time"].replace("Z", "+00:00"))
-            delay = (ready_time - datetime.utcnow()).total_seconds()
+            ready_time_str = notification["ready_time"]
+            if isinstance(ready_time_str, str):
+                ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "").replace("+00:00", ""))
+            else:
+                ready_time = ready_time_str
+            should_send = now >= ready_time
         elif notification["type"] == "limit_reset" and notification.get("reset_time"):
-            reset_time = datetime.fromisoformat(notification["reset_time"].replace("Z", "+00:00"))
-            delay = (reset_time - datetime.utcnow()).total_seconds()
-        else:
-            delay = 0
+            reset_time_str = notification["reset_time"]
+            if isinstance(reset_time_str, str):
+                reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "").replace("+00:00", ""))
+            else:
+                reset_time = reset_time_str
+            should_send = now >= reset_time
         
-        # Wait until notification time
-        if delay > 0:
-            await asyncio.sleep(min(delay, 86400))  # Max 24 hours
+        if not should_send:
+            # Not ready yet - will be picked up by the notification processor loop
+            return
         
-        # Check if subscription is still active
+        # Check if subscription is still active and send
         if notification.get("telegram_id"):
             sub = await db.notification_subscriptions.find_one({
                 "telegram_id": notification["telegram_id"],
                 "active": True
             })
             if not sub:
+                # Mark as sent to prevent retry
+                await db.scheduled_notifications.update_one(
+                    {"id": notification_id},
+                    {"$set": {"sent": True, "skipped_reason": "subscription_inactive"}}
+                )
                 return
             
             # Check preference
             if notification["type"] == "treat_ready" and not sub.get("treat_ready", True):
+                await db.scheduled_notifications.update_one(
+                    {"id": notification_id},
+                    {"$set": {"sent": True, "skipped_reason": "preference_disabled"}}
+                )
                 return
             if notification["type"] == "limit_reset" and not sub.get("limit_reset", True):
+                await db.scheduled_notifications.update_one(
+                    {"id": notification_id},
+                    {"$set": {"sent": True, "skipped_reason": "preference_disabled"}}
+                )
                 return
             
             # Send Telegram notification
             bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
             if bot_token:
-                bot = Bot(token=bot_token)
-                if notification["type"] == "treat_ready":
-                    message = f"🍖 Your {notification.get('treat_name', 'treat')} is ready!\n\nHead to the lab to collect it before it gets cold! 🧪"
-                else:
-                    message = "🔄 Daily limit reset!\n\nYou can now create more treats. Time to brew! 🧪"
-                
                 try:
+                    bot = Bot(token=bot_token)
+                    if notification["type"] == "treat_ready":
+                        message = f"🍖 Your {notification.get('treat_name', 'treat')} is ready!\n\nHead to the lab to collect it before it gets cold! 🧪"
+                    else:
+                        message = "🔄 Daily limit reset!\n\nYou can now create more treats. Time to brew! 🧪"
+                    
                     await bot.send_message(chat_id=notification["telegram_id"], text=message)
+                    logger.info(f"📬 Sent Telegram notification to {notification['telegram_id']}: {notification['type']}")
                 except Exception as e:
-                    logger.warning(f"Failed to send Telegram notification: {e}")
+                    logger.warning(f"Failed to send Telegram notification to {notification.get('telegram_id')}: {e}")
+                    # Don't mark as sent so it can be retried
+                    return
         
         # Mark as sent
         await db.scheduled_notifications.update_one(
@@ -3552,7 +3575,39 @@ async def send_scheduled_notification(notification_id: str):
         )
         
     except Exception as e:
-        logger.error(f"Error sending scheduled notification: {e}")
+        logger.error(f"Error sending scheduled notification {notification_id}: {e}")
+
+async def notification_processor_loop():
+    """Background loop that checks for pending notifications every minute"""
+    logger.info("🔔 Notification processor loop started")
+    
+    while True:
+        try:
+            now = datetime.utcnow()
+            
+            # Find all unsent notifications that are ready to be sent
+            pending_notifications = await db.scheduled_notifications.find({
+                "sent": False,
+                "$or": [
+                    {"ready_time": {"$lte": now.isoformat()}},
+                    {"reset_time": {"$lte": now.isoformat()}}
+                ]
+            }).to_list(100)
+            
+            if pending_notifications:
+                logger.info(f"📬 Found {len(pending_notifications)} pending notifications to send")
+            
+            for notification in pending_notifications:
+                try:
+                    await send_scheduled_notification(notification["id"])
+                except Exception as e:
+                    logger.error(f"Error processing notification {notification.get('id')}: {e}")
+            
+        except Exception as e:
+            logger.error(f"Error in notification processor loop: {e}")
+        
+        # Check every 60 seconds
+        await asyncio.sleep(60)
 
 # ============================================
 # GUEST REGISTRATION ENDPOINT
