@@ -1539,12 +1539,21 @@ async def verify_player_nft(address: str, data: dict = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/verify-nft/{address}")
-async def verify_nft_ownership(address: str, is_holder: bool = False):
+async def verify_nft_ownership(address: str, is_holder: str = "false"):
     """
     Verify NFT ownership and update player VIP status.
     Frontend should pass is_holder=True if wallet holds the NFT.
+    Accepts is_holder as string "true"/"false" or boolean
     """
     try:
+        # Parse is_holder - handle string "true"/"false" from query params
+        if isinstance(is_holder, str):
+            is_holder_bool = is_holder.lower() in ("true", "1", "yes")
+        else:
+            is_holder_bool = bool(is_holder)
+        
+        logger.info(f"🔍 NFT verification for {address}: is_holder={is_holder} -> {is_holder_bool}")
+        
         # Check if player exists
         existing_player = await db.players.find_one({"address": address})
         
