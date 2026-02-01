@@ -4274,21 +4274,23 @@ async def preview_kernel_bonus(ingredients: str):
 async def get_scheduler_status():
     """Get the status of the Kernel of Wow scheduler"""
     try:
-        jobs = scheduler.get_jobs()
-        job_info = []
-        for job in jobs:
-            job_info.append({
-                "id": job.id,
-                "name": job.name,
-                "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
-                "trigger": str(job.trigger)
-            })
+        # Get current holder to determine next selection time
+        current_holder = await db.special_ingredient_holders.find_one(
+            {"is_active": True},
+            sort=[("granted_at", -1)]
+        )
+        
+        next_run = None
+        if current_holder and current_holder.get("expires_at"):
+            next_run = current_holder["expires_at"].isoformat() if isinstance(current_holder["expires_at"], datetime) else current_holder["expires_at"]
         
         return {
-            "scheduler_running": scheduler.running,
-            "jobs": job_info,
+            "scheduler_running": background_task_started,
+            "scheduler_type": "asyncio_background_task",
+            "check_interval_hours": 1,
             "selection_interval_hours": 24,
-            "ingredient_duration_hours": 16
+            "ingredient_duration_hours": 16,
+            "current_holder_expires": next_run
         }
         
     except Exception as e:
