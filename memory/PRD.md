@@ -128,6 +128,16 @@ curl -X POST -H "Authorization: Bearer $RENDER_TOKEN" \
   "https://api.render.com/v1/services/srv-d595m3khg0os73c5cil0/deploys"
 ```
 
+### Game Mechanisms Page Redesign (Feb 1, 2026)
+- **Complete overhaul** of game-mechanisms.html with correct ingredient information
+- **New color scheme:** Changed from purple gradients to game's amber/orange theme
+- **Real ingredient images:** Added all 22 actual ingredient images from the game
+- **5 categories documented:** Core, Elonverse, Space, Lab, Mythic with unlock levels
+- **Example recipes:** Added 5 working recipes (Common to Mythic)
+- **New features documented:** Kernel of Wow, Marketplace, VIP benefits, Telegram notifications
+- **Lab tips fixed:** Updated ingredient categories and rarity hints with correct info
+- **Professional design:** Cards with hover effects, category headers, responsive layout
+
 ### Kernel of Wow Scheduler Fix (Feb 1, 2026) - DEPLOYMENT FIX
 - **Issue:** Render backend deployments were failing due to `APScheduler` library issues
 - **Solution:** Replaced APScheduler with native Python `asyncio` background task
