@@ -4692,10 +4692,14 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_event():
-    """Start background scheduler on app startup"""
+    """Start background schedulers on app startup"""
     # Start the Kernel of Wow scheduler loop as a background task
     asyncio.create_task(kernel_scheduler_loop())
     logger.info("🚀 Kernel of Wow background scheduler started")
+    
+    # Start the notification processor loop
+    asyncio.create_task(notification_processor_loop())
+    logger.info("🔔 Notification processor started")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
