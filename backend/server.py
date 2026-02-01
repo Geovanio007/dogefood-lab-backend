@@ -1557,7 +1557,7 @@ async def verify_nft_ownership(address: str, is_holder: str = "false"):
         # Check if player exists
         existing_player = await db.players.find_one({"address": address})
         
-        if is_holder:
+        if is_holder_bool:
             if existing_player:
                 # Player exists - check if VIP bonus already claimed
                 if not existing_player.get("vip_bonus_claimed", False):
@@ -1591,6 +1591,7 @@ async def verify_nft_ownership(address: str, is_holder: str = "false"):
             else:
                 # New player - create with VIP bonus
                 new_player = {
+                    "id": str(uuid.uuid4()),
                     "address": address,
                     "nickname": None,
                     "is_nft_holder": True,
@@ -1600,7 +1601,9 @@ async def verify_nft_ownership(address: str, is_holder: str = "false"):
                     "level": 1,
                     "experience": 0,
                     "created_treats": [],
-                    "last_active": datetime.utcnow()
+                    "last_active": datetime.utcnow(),
+                    "leaderboard_eligible": True,
+                    "can_convert_points": True
                 }
                 await db.players.insert_one(new_player)
                 logger.info(f"🌟 New VIP player created: {address} - 500 bonus points!")
