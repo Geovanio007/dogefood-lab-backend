@@ -6,14 +6,18 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
 import json
 import urllib.parse
+import random
+import asyncio
 from telegram import Bot
+import httpx  # For Firebase verification
+import blockcypher  # For DOGE transaction verification
 
 # Import Phase 2 services
 from services.anti_cheat import AntiCheatSystem
@@ -24,6 +28,10 @@ from services.merkle_tree import MerkleTreeGenerator
 from services.treat_game_engine import TreatGameEngine, TreatRarity
 from services.ingredient_system import IngredientSystem
 from services.season_manager import SeasonManager
+
+# Firebase Configuration
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "AIzaSyDPDYvwWVhmnTTAcACEdI1agLQcetDV9jQ")
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "dogefood-lab")
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -82,11 +90,112 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Background task flag
+background_task_started = False
+
+# Kernel of Wow automatic selection job
+async def auto_select_kernel_holder():
+    """Automatically select a new Kernel of Wow holder"""
+    try:
+        now = datetime.utcnow()
+        
+        # Check if there's already an active holder
+        existing_holder = await db.special_ingredient_holders.find_one({
+            "is_active": True,
+            "expires_at": {"$gt": now}
+        })
+        
+        if existing_holder:
+            logger.info(f"Kernel of Wow already active with {existing_holder.get('player_address')}")
+            return False
+        
+        # Deactivate any expired holders
+        await db.special_ingredient_holders.update_many(
+            {"is_active": True, "expires_at": {"$lte": now}},
+            {"$set": {"is_active": False}}
+        )
+        
+        # Get active players (players who have created treats in last 7 days)
+        seven_days_ago = now - timedelta(days=7)
+        
+        active_players = await db.players.find({
+            "last_active": {"$gte": seven_days_ago}
+        }).to_list(1000)
+        
+        # Fallback: get players with treats
+        if not active_players:
+            treat_creators = await db.treats.distinct("creator_address", {
+                "created_at": {"$gte": seven_days_ago}
+            })
+            active_players = await db.players.find({
+                "address": {"$in": treat_creators}
+            }).to_list(1000)
+        
+        # Final fallback: get any players with points
+        if not active_players:
+            active_players = await db.players.find({
+                "points": {"$gt": 0}
+            }).to_list(100)
+        
+        if not active_players:
+            logger.warning("No eligible players found for Kernel of Wow")
+            return False
+        
+        # Select random player
+        selected_player = random.choice(active_players)
+        
+        # Create new holder record (16 hour duration)
+        expires_at = now + timedelta(hours=16)
+        
+        new_holder = {
+            "id": str(uuid.uuid4()),
+            "player_address": selected_player.get("address"),
+            "player_nickname": selected_player.get("nickname"),
+            "ingredient_id": "KERNEL_WOW",
+            "granted_at": now,
+            "expires_at": expires_at,
+            "used_in_treats": [],
+            "total_bonus_earned": 0,
+            "is_active": True
+        }
+        
+        await db.special_ingredient_holders.insert_one(new_holder)
+        
+        # Update player record
+        await db.players.update_one(
+            {"address": selected_player.get("address")},
+            {"$set": {"has_special_ingredient": True, "special_ingredient_expires": expires_at}}
+        )
+        
+        logger.info(f"🌟 Kernel of Wow auto-granted to {selected_player.get('nickname') or selected_player.get('address')} until {expires_at}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error in auto_select_kernel_holder: {e}")
+        return False
+
+async def kernel_scheduler_loop():
+    """Background loop that checks every hour if a new holder needs to be selected"""
+    global background_task_started
+    background_task_started = True
+    logger.info("🚀 Kernel of Wow scheduler loop started")
+    
+    while True:
+        try:
+            # Check and select holder if needed
+            await auto_select_kernel_holder()
+        except Exception as e:
+            logger.error(f"Error in scheduler loop: {e}")
+        
+        # Sleep for 1 hour before checking again
+        await asyncio.sleep(3600)
+
 # Game Models
 class Player(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    address: Optional[str] = None  # Wallet address (optional for Telegram users)
+    address: Optional[str] = None  # Wallet address (optional for Telegram/guest users)
     nickname: Optional[str] = None  # Enhanced: Add nickname support
+    email: Optional[str] = None  # Email for Firebase auth users
     # Character selection
     selected_character: Optional[str] = None  # Character ID: 'max', 'rex', or 'luna'
     character_bonuses: Optional[dict] = None  # Character-specific bonuses
@@ -95,10 +204,17 @@ class Player(BaseModel):
     telegram_username: Optional[str] = None  # Telegram @username
     telegram_first_name: Optional[str] = None  # Telegram first name
     telegram_last_name: Optional[str] = None  # Telegram last name
-    auth_type: str = "wallet"  # "wallet", "telegram", or "linked"
+    # Firebase user fields
+    firebase_uid: Optional[str] = None  # Firebase user ID
+    firebase_provider: Optional[str] = None  # "email", "google", etc.
+    profile_image: Optional[str] = None  # Profile image URL or base64
+    # Auth type: "wallet", "telegram", "firebase", "guest", or "linked"
+    auth_type: str = "wallet"
     is_nft_holder: bool = False
     is_vip: bool = False  # VIP Scientist badge
     vip_bonus_claimed: bool = False  # Track if 500 point bonus was claimed
+    leaderboard_eligible: bool = True  # All users can appear on leaderboard
+    can_convert_points: bool = False  # Only NFT holders can convert points to $LAB
     level: int = 1
     experience: int = 0
     points: int = 0
@@ -129,6 +245,9 @@ class DogeTreat(BaseModel):
     timer_duration: Optional[int] = None  # Enhanced: Timer in seconds
     brewing_status: str = "ready"  # Enhanced: "brewing" or "ready"
     ready_at: Optional[datetime] = None  # Enhanced: When treat will be ready
+    points_reward: Optional[int] = 0  # Points earned from this treat
+    xp_reward: Optional[int] = 0  # XP earned from this treat
+    season_id: Optional[int] = None  # Season when treat was created
 
 class TreatCreate(BaseModel):
     name: str
@@ -174,6 +293,204 @@ class TreatSimulationRequest(BaseModel):
     level: int
     is_nft_holder: bool
     rank: int
+
+# Chat Models
+class ChatMessage(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    sender_address: str
+    sender_nickname: Optional[str] = None
+    sender_character: Optional[str] = None
+    content: str
+    reply_to: Optional[str] = None  # ID of message being replied to
+    reply_preview: Optional[str] = None  # Preview of replied message
+    upvotes: List[str] = []  # List of addresses who upvoted
+    upvote_count: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class ChatMessageCreate(BaseModel):
+    sender_address: str
+    content: str
+    reply_to: Optional[str] = None
+
+class ChatUpvoteRequest(BaseModel):
+    message_id: str
+    voter_address: str
+
+# =====================================================
+# MARKETPLACE MODELS
+# =====================================================
+
+class MarketplaceListing(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    treat_id: str
+    treat_name: str
+    treat_rarity: str
+    treat_image: str
+    treat_ingredients: List[str] = []
+    treat_points_reward: Optional[int] = 0
+    treat_xp_reward: Optional[int] = 0
+    seller_address: str
+    seller_nickname: Optional[str] = None
+    price_doge: Optional[float] = None  # Price in DOGE (if seller accepts DOGE)
+    price_lab: Optional[float] = None   # Price in LAB (if seller accepts LAB)
+    payment_options: str = "both"  # "doge", "lab", or "both"
+    status: str = "active"  # "active", "sold", "cancelled"
+    listed_at: datetime = Field(default_factory=datetime.utcnow)
+    sold_at: Optional[datetime] = None
+    buyer_address: Optional[str] = None
+
+class CreateListingRequest(BaseModel):
+    treat_id: str
+    seller_address: str
+    price_doge: Optional[float] = None
+    price_lab: Optional[float] = None
+    payment_options: str = "both"  # "doge", "lab", or "both"
+
+class BuyListingRequest(BaseModel):
+    listing_id: str
+    buyer_address: str
+    payment_currency: str  # "doge" or "lab"
+
+# Marketplace fee constant
+MARKETPLACE_FEE = 0.420  # Fee for successful sales
+
+# =====================================================
+# AUTO-MIXER SUBSCRIPTION SYSTEM
+# =====================================================
+
+# Auto-Mixer Configuration
+AUTO_MIXER_CONFIG = {
+    "monthly_fee_doge": 30,  # 30 DOGE per month
+    "max_window_hours": 6,   # Max 6-hour mixing window
+    "min_window_hours": 1,   # Min 1-hour mixing window
+    "payment_address": "DMxBXyfQbkCoZJyFoKMksjn9epLTwhHAyE",  # Payment address
+    "buy_burn_percent": 80,  # 80% for buy and burn
+    "dev_percent": 20,       # 20% for devs
+    "mixes_per_hour": 2,     # How many auto-mixes per hour during window
+    "blockcypher_api_key": os.environ.get("BLOCKCYPHER_API_KEY", ""),
+    "required_confirmations": 3  # Required confirmations for payment
+}
+
+class AutoMixerSubscription(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    player_address: str
+    player_nickname: Optional[str] = None
+    # Subscription details
+    status: str = "pending"  # "pending", "active", "expired", "cancelled"
+    subscription_start: Optional[datetime] = None
+    subscription_end: Optional[datetime] = None
+    # Mixing window (24-hour format, UTC)
+    window_start_hour: int = 0  # 0-23
+    window_end_hour: int = 6    # 0-23
+    # Payment info
+    payment_tx_hash: Optional[str] = None
+    payment_amount: float = 30.0
+    payment_confirmed: bool = False
+    payment_confirmations: int = 0
+    # Stats
+    total_auto_mixes: int = 0
+    last_auto_mix: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class AutoMixerCreateRequest(BaseModel):
+    player_address: str
+    window_start_hour: int  # 0-23
+    window_end_hour: int    # 0-23
+
+class AutoMixerPaymentVerifyRequest(BaseModel):
+    subscription_id: str
+    tx_hash: str
+
+class AutoMixerWindowUpdateRequest(BaseModel):
+    subscription_id: str
+    player_address: str
+    window_start_hour: int
+    window_end_hour: int
+
+class AutoMixerFundsStats(BaseModel):
+    total_received_doge: float = 0.0
+    buy_burn_amount: float = 0.0
+    dev_amount: float = 0.0
+    total_subscribers: int = 0
+    active_subscribers: int = 0
+    total_auto_mixes: int = 0
+
+# =====================================================
+# KERNEL OF WOW - SPECIAL INGREDIENT SYSTEM
+# =====================================================
+
+# Special Ingredient Configuration
+KERNEL_OF_WOW = {
+    "id": "KERNEL_WOW",
+    "name": "Kernel of Wow",
+    "icon": "https://customer-assets.emergentagent.com/job_treatlabgame/artifacts/pt9v6fui_file_00000000a6ec7230a03b126d8939507c.png",
+    "description": "Forged deep inside the DogeOS kernel, this legendary byte-sized snack runs on pure WOW logic.",
+    "duration_hours": 16,
+    "selection_interval_hours": 24,
+    "rarity": "Legendary",
+    "category": "Special"
+}
+
+# Combo configurations for bonus tiers
+# Each combo is a set of ingredient IDs that, when combined with Kernel of Wow, gives bonus
+KERNEL_BONUS_COMBOS = {
+    # 30% bonus - Legendary combo (hardest to get)
+    "legendary": {
+        "bonus_percent": 30,
+        "combos": [
+            {"ING001", "ING008", "ING015"},  # Crunchy Kibble + Cosmic Catnip + Moonrock Salt
+            {"ING005", "ING012", "ING018"},  # Shiba Crunch + Doge Dust + Stellar Syrup
+        ],
+        "description": "Legendary WOW Combo - Maximum boost!"
+    },
+    # 20% bonus - Epic combo
+    "epic": {
+        "bonus_percent": 20,
+        "combos": [
+            {"ING002", "ING007"},  # Golden Bone Dust + Love Potion
+            {"ING004", "ING011"},  # Meme Meat + Rainbow Sprinkles
+            {"ING003", "ING009"},  # Bacon Bits + Honey Glaze
+        ],
+        "description": "Epic WOW Combo - Strong boost!"
+    },
+    # 15% bonus - Rare combo
+    "rare": {
+        "bonus_percent": 15,
+        "combos": [
+            {"ING001", "ING006"},  # Crunchy Kibble + Peanut Butter
+            {"ING002", "ING003"},  # Golden Bone Dust + Bacon Bits
+            {"ING005", "ING010"},  # Shiba Crunch + Cheese Powder
+        ],
+        "description": "Rare WOW Combo - Good boost!"
+    },
+    # 5% bonus - Common combo (any combo with kernel)
+    "common": {
+        "bonus_percent": 5,
+        "combos": [],  # Any combo not matching above gets 5%
+        "description": "Basic WOW Combo - Small boost!"
+    }
+}
+
+class SpecialIngredientHolder(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    player_address: str
+    player_nickname: Optional[str] = None
+    ingredient_id: str = "KERNEL_WOW"
+    granted_at: datetime = Field(default_factory=datetime.utcnow)
+    expires_at: datetime
+    used_in_treats: List[str] = []  # Treat IDs where this was used
+    total_bonus_earned: int = 0
+    is_active: bool = True
+
+class SpecialIngredientHistory(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    player_address: str
+    player_nickname: Optional[str] = None
+    granted_at: datetime
+    expired_at: datetime
+    treats_created: int = 0
+    total_bonus_earned: int = 0
 
 # Player Management Routes
 @api_router.post("/player", response_model=Player)
@@ -234,6 +551,226 @@ async def update_player_progress(progress: PlayerProgress):
     
     return {"message": "Progress updated successfully"}
 
+# =====================================================
+# ANTI-CHEAT & DAILY LIMIT ENDPOINTS
+# =====================================================
+
+@api_router.get("/daily-status/{address}")
+async def get_daily_treat_status(address: str):
+    """
+    Get player's daily treat creation status including:
+    - Treats created today
+    - Remaining treats
+    - Extra lives purchased
+    - Time until reset
+    """
+    try:
+        status = await anti_cheat_system.get_daily_treat_status(address)
+        return status
+    except Exception as e:
+        logger.error(f"Error getting daily status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@api_router.post("/extra-life/{address}")
+async def purchase_extra_life(address: str):
+    """
+    Purchase an extra life for 5000 $LAB tokens.
+    NOTE: $LAB is not yet live - this will return a placeholder response.
+    """
+    try:
+        result = await anti_cheat_system.purchase_extra_life(address)
+        return result
+    except Exception as e:
+        logger.error(f"Error purchasing extra life: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@api_router.get("/streak/{address}")
+async def get_player_streak(address: str):
+    """
+    Get player's current streak information and bonuses.
+    Streak bonuses include:
+    - Bonus daily treats
+    - XP multiplier
+    - Brewing time reduction
+    """
+    try:
+        from services.anti_cheat import get_streak_bonus
+        streak_info = await anti_cheat_system.get_player_streak(address)
+        streak_bonus = get_streak_bonus(streak_info["current_streak"])
+        return {
+            **streak_info,
+            "streak_bonus": streak_bonus,
+            "all_tiers": {
+                1: {"bonus_treats": 0, "xp_multiplier": 1.0, "title": "New Chef"},
+                3: {"bonus_treats": 1, "xp_multiplier": 1.1, "title": "Rising Star"},
+                5: {"bonus_treats": 1, "xp_multiplier": 1.15, "title": "Dedicated Chef"},
+                7: {"bonus_treats": 2, "xp_multiplier": 1.2, "title": "Week Warrior"},
+                14: {"bonus_treats": 2, "xp_multiplier": 1.3, "title": "Lab Legend"},
+                30: {"bonus_treats": 3, "xp_multiplier": 1.5, "title": "Master Scientist"},
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting streak: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@api_router.get("/player-stats/{address}")
+async def get_player_weekly_stats(address: str):
+    """
+    Get player's stats for the last 7 days.
+    Includes treats created, points earned, XP gained, streak info, rarity breakdown, etc.
+    """
+    try:
+        from services.anti_cheat import get_streak_bonus
+        
+        # Get player data
+        player = await db.players.find_one({"address": address})
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        # Calculate 7 days ago
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        
+        # Get treats created in last 7 days
+        treats_cursor = db.treats.find({
+            "creator_address": address,
+            "created_at": {"$gte": seven_days_ago}
+        })
+        treats_list = await treats_cursor.to_list(length=500)
+        
+        # Calculate stats
+        total_treats = len(treats_list)
+        
+        # Rarity breakdown
+        rarity_counts = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
+        total_points = 0
+        total_xp = 0
+        unique_formulas = set()
+        
+        for treat in treats_list:
+            rarity = treat.get("rarity", "Common")
+            if rarity in rarity_counts:
+                rarity_counts[rarity] += 1
+            
+            total_points += treat.get("points_reward", 0)
+            total_xp += treat.get("xp_reward", 0)
+            
+            # Track unique ingredient combinations
+            ingredients = tuple(sorted(treat.get("ingredients", [])))
+            if ingredients:
+                unique_formulas.add(ingredients)
+        
+        # Get streak info
+        streak_info = await anti_cheat_system.get_player_streak(address)
+        streak_bonus = get_streak_bonus(streak_info.get("current_streak", 0))
+        
+        # Calculate best rarity found
+        best_rarity = "None"
+        rarity_order = ["Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]
+        for r in rarity_order:
+            if rarity_counts.get(r, 0) > 0:
+                best_rarity = r
+                break
+        
+        # Get daily breakdown - Last 7 days including today
+        daily_stats = {}
+        now = datetime.utcnow()
+        for i in range(7):
+            day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+            daily_stats[day] = {"treats": 0, "points": 0, "xp": 0}
+        
+        for treat in treats_list:
+            created_at = treat.get("created_at")
+            if created_at:
+                # Handle different datetime formats
+                if isinstance(created_at, str):
+                    try:
+                        # Remove timezone info for comparison
+                        created_at = created_at.replace("Z", "").replace("+00:00", "").split(".")[0]
+                        created_at = datetime.fromisoformat(created_at)
+                    except:
+                        continue
+                
+                day = created_at.strftime("%Y-%m-%d")
+                if day in daily_stats:
+                    daily_stats[day]["treats"] += 1
+                    daily_stats[day]["points"] += treat.get("points_reward", 0)
+                    daily_stats[day]["xp"] += treat.get("xp_reward", 0)
+        
+        # Calculate averages
+        avg_treats_per_day = total_treats / 7 if total_treats > 0 else 0
+        avg_points_per_day = total_points / 7 if total_points > 0 else 0
+        
+        # Get player rank from leaderboard
+        leaderboard_cursor = db.players.find(
+            {"points": {"$gt": 0}},
+            {"address": 1, "points": 1}
+        ).sort("points", -1)
+        leaderboard_list = await leaderboard_cursor.to_list(length=1000)
+        
+        player_rank = None
+        total_players = len(leaderboard_list)
+        for idx, lb_player in enumerate(leaderboard_list):
+            if lb_player.get("address", "").lower() == address.lower():
+                player_rank = idx + 1
+                break
+        
+        # Serialize player data (exclude _id)
+        player_data = {
+            "nickname": player.get("nickname", f"Scientist"),
+            "address": address,
+            "points": player.get("points", 0),
+            "xp": player.get("xp", 0),
+            "level": player.get("level", 1),
+            "selected_character": player.get("selected_character", "luna"),
+            "character_image": player.get("character_image"),
+            "is_nft_holder": player.get("is_nft_holder", False),
+            "total_treats_created": player.get("total_treats_created", len(player.get("created_treats", [])))
+        }
+        
+        return {
+            "player": player_data,
+            "rank": player_rank,
+            "total_players": total_players,
+            "period": "Last 7 Days",
+            "period_start": seven_days_ago.isoformat(),
+            "period_end": datetime.utcnow().isoformat(),
+            "stats": {
+                "treats_created": total_treats,
+                "points_earned": total_points,
+                "xp_gained": total_xp,
+                "unique_formulas": len(unique_formulas),
+                "best_rarity": best_rarity,
+                "avg_treats_per_day": round(avg_treats_per_day, 1),
+                "avg_points_per_day": round(avg_points_per_day, 1)
+            },
+            "rarity_breakdown": rarity_counts,
+            "streak": {
+                "current": streak_info.get("current_streak", 0),
+                "longest": streak_info.get("longest_streak", 0),
+                "title": streak_bonus.get("title", "New Chef"),
+                "bonus_treats": streak_bonus.get("bonus_treats", 0),
+                "xp_multiplier": streak_bonus.get("xp_multiplier", 1.0)
+            },
+            "daily_breakdown": daily_stats
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting player stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@api_router.post("/streak/{address}/checkin")
+async def update_player_streak(address: str):
+    """
+    Update player's streak when they play. Called automatically on treat creation.
+    """
+    try:
+        result = await anti_cheat_system.update_player_streak(address)
+        return result
+    except Exception as e:
+        logger.error(f"Error updating streak: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
 # Treat Management Routes
 @api_router.post("/treats", response_model=DogeTreat)
 async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTasks):
@@ -269,16 +806,8 @@ async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTask
         {"$push": {"created_treats": treat.id}}
     )
     
-    # Phase 2: Award points for treat creation
-    background_tasks.add_task(
-        award_treat_creation_points,
-        treat_data.creator_address,
-        {
-            "rarity": treat_data.rarity,
-            "ingredients": treat_data.ingredients,
-            "main_ingredient": treat_data.main_ingredient
-        }
-    )
+    # NOTE: Points and XP are awarded ONLY when the treat is collected, not on creation
+    # This prevents double-awarding rewards
     
     return treat
 
@@ -355,6 +884,47 @@ async def select_player_character(address: str, character_id: str):
         "message": f"Character {character_id} selected! This choice is permanent."
     }
 
+@api_router.get("/characters")
+async def get_characters():
+    """Get all available characters and their bonuses"""
+    characters = {
+        "max": {
+            "id": "max",
+            "name": "Max",
+            "description": "The energetic Shiba who never stops learning",
+            "image": "https://customer-assets.emergentagent.com/job_shibalab/artifacts/max_character.png",
+            "bonus_type": "experience",
+            "bonus_value": 0.10,
+            "bonus_description": "+10% Experience from treats",
+            "personality": ["Energetic", "Curious", "Friendly"]
+        },
+        "rex": {
+            "id": "rex",
+            "name": "Rex",
+            "description": "The lucky Shiba with a nose for rare treats",
+            "image": "https://customer-assets.emergentagent.com/job_shibalab/artifacts/rex_character.png",
+            "bonus_type": "rare_chance",
+            "bonus_value": 0.15,
+            "bonus_description": "+15% Rare treat chance",
+            "personality": ["Lucky", "Adventurous", "Bold"]
+        },
+        "luna": {
+            "id": "luna",
+            "name": "Luna",
+            "description": "The clever Shiba who knows how to earn more",
+            "image": "https://customer-assets.emergentagent.com/job_shibalab/artifacts/luna_character.png",
+            "bonus_type": "points",
+            "bonus_value": 0.20,
+            "bonus_description": "+20% Points from treats",
+            "personality": ["Clever", "Strategic", "Calm"]
+        }
+    }
+    
+    return {
+        "characters": characters,
+        "note": "Character selection is permanent and cannot be changed!"
+    }
+
 @api_router.get("/player/{address}/profile")
 async def get_player_profile(address: str):
     """Get player profile including character and username"""
@@ -368,10 +938,184 @@ async def get_player_profile(address: str):
             "character_bonuses": None,
             "is_vip": False,
             "points": 0,
-            "level": 1
+            "level": 1,
+            "profile_image": None
         }
     
     return player
+
+@api_router.post("/player/{address}/profile-image")
+async def update_profile_image(address: str, data: dict):
+    """Update player's profile image (base64 encoded)"""
+    try:
+        image_data = data.get("image")
+        if not image_data:
+            raise HTTPException(status_code=400, detail="Image data required")
+        
+        # Validate image size (base64 adds ~33% overhead, so 2MB file = ~2.7MB base64)
+        if len(image_data) > 3 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Image too large (max 2MB)")
+        
+        # Update player's profile image
+        result = await db.players.update_one(
+            {"address": address},
+            {"$set": {"profile_image": image_data, "last_active": datetime.utcnow().isoformat()}}
+        )
+        
+        if result.modified_count == 0:
+            # Player doesn't exist, create them
+            await db.players.insert_one({
+                "address": address,
+                "profile_image": image_data,
+                "created_at": datetime.utcnow().isoformat(),
+                "last_active": datetime.utcnow().isoformat()
+            })
+        
+        return {"success": True, "message": "Profile image updated"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating profile image: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/admin/credit-nft-holders")
+async def credit_existing_nft_holders():
+    """
+    Admin endpoint to credit all existing NFT holders who haven't received their VIP bonus.
+    This is a one-time fix for players who registered before the bonus was implemented.
+    """
+    try:
+        # Find all NFT holders who haven't received their bonus
+        uncredited_holders = await db.players.find({
+            "is_nft_holder": True,
+            "$or": [
+                {"vip_bonus_claimed": False},
+                {"vip_bonus_claimed": {"$exists": False}}
+            ]
+        }).to_list(1000)
+        
+        credited_count = 0
+        credited_players = []
+        
+        for player in uncredited_holders:
+            address = player.get("address")
+            current_points = player.get("points", 0)
+            
+            # Credit 500 bonus points
+            await db.players.update_one(
+                {"address": address},
+                {
+                    "$set": {
+                        "vip_bonus_claimed": True,
+                        "is_vip": True
+                    },
+                    "$inc": {"points": 500}
+                }
+            )
+            
+            credited_count += 1
+            credited_players.append({
+                "address": address,
+                "old_points": current_points,
+                "new_points": current_points + 500
+            })
+            logger.info(f"🌟 Credited VIP bonus to {address}: {current_points} -> {current_points + 500}")
+        
+        return {
+            "success": True,
+            "message": f"Credited {credited_count} NFT holders with 500 bonus points each",
+            "credited_count": credited_count,
+            "credited_players": credited_players
+        }
+        
+    except Exception as e:
+        logger.error(f"Error crediting NFT holders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/admin/credit-nft-holder/{address}")
+async def credit_single_nft_holder(address: str):
+    """
+    Admin endpoint to manually credit a specific NFT holder with VIP bonus.
+    Use this for players who should have received the bonus but didn't.
+    """
+    try:
+        # Find the player
+        player = await db.players.find_one({"address": address})
+        
+        if not player:
+            # Create new VIP player
+            new_player = {
+                "id": str(uuid.uuid4()),
+                "address": address,
+                "nickname": None,
+                "is_nft_holder": True,
+                "is_vip": True,
+                "vip_bonus_claimed": True,
+                "points": 500,
+                "level": 1,
+                "experience": 0,
+                "created_treats": [],
+                "last_active": datetime.utcnow(),
+                "leaderboard_eligible": True,
+                "can_convert_points": True
+            }
+            await db.players.insert_one(new_player)
+            logger.info(f"🌟 Created new VIP player with bonus: {address}")
+            return {
+                "success": True,
+                "address": address,
+                "action": "created_new_player",
+                "points_credited": 500,
+                "is_vip": True
+            }
+        
+        # Player exists
+        current_points = player.get("points", 0)
+        already_claimed = player.get("vip_bonus_claimed", False)
+        
+        if already_claimed:
+            # Just ensure VIP status is set
+            await db.players.update_one(
+                {"address": address},
+                {"$set": {"is_nft_holder": True, "is_vip": True}}
+            )
+            return {
+                "success": True,
+                "address": address,
+                "action": "already_credited",
+                "message": "Player already received VIP bonus",
+                "current_points": current_points,
+                "is_vip": True
+            }
+        
+        # Credit the bonus
+        await db.players.update_one(
+            {"address": address},
+            {
+                "$set": {
+                    "is_nft_holder": True,
+                    "is_vip": True,
+                    "vip_bonus_claimed": True
+                },
+                "$inc": {"points": 500}
+            }
+        )
+        
+        logger.info(f"🌟 Manually credited VIP bonus to {address}: {current_points} -> {current_points + 500}")
+        
+        return {
+            "success": True,
+            "address": address,
+            "action": "credited",
+            "old_points": current_points,
+            "new_points": current_points + 500,
+            "points_credited": 500,
+            "is_vip": True
+        }
+        
+    except Exception as e:
+        logger.error(f"Error crediting NFT holder {address}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/treats", response_model=List[DogeTreat])
 async def get_all_treats(limit: int = 50):
@@ -477,17 +1221,24 @@ async def get_active_treats_with_timer(address: str):
         now = datetime.utcnow()
         
         # Get all recent treats for this player (last 24 hours or still brewing)
+        # Exclude collected treats
         cutoff = now - timedelta(hours=24)
         treats = await db.treats.find({
             "creator_address": address,
+            "brewing_status": {"$ne": "collected"},  # Exclude collected treats
             "$or": [
                 {"brewing_status": "brewing"},
+                {"brewing_status": "ready"},
                 {"created_at": {"$gte": cutoff}}
             ]
         }).sort("created_at", -1).limit(10).to_list(10)
         
         result = []
         for treat in treats:
+            # Skip collected treats (double check)
+            if treat.get("brewing_status") == "collected":
+                continue
+                
             ready_at = treat.get("ready_at")
             created_at = treat.get("created_at")
             timer_duration = treat.get("timer_duration", 3600)
@@ -550,6 +1301,143 @@ async def get_active_treats_with_timer(address: str):
         }
     except Exception as e:
         logger.error(f"Error getting active treats: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@api_router.post("/treats/{treat_id}/collect")
+async def collect_treat(treat_id: str, data: dict):
+    """
+    Collect a ready treat and award points/XP to the player.
+    Character bonuses are applied:
+    - Max: +10% Experience
+    - Luna: +20% Points
+    - Rex: (bonus applies during treat creation for rare chance)
+    """
+    try:
+        player_address = data.get("player_address")
+        if not player_address:
+            raise HTTPException(status_code=400, detail="Player address required")
+        
+        # Find the treat
+        treat = await db.treats.find_one({"id": treat_id})
+        if not treat:
+            raise HTTPException(status_code=404, detail="Treat not found")
+        
+        # Verify ownership
+        if treat.get("creator_address") != player_address:
+            raise HTTPException(status_code=403, detail="You don't own this treat")
+        
+        # Check if already collected
+        if treat.get("brewing_status") == "collected":
+            raise HTTPException(status_code=400, detail="Treat already collected")
+        
+        # Check if ready
+        now = datetime.utcnow()
+        ready_at = treat.get("ready_at")
+        if isinstance(ready_at, str):
+            ready_at = datetime.fromisoformat(ready_at.replace("Z", ""))
+        
+        if ready_at and now < ready_at:
+            raise HTTPException(status_code=400, detail="Treat is not ready yet")
+        
+        # Get base rewards
+        base_points_reward = treat.get("points_reward", 10)
+        base_xp_reward = treat.get("xp_reward", 5)
+        
+        # Get player to check for character bonuses
+        player = await db.players.find_one({"address": player_address})
+        
+        # Apply character bonuses
+        points_bonus = 0
+        xp_bonus = 0
+        bonus_details = {}
+        
+        if player:
+            selected_character = player.get("selected_character")
+            character_bonuses = player.get("character_bonuses", {})
+            
+            # Luna: +20% Points bonus
+            if selected_character == "luna" or character_bonuses.get("points_bonus"):
+                points_bonus_percent = character_bonuses.get("points_bonus", 0.20)
+                points_bonus = int(base_points_reward * points_bonus_percent)
+                bonus_details["luna_points_bonus"] = points_bonus
+                logger.info(f"🌙 Luna bonus: +{points_bonus} points ({points_bonus_percent*100}%) for {player_address}")
+            
+            # Max: +10% Experience bonus
+            if selected_character == "max" or character_bonuses.get("experience_bonus"):
+                xp_bonus_percent = character_bonuses.get("experience_bonus", 0.10)
+                xp_bonus = int(base_xp_reward * xp_bonus_percent)
+                bonus_details["max_xp_bonus"] = xp_bonus
+                logger.info(f"🔥 Max bonus: +{xp_bonus} XP ({xp_bonus_percent*100}%) for {player_address}")
+        
+        # Calculate final rewards with bonuses
+        final_points_reward = base_points_reward + points_bonus
+        final_xp_reward = base_xp_reward + xp_bonus
+        
+        # Update treat status
+        await db.treats.update_one(
+            {"id": treat_id},
+            {"$set": {
+                "brewing_status": "collected",
+                "collected_at": now.isoformat(),
+                "final_points_awarded": final_points_reward,
+                "final_xp_awarded": final_xp_reward,
+                "character_bonuses_applied": bonus_details
+            }}
+        )
+        
+        # Update player stats
+        if player:
+            new_xp = player.get("experience", 0) + final_xp_reward
+            new_level = player.get("level", 1)
+            
+            # Check for level up (100 XP per level)
+            xp_for_level = new_level * 100
+            leveled_up = False
+            if new_xp >= xp_for_level:
+                new_level += 1
+                new_xp = new_xp - xp_for_level
+                leveled_up = True
+            
+            await db.players.update_one(
+                {"address": player_address},
+                {"$set": {
+                    "experience": new_xp,
+                    "level": new_level,
+                    "last_active": now.isoformat()
+                },
+                "$inc": {"points": final_points_reward}}
+            )
+            
+            return {
+                "success": True,
+                "message": "Treat collected successfully!",
+                "rewards": {
+                    "base_points": base_points_reward,
+                    "base_xp": base_xp_reward,
+                    "points_bonus": points_bonus,
+                    "xp_bonus": xp_bonus,
+                    "total_points": final_points_reward,
+                    "total_xp": final_xp_reward
+                },
+                "character_bonus_applied": bonus_details if bonus_details else None,
+                "leveled_up": leveled_up,
+                "new_level": new_level if leveled_up else None,
+                "treat_id": treat_id
+            }
+        
+        return {
+            "success": True,
+            "message": "Treat collected successfully!",
+            "rewards": {
+                "points": final_points_reward,
+                "xp": final_xp_reward
+            },
+            "treat_id": treat_id
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error collecting treat: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 # Leaderboard Routes
@@ -646,6 +1534,9 @@ async def get_player_points_stats(address: str):
         if not stats:
             raise HTTPException(status_code=404, detail="Player not found")
         return stats
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         logger.error(f"Error getting player stats for {address}: {str(e)}")
         # Return basic stats if detailed stats fail
@@ -670,6 +1561,8 @@ async def get_player_points_stats(address: str):
                 },
                 "points_breakdown": {}
             }
+        except HTTPException:
+            raise
         except Exception as fallback_error:
             logger.error(f"Fallback stats failed for {address}: {str(fallback_error)}")
             raise HTTPException(status_code=500, detail="Unable to retrieve player statistics")
@@ -706,17 +1599,113 @@ async def get_flagged_players(risk_level: str = "high"):
 # DogeFood Lab NFT Contract: 0xA74Dad05f54d32575f82C3e065C4441b8d979a54
 DOGEFOOD_NFT_CONTRACT = "0xA74Dad05f54d32575f82C3e065C4441b8d979a54"
 
-@api_router.post("/verify-nft/{address}")
-async def verify_nft_ownership(address: str, is_holder: bool = False):
+@api_router.post("/player/{address}/verify-nft")
+async def verify_player_nft(address: str, data: dict = None):
     """
-    Verify NFT ownership and update player VIP status.
-    Frontend should pass is_holder=True if wallet holds the NFT.
+    Verify NFT ownership from frontend POST body and update player VIP status.
+    Accepts: {"is_nft_holder": true/false, "nft_balance": number}
     """
     try:
+        if data is None:
+            data = {}
+        
+        is_holder = data.get("is_nft_holder", False)
+        nft_balance = data.get("nft_balance", 0)
+        
+        logger.info(f"🔍 Verifying NFT status for {address}: holder={is_holder}, balance={nft_balance}")
+        
         # Check if player exists
         existing_player = await db.players.find_one({"address": address})
         
         if is_holder:
+            if existing_player:
+                # Player exists - check if VIP bonus already claimed
+                if not existing_player.get("vip_bonus_claimed", False):
+                    # Award 500 VIP bonus points
+                    await db.players.update_one(
+                        {"address": address},
+                        {
+                            "$set": {
+                                "is_nft_holder": True,
+                                "is_vip": True,
+                                "vip_bonus_claimed": True,
+                                "nft_balance": nft_balance
+                            },
+                            "$inc": {"points": 500}
+                        }
+                    )
+                    logger.info(f"🌟 VIP bonus awarded to existing player: {address} - 500 points!")
+                    return {
+                        "address": address,
+                        "is_nft_holder": True,
+                        "is_vip": True,
+                        "vip_bonus_credited": True,
+                        "bonus_amount": 500,
+                        "contract": DOGEFOOD_NFT_CONTRACT
+                    }
+                else:
+                    # Already claimed bonus
+                    await db.players.update_one(
+                        {"address": address},
+                        {"$set": {"is_nft_holder": True, "is_vip": True, "nft_balance": nft_balance}}
+                    )
+                    return {
+                        "address": address,
+                        "is_nft_holder": True,
+                        "is_vip": True,
+                        "vip_bonus_credited": False,
+                        "already_claimed": True,
+                        "contract": DOGEFOOD_NFT_CONTRACT
+                    }
+            else:
+                # New player - they'll get bonus when they register
+                return {
+                    "address": address,
+                    "is_nft_holder": True,
+                    "is_vip": True,
+                    "vip_bonus_credited": False,
+                    "message": "Register to receive VIP bonus",
+                    "contract": DOGEFOOD_NFT_CONTRACT
+                }
+        else:
+            # Not an NFT holder
+            if existing_player:
+                await db.players.update_one(
+                    {"address": address},
+                    {"$set": {"is_nft_holder": False, "nft_balance": 0}}
+                )
+            return {
+                "address": address,
+                "is_nft_holder": False,
+                "is_vip": False,
+                "vip_bonus_credited": False,
+                "contract": DOGEFOOD_NFT_CONTRACT
+            }
+            
+    except Exception as e:
+        logger.error(f"Error verifying NFT for {address}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/verify-nft/{address}")
+async def verify_nft_ownership(address: str, is_holder: str = "false"):
+    """
+    Verify NFT ownership and update player VIP status.
+    Frontend should pass is_holder=True if wallet holds the NFT.
+    Accepts is_holder as string "true"/"false" or boolean
+    """
+    try:
+        # Parse is_holder - handle string "true"/"false" from query params
+        if isinstance(is_holder, str):
+            is_holder_bool = is_holder.lower() in ("true", "1", "yes")
+        else:
+            is_holder_bool = bool(is_holder)
+        
+        logger.info(f"🔍 NFT verification for {address}: is_holder={is_holder} -> {is_holder_bool}")
+        
+        # Check if player exists
+        existing_player = await db.players.find_one({"address": address})
+        
+        if is_holder_bool:
             if existing_player:
                 # Player exists - check if VIP bonus already claimed
                 if not existing_player.get("vip_bonus_claimed", False):
@@ -750,6 +1739,7 @@ async def verify_nft_ownership(address: str, is_holder: bool = False):
             else:
                 # New player - create with VIP bonus
                 new_player = {
+                    "id": str(uuid.uuid4()),
                     "address": address,
                     "nickname": None,
                     "is_nft_holder": True,
@@ -759,7 +1749,9 @@ async def verify_nft_ownership(address: str, is_holder: bool = False):
                     "level": 1,
                     "experience": 0,
                     "created_treats": [],
-                    "last_active": datetime.utcnow()
+                    "last_active": datetime.utcnow(),
+                    "leaderboard_eligible": True,
+                    "can_convert_points": True
                 }
                 await db.players.insert_one(new_player)
                 logger.info(f"🌟 New VIP player created: {address} - 500 bonus points!")
@@ -950,18 +1942,59 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         if not validation["valid"]:
             raise HTTPException(status_code=400, detail=f"Invalid treat creation: {validation['errors']}")
         
-        # Anti-cheat validation
+        # Anti-cheat validation (includes daily limit check)
         cheat_check = await anti_cheat_system.validate_treat_creation(
             treat_data.creator_address,
             {"ingredients": treat_data.ingredients, "level": treat_data.player_level}
         )
         if not cheat_check["valid"]:
-            raise HTTPException(status_code=429, detail=f"Anti-cheat triggered: {cheat_check['reason']}")
+            # Return more detailed error for daily limit
+            daily_status = cheat_check.get("daily_status")
+            error_detail = {
+                "message": cheat_check['reason'],
+                "daily_status": daily_status
+            }
+            raise HTTPException(status_code=429, detail=error_detail)
         
-        # Calculate treat outcome using game engine
+        # Update player streak on treat creation
+        streak_result = await anti_cheat_system.update_player_streak(treat_data.creator_address)
+        streak_bonus = streak_result.get("streak_bonus", {})
+        xp_multiplier = streak_bonus.get("xp_multiplier", 1.0)
+        brewing_reduction = streak_bonus.get("brewing_reduction", 0)  # percentage reduction
+        
+        # Get player's character bonus (Rex gives +15% rare chance)
+        rare_chance_bonus = 0.0
+        player = await db.players.find_one({"address": treat_data.creator_address})
+        if player:
+            selected_character = player.get("selected_character")
+            character_bonuses = player.get("character_bonuses", {})
+            
+            # Rex: +15% rare treat chance
+            if selected_character == "rex" or character_bonuses.get("rare_chance_bonus"):
+                rare_chance_bonus = character_bonuses.get("rare_chance_bonus", 0.15)
+                logger.info(f"🦖 Rex bonus: +{rare_chance_bonus*100}% rare chance for {treat_data.creator_address}")
+        
+        # Calculate treat outcome using game engine with character bonus
         treat_outcome = game_engine.calculate_treat_outcome(
-            treat_data.ingredients, treat_data.player_level, treat_data.creator_address
+            treat_data.ingredients, treat_data.player_level, treat_data.creator_address,
+            rare_chance_bonus=rare_chance_bonus
         )
+        
+        # Apply streak XP bonus
+        if xp_multiplier > 1.0:
+            original_xp = treat_outcome.get("xp_reward", 0)
+            treat_outcome["xp_reward"] = int(original_xp * xp_multiplier)
+            treat_outcome["streak_xp_bonus"] = treat_outcome["xp_reward"] - original_xp
+            logger.info(f"🔥 Streak XP bonus: {original_xp} -> {treat_outcome['xp_reward']} ({xp_multiplier}x)")
+        
+        # Apply streak brewing time reduction
+        if brewing_reduction > 0:
+            original_timer = treat_outcome.get("timer_duration_seconds", 0)
+            reduction_factor = 1 - (brewing_reduction / 100)
+            treat_outcome["timer_duration_seconds"] = int(original_timer * reduction_factor)
+            treat_outcome["timer_duration_hours"] = treat_outcome["timer_duration_seconds"] / 3600
+            treat_outcome["streak_time_reduction"] = original_timer - treat_outcome["timer_duration_seconds"]
+            logger.info(f"⏱️ Streak time reduction: {original_timer}s -> {treat_outcome['timer_duration_seconds']}s (-{brewing_reduction}%)")
         
         # Get current season info
         current_season = season_manager.get_season_info()
@@ -983,12 +2016,60 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         
         # Add Season 1 specific metadata for future NFT compatibility
         treat_dict = treat.dict()
+        
+        # Check if player has Kernel of Wow and apply bonus
+        kernel_bonus = None
+        now = datetime.utcnow()
+        kernel_holder = await db.special_ingredient_holders.find_one({
+            "player_address": treat_data.creator_address,
+            "is_active": True,
+            "expires_at": {"$gt": now}
+        })
+        
+        base_points_reward = treat_outcome.get("points_reward", 10)
+        base_xp_reward = treat_outcome.get("xp_reward", 5)
+        
+        if kernel_holder:
+            # Calculate bonus based on ingredients
+            kernel_bonus = calculate_kernel_bonus(treat_outcome.get("ingredients_used", []))
+            bonus_multiplier = 1 + (kernel_bonus["bonus_percent"] / 100)
+            
+            # Apply bonus to rewards
+            boosted_points = int(base_points_reward * bonus_multiplier)
+            boosted_xp = int(base_xp_reward * bonus_multiplier)
+            
+            kernel_bonus["base_points"] = base_points_reward
+            kernel_bonus["boosted_points"] = boosted_points
+            kernel_bonus["base_xp"] = base_xp_reward
+            kernel_bonus["boosted_xp"] = boosted_xp
+            kernel_bonus["points_bonus"] = boosted_points - base_points_reward
+            kernel_bonus["xp_bonus"] = boosted_xp - base_xp_reward
+            
+            # Use boosted values
+            final_points_reward = boosted_points
+            final_xp_reward = boosted_xp
+            
+            # Update kernel holder record
+            await db.special_ingredient_holders.update_one(
+                {"id": kernel_holder.get("id")},
+                {
+                    "$push": {"used_in_treats": treat.id},
+                    "$inc": {"total_bonus_earned": kernel_bonus["points_bonus"]}
+                }
+            )
+            
+            logger.info(f"Kernel of Wow bonus applied: {kernel_bonus['bonus_percent']}% ({kernel_bonus['tier']})")
+        else:
+            final_points_reward = base_points_reward
+            final_xp_reward = base_xp_reward
+        
         treat_dict.update({
             "season_id": season_id,
             "created_at": datetime.utcnow(),
             "is_offchain": season_id == 1,  # Season 1 is offchain only
-            "points_reward": treat_outcome.get("points_reward", 10),
-            "xp_reward": treat_outcome.get("xp_reward", 5),
+            "points_reward": final_points_reward,
+            "xp_reward": final_xp_reward,
+            "kernel_bonus": kernel_bonus,  # Store bonus info in treat
             "rarity_emoji": treat_outcome.get("rarity_emoji", "⚪"),
             "rarity_color": treat_outcome.get("rarity_color", "#9CA3AF"),
             "nft_metadata": {
@@ -1057,32 +2138,14 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                     "last_activity": datetime.utcnow()
                 },
                 "$inc": {
-                    "experience": sack_bonus_xp  # Award sack completion XP
+                    "experience": sack_bonus_xp  # Only award sack completion bonus XP (not treat creation XP)
                 }
             }
         )
         
-        # Award points in background (pass pre-calculated rewards)
-        background_tasks.add_task(
-            award_treat_creation_points,
-            treat_data.creator_address,
-            {
-                "rarity": treat_outcome["rarity"],
-                "ingredients": treat_outcome["ingredients_used"],
-                "level": treat_data.player_level,
-                "secret_combo": treat_outcome.get("secret_combo", {}),
-                "season_id": season_id,
-                "points_reward": treat_outcome.get("points_reward", 10),
-                "xp_reward": treat_outcome.get("xp_reward", 5)
-            }
-        )
-        
-        # Award XP directly to player based on rarity
-        xp_to_award = treat_outcome.get("xp_reward", 5) + sack_bonus_xp
-        await db.players.update_one(
-            {"address": treat_data.creator_address},
-            {"$inc": {"experience": xp_to_award}}
-        )
+        # NOTE: Points and XP rewards are awarded ONLY when the treat is COLLECTED (not created)
+        # This prevents double-awarding. The points_reward and xp_reward are stored in the treat
+        # and will be awarded when the player calls the /treats/{treat_id}/collect endpoint
         
         # Convert treat_dict to JSON-serializable format
         treat_response = treat_dict.copy()
@@ -1102,6 +2165,19 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         # Set the MongoDB inserted ID as the treat ID
         treat_response['id'] = str(result.inserted_id)
         
+        # Get updated daily status after treat creation
+        daily_status = await anti_cheat_system.get_daily_treat_status(treat_data.creator_address)
+        
+        # Build streak message
+        streak_message = ""
+        if streak_result.get("streak_increased"):
+            streak_message = f" {streak_result.get('message', '')}"
+        
+        # Build kernel bonus message
+        kernel_message = ""
+        if kernel_bonus:
+            kernel_message = f" 🌟 KERNEL OF WOW {kernel_bonus['tier'].upper()}! +{kernel_bonus['bonus_percent']}% bonus!"
+        
         return {
             "treat": treat_response,
             "outcome": treat_outcome,
@@ -1114,7 +2190,10 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 "bonus_xp_awarded": sack_bonus_xp,
                 "total_treats": new_treats_count
             },
-            "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']} hours. {'(Offchain storage)' if season_id == 1 else ''}{' 🎉 Sack completed! +50 XP bonus!' if sack_just_completed else ''}"
+            "daily_status": daily_status,
+            "streak": streak_result,
+            "kernel_bonus": kernel_bonus,
+            "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']:.1f} hours.{streak_message}{kernel_message}{'(Offchain storage)' if season_id == 1 else ''}{' 🎉 Sack completed! +50 XP bonus!' if sack_just_completed else ''}"
         }
         
     except Exception as e:
@@ -1434,6 +2513,257 @@ async def register_telegram_player(request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Telegram registration failed: {str(e)}")
 
+# Guest Registration (Username only)
+@api_router.post("/players/guest-register")
+async def register_guest_player(request: Request):
+    """Register a guest player with just a username - can appear on leaderboard but needs NFT to convert points"""
+    
+    try:
+        body = await request.json()
+        username = body.get("username", "").strip()
+        
+        if not username:
+            raise HTTPException(status_code=400, detail="Username is required")
+        
+        # Validate username format
+        if len(username) < 3 or len(username) > 20:
+            raise HTTPException(status_code=400, detail="Username must be 3-20 characters")
+        
+        if not username.replace("_", "").isalnum():
+            raise HTTPException(status_code=400, detail="Username can only contain letters, numbers, and underscores")
+        
+        # Check if username already exists
+        existing_user = await db.players.find_one({"nickname": {"$regex": f"^{username}$", "$options": "i"}})
+        if existing_user:
+            raise HTTPException(status_code=409, detail="Username already taken")
+        
+        # Generate a unique guest ID
+        guest_id = f"guest_{str(uuid.uuid4())[:8]}"
+        
+        # Create guest player
+        player_data = {
+            "id": str(uuid.uuid4()),
+            "address": guest_id,  # Use guest_id as a pseudo-address
+            "nickname": username,
+            "auth_type": "guest",
+            "level": 1,
+            "experience": 0,
+            "points": 0,
+            "created_treats": [],
+            "sack_progress": 0,
+            "sack_completed_count": 0,
+            "total_treats_created": 0,
+            "is_nft_holder": False,
+            "is_vip": False,
+            "leaderboard_eligible": True,
+            "can_convert_points": False,  # Can't convert without NFT
+            "registered_at": datetime.utcnow(),
+            "last_activity": datetime.utcnow()
+        }
+        
+        await db.players.insert_one(player_data)
+        logger.info(f"👤 Guest player registered: {username} ({guest_id})")
+        
+        return {
+            "success": True,
+            "message": f"Welcome, {username}! You can now play and appear on the leaderboard.",
+            "player_id": player_data["id"],
+            "guest_id": guest_id,
+            "username": username,
+            "auth_type": "guest",
+            "leaderboard_eligible": True,
+            "can_convert_points": False,
+            "note": "Connect your wallet with a DogeFood NFT to convert points to $LAB tokens!",
+            "registered_at": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Guest registration failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+# Firebase Authentication (Email/Google)
+@api_router.post("/players/firebase-register")
+async def register_firebase_player(request: Request):
+    """Register a player using Firebase authentication (Email or Google)"""
+    
+    try:
+        body = await request.json()
+        id_token = body.get("idToken")
+        username = body.get("username", "").strip()
+        
+        if not id_token:
+            raise HTTPException(status_code=400, detail="Firebase ID token is required")
+        
+        # Verify Firebase ID token
+        async with httpx.AsyncClient() as client:
+            verify_url = f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={FIREBASE_API_KEY}"
+            response = await client.post(verify_url, json={"idToken": id_token})
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=401, detail="Invalid Firebase token")
+            
+            firebase_data = response.json()
+            users = firebase_data.get("users", [])
+            
+            if not users:
+                raise HTTPException(status_code=401, detail="Firebase user not found")
+            
+            user_info = users[0]
+            firebase_uid = user_info.get("localId")
+            email = user_info.get("email")
+            display_name = user_info.get("displayName", "")
+            photo_url = user_info.get("photoUrl")
+            
+            # Determine provider (email or google)
+            provider_data = user_info.get("providerUserInfo", [])
+            provider = "email"
+            for p in provider_data:
+                if "google" in p.get("providerId", "").lower():
+                    provider = "google"
+                    break
+        
+        # Check if Firebase user already registered
+        existing_player = await db.players.find_one({"firebase_uid": firebase_uid})
+        if existing_player:
+            return {
+                "success": True,
+                "message": "Welcome back!",
+                "player_id": existing_player.get("id"),
+                "firebase_uid": firebase_uid,
+                "email": email,
+                "username": existing_player.get("nickname"),
+                "auth_type": "firebase",
+                "already_registered": True
+            }
+        
+        # Also check if email is already used
+        if email:
+            email_exists = await db.players.find_one({"email": email})
+            if email_exists:
+                raise HTTPException(status_code=409, detail="Email already registered")
+        
+        # Use provided username or generate from display name/email
+        final_username = username or display_name or (email.split("@")[0] if email else f"user_{firebase_uid[:8]}")
+        
+        # Check if username is taken
+        existing_username = await db.players.find_one({"nickname": {"$regex": f"^{final_username}$", "$options": "i"}})
+        if existing_username:
+            # Append random suffix
+            final_username = f"{final_username}_{str(uuid.uuid4())[:4]}"
+        
+        # Create Firebase player
+        player_data = {
+            "id": str(uuid.uuid4()),
+            "address": f"firebase_{firebase_uid[:12]}",  # Pseudo-address
+            "nickname": final_username,
+            "email": email,
+            "firebase_uid": firebase_uid,
+            "firebase_provider": provider,
+            "profile_image": photo_url,
+            "auth_type": "firebase",
+            "level": 1,
+            "experience": 0,
+            "points": 0,
+            "created_treats": [],
+            "sack_progress": 0,
+            "sack_completed_count": 0,
+            "total_treats_created": 0,
+            "is_nft_holder": False,
+            "is_vip": False,
+            "leaderboard_eligible": True,
+            "can_convert_points": False,
+            "registered_at": datetime.utcnow(),
+            "last_activity": datetime.utcnow()
+        }
+        
+        await db.players.insert_one(player_data)
+        logger.info(f"🔥 Firebase player registered: {final_username} ({provider}) - {email}")
+        
+        return {
+            "success": True,
+            "message": f"Welcome, {final_username}!",
+            "player_id": player_data["id"],
+            "firebase_uid": firebase_uid,
+            "email": email,
+            "username": final_username,
+            "auth_type": "firebase",
+            "provider": provider,
+            "leaderboard_eligible": True,
+            "can_convert_points": False,
+            "note": "Connect your wallet with a DogeFood NFT to convert points to $LAB tokens!",
+            "registered_at": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Firebase registration failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+# Link wallet to any account type (guest/firebase/telegram)
+@api_router.post("/players/link-nft-wallet")
+async def link_nft_wallet(request: Request):
+    """Link an NFT wallet to any existing account to enable point conversion"""
+    
+    try:
+        body = await request.json()
+        player_id = body.get("player_id")
+        wallet_address = body.get("address")
+        is_nft_holder = body.get("is_nft_holder", False)
+        
+        if not player_id or not wallet_address:
+            raise HTTPException(status_code=400, detail="Player ID and wallet address are required")
+        
+        # Find the player
+        player = await db.players.find_one({"id": player_id})
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        # Check if wallet is already linked to another player
+        existing_wallet = await db.players.find_one({"address": wallet_address, "id": {"$ne": player_id}})
+        if existing_wallet:
+            raise HTTPException(status_code=409, detail="Wallet already linked to another account")
+        
+        # Update player with wallet info
+        update_data = {
+            "address": wallet_address,
+            "is_nft_holder": is_nft_holder,
+            "can_convert_points": is_nft_holder,  # Can convert if NFT holder
+            "auth_type": "linked",
+            "last_activity": datetime.utcnow(),
+            "wallet_linked_at": datetime.utcnow()
+        }
+        
+        # Award VIP bonus if NFT holder and not claimed
+        if is_nft_holder and not player.get("vip_bonus_claimed"):
+            update_data["is_vip"] = True
+            update_data["vip_bonus_claimed"] = True
+            update_data["points"] = player.get("points", 0) + 500
+            logger.info(f"🌟 VIP bonus awarded to {player.get('nickname')}: +500 points")
+        
+        await db.players.update_one(
+            {"id": player_id},
+            {"$set": update_data}
+        )
+        
+        return {
+            "success": True,
+            "message": "Wallet linked successfully!" + (" VIP bonus awarded!" if is_nft_holder and not player.get("vip_bonus_claimed") else ""),
+            "player_id": player_id,
+            "wallet_address": wallet_address,
+            "is_nft_holder": is_nft_holder,
+            "can_convert_points": is_nft_holder,
+            "vip_bonus_awarded": is_nft_holder and not player.get("vip_bonus_claimed")
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Wallet linking failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to link wallet: {str(e)}")
+
 # Link Telegram Account to Wallet
 @api_router.post("/players/link-wallet")
 async def link_wallet_to_telegram(request: Request):
@@ -1606,6 +2936,80 @@ async def simulate_treat_outcome(
     }
 
 # Season Management Endpoints
+
+@api_router.delete("/admin/delete-player/{address}")
+async def delete_player(address: str, admin_key: str):
+    """Delete a specific player by address - admin only"""
+    
+    expected_key = "dogefood_admin_cleanup_2024"
+    if admin_key != expected_key:
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+    
+    # Find and delete the player
+    player = await db.players.find_one({"address": address}, {"_id": 0})
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    # Delete player
+    await db.players.delete_one({"address": address})
+    
+    # Delete their treats too
+    treats_result = await db.treats.delete_many({"player_address": address})
+    
+    logger.info(f"🗑️ Deleted player: {address} and {treats_result.deleted_count} treats")
+    
+    return {
+        "message": f"Player deleted successfully",
+        "address": address,
+        "nickname": player.get("nickname"),
+        "treats_deleted": treats_result.deleted_count
+    }
+
+
+@api_router.delete("/admin/cleanup-test-players")
+async def cleanup_test_players(admin_key: str = "dogefood_admin_2024"):
+    """Remove test players from the database - admin only"""
+    
+    # Simple admin key check (in production, use proper authentication)
+    expected_key = "dogefood_admin_cleanup_2024"
+    if admin_key != expected_key:
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+    
+    # Define patterns that identify test players
+    test_patterns = [
+        {"address": {"$regex": "^TEST_", "$options": "i"}},
+        {"address": {"$regex": "^RARITY_", "$options": "i"}},
+        {"address": {"$regex": "_TEST_", "$options": "i"}},
+        {"address": {"$regex": "timer_debug", "$options": "i"}},
+        {"address": {"$regex": "^GUEST_TEST", "$options": "i"}},
+        {"address": {"$regex": "^0xATLAS_", "$options": "i"}},
+        {"address": {"$regex": "^0xWALLET_USER_ATLAS", "$options": "i"}},
+    ]
+    
+    # Find all test players first
+    test_query = {"$or": test_patterns}
+    test_players = await db.players.find(test_query, {"_id": 0, "address": 1, "nickname": 1}).to_list(100)
+    
+    if not test_players:
+        return {"message": "No test players found", "deleted_count": 0}
+    
+    # Delete test players
+    result = await db.players.delete_many(test_query)
+    
+    # Also delete their treats
+    test_addresses = [p["address"] for p in test_players]
+    treats_result = await db.treats.delete_many({"player_address": {"$in": test_addresses}})
+    
+    logger.info(f"🧹 Cleaned up {result.deleted_count} test players and {treats_result.deleted_count} treats")
+    
+    return {
+        "message": f"Successfully cleaned up test players",
+        "deleted_players": result.deleted_count,
+        "deleted_treats": treats_result.deleted_count,
+        "players_removed": [{"address": p.get("address"), "nickname": p.get("nickname")} for p in test_players]
+    }
+
+
 @api_router.get("/seasons/current")
 async def get_current_season():
     """Get current season information"""
@@ -1871,6 +3275,2034 @@ async def get_nft_contract_info():
         "description": "DogeFood Lab NFT holders receive VIP Scientist status with 500 bonus points on signup!"
     }
 
+# ================================
+# CHAT SYSTEM ENDPOINTS
+# ================================
+
+@api_router.get("/chat/messages")
+async def get_chat_messages(limit: int = 50, before: Optional[str] = None):
+    """Get recent chat messages"""
+    try:
+        query = {}
+        if before:
+            # Get messages before a certain message ID for pagination
+            ref_message = await db.chat_messages.find_one({"id": before})
+            if ref_message:
+                query["created_at"] = {"$lt": ref_message["created_at"]}
+        
+        cursor = db.chat_messages.find(query, {"_id": 0}).sort("created_at", -1).limit(limit)
+        messages = await cursor.to_list(length=limit)
+        
+        # Return in chronological order
+        messages.reverse()
+        return messages
+    except Exception as e:
+        logger.error(f"Error fetching chat messages: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/chat/messages")
+async def create_chat_message(message_data: ChatMessageCreate):
+    """Create a new chat message"""
+    try:
+        # Get sender info
+        player = await db.players.find_one({"address": message_data.sender_address})
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        # Get reply preview if replying
+        reply_preview = None
+        if message_data.reply_to:
+            replied_msg = await db.chat_messages.find_one({"id": message_data.reply_to})
+            if replied_msg:
+                reply_preview = replied_msg.get("content", "")[:50]
+                if len(replied_msg.get("content", "")) > 50:
+                    reply_preview += "..."
+        
+        # Create message
+        message = ChatMessage(
+            sender_address=message_data.sender_address,
+            sender_nickname=player.get("nickname") or player.get("telegram_username") or f"Scientist #{player.get('address', '')[:6]}",
+            sender_character=player.get("selected_character"),
+            content=message_data.content[:500],  # Limit to 500 chars
+            reply_to=message_data.reply_to,
+            reply_preview=reply_preview,
+            upvotes=[],
+            upvote_count=0
+        )
+        
+        await db.chat_messages.insert_one(message.dict())
+        
+        return {**message.dict(), "_id": None}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating chat message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/chat/upvote")
+async def upvote_chat_message(upvote_data: ChatUpvoteRequest):
+    """Upvote a chat message - gives 1 XP to message author"""
+    try:
+        # Get the message
+        message = await db.chat_messages.find_one({"id": upvote_data.message_id})
+        if not message:
+            raise HTTPException(status_code=404, detail="Message not found")
+        
+        # Check if already upvoted
+        if upvote_data.voter_address in message.get("upvotes", []):
+            # Remove upvote (toggle)
+            await db.chat_messages.update_one(
+                {"id": upvote_data.message_id},
+                {
+                    "$pull": {"upvotes": upvote_data.voter_address},
+                    "$inc": {"upvote_count": -1}
+                }
+            )
+            # Remove XP from message author
+            await db.players.update_one(
+                {"address": message["sender_address"]},
+                {"$inc": {"experience": -1}}
+            )
+            return {"action": "removed", "new_count": message.get("upvote_count", 1) - 1}
+        
+        # Can't upvote own message
+        if upvote_data.voter_address == message["sender_address"]:
+            raise HTTPException(status_code=400, detail="Cannot upvote your own message")
+        
+        # Add upvote
+        await db.chat_messages.update_one(
+            {"id": upvote_data.message_id},
+            {
+                "$push": {"upvotes": upvote_data.voter_address},
+                "$inc": {"upvote_count": 1}
+            }
+        )
+        
+        # Award 1 XP to message author
+        await db.players.update_one(
+            {"address": message["sender_address"]},
+            {"$inc": {"experience": 1}}
+        )
+        
+        return {"action": "added", "new_count": message.get("upvote_count", 0) + 1, "xp_awarded": 1}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error upvoting message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/chat/messages/{message_id}")
+async def delete_chat_message(message_id: str, sender_address: str):
+    """Delete own chat message"""
+    try:
+        message = await db.chat_messages.find_one({"id": message_id})
+        if not message:
+            raise HTTPException(status_code=404, detail="Message not found")
+        
+        if message["sender_address"] != sender_address:
+            raise HTTPException(status_code=403, detail="Can only delete your own messages")
+        
+        await db.chat_messages.delete_one({"id": message_id})
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================
+# NOTIFICATION SYSTEM ENDPOINTS
+# ============================================
+
+# VAPID keys for web push (generate once and store)
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+
+class NotificationSubscription(BaseModel):
+    player_address: Optional[str] = None
+    telegram_id: Optional[int] = None
+    subscription: Optional[dict] = None
+    treat_ready: bool = True
+    limit_reset: bool = True
+
+class ScheduleNotification(BaseModel):
+    player_address: Optional[str] = None
+    telegram_id: Optional[int] = None
+    treat_name: Optional[str] = None
+    ready_time: Optional[str] = None
+    reset_time: Optional[str] = None
+
+@api_router.get("/notifications/vapid-key")
+async def get_vapid_key():
+    """Get VAPID public key for web push subscription"""
+    return {"publicKey": VAPID_PUBLIC_KEY}
+
+@api_router.post("/notifications/telegram/subscribe")
+async def subscribe_telegram_notifications(data: NotificationSubscription):
+    """Subscribe to Telegram notifications"""
+    try:
+        if not data.telegram_id:
+            raise HTTPException(status_code=400, detail="Telegram ID required")
+        
+        await db.notification_subscriptions.update_one(
+            {"telegram_id": data.telegram_id},
+            {
+                "$set": {
+                    "telegram_id": data.telegram_id,
+                    "type": "telegram",
+                    "treat_ready": data.treat_ready,
+                    "limit_reset": data.limit_reset,
+                    "subscribed_at": datetime.utcnow(),
+                    "active": True
+                }
+            },
+            upsert=True
+        )
+        
+        # Send confirmation message via Telegram
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+        if bot_token:
+            try:
+                bot = Bot(token=bot_token)
+                await bot.send_message(
+                    chat_id=data.telegram_id,
+                    text="🔔 Notifications enabled!\n\nYou'll be notified when:\n✅ Your treats are ready to collect\n🔄 Your daily limit resets\n\nHappy brewing! 🧪"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to send Telegram confirmation: {e}")
+        
+        return {"success": True, "message": "Telegram notifications enabled"}
+    except Exception as e:
+        logger.error(f"Error subscribing to Telegram notifications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/telegram/unsubscribe")
+async def unsubscribe_telegram_notifications(data: NotificationSubscription):
+    """Unsubscribe from Telegram notifications"""
+    try:
+        if not data.telegram_id:
+            raise HTTPException(status_code=400, detail="Telegram ID required")
+        
+        await db.notification_subscriptions.update_one(
+            {"telegram_id": data.telegram_id},
+            {"$set": {"active": False}}
+        )
+        
+        return {"success": True, "message": "Telegram notifications disabled"}
+    except Exception as e:
+        logger.error(f"Error unsubscribing from Telegram notifications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/telegram/preferences")
+async def update_telegram_preferences(data: NotificationSubscription):
+    """Update Telegram notification preferences"""
+    try:
+        if not data.telegram_id:
+            raise HTTPException(status_code=400, detail="Telegram ID required")
+        
+        await db.notification_subscriptions.update_one(
+            {"telegram_id": data.telegram_id},
+            {
+                "$set": {
+                    "treat_ready": data.treat_ready,
+                    "limit_reset": data.limit_reset
+                }
+            }
+        )
+        
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error updating Telegram preferences: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/web/subscribe")
+async def subscribe_web_notifications(data: NotificationSubscription):
+    """Subscribe to web push notifications"""
+    try:
+        if not data.player_address or not data.subscription:
+            raise HTTPException(status_code=400, detail="Player address and subscription required")
+        
+        await db.notification_subscriptions.update_one(
+            {"player_address": data.player_address},
+            {
+                "$set": {
+                    "player_address": data.player_address,
+                    "type": "web",
+                    "subscription": data.subscription,
+                    "treat_ready": data.treat_ready,
+                    "limit_reset": data.limit_reset,
+                    "subscribed_at": datetime.utcnow(),
+                    "active": True
+                }
+            },
+            upsert=True
+        )
+        
+        return {"success": True, "message": "Web push notifications enabled"}
+    except Exception as e:
+        logger.error(f"Error subscribing to web notifications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/web/unsubscribe")
+async def unsubscribe_web_notifications(data: NotificationSubscription):
+    """Unsubscribe from web push notifications"""
+    try:
+        if not data.player_address:
+            raise HTTPException(status_code=400, detail="Player address required")
+        
+        await db.notification_subscriptions.update_one(
+            {"player_address": data.player_address},
+            {"$set": {"active": False}}
+        )
+        
+        return {"success": True, "message": "Web push notifications disabled"}
+    except Exception as e:
+        logger.error(f"Error unsubscribing from web notifications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/web/preferences")
+async def update_web_preferences(data: NotificationSubscription):
+    """Update web push notification preferences"""
+    try:
+        if not data.player_address:
+            raise HTTPException(status_code=400, detail="Player address required")
+        
+        await db.notification_subscriptions.update_one(
+            {"player_address": data.player_address},
+            {
+                "$set": {
+                    "treat_ready": data.treat_ready,
+                    "limit_reset": data.limit_reset
+                }
+            }
+        )
+        
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error updating web preferences: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/schedule/treat-ready")
+async def schedule_treat_ready_notification(data: ScheduleNotification, background_tasks: BackgroundTasks):
+    """Schedule a notification for when a treat is ready"""
+    try:
+        notification_data = {
+            "id": str(uuid.uuid4()),
+            "type": "treat_ready",
+            "treat_name": data.treat_name,
+            "ready_time": data.ready_time,
+            "created_at": datetime.utcnow(),
+            "sent": False
+        }
+        
+        if data.telegram_id:
+            notification_data["telegram_id"] = data.telegram_id
+        elif data.player_address:
+            notification_data["player_address"] = data.player_address
+        else:
+            raise HTTPException(status_code=400, detail="Telegram ID or player address required")
+        
+        await db.scheduled_notifications.insert_one(notification_data)
+        
+        # Schedule background task to send notification
+        background_tasks.add_task(send_scheduled_notification, notification_data["id"])
+        
+        return {"success": True, "notification_id": notification_data["id"]}
+    except Exception as e:
+        logger.error(f"Error scheduling treat notification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notifications/schedule/limit-reset")
+async def schedule_limit_reset_notification(data: ScheduleNotification, background_tasks: BackgroundTasks):
+    """Schedule a notification for when daily limit resets"""
+    try:
+        notification_data = {
+            "id": str(uuid.uuid4()),
+            "type": "limit_reset",
+            "reset_time": data.reset_time,
+            "created_at": datetime.utcnow(),
+            "sent": False
+        }
+        
+        if data.telegram_id:
+            notification_data["telegram_id"] = data.telegram_id
+        elif data.player_address:
+            notification_data["player_address"] = data.player_address
+        else:
+            raise HTTPException(status_code=400, detail="Telegram ID or player address required")
+        
+        await db.scheduled_notifications.insert_one(notification_data)
+        
+        # Schedule background task to send notification
+        background_tasks.add_task(send_scheduled_notification, notification_data["id"])
+        
+        return {"success": True, "notification_id": notification_data["id"]}
+    except Exception as e:
+        logger.error(f"Error scheduling limit reset notification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def send_scheduled_notification(notification_id: str):
+    """Background task to send scheduled notification immediately when ready"""
+    try:
+        notification = await db.scheduled_notifications.find_one({"id": notification_id})
+        if not notification or notification.get("sent"):
+            return
+        
+        # Calculate if notification should be sent now
+        now = datetime.utcnow()
+        should_send = False
+        
+        if notification["type"] == "treat_ready" and notification.get("ready_time"):
+            ready_time_str = notification["ready_time"]
+            if isinstance(ready_time_str, str):
+                ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "").replace("+00:00", ""))
+            else:
+                ready_time = ready_time_str
+            should_send = now >= ready_time
+        elif notification["type"] == "limit_reset" and notification.get("reset_time"):
+            reset_time_str = notification["reset_time"]
+            if isinstance(reset_time_str, str):
+                reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "").replace("+00:00", ""))
+            else:
+                reset_time = reset_time_str
+            should_send = now >= reset_time
+        
+        if not should_send:
+            # Not ready yet - will be picked up by the notification processor loop
+            return
+        
+        # Check if subscription is still active and send
+        if notification.get("telegram_id"):
+            sub = await db.notification_subscriptions.find_one({
+                "telegram_id": notification["telegram_id"],
+                "active": True
+            })
+            if not sub:
+                # Mark as sent to prevent retry
+                await db.scheduled_notifications.update_one(
+                    {"id": notification_id},
+                    {"$set": {"sent": True, "skipped_reason": "subscription_inactive"}}
+                )
+                return
+            
+            # Check preference
+            if notification["type"] == "treat_ready" and not sub.get("treat_ready", True):
+                await db.scheduled_notifications.update_one(
+                    {"id": notification_id},
+                    {"$set": {"sent": True, "skipped_reason": "preference_disabled"}}
+                )
+                return
+            if notification["type"] == "limit_reset" and not sub.get("limit_reset", True):
+                await db.scheduled_notifications.update_one(
+                    {"id": notification_id},
+                    {"$set": {"sent": True, "skipped_reason": "preference_disabled"}}
+                )
+                return
+            
+            # Send Telegram notification
+            bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+            if bot_token:
+                try:
+                    bot = Bot(token=bot_token)
+                    if notification["type"] == "treat_ready":
+                        message = f"🍖 Your {notification.get('treat_name', 'treat')} is ready!\n\nHead to the lab to collect it before it gets cold! 🧪"
+                    else:
+                        message = "🔄 Daily limit reset!\n\nYou can now create more treats. Time to brew! 🧪"
+                    
+                    await bot.send_message(chat_id=notification["telegram_id"], text=message)
+                    logger.info(f"📬 Sent Telegram notification to {notification['telegram_id']}: {notification['type']}")
+                except Exception as e:
+                    logger.warning(f"Failed to send Telegram notification to {notification.get('telegram_id')}: {e}")
+                    # Don't mark as sent so it can be retried
+                    return
+        
+        # Mark as sent
+        await db.scheduled_notifications.update_one(
+            {"id": notification_id},
+            {"$set": {"sent": True, "sent_at": datetime.utcnow()}}
+        )
+        
+    except Exception as e:
+        logger.error(f"Error sending scheduled notification {notification_id}: {e}")
+
+async def notification_processor_loop():
+    """Background loop that checks for pending notifications every minute"""
+    logger.info("🔔 Notification processor loop started")
+    
+    while True:
+        try:
+            now = datetime.utcnow()
+            
+            # Find all unsent notifications that are ready to be sent
+            pending_notifications = await db.scheduled_notifications.find({
+                "sent": False,
+                "$or": [
+                    {"ready_time": {"$lte": now.isoformat()}},
+                    {"reset_time": {"$lte": now.isoformat()}}
+                ]
+            }).to_list(100)
+            
+            if pending_notifications:
+                logger.info(f"📬 Found {len(pending_notifications)} pending notifications to send")
+            
+            for notification in pending_notifications:
+                try:
+                    await send_scheduled_notification(notification["id"])
+                except Exception as e:
+                    logger.error(f"Error processing notification {notification.get('id')}: {e}")
+            
+        except Exception as e:
+            logger.error(f"Error in notification processor loop: {e}")
+        
+        # Check every 60 seconds
+        await asyncio.sleep(60)
+
+# ============================================
+# GUEST REGISTRATION ENDPOINT
+# ============================================
+
+class GuestRegisterRequest(BaseModel):
+    username: str
+
+@api_router.post("/players/guest-register")
+async def register_guest_player(request: GuestRegisterRequest):
+    """Register a new guest player with unique ID"""
+    try:
+        username = request.username.strip()
+        
+        # Validate username
+        if len(username) < 3:
+            raise HTTPException(status_code=400, detail="Username must be at least 3 characters")
+        if len(username) > 20:
+            raise HTTPException(status_code=400, detail="Username must be 20 characters or less")
+        if not username.replace('_', '').isalnum():
+            raise HTTPException(status_code=400, detail="Username can only contain letters, numbers, and underscores")
+        
+        # Check if username is taken
+        existing = await db.players.find_one({"nickname": {"$regex": f"^{username}$", "$options": "i"}})
+        if existing:
+            raise HTTPException(status_code=400, detail="Username is already taken")
+        
+        # Generate unique guest ID
+        guest_id = f"GUEST_{uuid.uuid4().hex[:12].upper()}"
+        player_id = str(uuid.uuid4())
+        
+        # Create player document
+        player_data = {
+            "id": player_id,
+            "guest_id": guest_id,
+            "address": guest_id,  # Use guest_id as address for consistency
+            "nickname": username,
+            "auth_type": "guest",
+            "points": 0,
+            "level": 1,
+            "experience": 0,
+            "treats_created": 0,
+            "streak_days": 0,
+            "last_activity": datetime.utcnow(),
+            "created_at": datetime.utcnow(),
+            "daily_treats_count": 0,
+            "daily_treats_last_reset": datetime.utcnow(),
+            "is_nft_holder": False
+        }
+        
+        await db.players.insert_one(player_data)
+        
+        logger.info(f"New guest player registered: {username} ({guest_id})")
+        
+        return {
+            "success": True,
+            "player_id": player_id,
+            "guest_id": guest_id,
+            "username": username
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Guest registration failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================
+# ADMIN ENDPOINTS
+# ============================================
+
+class DeleteTestPlayersRequest(BaseModel):
+    addresses: List[str]
+    admin_key: Optional[str] = None
+
+@api_router.post("/admin/delete-test-players")
+async def delete_test_players(request: DeleteTestPlayersRequest):
+    """Delete test players from the database"""
+    try:
+        # Delete players with matching addresses
+        addresses_to_delete = request.addresses + [
+            "GUEST_USER",
+            "0x123test",
+            "0xTestWallet123", 
+            "0xTestNFTHolder",
+            "test_user",
+            "Test User"
+        ]
+        
+        result = await db.players.delete_many({
+            "$or": [
+                {"address": {"$in": addresses_to_delete}},
+                {"guest_id": "GUEST_USER"},
+                {"nickname": {"$regex": "^test", "$options": "i"}}
+            ]
+        })
+        
+        logger.info(f"Deleted {result.deleted_count} test players")
+        
+        return {
+            "success": True,
+            "deleted_count": result.deleted_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to delete test players: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================
+# TOURNAMENT SYSTEM ENDPOINTS
+# ============================================
+
+class TournamentCreate(BaseModel):
+    name: str
+    season: int = 1
+    start_date: str
+    match_duration_hours: int = 48
+
+class MatchUpdate(BaseModel):
+    match_id: str
+    player1_treats: Optional[int] = None
+    player1_points: Optional[int] = None
+    player2_treats: Optional[int] = None
+    player2_points: Optional[int] = None
+
+@api_router.get("/tournament/current")
+async def get_current_tournament():
+    """Get the current active tournament"""
+    try:
+        # Find active or upcoming tournament
+        tournament = await db.tournaments.find_one(
+            {"status": {"$in": ["active", "upcoming", "qualification"]}},
+            {"_id": 0}
+        )
+        
+        if not tournament:
+            # Return default tournament info for Season 1
+            # Tournament starts 2 weeks before season end (March 1, 2026)
+            # So tournament starts around Feb 15, 2026
+            return {
+                "id": "season1_championship",
+                "name": "Treat Masters Champions League",
+                "season": 1,
+                "status": "qualification",
+                "qualification_ends": "2026-02-15T00:00:00Z",
+                "tournament_starts": "2026-02-15T00:00:00Z",
+                "matches": [],
+                "prize_pool": "$LAB / DOGE Rewards",
+                "champion": None
+            }
+        
+        # Get matches for this tournament
+        matches = await db.tournament_matches.find(
+            {"tournament_id": tournament["id"]},
+            {"_id": 0}
+        ).to_list(100)
+        
+        # Enrich matches with player data
+        for match in matches:
+            if match.get("player1_id"):
+                player1 = await db.players.find_one({"id": match["player1_id"]}, {"_id": 0})
+                if player1:
+                    match["player1"] = {
+                        "id": player1["id"],
+                        "nickname": player1.get("nickname", "Anonymous"),
+                        "seed": match.get("player1_seed", 0)
+                    }
+            
+            if match.get("player2_id"):
+                player2 = await db.players.find_one({"id": match["player2_id"]}, {"_id": 0})
+                if player2:
+                    match["player2"] = {
+                        "id": player2["id"],
+                        "nickname": player2.get("nickname", "Anonymous"),
+                        "seed": match.get("player2_seed", 0)
+                    }
+        
+        tournament["matches"] = matches
+        return tournament
+        
+    except Exception as e:
+        logger.error(f"Error fetching tournament: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/tournament/create")
+async def create_tournament(data: TournamentCreate):
+    """Create a new tournament (admin only)"""
+    try:
+        tournament_id = f"season{data.season}_championship_{uuid.uuid4().hex[:8]}"
+        
+        # Get top 8 players from leaderboard
+        top_players = await db.players.find(
+            {},
+            {"_id": 0, "id": 1, "nickname": 1, "points": 1, "address": 1}
+        ).sort("points", -1).limit(8).to_list(8)
+        
+        if len(top_players) < 8:
+            raise HTTPException(status_code=400, detail="Not enough players for tournament (need 8)")
+        
+        # Create tournament
+        tournament = {
+            "id": tournament_id,
+            "name": data.name,
+            "season": data.season,
+            "status": "upcoming",
+            "start_date": data.start_date,
+            "match_duration_hours": data.match_duration_hours,
+            "qualified_players": [p["id"] for p in top_players],
+            "created_at": datetime.utcnow(),
+            "champion": None
+        }
+        
+        await db.tournaments.insert_one(tournament)
+        
+        # Create quarterfinal matches based on seeding
+        # #1 vs #8, #2 vs #7, #3 vs #6, #4 vs #5
+        matchups = [(0, 7), (1, 6), (2, 5), (3, 4)]
+        
+        start_time = datetime.fromisoformat(data.start_date.replace("Z", "+00:00"))
+        end_time = start_time + timedelta(hours=data.match_duration_hours)
+        
+        for i, (seed1_idx, seed2_idx) in enumerate(matchups):
+            match = {
+                "id": f"{tournament_id}_qf_{i+1}",
+                "tournament_id": tournament_id,
+                "stage": "quarterfinal",
+                "match_number": i + 1,
+                "player1_id": top_players[seed1_idx]["id"],
+                "player1_seed": seed1_idx + 1,
+                "player2_id": top_players[seed2_idx]["id"],
+                "player2_seed": seed2_idx + 1,
+                "player1_treats": 0,
+                "player1_points": 0,
+                "player2_treats": 0,
+                "player2_points": 0,
+                "status": "upcoming",
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "winner_id": None,
+                "created_at": datetime.utcnow()
+            }
+            await db.tournament_matches.insert_one(match)
+        
+        logger.info(f"Tournament created: {tournament_id}")
+        
+        return {
+            "success": True,
+            "tournament_id": tournament_id,
+            "matches_created": 4
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating tournament: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/tournament/start/{tournament_id}")
+async def start_tournament(tournament_id: str):
+    """Start a tournament (activate quarterfinal matches)"""
+    try:
+        tournament = await db.tournaments.find_one({"id": tournament_id})
+        if not tournament:
+            raise HTTPException(status_code=404, detail="Tournament not found")
+        
+        # Update tournament status
+        await db.tournaments.update_one(
+            {"id": tournament_id},
+            {"$set": {"status": "active", "started_at": datetime.utcnow()}}
+        )
+        
+        # Activate quarterfinal matches
+        now = datetime.utcnow()
+        end_time = now + timedelta(hours=tournament.get("match_duration_hours", 48))
+        
+        await db.tournament_matches.update_many(
+            {"tournament_id": tournament_id, "stage": "quarterfinal"},
+            {"$set": {
+                "status": "active",
+                "start_time": now.isoformat(),
+                "end_time": end_time.isoformat()
+            }}
+        )
+        
+        logger.info(f"Tournament started: {tournament_id}")
+        
+        return {"success": True, "message": "Tournament started"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting tournament: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/tournament/match/update")
+async def update_match_scores(data: MatchUpdate):
+    """Update match scores during a tournament match"""
+    try:
+        update_data = {}
+        if data.player1_treats is not None:
+            update_data["player1_treats"] = data.player1_treats
+        if data.player1_points is not None:
+            update_data["player1_points"] = data.player1_points
+        if data.player2_treats is not None:
+            update_data["player2_treats"] = data.player2_treats
+        if data.player2_points is not None:
+            update_data["player2_points"] = data.player2_points
+        
+        if update_data:
+            await db.tournament_matches.update_one(
+                {"id": data.match_id},
+                {"$set": update_data}
+            )
+        
+        return {"success": True}
+        
+    except Exception as e:
+        logger.error(f"Error updating match: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/tournament/match/complete/{match_id}")
+async def complete_match(match_id: str):
+    """Complete a match and determine winner"""
+    try:
+        match = await db.tournament_matches.find_one({"id": match_id})
+        if not match:
+            raise HTTPException(status_code=404, detail="Match not found")
+        
+        # Calculate combined scores
+        player1_score = (match.get("player1_treats", 0) * 10) + match.get("player1_points", 0)
+        player2_score = (match.get("player2_treats", 0) * 10) + match.get("player2_points", 0)
+        
+        # Determine winner (treats count more - 10 points each)
+        if player1_score >= player2_score:
+            winner_id = match["player1_id"]
+            winner_seed = match.get("player1_seed", 0)
+        else:
+            winner_id = match["player2_id"]
+            winner_seed = match.get("player2_seed", 0)
+        
+        # Update match
+        await db.tournament_matches.update_one(
+            {"id": match_id},
+            {"$set": {
+                "status": "completed",
+                "winner_id": winner_id,
+                "completed_at": datetime.utcnow()
+            }}
+        )
+        
+        # Check if we need to create next stage matches
+        tournament = await db.tournaments.find_one({"id": match["tournament_id"]})
+        
+        # Get all completed matches in current stage
+        stage = match["stage"]
+        completed_matches = await db.tournament_matches.find({
+            "tournament_id": match["tournament_id"],
+            "stage": stage,
+            "status": "completed"
+        }).to_list(100)
+        
+        # If all quarterfinals done, create semifinals
+        if stage == "quarterfinal" and len(completed_matches) == 4:
+            await create_next_stage_matches(match["tournament_id"], "semifinal", tournament)
+        
+        # If all semifinals done, create final
+        elif stage == "semifinal" and len(completed_matches) == 2:
+            await create_next_stage_matches(match["tournament_id"], "final", tournament)
+        
+        # If final is complete, crown champion
+        elif stage == "final":
+            await db.tournaments.update_one(
+                {"id": match["tournament_id"]},
+                {"$set": {
+                    "status": "completed",
+                    "champion": winner_id,
+                    "completed_at": datetime.utcnow()
+                }}
+            )
+        
+        logger.info(f"Match completed: {match_id}, Winner: {winner_id}")
+        
+        return {"success": True, "winner_id": winner_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error completing match: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def create_next_stage_matches(tournament_id: str, stage: str, tournament: dict):
+    """Helper function to create next stage matches from winners"""
+    try:
+        previous_stage = "quarterfinal" if stage == "semifinal" else "semifinal"
+        
+        # Get winners from previous stage
+        previous_matches = await db.tournament_matches.find({
+            "tournament_id": tournament_id,
+            "stage": previous_stage,
+            "status": "completed"
+        }).sort("match_number", 1).to_list(100)
+        
+        winners = [(m["winner_id"], m.get("player1_seed") if m["winner_id"] == m["player1_id"] else m.get("player2_seed")) 
+                   for m in previous_matches]
+        
+        duration = tournament.get("match_duration_hours", 48)
+        start_time = datetime.utcnow()
+        end_time = start_time + timedelta(hours=duration)
+        
+        if stage == "semifinal":
+            # SF1: QF1 winner vs QF2 winner
+            # SF2: QF3 winner vs QF4 winner
+            matchups = [(0, 1), (2, 3)]
+        else:  # final
+            matchups = [(0, 1)]
+        
+        for i, (idx1, idx2) in enumerate(matchups):
+            match = {
+                "id": f"{tournament_id}_{stage[:2]}_{i+1}",
+                "tournament_id": tournament_id,
+                "stage": stage,
+                "match_number": i + 1,
+                "player1_id": winners[idx1][0],
+                "player1_seed": winners[idx1][1],
+                "player2_id": winners[idx2][0],
+                "player2_seed": winners[idx2][1],
+                "player1_treats": 0,
+                "player1_points": 0,
+                "player2_treats": 0,
+                "player2_points": 0,
+                "status": "active",
+                "start_time": start_time.isoformat(),
+                "end_time": end_time.isoformat(),
+                "winner_id": None,
+                "created_at": datetime.utcnow()
+            }
+            await db.tournament_matches.insert_one(match)
+        
+        logger.info(f"Created {stage} matches for tournament {tournament_id}")
+        
+    except Exception as e:
+        logger.error(f"Error creating next stage matches: {e}")
+
+# ============================================
+# KERNEL OF WOW - SPECIAL INGREDIENT ENDPOINTS
+# ============================================
+
+def calculate_kernel_bonus(ingredients: List[str]) -> dict:
+    """Calculate bonus tier based on ingredients used with Kernel of Wow"""
+    ingredient_set = set(ingredients)
+    
+    # Check for legendary combo
+    for combo in KERNEL_BONUS_COMBOS["legendary"]["combos"]:
+        if combo.issubset(ingredient_set):
+            return {
+                "tier": "legendary",
+                "bonus_percent": 30,
+                "description": KERNEL_BONUS_COMBOS["legendary"]["description"]
+            }
+    
+    # Check for epic combo
+    for combo in KERNEL_BONUS_COMBOS["epic"]["combos"]:
+        if combo.issubset(ingredient_set):
+            return {
+                "tier": "epic",
+                "bonus_percent": 20,
+                "description": KERNEL_BONUS_COMBOS["epic"]["description"]
+            }
+    
+    # Check for rare combo
+    for combo in KERNEL_BONUS_COMBOS["rare"]["combos"]:
+        if combo.issubset(ingredient_set):
+            return {
+                "tier": "rare",
+                "bonus_percent": 15,
+                "description": KERNEL_BONUS_COMBOS["rare"]["description"]
+            }
+    
+    # Default to common bonus
+    return {
+        "tier": "common",
+        "bonus_percent": 5,
+        "description": KERNEL_BONUS_COMBOS["common"]["description"]
+    }
+
+@api_router.get("/special-ingredient/current")
+async def get_current_special_ingredient_holder():
+    """Get the current holder of the Kernel of Wow"""
+    try:
+        now = datetime.utcnow()
+        
+        # Find active holder
+        holder = await db.special_ingredient_holders.find_one({
+            "is_active": True,
+            "expires_at": {"$gt": now}
+        }, {"_id": 0})
+        
+        if holder:
+            # Calculate time remaining
+            expires_at = holder.get("expires_at")
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+            time_remaining = (expires_at - now).total_seconds()
+            
+            return {
+                "has_holder": True,
+                "holder": holder,
+                "ingredient": KERNEL_OF_WOW,
+                "time_remaining_seconds": max(0, time_remaining),
+                "bonus_combos": KERNEL_BONUS_COMBOS
+            }
+        
+        return {
+            "has_holder": False,
+            "holder": None,
+            "ingredient": KERNEL_OF_WOW,
+            "next_selection_info": "A new holder will be selected soon!"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting special ingredient holder: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/special-ingredient/check/{address}")
+async def check_player_has_special_ingredient(address: str):
+    """Check if a specific player currently has the Kernel of Wow"""
+    try:
+        now = datetime.utcnow()
+        
+        holder = await db.special_ingredient_holders.find_one({
+            "player_address": address,
+            "is_active": True,
+            "expires_at": {"$gt": now}
+        }, {"_id": 0})
+        
+        if holder:
+            expires_at = holder.get("expires_at")
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+            time_remaining = (expires_at - now).total_seconds()
+            
+            return {
+                "has_ingredient": True,
+                "ingredient": KERNEL_OF_WOW,
+                "expires_at": holder.get("expires_at"),
+                "time_remaining_seconds": max(0, time_remaining),
+                "bonus_combos": KERNEL_BONUS_COMBOS,
+                "used_count": len(holder.get("used_in_treats", [])),
+                "total_bonus_earned": holder.get("total_bonus_earned", 0)
+            }
+        
+        return {
+            "has_ingredient": False,
+            "ingredient": KERNEL_OF_WOW
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking special ingredient: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/special-ingredient/select-random")
+async def select_random_special_ingredient_holder():
+    """Select a random active player to receive the Kernel of Wow (admin/cron endpoint)"""
+    try:
+        now = datetime.utcnow()
+        
+        # Check if there's already an active holder
+        existing_holder = await db.special_ingredient_holders.find_one({
+            "is_active": True,
+            "expires_at": {"$gt": now}
+        })
+        
+        if existing_holder:
+            return {
+                "success": False,
+                "message": "There is already an active holder",
+                "current_holder": existing_holder.get("player_address")
+            }
+        
+        # Deactivate any expired holders
+        await db.special_ingredient_holders.update_many(
+            {"is_active": True, "expires_at": {"$lte": now}},
+            {"$set": {"is_active": False}}
+        )
+        
+        # Get active players (players who have created treats in last 7 days)
+        seven_days_ago = now - timedelta(days=7)
+        
+        active_players = await db.players.find({
+            "last_active": {"$gte": seven_days_ago}
+        }).to_list(1000)
+        
+        # Fallback: get players with treats
+        if not active_players:
+            treat_creators = await db.treats.distinct("creator_address", {
+                "created_at": {"$gte": seven_days_ago}
+            })
+            active_players = await db.players.find({
+                "address": {"$in": treat_creators}
+            }).to_list(1000)
+        
+        # Final fallback: get any players with points
+        if not active_players:
+            active_players = await db.players.find({
+                "points": {"$gt": 0}
+            }).to_list(100)
+        
+        if not active_players:
+            return {
+                "success": False,
+                "message": "No eligible players found"
+            }
+        
+        # Select random player
+        import random
+        selected_player = random.choice(active_players)
+        
+        # Create new holder record
+        expires_at = now + timedelta(hours=KERNEL_OF_WOW["duration_hours"])
+        
+        new_holder = SpecialIngredientHolder(
+            player_address=selected_player.get("address"),
+            player_nickname=selected_player.get("nickname"),
+            ingredient_id="KERNEL_WOW",
+            granted_at=now,
+            expires_at=expires_at,
+            is_active=True
+        )
+        
+        await db.special_ingredient_holders.insert_one(new_holder.dict())
+        
+        # Update player record
+        await db.players.update_one(
+            {"address": selected_player.get("address")},
+            {"$set": {"has_special_ingredient": True, "special_ingredient_expires": expires_at}}
+        )
+        
+        logger.info(f"Kernel of Wow granted to {selected_player.get('address')} until {expires_at}")
+        
+        return {
+            "success": True,
+            "message": "Kernel of Wow granted!",
+            "holder": {
+                "address": selected_player.get("address"),
+                "nickname": selected_player.get("nickname"),
+                "expires_at": expires_at.isoformat()
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error selecting special ingredient holder: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/special-ingredient/history")
+async def get_special_ingredient_history(limit: int = 20):
+    """Get history of Kernel of Wow holders"""
+    try:
+        history = await db.special_ingredient_holders.find(
+            {},
+            {"_id": 0}
+        ).sort("granted_at", -1).limit(limit).to_list(limit)
+        
+        return {
+            "history": history,
+            "ingredient": KERNEL_OF_WOW
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching special ingredient history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/special-ingredient/use")
+async def use_special_ingredient_in_treat(treat_id: str, player_address: str, ingredients: List[str]):
+    """Record usage of Kernel of Wow in a treat and calculate bonus"""
+    try:
+        now = datetime.utcnow()
+        
+        # Check if player has active special ingredient
+        holder = await db.special_ingredient_holders.find_one({
+            "player_address": player_address,
+            "is_active": True,
+            "expires_at": {"$gt": now}
+        })
+        
+        if not holder:
+            return {
+                "success": False,
+                "message": "You don't have the Kernel of Wow"
+            }
+        
+        # Calculate bonus
+        bonus_info = calculate_kernel_bonus(ingredients)
+        
+        # Update holder record
+        await db.special_ingredient_holders.update_one(
+            {"id": holder.get("id")},
+            {
+                "$push": {"used_in_treats": treat_id},
+                "$inc": {"total_bonus_earned": bonus_info["bonus_percent"]}
+            }
+        )
+        
+        return {
+            "success": True,
+            "bonus": bonus_info,
+            "message": f"Kernel of Wow activated! {bonus_info['description']}"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error using special ingredient: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/special-ingredient/bonus-preview")
+async def preview_kernel_bonus(ingredients: str):
+    """Preview bonus for a set of ingredients (comma-separated)"""
+    try:
+        ingredient_list = [ing.strip() for ing in ingredients.split(",")]
+        bonus_info = calculate_kernel_bonus(ingredient_list)
+        
+        return {
+            "ingredients": ingredient_list,
+            "bonus": bonus_info,
+            "all_combos": KERNEL_BONUS_COMBOS
+        }
+        
+    except Exception as e:
+        logger.error(f"Error previewing bonus: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/special-ingredient/scheduler-status")
+async def get_scheduler_status():
+    """Get the status of the Kernel of Wow scheduler"""
+    try:
+        # Get current holder to determine next selection time
+        current_holder = await db.special_ingredient_holders.find_one(
+            {"is_active": True},
+            sort=[("granted_at", -1)]
+        )
+        
+        next_run = None
+        if current_holder and current_holder.get("expires_at"):
+            next_run = current_holder["expires_at"].isoformat() if isinstance(current_holder["expires_at"], datetime) else current_holder["expires_at"]
+        
+        return {
+            "scheduler_running": background_task_started,
+            "scheduler_type": "asyncio_background_task",
+            "check_interval_hours": 1,
+            "selection_interval_hours": 24,
+            "ingredient_duration_hours": 16,
+            "current_holder_expires": next_run
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting scheduler status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/special-ingredient/force-expire")
+async def force_expire_kernel(address: str = None):
+    """Force expire current Kernel of Wow holder (admin endpoint)"""
+    try:
+        query = {"is_active": True}
+        if address:
+            query["player_address"] = address
+            
+        result = await db.special_ingredient_holders.update_many(
+            query,
+            {"$set": {"is_active": False, "expires_at": datetime.utcnow()}}
+        )
+        
+        return {
+            "success": True,
+            "expired_count": result.modified_count,
+            "message": f"Expired {result.modified_count} active holder(s)"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error force expiring kernel: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================
+# MARKETPLACE SYSTEM ENDPOINTS
+# ============================================
+
+@api_router.post("/marketplace/list")
+async def create_marketplace_listing(data: CreateListingRequest):
+    """List a treat for sale on the marketplace"""
+    try:
+        # Verify the treat exists and belongs to the seller
+        treat = await db.treats.find_one({"id": data.treat_id})
+        if not treat:
+            raise HTTPException(status_code=404, detail="Treat not found")
+        
+        if treat.get("creator_address") != data.seller_address:
+            raise HTTPException(status_code=403, detail="You can only list your own treats")
+        
+        # Check if treat is already listed
+        existing_listing = await db.marketplace_listings.find_one({
+            "treat_id": data.treat_id,
+            "status": "active"
+        })
+        if existing_listing:
+            raise HTTPException(status_code=400, detail="Treat is already listed on marketplace")
+        
+        # Validate pricing - at least one price must be set
+        if data.price_doge is None and data.price_lab is None:
+            raise HTTPException(status_code=400, detail="At least one price (DOGE or LAB) must be set")
+        
+        # Get seller info
+        seller = await db.players.find_one({"address": data.seller_address})
+        seller_nickname = seller.get("nickname") if seller else None
+        
+        # Create listing
+        listing = MarketplaceListing(
+            treat_id=data.treat_id,
+            treat_name=treat.get("name", "Unknown Treat"),
+            treat_rarity=treat.get("rarity", "Common"),
+            treat_image=treat.get("image", ""),
+            treat_ingredients=treat.get("ingredients", []),
+            treat_points_reward=treat.get("points_reward", 0),
+            treat_xp_reward=treat.get("xp_reward", 0),
+            seller_address=data.seller_address,
+            seller_nickname=seller_nickname,
+            price_doge=data.price_doge,
+            price_lab=data.price_lab,
+            payment_options=data.payment_options,
+            status="active"
+        )
+        
+        await db.marketplace_listings.insert_one(listing.dict())
+        
+        logger.info(f"Treat listed on marketplace: {data.treat_id} by {data.seller_address}")
+        
+        return {
+            "success": True,
+            "listing_id": listing.id,
+            "message": "Treat listed successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating marketplace listing: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/marketplace/listings")
+async def get_marketplace_listings(
+    rarity: Optional[str] = None,
+    min_price_doge: Optional[float] = None,
+    max_price_doge: Optional[float] = None,
+    min_price_lab: Optional[float] = None,
+    max_price_lab: Optional[float] = None,
+    payment_option: Optional[str] = None,
+    sort_by: str = "newest",  # "newest", "oldest", "price_low", "price_high"
+    limit: int = 50,
+    skip: int = 0
+):
+    """Get active marketplace listings with filters"""
+    try:
+        # Build query
+        query = {"status": "active"}
+        
+        if rarity and rarity.lower() != "all":
+            query["treat_rarity"] = {"$regex": f"^{rarity}$", "$options": "i"}
+        
+        if payment_option and payment_option != "all":
+            if payment_option == "doge":
+                query["price_doge"] = {"$ne": None}
+            elif payment_option == "lab":
+                query["price_lab"] = {"$ne": None}
+        
+        if min_price_doge is not None:
+            query["price_doge"] = query.get("price_doge", {})
+            query["price_doge"]["$gte"] = min_price_doge
+        
+        if max_price_doge is not None:
+            query["price_doge"] = query.get("price_doge", {})
+            query["price_doge"]["$lte"] = max_price_doge
+        
+        if min_price_lab is not None:
+            query["price_lab"] = query.get("price_lab", {})
+            query["price_lab"]["$gte"] = min_price_lab
+        
+        if max_price_lab is not None:
+            query["price_lab"] = query.get("price_lab", {})
+            query["price_lab"]["$lte"] = max_price_lab
+        
+        # Build sort
+        sort_options = {
+            "newest": [("listed_at", -1)],
+            "oldest": [("listed_at", 1)],
+            "price_low": [("price_doge", 1), ("price_lab", 1)],
+            "price_high": [("price_doge", -1), ("price_lab", -1)]
+        }
+        sort = sort_options.get(sort_by, [("listed_at", -1)])
+        
+        # Get total count
+        total = await db.marketplace_listings.count_documents(query)
+        
+        # Get listings
+        listings = await db.marketplace_listings.find(
+            query,
+            {"_id": 0}
+        ).sort(sort).skip(skip).limit(limit).to_list(limit)
+        
+        return {
+            "listings": listings,
+            "total": total,
+            "limit": limit,
+            "skip": skip,
+            "marketplace_fee": MARKETPLACE_FEE,
+            "trading_live": False  # Set to True when $LAB is live
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching marketplace listings: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/marketplace/listing/{listing_id}")
+async def get_marketplace_listing(listing_id: str):
+    """Get a single marketplace listing by ID"""
+    try:
+        listing = await db.marketplace_listings.find_one(
+            {"id": listing_id},
+            {"_id": 0}
+        )
+        
+        if not listing:
+            raise HTTPException(status_code=404, detail="Listing not found")
+        
+        return listing
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching listing: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/marketplace/my-listings/{address}")
+async def get_my_listings(address: str):
+    """Get all listings for a specific seller"""
+    try:
+        listings = await db.marketplace_listings.find(
+            {"seller_address": address},
+            {"_id": 0}
+        ).sort("listed_at", -1).to_list(100)
+        
+        return {"listings": listings}
+        
+    except Exception as e:
+        logger.error(f"Error fetching seller listings: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/marketplace/listing/{listing_id}")
+async def cancel_marketplace_listing(listing_id: str, seller_address: str):
+    """Cancel/remove a marketplace listing"""
+    try:
+        # Find the listing
+        listing = await db.marketplace_listings.find_one({"id": listing_id})
+        
+        if not listing:
+            raise HTTPException(status_code=404, detail="Listing not found")
+        
+        if listing.get("seller_address") != seller_address:
+            raise HTTPException(status_code=403, detail="You can only cancel your own listings")
+        
+        if listing.get("status") != "active":
+            raise HTTPException(status_code=400, detail="Listing is not active")
+        
+        # Update listing status
+        await db.marketplace_listings.update_one(
+            {"id": listing_id},
+            {"$set": {"status": "cancelled"}}
+        )
+        
+        logger.info(f"Marketplace listing cancelled: {listing_id}")
+        
+        return {"success": True, "message": "Listing cancelled"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling listing: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/marketplace/buy/{listing_id}")
+async def buy_marketplace_listing(listing_id: str, data: BuyListingRequest):
+    """Buy a treat from the marketplace (disabled until $LAB is live)"""
+    try:
+        # Trading is not live yet
+        raise HTTPException(
+            status_code=503, 
+            detail="Trading is not live yet. $LAB token launch coming soon!"
+        )
+        
+        # Future implementation when trading goes live:
+        # 1. Verify listing exists and is active
+        # 2. Verify buyer has sufficient funds
+        # 3. Transfer payment (minus fee) to seller
+        # 4. Transfer treat ownership to buyer
+        # 5. Update listing status to "sold"
+        # 6. Deduct MARKETPLACE_FEE from sale
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing purchase: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/marketplace/stats")
+async def get_marketplace_stats():
+    """Get marketplace statistics"""
+    try:
+        # Count active listings
+        active_count = await db.marketplace_listings.count_documents({"status": "active"})
+        
+        # Count total sold
+        sold_count = await db.marketplace_listings.count_documents({"status": "sold"})
+        
+        # Get listings by rarity
+        pipeline = [
+            {"$match": {"status": "active"}},
+            {"$group": {"_id": "$treat_rarity", "count": {"$sum": 1}}}
+        ]
+        rarity_stats = await db.marketplace_listings.aggregate(pipeline).to_list(10)
+        
+        # Calculate average prices
+        avg_pipeline = [
+            {"$match": {"status": "active", "price_doge": {"$ne": None}}},
+            {"$group": {"_id": None, "avg_doge": {"$avg": "$price_doge"}}}
+        ]
+        avg_result = await db.marketplace_listings.aggregate(avg_pipeline).to_list(1)
+        avg_price_doge = avg_result[0]["avg_doge"] if avg_result else 0
+        
+        return {
+            "active_listings": active_count,
+            "total_sold": sold_count,
+            "marketplace_fee": MARKETPLACE_FEE,
+            "trading_live": False,
+            "rarity_breakdown": {r["_id"]: r["count"] for r in rarity_stats},
+            "average_price_doge": round(avg_price_doge, 2) if avg_price_doge else 0
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching marketplace stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/marketplace/check-listed/{treat_id}")
+async def check_treat_listed(treat_id: str):
+    """Check if a treat is listed on the marketplace"""
+    try:
+        listing = await db.marketplace_listings.find_one({
+            "treat_id": treat_id,
+            "status": "active"
+        }, {"_id": 0})
+        
+        return {
+            "is_listed": listing is not None,
+            "listing": listing
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking listing status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# =====================================================
+# AUTO-MIXER SUBSCRIPTION ENDPOINTS
+# =====================================================
+
+@api_router.get("/auto-mixer/config")
+async def get_auto_mixer_config():
+    """Get auto-mixer configuration"""
+    return {
+        "monthly_fee_doge": AUTO_MIXER_CONFIG["monthly_fee_doge"],
+        "max_window_hours": AUTO_MIXER_CONFIG["max_window_hours"],
+        "min_window_hours": AUTO_MIXER_CONFIG["min_window_hours"],
+        "payment_address": AUTO_MIXER_CONFIG["payment_address"],
+        "buy_burn_percent": AUTO_MIXER_CONFIG["buy_burn_percent"],
+        "dev_percent": AUTO_MIXER_CONFIG["dev_percent"],
+        "mixes_per_hour": AUTO_MIXER_CONFIG["mixes_per_hour"]
+    }
+
+@api_router.post("/auto-mixer/create-subscription")
+async def create_auto_mixer_subscription(request: AutoMixerCreateRequest):
+    """Create a new auto-mixer subscription (pending payment)"""
+    try:
+        # Validate window hours
+        if not (0 <= request.window_start_hour <= 23 and 0 <= request.window_end_hour <= 23):
+            raise HTTPException(status_code=400, detail="Window hours must be between 0 and 23")
+        
+        # Calculate window duration
+        if request.window_end_hour > request.window_start_hour:
+            duration = request.window_end_hour - request.window_start_hour
+        else:
+            duration = (24 - request.window_start_hour) + request.window_end_hour
+        
+        if duration > AUTO_MIXER_CONFIG["max_window_hours"]:
+            raise HTTPException(status_code=400, detail=f"Window cannot exceed {AUTO_MIXER_CONFIG['max_window_hours']} hours")
+        
+        if duration < AUTO_MIXER_CONFIG["min_window_hours"]:
+            raise HTTPException(status_code=400, detail=f"Window must be at least {AUTO_MIXER_CONFIG['min_window_hours']} hour(s)")
+        
+        # Check for existing active subscription
+        existing = await db.auto_mixer_subscriptions.find_one({
+            "player_address": request.player_address,
+            "status": {"$in": ["active", "pending"]}
+        })
+        
+        if existing:
+            if existing.get("status") == "active":
+                raise HTTPException(status_code=400, detail="You already have an active subscription")
+            # Return existing pending subscription
+            existing["_id"] = str(existing["_id"]) if "_id" in existing else None
+            return {"subscription": {k: v for k, v in existing.items() if k != "_id"}, "existing": True}
+        
+        # Get player nickname
+        player = await db.players.find_one({"address": request.player_address})
+        nickname = player.get("nickname") if player else None
+        
+        subscription_id = str(uuid.uuid4())
+        subscription = {
+            "id": subscription_id,
+            "player_address": request.player_address,
+            "player_nickname": nickname,
+            "status": "pending",
+            "subscription_start": None,
+            "subscription_end": None,
+            "window_start_hour": request.window_start_hour,
+            "window_end_hour": request.window_end_hour,
+            "payment_tx_hash": None,
+            "payment_amount": AUTO_MIXER_CONFIG["monthly_fee_doge"],
+            "payment_confirmed": False,
+            "payment_confirmations": 0,
+            "total_auto_mixes": 0,
+            "last_auto_mix": None,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        await db.auto_mixer_subscriptions.insert_one(subscription)
+        
+        return {
+            "subscription": {k: v for k, v in subscription.items() if k != "_id"},
+            "payment_address": AUTO_MIXER_CONFIG["payment_address"],
+            "payment_amount": AUTO_MIXER_CONFIG["monthly_fee_doge"],
+            "existing": False
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating auto-mixer subscription: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/auto-mixer/verify-payment")
+async def verify_auto_mixer_payment(request: AutoMixerPaymentVerifyRequest):
+    """Verify payment for auto-mixer subscription using BlockCypher"""
+    try:
+        # Find the subscription
+        subscription = await db.auto_mixer_subscriptions.find_one({
+            "id": request.subscription_id,
+            "status": "pending"
+        })
+        
+        if not subscription:
+            raise HTTPException(status_code=404, detail="Subscription not found or not pending")
+        
+        # Verify the transaction using BlockCypher
+        api_key = AUTO_MIXER_CONFIG.get("blockcypher_api_key", "")
+        
+        try:
+            # Get transaction details
+            tx_details = blockcypher.get_transaction_details(
+                tx_hash=request.tx_hash,
+                coin_symbol='doge',
+                api_key=api_key if api_key else None
+            )
+            
+            if not tx_details:
+                raise HTTPException(status_code=400, detail="Transaction not found on blockchain")
+            
+            confirmations = tx_details.get('confirmations', 0)
+            
+            # Check if payment goes to our address and has correct amount
+            payment_valid = False
+            payment_amount = 0
+            
+            for output in tx_details.get('outputs', []):
+                addresses = output.get('addresses', [])
+                if AUTO_MIXER_CONFIG["payment_address"] in addresses:
+                    payment_amount += output.get('value', 0) / 100000000  # Convert from satoshis
+                    payment_valid = True
+            
+            if not payment_valid:
+                raise HTTPException(status_code=400, detail="Payment not sent to correct address")
+            
+            if payment_amount < AUTO_MIXER_CONFIG["monthly_fee_doge"]:
+                raise HTTPException(status_code=400, detail=f"Payment amount insufficient. Required: {AUTO_MIXER_CONFIG['monthly_fee_doge']} DOGE, Received: {payment_amount} DOGE")
+            
+            # Update subscription
+            now = datetime.utcnow()
+            update_data = {
+                "payment_tx_hash": request.tx_hash,
+                "payment_confirmations": confirmations,
+                "updated_at": now
+            }
+            
+            # If enough confirmations, activate the subscription
+            if confirmations >= AUTO_MIXER_CONFIG["required_confirmations"]:
+                update_data["status"] = "active"
+                update_data["payment_confirmed"] = True
+                update_data["subscription_start"] = now
+                update_data["subscription_end"] = now + timedelta(days=30)
+                
+                # Record the payment for funds tracking
+                await db.auto_mixer_payments.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "subscription_id": request.subscription_id,
+                    "player_address": subscription["player_address"],
+                    "tx_hash": request.tx_hash,
+                    "amount_doge": payment_amount,
+                    "buy_burn_amount": payment_amount * (AUTO_MIXER_CONFIG["buy_burn_percent"] / 100),
+                    "dev_amount": payment_amount * (AUTO_MIXER_CONFIG["dev_percent"] / 100),
+                    "confirmed_at": now,
+                    "created_at": now
+                })
+            
+            await db.auto_mixer_subscriptions.update_one(
+                {"id": request.subscription_id},
+                {"$set": update_data}
+            )
+            
+            # Get updated subscription
+            updated_sub = await db.auto_mixer_subscriptions.find_one({"id": request.subscription_id}, {"_id": 0})
+            
+            return {
+                "subscription": updated_sub,
+                "confirmations": confirmations,
+                "required_confirmations": AUTO_MIXER_CONFIG["required_confirmations"],
+                "payment_amount": payment_amount,
+                "is_confirmed": confirmations >= AUTO_MIXER_CONFIG["required_confirmations"]
+            }
+            
+        except blockcypher.CoinSymbolError as e:
+            raise HTTPException(status_code=400, detail=f"Invalid coin symbol: {str(e)}")
+        except Exception as e:
+            if "HTTPException" in str(type(e)):
+                raise
+            logger.error(f"BlockCypher API error: {e}")
+            raise HTTPException(status_code=400, detail=f"Transaction verification failed: {str(e)}")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying payment: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/auto-mixer/subscription/{player_address}")
+async def get_auto_mixer_subscription(player_address: str):
+    """Get player's auto-mixer subscription"""
+    try:
+        subscription = await db.auto_mixer_subscriptions.find_one({
+            "player_address": player_address,
+            "status": {"$in": ["active", "pending"]}
+        }, {"_id": 0})
+        
+        if subscription:
+            # Check if subscription has expired
+            if subscription.get("status") == "active" and subscription.get("subscription_end"):
+                if datetime.utcnow() > subscription["subscription_end"]:
+                    await db.auto_mixer_subscriptions.update_one(
+                        {"id": subscription["id"]},
+                        {"$set": {"status": "expired", "updated_at": datetime.utcnow()}}
+                    )
+                    subscription["status"] = "expired"
+        
+        return {"subscription": subscription, "has_subscription": subscription is not None}
+        
+    except Exception as e:
+        logger.error(f"Error fetching subscription: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/auto-mixer/update-window")
+async def update_auto_mixer_window(request: AutoMixerWindowUpdateRequest):
+    """Update the mixing window for an active subscription"""
+    try:
+        # Validate window hours
+        if not (0 <= request.window_start_hour <= 23 and 0 <= request.window_end_hour <= 23):
+            raise HTTPException(status_code=400, detail="Window hours must be between 0 and 23")
+        
+        # Calculate window duration
+        if request.window_end_hour > request.window_start_hour:
+            duration = request.window_end_hour - request.window_start_hour
+        else:
+            duration = (24 - request.window_start_hour) + request.window_end_hour
+        
+        if duration > AUTO_MIXER_CONFIG["max_window_hours"]:
+            raise HTTPException(status_code=400, detail=f"Window cannot exceed {AUTO_MIXER_CONFIG['max_window_hours']} hours")
+        
+        # Find and verify ownership
+        subscription = await db.auto_mixer_subscriptions.find_one({
+            "id": request.subscription_id,
+            "player_address": request.player_address,
+            "status": "active"
+        })
+        
+        if not subscription:
+            raise HTTPException(status_code=404, detail="Active subscription not found")
+        
+        # Update window
+        await db.auto_mixer_subscriptions.update_one(
+            {"id": request.subscription_id},
+            {"$set": {
+                "window_start_hour": request.window_start_hour,
+                "window_end_hour": request.window_end_hour,
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        
+        updated_sub = await db.auto_mixer_subscriptions.find_one({"id": request.subscription_id}, {"_id": 0})
+        
+        return {"subscription": updated_sub, "message": "Window updated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating window: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/auto-mixer/cancel/{subscription_id}")
+async def cancel_auto_mixer_subscription(subscription_id: str, player_address: str):
+    """Cancel an auto-mixer subscription"""
+    try:
+        subscription = await db.auto_mixer_subscriptions.find_one({
+            "id": subscription_id,
+            "player_address": player_address
+        })
+        
+        if not subscription:
+            raise HTTPException(status_code=404, detail="Subscription not found")
+        
+        await db.auto_mixer_subscriptions.update_one(
+            {"id": subscription_id},
+            {"$set": {"status": "cancelled", "updated_at": datetime.utcnow()}}
+        )
+        
+        return {"message": "Subscription cancelled successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling subscription: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/auto-mixer/funds-stats")
+async def get_auto_mixer_funds_stats():
+    """Get real-time funds statistics for auto-mixer"""
+    try:
+        # Get total payments
+        pipeline = [
+            {"$group": {
+                "_id": None,
+                "total_received": {"$sum": "$amount_doge"},
+                "buy_burn_total": {"$sum": "$buy_burn_amount"},
+                "dev_total": {"$sum": "$dev_amount"},
+                "count": {"$sum": 1}
+            }}
+        ]
+        
+        result = await db.auto_mixer_payments.aggregate(pipeline).to_list(1)
+        
+        # Get subscriber counts
+        total_subs = await db.auto_mixer_subscriptions.count_documents({})
+        active_subs = await db.auto_mixer_subscriptions.count_documents({"status": "active"})
+        
+        # Get total auto mixes
+        mix_pipeline = [
+            {"$match": {"status": "active"}},
+            {"$group": {"_id": None, "total_mixes": {"$sum": "$total_auto_mixes"}}}
+        ]
+        mix_result = await db.auto_mixer_subscriptions.aggregate(mix_pipeline).to_list(1)
+        
+        stats = result[0] if result else {}
+        mix_stats = mix_result[0] if mix_result else {}
+        
+        return {
+            "total_received_doge": round(stats.get("total_received", 0), 2),
+            "buy_burn_amount": round(stats.get("buy_burn_total", 0), 2),
+            "dev_amount": round(stats.get("dev_total", 0), 2),
+            "total_subscribers": total_subs,
+            "active_subscribers": active_subs,
+            "total_auto_mixes": mix_stats.get("total_mixes", 0),
+            "buy_burn_percent": AUTO_MIXER_CONFIG["buy_burn_percent"],
+            "dev_percent": AUTO_MIXER_CONFIG["dev_percent"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching funds stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/auto-mixer/history/{player_address}")
+async def get_auto_mixer_history(player_address: str, limit: int = 20):
+    """Get auto-mix history for a player"""
+    try:
+        history = await db.auto_mix_history.find(
+            {"player_address": player_address}
+        ).sort("created_at", -1).limit(limit).to_list(limit)
+        
+        # Remove MongoDB _id
+        for item in history:
+            item.pop("_id", None)
+        
+        return {"history": history}
+        
+    except Exception as e:
+        logger.error(f"Error fetching auto-mix history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Auto-mixer background task
+async def auto_mixer_processor_loop():
+    """Background loop that processes auto-mixes for active subscribers"""
+    logger.info("🤖 Auto-mixer processor started")
+    
+    while True:
+        try:
+            now = datetime.utcnow()
+            current_hour = now.hour
+            
+            # Find active subscriptions where current hour is within their window
+            # Handle windows that cross midnight
+            active_subs = await db.auto_mixer_subscriptions.find({
+                "status": "active",
+                "subscription_end": {"$gt": now}
+            }).to_list(1000)
+            
+            for sub in active_subs:
+                try:
+                    start_hour = sub.get("window_start_hour", 0)
+                    end_hour = sub.get("window_end_hour", 6)
+                    
+                    # Check if current hour is within the window
+                    in_window = False
+                    if start_hour < end_hour:
+                        in_window = start_hour <= current_hour < end_hour
+                    else:  # Window crosses midnight
+                        in_window = current_hour >= start_hour or current_hour < end_hour
+                    
+                    if not in_window:
+                        continue
+                    
+                    # Check if we've already mixed recently (limit to mixes_per_hour)
+                    last_mix = sub.get("last_auto_mix")
+                    if last_mix:
+                        minutes_since_last = (now - last_mix).total_seconds() / 60
+                        min_interval = 60 / AUTO_MIXER_CONFIG["mixes_per_hour"]
+                        if minutes_since_last < min_interval:
+                            continue
+                    
+                    # Perform auto-mix for this player
+                    player_address = sub["player_address"]
+                    player = await db.players.find_one({"address": player_address})
+                    
+                    if not player:
+                        continue
+                    
+                    player_level = player.get("level", 1)
+                    
+                    # Get available ingredients for player level
+                    available_ingredients = ingredient_system.get_available_ingredients(player_level)
+                    
+                    if len(available_ingredients) < 2:
+                        continue
+                    
+                    # Select random ingredients (2-4)
+                    num_ingredients = random.randint(2, min(4, len(available_ingredients)))
+                    selected_ingredients = random.sample([ing["id"] for ing in available_ingredients], num_ingredients)
+                    
+                    # Create the treat using the game engine
+                    treat_result = game_engine.create_treat(
+                        ingredients=selected_ingredients,
+                        player_level=player_level
+                    )
+                    
+                    # Generate treat name
+                    flavor_names = ["Cosmic", "Stellar", "Lunar", "Solar", "Galactic", "Nebula", "Quantum"]
+                    treat_names = ["Biscuit", "Crunch", "Delight", "Snack", "Treat", "Nibble", "Morsel"]
+                    treat_name = f"{random.choice(flavor_names)} {random.choice(treat_names)}"
+                    
+                    # Save the treat
+                    treat_id = str(uuid.uuid4())
+                    treat_doc = {
+                        "id": treat_id,
+                        "name": treat_name,
+                        "creator_address": player_address,
+                        "ingredients": selected_ingredients,
+                        "rarity": treat_result.get("rarity", "Common"),
+                        "flavor": treat_result.get("flavor", "Savory"),
+                        "created_at": now,
+                        "image": treat_result.get("image", "🍪"),
+                        "brewing_status": "ready",
+                        "points_reward": treat_result.get("points", 10),
+                        "xp_reward": treat_result.get("xp", 5),
+                        "auto_mixed": True
+                    }
+                    
+                    await db.treats.insert_one(treat_doc)
+                    
+                    # Update player points and XP
+                    await db.players.update_one(
+                        {"address": player_address},
+                        {"$inc": {
+                            "points": treat_result.get("points", 10),
+                            "experience": treat_result.get("xp", 5)
+                        }}
+                    )
+                    
+                    # Record the auto-mix
+                    await db.auto_mix_history.insert_one({
+                        "id": str(uuid.uuid4()),
+                        "subscription_id": sub["id"],
+                        "player_address": player_address,
+                        "treat_id": treat_id,
+                        "treat_name": treat_name,
+                        "treat_rarity": treat_result.get("rarity", "Common"),
+                        "points_earned": treat_result.get("points", 10),
+                        "xp_earned": treat_result.get("xp", 5),
+                        "ingredients": selected_ingredients,
+                        "created_at": now
+                    })
+                    
+                    # Update subscription stats
+                    await db.auto_mixer_subscriptions.update_one(
+                        {"id": sub["id"]},
+                        {"$set": {"last_auto_mix": now}, "$inc": {"total_auto_mixes": 1}}
+                    )
+                    
+                    logger.info(f"🤖 Auto-mixed treat '{treat_name}' for {player_address}")
+                    
+                except Exception as e:
+                    logger.error(f"Error processing auto-mix for {sub.get('player_address')}: {e}")
+                    continue
+                    
+        except Exception as e:
+            logger.error(f"Error in auto-mixer loop: {e}")
+        
+        # Run every 10 minutes
+        await asyncio.sleep(600)
+
 # Include the router in the main app
 app.include_router(api_router)
 
@@ -1889,6 +5321,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@app.on_event("startup")
+async def startup_event():
+    """Start background schedulers on app startup"""
+    # Start the Kernel of Wow scheduler loop as a background task
+    asyncio.create_task(kernel_scheduler_loop())
+    logger.info("🚀 Kernel of Wow background scheduler started")
+    
+    # Start the notification processor loop
+    asyncio.create_task(notification_processor_loop())
+    logger.info("🔔 Notification processor started")
+    
+    # Start the auto-mixer processor loop
+    asyncio.create_task(auto_mixer_processor_loop())
+    logger.info("🤖 Auto-mixer processor started")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+    logger.info("Database connection closed")
