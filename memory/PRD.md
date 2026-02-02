@@ -33,31 +33,26 @@ DogeFood Lab is a Web3-powered treat creation game where players become scientis
 
 ## What's Been Implemented
 
-### Session: February 2, 2026
+### Session: February 2, 2026 (Latest)
+1. **Calendar Date Picker** - COMPLETED
+   - Added date picker for scheduling specific auto-mix days
+   - Players can select up to 30 days in advance
+   - Visual display of selected dates with remove option
+
+2. **Dark Mode Support** - COMPLETED
+   - Full dark mode implementation for Settings page
+   - Dark mode toggle in header and Appearance section
+   - Preference saved to localStorage
+   - All text properly visible in both modes
+
+3. **Text Visibility Fix** - COMPLETED
+   - Fixed grey text issues for Telegram dark mode
+   - Proper contrast for all text in dark/light modes
+
+### Previous Session: February 2, 2026
 1. **Frontend Deployment Fix (P0)** - COMPLETED
-   - Identified issue: Changes pushed to wrong Vercel project
-   - Fixed vercel.json config (removed conflicting routes/headers)
-   - Successfully deployed to dogefoodlab.vercel.app
-
 2. **Auto-Mixer Subscription Feature** - COMPLETED
-   - Backend: Created subscription CRUD endpoints
-   - Backend: DOGE payment verification via BlockCypher API
-   - Backend: Background task for auto-mixing treats
-   - Frontend: Settings page redesign with 4 tabs (General, Auto-Mixer, Audio, Account)
-   - Frontend: Time window selector with visual timeline
-   - Frontend: Payment flow with address copy and verification
-   - Frontend: Real-time fund distribution display (80% buy & burn, 20% dev)
-
-3. **Color Scheme Update** - COMPLETED
-   - Changed entire Settings and Auto-Mixer UI from orange to sky blue
-   - Updated gradients, icons, buttons, and borders
-
-### Previous Sessions
-- Backend stability fix (APScheduler → asyncio)
-- NFT verification endpoint fix
-- Telegram notification system
-- Admin endpoint for manual NFT holder crediting
-- Game mechanisms page content update
+3. **Color Scheme Update** - COMPLETED (Sky Blue theme)
 
 ## API Endpoints (Auto-Mixer)
 - `GET /api/auto-mixer/config` - Configuration
@@ -76,6 +71,3 @@ DogeFood Lab is a Web3-powered treat creation game where players become scientis
 - Frontend: https://dogefoodlab.vercel.app (Vercel)
 - Backend: https://dogefood-lab-api.onrender.com (Render)
 - Payment Address: DMxBXyfQbkCoZJyFoKMksjn9epLTwhHAyE
-
-## Test Reports
-- `/app/test_reports/iteration_2.json` - Auto-Mixer feature testing (100% pass)
