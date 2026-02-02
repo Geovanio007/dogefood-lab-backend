@@ -1112,8 +1112,26 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
         </Card>
       )}
 
-      {/* New Subscription View */}
-      {!hasActiveSubscription && !hasPendingSubscription && (
+      {/* Connect Wallet Prompt - Show when not connected */}
+      {!isConnected && (
+        <Card className={`border-2 border-dashed ${isDark ? 'border-sky-700 bg-slate-800/50' : 'border-sky-300 bg-sky-50/50'}`}>
+          <CardContent className="py-8 text-center">
+            <div className="p-4 bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <Zap className="w-8 h-8 text-white" />
+            </div>
+            <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+              Connect to Subscribe
+            </h3>
+            <p className={`mb-4 max-w-md mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+              Connect your wallet to subscribe and let the Auto-Mixer agent work for you. 
+              Check out the live agent stats below to see it in action!
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* New Subscription View - Only show when connected but not subscribed */}
+      {isConnected && !hasActiveSubscription && !hasPendingSubscription && (
         <Card className={`border-2 ${isDark ? 'bg-slate-800/50 border-slate-700' : 'border-slate-200'}`}>
           <CardHeader>
             <CardTitle className={`flex items-center gap-2 ${isDark ? 'text-white' : ''}`}>
