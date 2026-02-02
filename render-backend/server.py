@@ -1173,6 +1173,55 @@ async def remove_test_users():
         logger.error(f"Error removing test users: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.delete("/admin/remove-placeholder-accounts")
+async def remove_placeholder_accounts():
+    """
+    Admin endpoint to remove placeholder accounts - players who were created
+    but never actually signed up (no selected_character).
+    Only removes accounts with 500 or fewer points (just the signup bonus).
+    """
+    try:
+        # Find placeholder accounts - no character selected and only have signup bonus
+        placeholder_accounts = await db.players.find({
+            "selected_character": {"$exists": False},
+            "points": {"$lte": 500}
+        }).to_list(10000)
+        
+        # Also find accounts where selected_character is None
+        placeholder_accounts_null = await db.players.find({
+            "selected_character": None,
+            "points": {"$lte": 500}
+        }).to_list(10000)
+        
+        # Combine and dedupe
+        all_placeholders = {p.get("address"): p for p in placeholder_accounts + placeholder_accounts_null}
+        
+        removed = []
+        for address, player in all_placeholders.items():
+            if not address:
+                continue
+                
+            # Remove the placeholder account
+            await db.players.delete_one({"address": address})
+            
+            removed.append({
+                "address": address,
+                "nickname": player.get("nickname"),
+                "points": player.get("points", 0)
+            })
+            logger.info(f"🗑️ Removed placeholder account: {address}")
+        
+        return {
+            "success": True,
+            "message": f"Removed {len(removed)} placeholder accounts",
+            "removed_count": len(removed),
+            "removed_accounts": removed[:50]  # Show first 50
+        }
+        
+    except Exception as e:
+        logger.error(f"Error removing placeholder accounts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.get("/admin/check-nft-holders")
 async def check_nft_holders_status():
     """
@@ -1319,6 +1368,8 @@ async def scan_and_credit_all_nft_holders():
     """
     Admin endpoint to scan all players and verify their NFT ownership on DogeOS blockchain.
     Credits VIP bonus to any holder who hasn't received it yet.
+    NOTE: Only credits existing players who have signed up (chosen a character).
+    Does NOT create accounts for holders who haven't signed up yet.
     """
     try:
         # First, get ALL NFT holders directly from DogeOS blockchain
@@ -1336,23 +1387,31 @@ async def scan_and_credit_all_nft_holders():
         
         credited = []
         already_credited = []
-        new_players_created = []
+        not_signed_up = []  # Holders who haven't signed up to play yet
         errors = []
         
         # Check each holder
         for holder_address, nft_count in nft_holders.items():
             try:
                 # Normalize address format
-                holder_address = holder_address.lower()
+                holder_address_lower = holder_address.lower()
                 
                 # Find player in database (case-insensitive)
                 player = await db.players.find_one({
-                    "address": {"$regex": f"^{holder_address}$", "$options": "i"}
+                    "address": {"$regex": f"^{holder_address_lower}$", "$options": "i"}
                 })
                 
                 if player:
+                    # Check if player has actually signed up (chosen a character)
+                    has_signed_up = player.get("selected_character") is not None
+                    
+                    if not has_signed_up:
+                        # Player exists but hasn't completed signup - don't credit yet
+                        not_signed_up.append(holder_address)
+                        continue
+                    
                     if not player.get("vip_bonus_claimed"):
-                        # Credit existing player
+                        # Credit existing player who has signed up
                         await db.players.update_one(
                             {"_id": player["_id"]},
                             {
@@ -1375,27 +1434,8 @@ async def scan_and_credit_all_nft_holders():
                         )
                         already_credited.append(holder_address)
                 else:
-                    # Create new player for this holder (they haven't played yet but are holders)
-                    new_player = {
-                        "id": str(uuid.uuid4()),
-                        "address": holder_address,
-                        "nickname": None,
-                        "is_nft_holder": True,
-                        "is_vip": True,
-                        "vip_bonus_claimed": True,
-                        "points": 500,
-                        "level": 1,
-                        "experience": 0,
-                        "created_treats": [],
-                        "last_active": datetime.utcnow(),
-                        "leaderboard_eligible": True
-                    }
-                    await db.players.insert_one(new_player)
-                    new_players_created.append({
-                        "address": holder_address,
-                        "nft_count": nft_count
-                    })
-                    logger.info(f"🌟 Created new VIP player: {holder_address}")
+                    # Holder hasn't signed up to play yet - will be credited when they do
+                    not_signed_up.append(holder_address)
                     
             except Exception as e:
                 errors.append({"address": holder_address, "error": str(e)})
@@ -1408,8 +1448,8 @@ async def scan_and_credit_all_nft_holders():
             "credited_count": len(credited),
             "credited_players": credited,
             "already_credited": len(already_credited),
-            "new_players_created": len(new_players_created),
-            "new_players": new_players_created[:20],  # Only show first 20
+            "not_signed_up_yet": len(not_signed_up),
+            "note": "Holders who haven't signed up will be credited when they choose a character",
             "errors": len(errors),
             "error_details": errors[:10] if errors else []
         }
