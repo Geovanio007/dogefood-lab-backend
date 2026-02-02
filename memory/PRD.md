@@ -14,7 +14,7 @@ DogeFood Lab is a Web3-powered treat creation game where players become scientis
 - **Frontend**: React.js (deployed on Vercel)
 - **Backend**: Python FastAPI (deployed on Render)
 - **Database**: MongoDB Atlas
-- **Payments**: DOGE via multi-API verification (BlockCypher, SoChain, DogeChain)
+- **Payments**: DOGE via BlockCypher API (most reliable, no Cloudflare)
 
 ## Current Architecture
 ```
@@ -34,21 +34,19 @@ DogeFood Lab is a Web3-powered treat creation game where players become scientis
 ## What's Been Implemented
 
 ### Session: February 2, 2026 (Latest)
-1. **Auto-Mixer 429 Error Fix** - COMPLETED & TESTED
-   - Implemented multi-API fallback verification (BlockCypher → SoChain → DogeChain)
-   - Added exponential backoff retry logic (1s, 2s, 4s)
-   - Implemented transaction caching in `db.tx_verifications`
-   - Returns user-friendly error messages (503 for rate limits)
-   - All 13 backend tests passed (100%)
+1. **DOGE Verification Fix (CRITICAL)** - COMPLETED & DEPLOYED
+   - Removed unreliable APIs (SoChain 502, DogeChain 403 Cloudflare)
+   - Uses BlockCypher exclusively (most reliable, no protection)
+   - Primary method: Direct transaction lookup
+   - Fallback method: Address-based verification (checks address tx history)
+   - Increased timeouts to 60s
+   - Browser-like headers for compatibility
+   - Better retry logic (2s, 4s, 8s backoff)
 
-2. **Funds Tracking Dashboard** - COMPLETED
-   - Backend endpoint `/api/auto-mixer/funds-stats` working
-   - Real-time 80/20 split display (buy/burn vs dev)
-   - FundsBreakdown component integrated in frontend
-
-3. **Render-Backend Sync** - COMPLETED
-   - Copied latest server.py with fallback verification
-   - Synced services folder
+2. **Previous fixes in this session:**
+   - Multi-API fallback verification (refined to BlockCypher only)
+   - Transaction caching in `db.tx_verifications`
+   - Funds tracking dashboard (80/20 split) working
 
 ### Previous Session: February 2, 2026
 1. **Frontend Deployment Fix (P0)** - COMPLETED
@@ -63,14 +61,32 @@ DogeFood Lab is a Web3-powered treat creation game where players become scientis
 |----------|--------|-------------|--------|
 | `/api/auto-mixer/config` | GET | Get subscription config | ✅ Working |
 | `/api/auto-mixer/create-subscription` | POST | Create pending subscription | ✅ Working |
-| `/api/auto-mixer/verify-payment` | POST | Verify DOGE payment (multi-API) | ✅ Fixed |
+| `/api/auto-mixer/verify-payment` | POST | Verify DOGE payment | ✅ Fixed & Deployed |
 | `/api/auto-mixer/subscription/{address}` | GET | Get subscription status | ✅ Working |
 | `/api/auto-mixer/update-window` | POST | Update mixing window | ✅ Working |
 | `/api/auto-mixer/funds-stats` | GET | Get 80/20 fund split | ✅ Working |
 | `/api/auto-mixer/history/{address}` | GET | Get mix history | ✅ Working |
 
+## DOGE Verification Strategy
+```
+Method 1: BlockCypher Direct TX Lookup
+  - URL: api.blockcypher.com/v1/doge/main/txs/{tx_hash}
+  - Returns: confirmations, outputs, payment amount
+  - Retry: 3 attempts with 2s/4s/8s backoff
+
+Method 2: BlockCypher Address Lookup (Fallback)
+  - URL: api.blockcypher.com/v1/doge/main/addrs/{address}
+  - Searches tx_hash in address transaction history
+  - Useful when direct lookup fails
+
+Removed (Unreliable):
+  - SoChain: 502 errors
+  - DogeChain.info: Cloudflare 403
+  - BlockExplorer.one: Cloudflare 403
+```
+
 ## Pending Issues
-1. **Invisible Grey Text on Telegram (P2)** - Needs user clarification about which service/bot is affected
+1. **Invisible Grey Text on Telegram (P2)** - Needs user clarification
 
 ## Deployment Info
 - Frontend: https://dogefoodlab.vercel.app (Vercel)
@@ -80,11 +96,4 @@ DogeFood Lab is a Web3-powered treat creation game where players become scientis
 
 ## Test Reports
 - Latest: `/app/test_reports/iteration_3.json` - 100% pass rate
-- All auto-mixer features validated
-- 429 fix confirmed working
-
-## Known Technical Details
-- Transaction verification uses 3 fallback APIs with exponential backoff
-- Cached verifications stored in `db.tx_verifications` collection
-- Minimum subscription window: 1 hour, Maximum: 6 hours
-- NFT holders credited only after selecting character (no placeholder accounts)
+- DOGE verification tested with real transaction: 58 confirmations ✅
