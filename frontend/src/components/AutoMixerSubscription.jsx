@@ -1183,6 +1183,12 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
         </Card>
       )}
 
+      {/* Agent Stats Card - Shows global agent status */}
+      <AgentStatsCard agentStatus={agentStatus} playerStats={playerStats} isDark={isDark} />
+
+      {/* Player's Personal Stats - Only show if subscribed */}
+      {playerStats?.has_subscription && <PlayerMixerStats stats={playerStats} isDark={isDark} />}
+
       {/* Funds Breakdown */}
       {fundsStats && <FundsBreakdown stats={fundsStats} isDark={isDark} />}
     </div>
