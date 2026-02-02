@@ -255,10 +255,337 @@ const FundsBreakdown = ({ stats, isDark }) => {
   );
 };
 
+// Rarity colors for badges
+const RARITY_COLORS = {
+  Common: { bg: 'bg-gray-100', text: 'text-gray-700', dark_bg: 'bg-gray-800', dark_text: 'text-gray-300' },
+  Uncommon: { bg: 'bg-green-100', text: 'text-green-700', dark_bg: 'bg-green-900/50', dark_text: 'text-green-300' },
+  Rare: { bg: 'bg-blue-100', text: 'text-blue-700', dark_bg: 'bg-blue-900/50', dark_text: 'text-blue-300' },
+  Epic: { bg: 'bg-purple-100', text: 'text-purple-700', dark_bg: 'bg-purple-900/50', dark_text: 'text-purple-300' },
+  Legendary: { bg: 'bg-amber-100', text: 'text-amber-700', dark_bg: 'bg-amber-900/50', dark_text: 'text-amber-300' },
+  Mythic: { bg: 'bg-rose-100', text: 'text-rose-700', dark_bg: 'bg-rose-900/50', dark_text: 'text-rose-300' }
+};
+
+// Agent Stats Card Component - Professional detailed view
+const AgentStatsCard = ({ agentStatus, playerStats, isDark }) => {
+  if (!agentStatus) return null;
+
+  const statusColor = agentStatus.agent_status === 'ACTIVE' 
+    ? (isDark ? 'text-green-400' : 'text-green-600')
+    : (isDark ? 'text-red-400' : 'text-red-600');
+
+  return (
+    <Card className={`border-2 ${isDark ? 'bg-slate-900/80 border-sky-700' : 'bg-gradient-to-br from-sky-50 to-blue-50 border-sky-200'}`} data-testid="agent-stats-card">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className={`flex items-center gap-2 ${isDark ? 'text-sky-300' : 'text-sky-800'}`}>
+            <Bot className="w-6 h-6" />
+            Auto-Mixer Agent Status
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <span className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${
+              agentStatus.agent_status === 'ACTIVE' 
+                ? (isDark ? 'bg-green-900/50 text-green-400' : 'bg-green-100 text-green-700')
+                : (isDark ? 'bg-red-900/50 text-red-400' : 'bg-red-100 text-red-700')
+            }`}>
+              <span className={`w-2 h-2 rounded-full animate-pulse ${
+                agentStatus.agent_status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'
+              }`}></span>
+              {agentStatus.agent_status}
+            </span>
+          </div>
+        </div>
+        <p className={`text-sm ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
+          Real-time monitoring of the mixing automation system
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Agent Performance Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className={`p-4 rounded-xl border text-center ${isDark ? 'bg-slate-800 border-sky-700' : 'bg-white border-sky-200'}`}>
+            <Timer className={`w-5 h-5 mx-auto mb-2 ${isDark ? 'text-sky-400' : 'text-sky-600'}`} />
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{agentStatus.run_interval_minutes}min</div>
+            <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Run Interval</div>
+          </div>
+          
+          <div className={`p-4 rounded-xl border text-center ${isDark ? 'bg-slate-800 border-sky-700' : 'bg-white border-sky-200'}`}>
+            <Users className={`w-5 h-5 mx-auto mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+            <div className={`text-xl font-bold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>{agentStatus.subscribers?.total_active || 0}</div>
+            <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Active Subs</div>
+          </div>
+          
+          <div className={`p-4 rounded-xl border text-center ${isDark ? 'bg-slate-800 border-sky-700' : 'bg-white border-sky-200'}`}>
+            <Zap className={`w-5 h-5 mx-auto mb-2 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+            <div className={`text-xl font-bold ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>{agentStatus.subscribers?.currently_in_window || 0}</div>
+            <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>In Window Now</div>
+          </div>
+          
+          <div className={`p-4 rounded-xl border text-center ${isDark ? 'bg-slate-800 border-sky-700' : 'bg-white border-sky-200'}`}>
+            <Sparkles className={`w-5 h-5 mx-auto mb-2 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+            <div className={`text-xl font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{agentStatus.activity_24h?.total_mixes || 0}</div>
+            <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Mixes (24h)</div>
+          </div>
+        </div>
+
+        {/* Activity Stats */}
+        <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+          <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <TrendingUp className="w-4 h-4" />
+            24-Hour Activity
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <div className={`text-2xl font-bold ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>
+                {agentStatus.activity_24h?.total_mixes || 0}
+              </div>
+              <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Total Mixes</div>
+            </div>
+            <div>
+              <div className={`text-2xl font-bold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                {agentStatus.activity_24h?.total_points_awarded || 0}
+              </div>
+              <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Points Awarded</div>
+            </div>
+            <div>
+              <div className={`text-2xl font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
+                {agentStatus.activity_24h?.total_xp_awarded || 0}
+              </div>
+              <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>XP Awarded</div>
+            </div>
+            <div>
+              <div className={`text-2xl font-bold ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                {agentStatus.activity_24h?.avg_mixes_per_hour || 0}
+              </div>
+              <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Avg/Hour</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Rarity Distribution */}
+        <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+          <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <Sparkles className="w-4 h-4" />
+            Rarity Distribution (24h)
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(agentStatus.rarity_distribution_24h || {}).map(([rarity, count]) => {
+              const colors = RARITY_COLORS[rarity] || RARITY_COLORS.Common;
+              return (
+                <span 
+                  key={rarity}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    isDark ? `${colors.dark_bg} ${colors.dark_text}` : `${colors.bg} ${colors.text}`
+                  }`}
+                >
+                  {rarity}: {count}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Top Ingredients */}
+        {agentStatus.top_ingredients_7d && agentStatus.top_ingredients_7d.length > 0 && (
+          <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <Flame className="w-4 h-4" />
+              Most Used Ingredients (7 Days)
+            </h4>
+            <div className="space-y-2">
+              {agentStatus.top_ingredients_7d.slice(0, 5).map((item, idx) => (
+                <div key={item.ingredient_id} className="flex items-center gap-2">
+                  <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${
+                    isDark ? 'bg-sky-900 text-sky-300' : 'bg-sky-100 text-sky-700'
+                  }`}>
+                    {idx + 1}
+                  </span>
+                  <span className={`flex-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    {item.ingredient_id}
+                  </span>
+                  <span className={`font-semibold ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
+                    {item.usage_count}x
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* System Info */}
+        <div className={`p-3 rounded-lg text-sm ${isDark ? 'bg-slate-800/30 text-slate-400' : 'bg-slate-100 text-slate-600'}`}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              Current: {agentStatus.current_hour_utc}:00 UTC
+            </span>
+            <span className="flex items-center gap-1">
+              <RefreshCw className="w-4 h-4" />
+              Next run: {new Date(agentStatus.next_run_time_utc).toLocaleTimeString()}
+            </span>
+            <span className="flex items-center gap-1">
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              {agentStatus.performance?.uptime_status || 'healthy'}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Player's Personal Auto-Mixer Stats
+const PlayerMixerStats = ({ stats, isDark }) => {
+  if (!stats || !stats.has_subscription) return null;
+
+  return (
+    <Card className={`border-2 ${isDark ? 'bg-indigo-900/30 border-indigo-700' : 'bg-gradient-to-br from-indigo-50 to-violet-50 border-indigo-200'}`} data-testid="player-mixer-stats">
+      <CardHeader className="pb-3">
+        <CardTitle className={`flex items-center gap-2 ${isDark ? 'text-indigo-300' : 'text-indigo-800'}`}>
+          <Sparkles className="w-5 h-5" />
+          Your Auto-Mixer Performance
+        </CardTitle>
+        <p className={`text-sm ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
+          Personal mixing statistics and history
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Subscription Status Bar */}
+        <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-800 border-indigo-700' : 'bg-white border-indigo-200'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-sm font-medium ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`}>
+              Subscription Progress
+            </span>
+            <span className={`text-sm ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
+              {stats.subscription?.days_remaining || 0} days left
+            </span>
+          </div>
+          <div className={`h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-indigo-100'}`}>
+            <div 
+              className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-500"
+              style={{ width: `${100 - (stats.subscription?.progress_percent || 0)}%` }}
+            ></div>
+          </div>
+          <div className="flex items-center justify-between mt-2 text-xs">
+            <span className={`flex items-center gap-1 ${
+              stats.subscription?.currently_in_window 
+                ? (isDark ? 'text-green-400' : 'text-green-600')
+                : (isDark ? 'text-slate-400' : 'text-slate-500')
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${
+                stats.subscription?.currently_in_window ? 'bg-green-500 animate-pulse' : 'bg-slate-400'
+              }`}></span>
+              {stats.subscription?.currently_in_window ? 'Mixing Active' : 'Outside Window'}
+            </span>
+            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>
+              Window: {stats.subscription?.window_start || 0}:00 - {stats.subscription?.window_end || 6}:00 UTC
+            </span>
+          </div>
+        </div>
+
+        {/* Lifetime Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className={`p-3 rounded-xl border text-center ${isDark ? 'bg-slate-800 border-indigo-700' : 'bg-white border-indigo-200'}`}>
+            <div className={`text-2xl font-bold ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`}>
+              {stats.lifetime_stats?.total_mixes || 0}
+            </div>
+            <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Total Mixes</div>
+          </div>
+          <div className={`p-3 rounded-xl border text-center ${isDark ? 'bg-slate-800 border-indigo-700' : 'bg-white border-indigo-200'}`}>
+            <div className={`text-2xl font-bold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+              {stats.lifetime_stats?.total_points_earned || 0}
+            </div>
+            <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Points Earned</div>
+          </div>
+          <div className={`p-3 rounded-xl border text-center ${isDark ? 'bg-slate-800 border-indigo-700' : 'bg-white border-indigo-200'}`}>
+            <div className={`text-2xl font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
+              {stats.lifetime_stats?.total_xp_earned || 0}
+            </div>
+            <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>XP Earned</div>
+          </div>
+          <div className={`p-3 rounded-xl border text-center ${isDark ? 'bg-slate-800 border-indigo-700' : 'bg-white border-indigo-200'}`}>
+            <div className={`text-2xl font-bold ${
+              isDark 
+                ? RARITY_COLORS[stats.lifetime_stats?.best_rarity]?.dark_text || 'text-white'
+                : RARITY_COLORS[stats.lifetime_stats?.best_rarity]?.text || 'text-slate-700'
+            }`}>
+              {stats.lifetime_stats?.best_rarity || 'None'}
+            </div>
+            <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Best Rarity</div>
+          </div>
+        </div>
+
+        {/* Rarity Breakdown */}
+        <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+          <h4 className={`font-semibold mb-3 text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            Your Rarity Collection
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(stats.rarity_breakdown || {}).map(([rarity, count]) => {
+              const colors = RARITY_COLORS[rarity] || RARITY_COLORS.Common;
+              return (
+                <span 
+                  key={rarity}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    isDark ? `${colors.dark_bg} ${colors.dark_text}` : `${colors.bg} ${colors.text}`
+                  }`}
+                >
+                  {rarity}: {count}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent Mixes */}
+        {stats.recent_mixes && stats.recent_mixes.length > 0 && (
+          <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <h4 className={`font-semibold mb-3 text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              Recent Auto-Mixes
+            </h4>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {stats.recent_mixes.slice(0, 5).map((mix, idx) => {
+                const colors = RARITY_COLORS[mix.treat_rarity] || RARITY_COLORS.Common;
+                return (
+                  <div 
+                    key={mix.id || idx}
+                    className={`flex items-center justify-between p-2 rounded-lg ${
+                      isDark ? 'bg-slate-700/50' : 'bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        isDark ? `${colors.dark_bg} ${colors.dark_text}` : `${colors.bg} ${colors.text}`
+                      }`}>
+                        {mix.treat_rarity}
+                      </span>
+                      <span className={`text-sm ${isDark ? 'text-white' : 'text-slate-700'}`}>
+                        {mix.treat_name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className={isDark ? 'text-emerald-400' : 'text-emerald-600'}>
+                        +{mix.points_earned} pts
+                      </span>
+                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>
+                        {mix.time_ago}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = false }) => {
   const [config, setConfig] = useState(null);
   const [subscription, setSubscription] = useState(null);
   const [fundsStats, setFundsStats] = useState(null);
+  const [agentStatus, setAgentStatus] = useState(null);
+  const [playerStats, setPlayerStats] = useState(null);
   const [mixHistory, setMixHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
