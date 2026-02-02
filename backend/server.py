@@ -1199,7 +1199,9 @@ async def check_nft_holders_status():
             "uncredited_vip_count": len(uncredited_vip),
             "uncredited_vip": [{"address": p.get("address"), "nickname": p.get("nickname"), "points": p.get("points", 0)} for p in uncredited_vip],
             "nft_contract": DOGEFOOD_NFT_CONTRACT,
-            "note": "Use /admin/verify-nft-blockchain/{address} to check if a specific address holds the NFT"
+            "network": "DogeOS Testnet",
+            "blockscout_url": DOGEOS_BLOCKSCOUT_URL,
+            "note": "Use /admin/verify-nft-blockchain/{address} to check if a specific address holds the NFT on DogeOS"
         }
         
     except Exception as e:
