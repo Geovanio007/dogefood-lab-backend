@@ -227,6 +227,59 @@ class TestAutoMixerHistory:
         assert data["history"] == []
 
 
+class TestAutoMixerPaymentVerification:
+    """Tests for payment verification endpoint - 429 fix validation"""
+    
+    @pytest.fixture
+    def test_address(self):
+        return f"TEST_automixer_payment_{uuid.uuid4().hex[:16]}"
+    
+    def test_verify_payment_invalid_subscription_id(self):
+        """Verify payment fails gracefully with invalid subscription ID"""
+        response = requests.post(
+            f"{BASE_URL}/api/auto-mixer/verify-payment",
+            json={
+                "subscription_id": "fake_subscription_id_12345",
+                "tx_hash": "fake_tx_hash_abcdef123456"
+            }
+        )
+        # Should return 404 for non-existent subscription
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+    
+    def test_verify_payment_fake_tx_hash(self, test_address):
+        """Verify payment handles fake transaction hash gracefully without crashing"""
+        # First create a subscription
+        create_response = requests.post(
+            f"{BASE_URL}/api/auto-mixer/create-subscription",
+            json={
+                "player_address": test_address,
+                "window_start_hour": 10,
+                "window_end_hour": 16
+            }
+        )
+        assert create_response.status_code == 200
+        sub_id = create_response.json()["subscription"]["id"]
+        
+        # Try to verify with fake tx hash
+        verify_response = requests.post(
+            f"{BASE_URL}/api/auto-mixer/verify-payment",
+            json={
+                "subscription_id": sub_id,
+                "tx_hash": "fake_tx_hash_that_does_not_exist_12345"
+            }
+        )
+        
+        # Should return 400 (bad request) or 503 (service unavailable) - NOT 500 (server error)
+        # The fallback mechanism should try all APIs and return a proper error
+        assert verify_response.status_code in [400, 503]
+        
+        # Should have a meaningful error message
+        error_detail = verify_response.json().get("detail", "")
+        assert len(error_detail) > 0
+        print(f"Payment verification error (expected): {error_detail}")
+
+
 class TestAutoMixerEdgeCases:
     """Edge case tests for auto-mixer feature"""
     
