@@ -50,12 +50,12 @@ const TimeWindowSelector = ({ startHour, endHour, onStartChange, onEndChange, di
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-2 text-amber-700">Start Time (UTC)</label>
+          <label className="block text-sm font-medium mb-2 text-sky-700">Start Time (UTC)</label>
           <select
             value={startHour}
             onChange={(e) => onStartChange(parseInt(e.target.value))}
             disabled={disabled}
-            className="w-full p-3 rounded-xl border-2 border-amber-200 bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all disabled:opacity-50"
+            className="w-full p-3 rounded-xl border-2 border-sky-200 bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all disabled:opacity-50"
             data-testid="auto-mixer-start-hour"
           >
             {HOURS.map((hour) => (
@@ -66,12 +66,12 @@ const TimeWindowSelector = ({ startHour, endHour, onStartChange, onEndChange, di
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2 text-amber-700">End Time (UTC)</label>
+          <label className="block text-sm font-medium mb-2 text-sky-700">End Time (UTC)</label>
           <select
             value={endHour}
             onChange={(e) => onEndChange(parseInt(e.target.value))}
             disabled={disabled}
-            className="w-full p-3 rounded-xl border-2 border-amber-200 bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all disabled:opacity-50"
+            className="w-full p-3 rounded-xl border-2 border-sky-200 bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all disabled:opacity-50"
             data-testid="auto-mixer-end-hour"
           >
             {HOURS.map((hour) => (
@@ -86,7 +86,7 @@ const TimeWindowSelector = ({ startHour, endHour, onStartChange, onEndChange, di
       {/* Visual timeline */}
       <div className="relative h-12 bg-gradient-to-r from-slate-100 to-slate-200 rounded-xl overflow-hidden">
         <div 
-          className={`absolute h-full transition-all duration-300 ${isValid ? 'bg-gradient-to-r from-amber-400 to-orange-500' : 'bg-red-400'}`}
+          className={`absolute h-full transition-all duration-300 ${isValid ? 'bg-gradient-to-r from-sky-400 to-blue-500' : 'bg-red-400'}`}
           style={{
             left: `${(startHour / 24) * 100}%`,
             width: endHour > startHour 
@@ -119,7 +119,7 @@ const FundsBreakdown = ({ stats }) => {
           <TrendingUp className="w-5 h-5" />
           Fund Distribution (Real-time)
         </CardTitle>
-        <p className="text-emerald-600">
+        <p className="text-sm text-emerald-600">
           Transparent allocation of subscription fees
         </p>
       </CardHeader>
@@ -131,10 +131,10 @@ const FundsBreakdown = ({ stats }) => {
             <div className="text-xs text-emerald-600">Total DOGE</div>
           </div>
           
-          <div className="p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl border border-orange-200 text-center">
-            <Flame className="w-6 h-6 mx-auto mb-2 text-orange-600" />
-            <div className="text-2xl font-bold text-orange-800">{stats.buy_burn_amount}</div>
-            <div className="text-xs text-orange-600">Buy & Burn ({stats.buy_burn_percent}%)</div>
+          <div className="p-4 bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl border border-rose-200 text-center">
+            <Flame className="w-6 h-6 mx-auto mb-2 text-rose-600" />
+            <div className="text-2xl font-bold text-rose-800">{stats.buy_burn_amount}</div>
+            <div className="text-xs text-rose-600">Buy & Burn ({stats.buy_burn_percent}%)</div>
           </div>
           
           <div className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200 text-center">
@@ -359,7 +359,7 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-sky-500" />
       </div>
     );
   }
@@ -379,17 +379,17 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
   return (
     <div className="space-y-6">
       {/* Header Card */}
-      <Card className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border-2 border-amber-200 overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-200/30 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
+      <Card className="bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 border-2 border-sky-200 overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-sky-200/30 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg">
+              <div className="p-3 bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl shadow-lg">
                 <Bot className="w-8 h-8 text-white" />
               </div>
               <div>
-                <CardTitle className="text-2xl text-amber-900">Auto-Mixer Agent</CardTitle>
-                <p className="text-amber-700">
+                <CardTitle className="text-2xl text-sky-900">Auto-Mixer Agent</CardTitle>
+                <p className="text-sky-700">
                   Let your AI agent mix treats for you automatically
                 </p>
               </div>
@@ -405,24 +405,24 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-4 bg-white/60 rounded-xl">
-              <DollarSign className="w-6 h-6 text-amber-600" />
+              <DollarSign className="w-6 h-6 text-sky-600" />
               <div>
-                <div className="text-xl font-bold text-amber-900">{config.monthly_fee_doge} DOGE</div>
-                <div className="text-sm text-amber-600">Monthly Fee</div>
+                <div className="text-xl font-bold text-sky-900">{config.monthly_fee_doge} DOGE</div>
+                <div className="text-sm text-sky-600">Monthly Fee</div>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 bg-white/60 rounded-xl">
-              <Clock className="w-6 h-6 text-amber-600" />
+              <Clock className="w-6 h-6 text-sky-600" />
               <div>
-                <div className="text-xl font-bold text-amber-900">{config.max_window_hours}h</div>
-                <div className="text-sm text-amber-600">Max Daily Window</div>
+                <div className="text-xl font-bold text-sky-900">{config.max_window_hours}h</div>
+                <div className="text-sm text-sky-600">Max Daily Window</div>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 bg-white/60 rounded-xl">
-              <Zap className="w-6 h-6 text-amber-600" />
+              <Zap className="w-6 h-6 text-sky-600" />
               <div>
-                <div className="text-xl font-bold text-amber-900">{config.mixes_per_hour}/hr</div>
-                <div className="text-sm text-amber-600">Auto-Mixes</div>
+                <div className="text-xl font-bold text-sky-900">{config.mixes_per_hour}/hr</div>
+                <div className="text-sm text-sky-600">Auto-Mixes</div>
               </div>
             </div>
           </div>
@@ -534,7 +534,7 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
                       <div className="text-right">
                         <Badge variant="outline" className={
                           mix.treat_rarity === 'Mythic' ? 'border-pink-500 text-pink-600' :
-                          mix.treat_rarity === 'Legendary' ? 'border-amber-500 text-amber-600' :
+                          mix.treat_rarity === 'Legendary' ? 'border-yellow-500 text-yellow-600' :
                           mix.treat_rarity === 'Epic' ? 'border-purple-500 text-purple-600' :
                           mix.treat_rarity === 'Rare' ? 'border-blue-500 text-blue-600' :
                           'border-slate-300 text-slate-600'
@@ -554,22 +554,22 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
 
       {/* Pending Payment View */}
       {hasPendingSubscription && (
-        <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50">
+        <Card className="border-2 border-sky-300 bg-gradient-to-br from-sky-50 to-blue-50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-800">
+            <CardTitle className="flex items-center gap-2 text-sky-800">
               <CreditCard className="w-5 h-5" />
               Complete Payment
             </CardTitle>
-            <p className="text-amber-600">
+            <p className="text-sky-600">
               Send exactly {config.monthly_fee_doge} DOGE to activate your subscription
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Payment Address */}
-            <div className="p-4 bg-white rounded-xl border-2 border-amber-200">
-              <label className="block text-sm font-medium text-amber-700 mb-2">Payment Address</label>
+            <div className="p-4 bg-white rounded-xl border-2 border-sky-200">
+              <label className="block text-sm font-medium text-sky-700 mb-2">Payment Address</label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 p-3 bg-amber-50 rounded-lg text-amber-900 font-mono text-sm break-all">
+                <code className="flex-1 p-3 bg-sky-50 rounded-lg text-sky-900 font-mono text-sm break-all">
                   {config.payment_address}
                 </code>
                 <Button
@@ -585,14 +585,14 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
             </div>
 
             {/* Amount */}
-            <div className="p-4 bg-gradient-to-r from-amber-100 to-orange-100 rounded-xl text-center">
-              <div className="text-3xl font-bold text-amber-800">{config.monthly_fee_doge} DOGE</div>
-              <div className="text-sm text-amber-600">Exact Amount Required</div>
+            <div className="p-4 bg-gradient-to-r from-sky-100 to-blue-100 rounded-xl text-center">
+              <div className="text-3xl font-bold text-sky-800">{config.monthly_fee_doge} DOGE</div>
+              <div className="text-sm text-sky-600">Exact Amount Required</div>
             </div>
 
             {/* Transaction Hash Input */}
             <div>
-              <label className="block text-sm font-medium text-amber-700 mb-2">
+              <label className="block text-sm font-medium text-sky-700 mb-2">
                 Transaction Hash
               </label>
               <input
@@ -600,10 +600,10 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
                 value={txHash}
                 onChange={(e) => setTxHash(e.target.value)}
                 placeholder="Enter your DOGE transaction hash..."
-                className="w-full p-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all"
+                className="w-full p-3 rounded-xl border-2 border-sky-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all"
                 data-testid="tx-hash-input"
               />
-              <p className="text-xs text-amber-600 mt-2">
+              <p className="text-xs text-sky-600 mt-2">
                 After sending payment, paste the transaction hash here to verify
               </p>
             </div>
@@ -611,7 +611,7 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
             <Button
               onClick={handleVerifyPayment}
               disabled={verifying || !txHash.trim()}
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 py-6 text-lg"
+              className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 py-6 text-lg"
               data-testid="verify-payment-btn"
             >
               {verifying ? (
@@ -632,7 +632,7 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
                 href={`https://dogechain.info/address/${config.payment_address}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-amber-600 hover:text-amber-700 text-sm inline-flex items-center gap-1"
+                className="text-sky-600 hover:text-sky-700 text-sm inline-flex items-center gap-1"
               >
                 View address on DogeChain
                 <ExternalLink className="w-3 h-3" />
@@ -647,10 +647,10 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
         <Card className="border-2 border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-amber-600" />
+              <Calendar className="w-5 h-5 text-sky-600" />
               Set Your Mixing Schedule
             </CardTitle>
-            <p>
+            <p className="text-sm text-muted-foreground">
               Choose a 6-hour window when your AI agent will automatically mix treats for you
             </p>
           </CardHeader>
@@ -688,7 +688,7 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
             <Button
               onClick={handleCreateSubscription}
               disabled={creating || !isWindowValid}
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 py-6 text-lg"
+              className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 py-6 text-lg"
               data-testid="create-subscription-btn"
             >
               {creating ? (
