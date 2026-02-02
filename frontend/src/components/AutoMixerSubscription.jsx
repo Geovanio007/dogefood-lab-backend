@@ -119,9 +119,9 @@ const FundsBreakdown = ({ stats }) => {
           <TrendingUp className="w-5 h-5" />
           Fund Distribution (Real-time)
         </CardTitle>
-        <CardDescription className="text-emerald-600">
+        <p className="text-emerald-600">
           Transparent allocation of subscription fees
-        </CardDescription>
+        </p>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -389,9 +389,9 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
               </div>
               <div>
                 <CardTitle className="text-2xl text-amber-900">Auto-Mixer Agent</CardTitle>
-                <CardDescription className="text-amber-700">
+                <p className="text-amber-700">
                   Let your AI agent mix treats for you automatically
-                </CardDescription>
+                </p>
               </div>
             </div>
             {hasActiveSubscription && (
@@ -560,9 +560,9 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
               <CreditCard className="w-5 h-5" />
               Complete Payment
             </CardTitle>
-            <CardDescription className="text-amber-600">
+            <p className="text-amber-600">
               Send exactly {config.monthly_fee_doge} DOGE to activate your subscription
-            </CardDescription>
+            </p>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Payment Address */}
@@ -650,9 +650,9 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname }) => {
               <Calendar className="w-5 h-5 text-amber-600" />
               Set Your Mixing Schedule
             </CardTitle>
-            <CardDescription>
+            <p>
               Choose a 6-hour window when your AI agent will automatically mix treats for you
-            </CardDescription>
+            </p>
           </CardHeader>
           <CardContent className="space-y-6">
             <TimeWindowSelector
