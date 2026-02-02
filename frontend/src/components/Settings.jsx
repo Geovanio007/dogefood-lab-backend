@@ -432,13 +432,11 @@ const Settings = () => {
                 isDarkMode={isDarkMode}
               />
             ) : (
-              <Card className={`border-2 border-dashed ${isDarkMode ? 'border-slate-600 bg-slate-800' : 'border-slate-300'}`}>
-                <CardContent className="py-12 text-center">
-                  <Bot className={`w-12 h-12 mx-auto mb-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
-                  <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-600'}`}>Connect to Access Auto-Mixer</h3>
-                  <p className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Please connect your wallet or sign in to use the Auto-Mixer feature</p>
-                </CardContent>
-              </Card>
+              <AutoMixerSubscription 
+                playerAddress={null}
+                playerNickname={null}
+                isDarkMode={isDarkMode}
+              />
             )}
           </TabsContent>
 
