@@ -215,9 +215,9 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white">
+      <div className="bg-gradient-to-r from-sky-500 to-blue-600 text-white">
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
@@ -233,14 +233,14 @@ const Settings = () => {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold">Settings</h1>
-                  <p className="text-amber-100 text-sm">Customize your DogeFood Lab experience</p>
+                  <p className="text-sky-100 text-sm">Customize your DogeFood Lab experience</p>
                 </div>
               </div>
             </div>
             
             {/* Account Status Badge */}
             {effectiveNFTStatus && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full shadow-lg">
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-400 to-sky-500 rounded-full shadow-lg">
                 <Crown className="w-5 h-5" />
                 <span className="font-semibold">VIP Scientist</span>
               </div>
@@ -255,7 +255,7 @@ const Settings = () => {
           <TabsList className="grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm p-1 rounded-2xl shadow-sm">
             <TabsTrigger 
               value="general" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white rounded-xl transition-all"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl transition-all"
               data-testid="tab-general"
             >
               <SettingsIcon className="w-4 h-4 mr-2" />
@@ -263,7 +263,7 @@ const Settings = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="auto-mixer" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white rounded-xl transition-all"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl transition-all"
               data-testid="tab-auto-mixer"
             >
               <Bot className="w-4 h-4 mr-2" />
@@ -271,7 +271,7 @@ const Settings = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="audio" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white rounded-xl transition-all"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl transition-all"
               data-testid="tab-audio"
             >
               <Music className="w-4 h-4 mr-2" />
@@ -279,7 +279,7 @@ const Settings = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="account" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white rounded-xl transition-all"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl transition-all"
               data-testid="tab-account"
             >
               <User className="w-4 h-4 mr-2" />
@@ -293,10 +293,10 @@ const Settings = () => {
             <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-slate-800">
-                  <Bell className="w-5 h-5 text-amber-600" />
+                  <Bell className="w-5 h-5 text-sky-600" />
                   Notifications
                 </CardTitle>
-                <p>
+                <p className="text-sm text-muted-foreground">
                   Configure your notification preferences
                 </p>
               </CardHeader>
@@ -309,7 +309,7 @@ const Settings = () => {
             <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-slate-800">
-                  <Palette className="w-5 h-5 text-amber-600" />
+                  <Palette className="w-5 h-5 text-sky-600" />
                   Visual Settings
                 </CardTitle>
               </CardHeader>
@@ -344,7 +344,7 @@ const Settings = () => {
             <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-slate-800">
-                  <Zap className="w-5 h-5 text-amber-600" />
+                  <Zap className="w-5 h-5 text-sky-600" />
                   Gameplay
                 </CardTitle>
               </CardHeader>
@@ -399,7 +399,7 @@ const Settings = () => {
             <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-slate-800">
-                  {soundEnabled ? <Volume2 className="w-5 h-5 text-amber-600" /> : <VolumeX className="w-5 h-5 text-slate-400" />}
+                  {soundEnabled ? <Volume2 className="w-5 h-5 text-sky-600" /> : <VolumeX className="w-5 h-5 text-slate-400" />}
                   Audio Settings
                 </CardTitle>
               </CardHeader>
@@ -491,10 +491,10 @@ const Settings = () => {
           <TabsContent value="account" className="space-y-6">
             {/* Profile Card */}
             <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm overflow-hidden">
-              <div className="h-24 bg-gradient-to-r from-amber-500 to-orange-600" />
+              <div className="h-24 bg-gradient-to-r from-sky-500 to-blue-600" />
               <CardContent className="relative pt-0">
                 <div className="flex flex-col md:flex-row md:items-end gap-4 -mt-12">
-                  <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center text-4xl shadow-xl border-4 border-white">
+                  <div className="w-24 h-24 bg-gradient-to-br from-sky-400 to-blue-500 rounded-2xl flex items-center justify-center text-4xl shadow-xl border-4 border-white">
                     {playerData?.selected_character === 'max' ? '🐕' : 
                      playerData?.selected_character === 'rex' ? '🦮' : 
                      playerData?.selected_character === 'luna' ? '🐩' : '👨‍🔬'}
@@ -559,21 +559,21 @@ const Settings = () => {
 
             {/* Status Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className={`border-0 shadow-lg ${effectiveNFTStatus ? 'bg-gradient-to-br from-yellow-50 to-amber-100' : 'bg-white/90'}`}>
+              <Card className={`border-0 shadow-lg ${effectiveNFTStatus ? 'bg-gradient-to-br from-cyan-50 to-sky-100' : 'bg-white/90'}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-xl ${effectiveNFTStatus ? 'bg-gradient-to-br from-yellow-400 to-amber-500' : 'bg-slate-200'}`}>
+                    <div className={`p-3 rounded-xl ${effectiveNFTStatus ? 'bg-gradient-to-br from-cyan-400 to-sky-500' : 'bg-slate-200'}`}>
                       {effectiveNFTStatus ? <Crown className="w-6 h-6 text-white" /> : <Shield className="w-6 h-6 text-slate-500" />}
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-800">Account Status</h3>
-                      <p className={`text-sm ${effectiveNFTStatus ? 'text-amber-700' : 'text-slate-500'}`}>
+                      <p className={`text-sm ${effectiveNFTStatus ? 'text-sky-700' : 'text-slate-500'}`}>
                         {effectiveNFTStatus ? 'VIP Scientist (NFT Holder)' : 'Regular Scientist'}
                       </p>
                     </div>
                   </div>
                   {effectiveNFTStatus && (
-                    <div className="mt-4 p-3 bg-yellow-100 rounded-lg text-sm text-amber-800">
+                    <div className="mt-4 p-3 bg-sky-100 rounded-lg text-sm text-sky-800">
                       <Sparkles className="w-4 h-4 inline mr-1" />
                       500 Bonus Points + VIP Perks Active
                     </div>
@@ -609,9 +609,9 @@ const Settings = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-amber-50 rounded-xl">
-                      <div className="text-3xl font-bold text-amber-600">{playerData.level || 1}</div>
-                      <div className="text-sm text-amber-700">Level</div>
+                    <div className="text-center p-4 bg-sky-50 rounded-xl">
+                      <div className="text-3xl font-bold text-sky-600">{playerData.level || 1}</div>
+                      <div className="text-sm text-sky-700">Level</div>
                     </div>
                     <div className="text-center p-4 bg-emerald-50 rounded-xl">
                       <div className="text-3xl font-bold text-emerald-600">{playerData.points || 0}</div>
