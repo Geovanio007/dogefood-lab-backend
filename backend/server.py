@@ -1321,79 +1321,101 @@ async def scan_and_credit_all_nft_holders():
     Credits VIP bonus to any holder who hasn't received it yet.
     """
     try:
-        # Get all players who don't have VIP status yet
-        players_to_check = await db.players.find({
-            "$or": [
-                {"is_nft_holder": {"$ne": True}},
-                {"vip_bonus_claimed": {"$ne": True}}
-            ]
-        }).to_list(10000)
-        
-        credited = []
-        not_holders = []
-        already_credited = []
-        errors = []
+        # First, get ALL NFT holders directly from DogeOS blockchain
+        url = f"{DOGEOS_BLOCKSCOUT_URL}/api?module=token&action=getTokenHolders&contractaddress={DOGEFOOD_NFT_CONTRACT}&page=1&offset=1000"
         
         async with httpx.AsyncClient() as client:
-            for player in players_to_check:
-                address = player.get("address") or ""
+            response = await client.get(url, timeout=60.0)
+            data = response.json()
+        
+        if data.get("status") != "1":
+            raise HTTPException(status_code=500, detail="Failed to fetch NFT holders from DogeOS")
+        
+        nft_holders = {h["address"].lower(): int(h["value"]) for h in data.get("result", [])}
+        logger.info(f"🔍 Found {len(nft_holders)} DogeFood NFT holders on DogeOS")
+        
+        credited = []
+        already_credited = []
+        new_players_created = []
+        errors = []
+        
+        # Check each holder
+        for holder_address, nft_count in nft_holders.items():
+            try:
+                # Normalize address format
+                holder_address = holder_address.lower()
                 
-                # Skip non-ethereum addresses (Telegram users, guests, None)
-                if not address or not address.startswith("0x") or len(address) != 42:
-                    continue
+                # Find player in database (case-insensitive)
+                player = await db.players.find_one({
+                    "address": {"$regex": f"^{holder_address}$", "$options": "i"}
+                })
                 
-                try:
-                    # Check DogeOS blockchain via Blockscout
-                    url = f"{DOGEOS_BLOCKSCOUT_URL}/api?module=account&action=tokenbalance&contractaddress={DOGEFOOD_NFT_CONTRACT}&address={address}"
-                    
-                    response = await client.get(url, timeout=30.0)
-                    data = response.json()
-                    
-                    # Check if holder
-                    is_holder = False
-                    nft_count = 0
-                    
-                    if data.get("status") == "1" and data.get("result"):
-                        try:
-                            nft_count = int(data.get("result", "0"))
-                            is_holder = nft_count > 0
-                        except (ValueError, TypeError):
-                            is_holder = False
-                    
-                    if is_holder:
-                        if not player.get("vip_bonus_claimed"):
-                            await db.players.update_one(
-                                {"address": address},
-                                {
-                                    "$set": {"is_nft_holder": True, "is_vip": True, "vip_bonus_claimed": True},
-                                    "$inc": {"points": 500}
-                                }
-                            )
-                            credited.append({"address": address, "nickname": player.get("nickname"), "nft_count": nft_count})
-                            logger.info(f"🌟 Auto-credited from DogeOS scan: {address} (owns {nft_count} NFTs)")
-                        else:
-                            already_credited.append(address)
+                if player:
+                    if not player.get("vip_bonus_claimed"):
+                        # Credit existing player
+                        await db.players.update_one(
+                            {"_id": player["_id"]},
+                            {
+                                "$set": {"is_nft_holder": True, "is_vip": True, "vip_bonus_claimed": True},
+                                "$inc": {"points": 500}
+                            }
+                        )
+                        credited.append({
+                            "address": holder_address,
+                            "nickname": player.get("nickname"),
+                            "nft_count": nft_count,
+                            "action": "credited"
+                        })
+                        logger.info(f"🌟 Credited: {holder_address} ({player.get('nickname')})")
                     else:
-                        not_holders.append(address)
+                        # Ensure VIP status is set
+                        await db.players.update_one(
+                            {"_id": player["_id"]},
+                            {"$set": {"is_nft_holder": True, "is_vip": True}}
+                        )
+                        already_credited.append(holder_address)
+                else:
+                    # Create new player for this holder (they haven't played yet but are holders)
+                    new_player = {
+                        "id": str(uuid.uuid4()),
+                        "address": holder_address,
+                        "nickname": None,
+                        "is_nft_holder": True,
+                        "is_vip": True,
+                        "vip_bonus_claimed": True,
+                        "points": 500,
+                        "level": 1,
+                        "experience": 0,
+                        "created_treats": [],
+                        "last_active": datetime.utcnow(),
+                        "leaderboard_eligible": True
+                    }
+                    await db.players.insert_one(new_player)
+                    new_players_created.append({
+                        "address": holder_address,
+                        "nft_count": nft_count
+                    })
+                    logger.info(f"🌟 Created new VIP player: {holder_address}")
                     
-                    # Small delay to be nice to the API
-                    await asyncio.sleep(0.2)
-                    
-                except Exception as e:
-                    errors.append({"address": address, "error": str(e)})
+            except Exception as e:
+                errors.append({"address": holder_address, "error": str(e)})
         
         return {
             "success": True,
             "network": "DogeOS Testnet",
             "contract": DOGEFOOD_NFT_CONTRACT,
+            "total_nft_holders_on_chain": len(nft_holders),
             "credited_count": len(credited),
             "credited_players": credited,
             "already_credited": len(already_credited),
-            "not_holders": len(not_holders),
+            "new_players_created": len(new_players_created),
+            "new_players": new_players_created[:20],  # Only show first 20
             "errors": len(errors),
             "error_details": errors[:10] if errors else []
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error scanning NFT holders on DogeOS: {e}")
         raise HTTPException(status_code=500, detail=str(e))
