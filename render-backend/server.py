@@ -5256,7 +5256,6 @@ async def create_auto_mixer_subscription(request: AutoMixerCreateRequest):
 async def verify_doge_transaction_blockcypher(tx_hash: str, payment_address: str, api_key: str = None):
     """Verify DOGE transaction using BlockCypher API directly via httpx"""
     try:
-        # Use direct API call instead of blockcypher library
         url = f"https://api.blockcypher.com/v1/doge/main/txs/{tx_hash}"
         params = {}
         if api_key:
@@ -5267,6 +5266,9 @@ async def verify_doge_transaction_blockcypher(tx_hash: str, payment_address: str
             
             if response.status_code == 404:
                 return None, 0, 0, "Transaction not found"
+            
+            if response.status_code == 429:
+                return None, 0, 0, "RATE_LIMITED"
             
             if response.status_code != 200:
                 return None, 0, 0, f"API error: {response.status_code}"
@@ -5280,7 +5282,6 @@ async def verify_doge_transaction_blockcypher(tx_hash: str, payment_address: str
             for output in tx_data.get('outputs', []):
                 addresses = output.get('addresses', [])
                 if payment_address in addresses:
-                    # BlockCypher returns amounts in satoshis for DOGE
                     payment_amount += output.get('value', 0) / 100000000
                     payment_valid = True
             
@@ -5292,9 +5293,133 @@ async def verify_doge_transaction_blockcypher(tx_hash: str, payment_address: str
     except Exception as e:
         return None, 0, 0, str(e)
 
+async def verify_doge_transaction_sochain(tx_hash: str, payment_address: str):
+    """Verify DOGE transaction using SoChain API as fallback"""
+    try:
+        url = f"https://sochain.com/api/v2/tx/DOGE/{tx_hash}"
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=30.0)
+            
+            if response.status_code == 404:
+                return None, 0, 0, "Transaction not found"
+            
+            if response.status_code == 429:
+                return None, 0, 0, "RATE_LIMITED"
+            
+            if response.status_code != 200:
+                return None, 0, 0, f"API error: {response.status_code}"
+            
+            data = response.json()
+            tx_data = data.get('data', {})
+            
+            confirmations = tx_data.get('confirmations', 0)
+            payment_amount = 0
+            payment_valid = False
+            
+            for output in tx_data.get('outputs', []):
+                if output.get('address', '').lower() == payment_address.lower():
+                    payment_amount += float(output.get('value', 0))
+                    payment_valid = True
+            
+            if not payment_valid:
+                return None, 0, 0, "Payment not sent to correct address"
+            
+            return tx_data, confirmations, payment_amount, None
+            
+    except Exception as e:
+        return None, 0, 0, str(e)
+
+async def verify_doge_transaction_dogechain(tx_hash: str, payment_address: str):
+    """Verify DOGE transaction using DogeChain.info API as fallback"""
+    try:
+        url = f"https://dogechain.info/api/v1/transaction/{tx_hash}"
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=30.0)
+            
+            if response.status_code == 404:
+                return None, 0, 0, "Transaction not found"
+            
+            if response.status_code == 429:
+                return None, 0, 0, "RATE_LIMITED"
+            
+            if response.status_code != 200:
+                return None, 0, 0, f"API error: {response.status_code}"
+            
+            data = response.json()
+            
+            if data.get('success') != 1:
+                return None, 0, 0, "Transaction not found"
+            
+            tx_data = data.get('transaction', {})
+            confirmations = tx_data.get('confirmations', 0)
+            payment_amount = 0
+            payment_valid = False
+            
+            for output in tx_data.get('outputs', []):
+                if output.get('address', '').lower() == payment_address.lower():
+                    payment_amount += float(output.get('value', 0))
+                    payment_valid = True
+            
+            if not payment_valid:
+                return None, 0, 0, "Payment not sent to correct address"
+            
+            return tx_data, confirmations, payment_amount, None
+            
+    except Exception as e:
+        return None, 0, 0, str(e)
+
+async def verify_doge_transaction_with_fallback(tx_hash: str, payment_address: str, api_key: str = None):
+    """
+    Verify DOGE transaction using multiple APIs with fallback.
+    Tries BlockCypher first, then SoChain, then DogeChain.
+    Implements retry logic with exponential backoff for rate limits.
+    """
+    apis = [
+        ("BlockCypher", lambda: verify_doge_transaction_blockcypher(tx_hash, payment_address, api_key)),
+        ("SoChain", lambda: verify_doge_transaction_sochain(tx_hash, payment_address)),
+        ("DogeChain", lambda: verify_doge_transaction_dogechain(tx_hash, payment_address)),
+    ]
+    
+    last_error = None
+    
+    for api_name, api_func in apis:
+        for retry in range(3):  # Max 3 retries per API
+            tx_data, confirmations, payment_amount, error = await api_func()
+            
+            if error == "RATE_LIMITED":
+                # Exponential backoff: 1s, 2s, 4s
+                wait_time = (2 ** retry)
+                logger.warning(f"{api_name} rate limited, waiting {wait_time}s before retry {retry + 1}/3")
+                await asyncio.sleep(wait_time)
+                continue
+            
+            if error is None:
+                # Success!
+                logger.info(f"Transaction verified via {api_name}: {tx_hash}")
+                return tx_data, confirmations, payment_amount, None
+            
+            if "not found" in error.lower():
+                # Transaction doesn't exist - don't retry
+                last_error = error
+                break
+            
+            # Other error - try next API
+            last_error = f"{api_name}: {error}"
+            break
+        
+        # If we exhausted retries due to rate limiting, continue to next API
+        if error == "RATE_LIMITED":
+            logger.warning(f"{api_name} exhausted rate limit retries, trying next API")
+            continue
+    
+    # All APIs failed
+    return None, 0, 0, last_error or "All verification APIs failed. Please try again in a few minutes."
+
 @api_router.post("/auto-mixer/verify-payment")
 async def verify_auto_mixer_payment(request: AutoMixerPaymentVerifyRequest):
-    """Verify payment for auto-mixer subscription using BlockCypher"""
+    """Verify payment for auto-mixer subscription using multiple DOGE APIs with fallback"""
     try:
         # Find the subscription
         subscription = await db.auto_mixer_subscriptions.find_one({
@@ -5305,17 +5430,44 @@ async def verify_auto_mixer_payment(request: AutoMixerPaymentVerifyRequest):
         if not subscription:
             raise HTTPException(status_code=404, detail="Subscription not found or not pending")
         
-        # Verify the transaction using direct API call
-        api_key = AUTO_MIXER_CONFIG.get("blockcypher_api_key", "")
-        
-        tx_data, confirmations, payment_amount, error = await verify_doge_transaction_blockcypher(
-            request.tx_hash,
-            AUTO_MIXER_CONFIG["payment_address"],
-            api_key
-        )
-        
-        if error:
-            raise HTTPException(status_code=400, detail=error)
+        # Check if this tx_hash was already verified and cached
+        cached_verification = await db.tx_verifications.find_one({"tx_hash": request.tx_hash})
+        if cached_verification:
+            # Use cached result
+            confirmations = cached_verification.get("confirmations", 0)
+            payment_amount = cached_verification.get("payment_amount", 0)
+            logger.info(f"Using cached verification for {request.tx_hash}")
+        else:
+            # Verify the transaction using multiple APIs with fallback
+            api_key = AUTO_MIXER_CONFIG.get("blockcypher_api_key", "")
+            
+            tx_data, confirmations, payment_amount, error = await verify_doge_transaction_with_fallback(
+                request.tx_hash,
+                AUTO_MIXER_CONFIG["payment_address"],
+                api_key
+            )
+            
+            if error:
+                # Provide user-friendly error message
+                if "rate" in error.lower() or "429" in error:
+                    raise HTTPException(
+                        status_code=503, 
+                        detail="Verification services are busy. Please wait 30 seconds and try again."
+                    )
+                raise HTTPException(status_code=400, detail=error)
+            
+            # Cache successful verification
+            await db.tx_verifications.update_one(
+                {"tx_hash": request.tx_hash},
+                {"$set": {
+                    "tx_hash": request.tx_hash,
+                    "confirmations": confirmations,
+                    "payment_amount": payment_amount,
+                    "payment_address": AUTO_MIXER_CONFIG["payment_address"],
+                    "verified_at": datetime.utcnow()
+                }},
+                upsert=True
+            )
         
         if payment_amount < AUTO_MIXER_CONFIG["monthly_fee_doge"]:
             raise HTTPException(
