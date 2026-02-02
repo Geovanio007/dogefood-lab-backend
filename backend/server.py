@@ -5331,6 +5331,10 @@ async def startup_event():
     # Start the notification processor loop
     asyncio.create_task(notification_processor_loop())
     logger.info("🔔 Notification processor started")
+    
+    # Start the auto-mixer processor loop
+    asyncio.create_task(auto_mixer_processor_loop())
+    logger.info("🤖 Auto-mixer processor started")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
