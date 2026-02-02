@@ -1315,7 +1315,7 @@ async def verify_nft_on_blockchain(address: str):
 @api_router.post("/admin/scan-and-credit-all-holders")
 async def scan_and_credit_all_nft_holders():
     """
-    Admin endpoint to scan all players and verify their NFT ownership on blockchain.
+    Admin endpoint to scan all players and verify their NFT ownership on DogeOS blockchain.
     Credits VIP bonus to any holder who hasn't received it yet.
     """
     try:
@@ -1332,8 +1332,6 @@ async def scan_and_credit_all_nft_holders():
         already_credited = []
         errors = []
         
-        etherscan_api_key = os.environ.get("ETHERSCAN_API_KEY", "")
-        
         async with httpx.AsyncClient() as client:
             for player in players_to_check:
                 address = player.get("address") or ""
@@ -1343,20 +1341,22 @@ async def scan_and_credit_all_nft_holders():
                     continue
                 
                 try:
-                    # Check blockchain
-                    url = f"https://api.etherscan.io/api?module=account&action=tokennfttx&contractaddress={DOGEFOOD_NFT_CONTRACT}&address={address}&page=1&offset=100&sort=desc"
-                    if etherscan_api_key:
-                        url += f"&apikey={etherscan_api_key}"
+                    # Check DogeOS blockchain via Blockscout
+                    url = f"{DOGEOS_BLOCKSCOUT_URL}/api?module=account&action=tokenbalance&contractaddress={DOGEFOOD_NFT_CONTRACT}&address={address}"
                     
                     response = await client.get(url, timeout=30.0)
                     data = response.json()
                     
                     # Check if holder
                     is_holder = False
+                    nft_count = 0
+                    
                     if data.get("status") == "1" and data.get("result"):
-                        received = sum(1 for tx in data.get("result", []) if tx.get("to", "").lower() == address.lower())
-                        sent = sum(1 for tx in data.get("result", []) if tx.get("from", "").lower() == address.lower())
-                        is_holder = (received - sent) > 0
+                        try:
+                            nft_count = int(data.get("result", "0"))
+                            is_holder = nft_count > 0
+                        except (ValueError, TypeError):
+                            is_holder = False
                     
                     if is_holder:
                         if not player.get("vip_bonus_claimed"):
@@ -1367,21 +1367,23 @@ async def scan_and_credit_all_nft_holders():
                                     "$inc": {"points": 500}
                                 }
                             )
-                            credited.append({"address": address, "nickname": player.get("nickname")})
-                            logger.info(f"🌟 Auto-credited: {address}")
+                            credited.append({"address": address, "nickname": player.get("nickname"), "nft_count": nft_count})
+                            logger.info(f"🌟 Auto-credited from DogeOS scan: {address} (owns {nft_count} NFTs)")
                         else:
                             already_credited.append(address)
                     else:
                         not_holders.append(address)
                     
-                    # Rate limit - Etherscan has 5 calls/sec limit
-                    await asyncio.sleep(0.25)
+                    # Small delay to be nice to the API
+                    await asyncio.sleep(0.2)
                     
                 except Exception as e:
                     errors.append({"address": address, "error": str(e)})
         
         return {
             "success": True,
+            "network": "DogeOS Testnet",
+            "contract": DOGEFOOD_NFT_CONTRACT,
             "credited_count": len(credited),
             "credited_players": credited,
             "already_credited": len(already_credited),
@@ -1391,7 +1393,7 @@ async def scan_and_credit_all_nft_holders():
         }
         
     except Exception as e:
-        logger.error(f"Error scanning NFT holders: {e}")
+        logger.error(f"Error scanning NFT holders on DogeOS: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/treats", response_model=List[DogeTreat])
