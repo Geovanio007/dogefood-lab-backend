@@ -1209,38 +1209,28 @@ async def check_nft_holders_status():
 @api_router.post("/admin/verify-nft-blockchain/{address}")
 async def verify_nft_on_blockchain(address: str):
     """
-    Admin endpoint to verify NFT ownership directly on blockchain using Etherscan/Polygonscan API.
+    Admin endpoint to verify NFT ownership directly on DogeOS blockchain using Blockscout API.
     If holder, credits VIP bonus.
     """
     try:
-        # Use Etherscan API to check NFT balance
-        # The DogeFood NFT is on Ethereum mainnet
-        etherscan_api_key = os.environ.get("ETHERSCAN_API_KEY", "")
-        
-        # Check ERC-721 balance
-        url = f"https://api.etherscan.io/api?module=account&action=tokennfttx&contractaddress={DOGEFOOD_NFT_CONTRACT}&address={address}&page=1&offset=100&sort=desc"
-        if etherscan_api_key:
-            url += f"&apikey={etherscan_api_key}"
+        # Use DogeOS Blockscout API to check NFT balance
+        url = f"{DOGEOS_BLOCKSCOUT_URL}/api?module=account&action=tokenbalance&contractaddress={DOGEFOOD_NFT_CONTRACT}&address={address}"
         
         async with httpx.AsyncClient() as client:
             response = await client.get(url, timeout=30.0)
             data = response.json()
         
-        # Check if address has received any NFTs from this contract
+        # Check NFT balance
         is_holder = False
         nft_count = 0
         
         if data.get("status") == "1" and data.get("result"):
-            # Count NFTs currently held (received - sent)
-            received = 0
-            sent = 0
-            for tx in data.get("result", []):
-                if tx.get("to", "").lower() == address.lower():
-                    received += 1
-                if tx.get("from", "").lower() == address.lower():
-                    sent += 1
-            nft_count = received - sent
-            is_holder = nft_count > 0
+            try:
+                nft_count = int(data.get("result", "0"))
+                is_holder = nft_count > 0
+            except (ValueError, TypeError):
+                nft_count = 0
+                is_holder = False
         
         if is_holder:
             # Credit the player
@@ -1259,14 +1249,15 @@ async def verify_nft_on_blockchain(address: str):
                             "$inc": {"points": 500}
                         }
                     )
-                    logger.info(f"🌟 Blockchain verified & credited: {address}")
+                    logger.info(f"🌟 DogeOS verified & credited: {address}")
                     return {
                         "address": address,
                         "is_holder": True,
                         "nft_count": nft_count,
                         "action": "credited",
                         "bonus_points": 500,
-                        "contract": DOGEFOOD_NFT_CONTRACT
+                        "contract": DOGEFOOD_NFT_CONTRACT,
+                        "network": "DogeOS Testnet"
                     }
                 else:
                     await db.players.update_one(
@@ -1278,7 +1269,8 @@ async def verify_nft_on_blockchain(address: str):
                         "is_holder": True,
                         "nft_count": nft_count,
                         "action": "already_credited",
-                        "contract": DOGEFOOD_NFT_CONTRACT
+                        "contract": DOGEFOOD_NFT_CONTRACT,
+                        "network": "DogeOS Testnet"
                     }
             else:
                 # Create new VIP player
@@ -1303,7 +1295,8 @@ async def verify_nft_on_blockchain(address: str):
                     "nft_count": nft_count,
                     "action": "created_new_vip",
                     "bonus_points": 500,
-                    "contract": DOGEFOOD_NFT_CONTRACT
+                    "contract": DOGEFOOD_NFT_CONTRACT,
+                    "network": "DogeOS Testnet"
                 }
         
         return {
@@ -1311,11 +1304,12 @@ async def verify_nft_on_blockchain(address: str):
             "is_holder": False,
             "nft_count": 0,
             "contract": DOGEFOOD_NFT_CONTRACT,
+            "network": "DogeOS Testnet",
             "message": "Address does not hold DogeFood NFT"
         }
         
     except Exception as e:
-        logger.error(f"Error verifying NFT on blockchain: {e}")
+        logger.error(f"Error verifying NFT on DogeOS: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/admin/scan-and-credit-all-holders")
