@@ -1342,10 +1342,10 @@ async def scan_and_credit_all_nft_holders():
         
         async with httpx.AsyncClient() as client:
             for player in players_to_check:
-                address = player.get("address", "")
+                address = player.get("address") or ""
                 
-                # Skip non-ethereum addresses (Telegram users, guests)
-                if not address.startswith("0x") or len(address) != 42:
+                # Skip non-ethereum addresses (Telegram users, guests, None)
+                if not address or not address.startswith("0x") or len(address) != 42:
                     continue
                 
                 try:
