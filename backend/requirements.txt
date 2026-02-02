@@ -3,7 +3,6 @@ anyio==4.10.0
 APScheduler==3.11.2
 bitcoin==1.1.39
 black==25.1.0
-blockcypher==1.0.93
 boto3==1.40.7
 botocore==1.40.7
 certifi==2025.8.3
