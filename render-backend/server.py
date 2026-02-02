@@ -5694,6 +5694,257 @@ async def get_auto_mixer_history(player_address: str, limit: int = 20):
         logger.error(f"Error fetching auto-mix history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@api_router.get("/auto-mixer/agent-status")
+async def get_auto_mixer_agent_status():
+    """Get detailed status of the auto-mixer agent"""
+    try:
+        now = datetime.utcnow()
+        
+        # Get all active subscriptions
+        active_subs = await db.auto_mixer_subscriptions.find({
+            "status": "active",
+            "subscription_end": {"$gt": now}
+        }).to_list(1000)
+        
+        # Calculate subscribers currently in their window
+        current_hour = now.hour
+        in_window_count = 0
+        
+        for sub in active_subs:
+            start_hour = sub.get("window_start_hour", 0)
+            end_hour = sub.get("window_end_hour", 6)
+            
+            if start_hour < end_hour:
+                if start_hour <= current_hour < end_hour:
+                    in_window_count += 1
+            else:  # Window crosses midnight
+                if current_hour >= start_hour or current_hour < end_hour:
+                    in_window_count += 1
+        
+        # Get recent mix activity (last 24 hours)
+        yesterday = now - timedelta(hours=24)
+        recent_mixes = await db.auto_mix_history.find({
+            "created_at": {"$gte": yesterday}
+        }).to_list(1000)
+        
+        # Calculate stats
+        mixes_last_24h = len(recent_mixes)
+        mixes_last_hour = len([m for m in recent_mixes if (now - m.get("created_at", now)).total_seconds() < 3600])
+        
+        # Rarity breakdown of recent mixes
+        rarity_breakdown = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
+        total_points = 0
+        total_xp = 0
+        
+        for mix in recent_mixes:
+            rarity = mix.get("treat_rarity", "Common")
+            if rarity in rarity_breakdown:
+                rarity_breakdown[rarity] += 1
+            total_points += mix.get("points_earned", 0)
+            total_xp += mix.get("xp_earned", 0)
+        
+        # Get most used ingredients (last 7 days)
+        week_ago = now - timedelta(days=7)
+        weekly_mixes = await db.auto_mix_history.find({
+            "created_at": {"$gte": week_ago}
+        }).to_list(5000)
+        
+        ingredient_counts = {}
+        for mix in weekly_mixes:
+            for ing in mix.get("ingredients", []):
+                ingredient_counts[ing] = ingredient_counts.get(ing, 0) + 1
+        
+        # Get top 10 ingredients
+        top_ingredients = sorted(ingredient_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        
+        # Get next scheduled run info
+        next_run_minutes = 10 - (now.minute % 10)
+        next_run_time = now + timedelta(minutes=next_run_minutes)
+        
+        return {
+            "agent_status": "ACTIVE",
+            "current_time_utc": now.isoformat(),
+            "current_hour_utc": current_hour,
+            "next_run_time_utc": next_run_time.isoformat(),
+            "run_interval_minutes": 10,
+            "mixes_per_hour_config": AUTO_MIXER_CONFIG["mixes_per_hour"],
+            "subscribers": {
+                "total_active": len(active_subs),
+                "currently_in_window": in_window_count,
+                "outside_window": len(active_subs) - in_window_count
+            },
+            "activity_24h": {
+                "total_mixes": mixes_last_24h,
+                "mixes_last_hour": mixes_last_hour,
+                "total_points_awarded": total_points,
+                "total_xp_awarded": total_xp,
+                "avg_mixes_per_hour": round(mixes_last_24h / 24, 1) if mixes_last_24h > 0 else 0
+            },
+            "rarity_distribution_24h": rarity_breakdown,
+            "top_ingredients_7d": [{"ingredient_id": ing, "usage_count": count} for ing, count in top_ingredients],
+            "performance": {
+                "uptime_status": "healthy",
+                "last_error": None
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching agent status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/auto-mixer/detailed-stats/{player_address}")
+async def get_auto_mixer_detailed_stats(player_address: str):
+    """Get detailed auto-mixer stats for a specific player"""
+    try:
+        now = datetime.utcnow()
+        
+        # Get player's subscription
+        subscription = await db.auto_mixer_subscriptions.find_one({
+            "player_address": player_address,
+            "status": "active"
+        }, {"_id": 0})
+        
+        if not subscription:
+            return {
+                "has_subscription": False,
+                "message": "No active subscription found"
+            }
+        
+        # Get player's mix history
+        all_history = await db.auto_mix_history.find({
+            "player_address": player_address
+        }).sort("created_at", -1).to_list(1000)
+        
+        # Calculate time-based stats
+        last_24h = [m for m in all_history if (now - m.get("created_at", now)).total_seconds() < 86400]
+        last_7d = [m for m in all_history if (now - m.get("created_at", now)).total_seconds() < 604800]
+        
+        # Rarity breakdown (all time)
+        rarity_counts = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
+        total_points = 0
+        total_xp = 0
+        ingredient_usage = {}
+        
+        for mix in all_history:
+            rarity = mix.get("treat_rarity", "Common")
+            if rarity in rarity_counts:
+                rarity_counts[rarity] += 1
+            total_points += mix.get("points_earned", 0)
+            total_xp += mix.get("xp_earned", 0)
+            
+            for ing in mix.get("ingredients", []):
+                ingredient_usage[ing] = ingredient_usage.get(ing, 0) + 1
+        
+        # Best rarity found
+        best_rarity = "None"
+        rarity_order = ["Mythic", "Legendary", "Epic", "Rare", "Uncommon", "Common"]
+        for r in rarity_order:
+            if rarity_counts.get(r, 0) > 0:
+                best_rarity = r
+                break
+        
+        # Calculate window info
+        start_hour = subscription.get("window_start_hour", 0)
+        end_hour = subscription.get("window_end_hour", 6)
+        current_hour = now.hour
+        
+        if start_hour < end_hour:
+            in_window = start_hour <= current_hour < end_hour
+            window_hours = end_hour - start_hour
+        else:
+            in_window = current_hour >= start_hour or current_hour < end_hour
+            window_hours = (24 - start_hour) + end_hour
+        
+        # Calculate subscription progress
+        sub_start = subscription.get("subscription_start")
+        sub_end = subscription.get("subscription_end")
+        if sub_start and sub_end:
+            total_duration = (sub_end - sub_start).total_seconds()
+            elapsed = (now - sub_start).total_seconds()
+            days_remaining = max(0, (sub_end - now).days)
+            progress_percent = min(100, (elapsed / total_duration) * 100)
+        else:
+            days_remaining = 0
+            progress_percent = 0
+        
+        # Daily breakdown for last 7 days
+        daily_stats = {}
+        for i in range(7):
+            day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
+            daily_stats[day] = {"mixes": 0, "points": 0, "xp": 0}
+        
+        for mix in last_7d:
+            created = mix.get("created_at")
+            if created:
+                day = created.strftime("%Y-%m-%d")
+                if day in daily_stats:
+                    daily_stats[day]["mixes"] += 1
+                    daily_stats[day]["points"] += mix.get("points_earned", 0)
+                    daily_stats[day]["xp"] += mix.get("xp_earned", 0)
+        
+        # Most recent mixes
+        recent_mixes = []
+        for mix in all_history[:10]:
+            mix_copy = dict(mix)
+            mix_copy.pop("_id", None)
+            # Format time ago
+            created = mix.get("created_at")
+            if created:
+                seconds_ago = (now - created).total_seconds()
+                if seconds_ago < 60:
+                    time_ago = "Just now"
+                elif seconds_ago < 3600:
+                    time_ago = f"{int(seconds_ago / 60)}m ago"
+                elif seconds_ago < 86400:
+                    time_ago = f"{int(seconds_ago / 3600)}h ago"
+                else:
+                    time_ago = f"{int(seconds_ago / 86400)}d ago"
+                mix_copy["time_ago"] = time_ago
+            recent_mixes.append(mix_copy)
+        
+        return {
+            "has_subscription": True,
+            "subscription": {
+                "id": subscription.get("id"),
+                "status": subscription.get("status"),
+                "window_start": start_hour,
+                "window_end": end_hour,
+                "window_hours": window_hours,
+                "currently_in_window": in_window,
+                "days_remaining": days_remaining,
+                "progress_percent": round(progress_percent, 1),
+                "expires_at": sub_end.isoformat() if sub_end else None
+            },
+            "lifetime_stats": {
+                "total_mixes": len(all_history),
+                "total_points_earned": total_points,
+                "total_xp_earned": total_xp,
+                "best_rarity": best_rarity,
+                "avg_points_per_mix": round(total_points / len(all_history), 1) if all_history else 0
+            },
+            "activity_24h": {
+                "mixes": len(last_24h),
+                "points": sum(m.get("points_earned", 0) for m in last_24h),
+                "xp": sum(m.get("xp_earned", 0) for m in last_24h)
+            },
+            "activity_7d": {
+                "mixes": len(last_7d),
+                "points": sum(m.get("points_earned", 0) for m in last_7d),
+                "xp": sum(m.get("xp_earned", 0) for m in last_7d)
+            },
+            "rarity_breakdown": rarity_counts,
+            "top_ingredients": sorted(ingredient_usage.items(), key=lambda x: x[1], reverse=True)[:5],
+            "daily_breakdown": daily_stats,
+            "recent_mixes": recent_mixes
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching detailed stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Auto-mixer background task
 async def auto_mixer_processor_loop():
     """Background loop that processes auto-mixes for active subscribers"""
