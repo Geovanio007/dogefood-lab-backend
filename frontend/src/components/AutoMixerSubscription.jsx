@@ -605,11 +605,12 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
 
   const fetchData = useCallback(async () => {
     try {
-      // Fetch config, subscription, and stats in parallel
-      const [configRes, subRes, statsRes] = await Promise.all([
+      // Fetch config, subscription, stats, and agent status in parallel
+      const [configRes, subRes, statsRes, agentRes] = await Promise.all([
         fetch(`${BACKEND_URL}/api/auto-mixer/config`),
         fetch(`${BACKEND_URL}/api/auto-mixer/subscription/${playerAddress}`),
-        fetch(`${BACKEND_URL}/api/auto-mixer/funds-stats`)
+        fetch(`${BACKEND_URL}/api/auto-mixer/funds-stats`),
+        fetch(`${BACKEND_URL}/api/auto-mixer/agent-status`)
       ]);
 
       if (configRes.ok) {
@@ -632,12 +633,24 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
         setFundsStats(await statsRes.json());
       }
 
-      // Fetch mix history if there's an active subscription
+      if (agentRes.ok) {
+        setAgentStatus(await agentRes.json());
+      }
+
+      // Fetch player-specific detailed stats if there's an active subscription
       if (subscription?.status === 'active') {
-        const historyRes = await fetch(`${BACKEND_URL}/api/auto-mixer/history/${playerAddress}`);
+        const [historyRes, playerStatsRes] = await Promise.all([
+          fetch(`${BACKEND_URL}/api/auto-mixer/history/${playerAddress}`),
+          fetch(`${BACKEND_URL}/api/auto-mixer/detailed-stats/${playerAddress}`)
+        ]);
+        
         if (historyRes.ok) {
           const historyData = await historyRes.json();
           setMixHistory(historyData.history || []);
+        }
+        
+        if (playerStatsRes.ok) {
+          setPlayerStats(await playerStatsRes.json());
         }
       }
     } catch (err) {
@@ -653,13 +666,28 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
     }
   }, [playerAddress, fetchData]);
 
-  // Poll for funds stats every 30 seconds
+  // Poll for stats every 30 seconds
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const statsRes = await fetch(`${BACKEND_URL}/api/auto-mixer/funds-stats`);
+        const [statsRes, agentRes] = await Promise.all([
+          fetch(`${BACKEND_URL}/api/auto-mixer/funds-stats`),
+          fetch(`${BACKEND_URL}/api/auto-mixer/agent-status`)
+        ]);
+        
         if (statsRes.ok) {
           setFundsStats(await statsRes.json());
+        }
+        if (agentRes.ok) {
+          setAgentStatus(await agentRes.json());
+        }
+        
+        // Update player stats if subscribed
+        if (playerAddress && subscription?.status === 'active') {
+          const playerStatsRes = await fetch(`${BACKEND_URL}/api/auto-mixer/detailed-stats/${playerAddress}`);
+          if (playerStatsRes.ok) {
+            setPlayerStats(await playerStatsRes.json());
+          }
         }
       } catch (err) {
         console.error('Error polling stats:', err);
@@ -667,7 +695,7 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [playerAddress, subscription?.status]);
 
   const handleCreateSubscription = async () => {
     setCreating(true);
