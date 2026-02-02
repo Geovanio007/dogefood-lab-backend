@@ -5945,6 +5945,163 @@ async def get_auto_mixer_detailed_stats(player_address: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.post("/auto-mixer/trigger-now")
+async def trigger_auto_mixer_now():
+    """Manually trigger the auto-mixer to run immediately (for testing)"""
+    try:
+        now = datetime.utcnow()
+        current_hour = now.hour
+        results = []
+        
+        logger.info(f"🤖 Manual trigger at {now.strftime('%H:%M:%S')} UTC (hour: {current_hour})")
+        
+        # Find active subscriptions
+        active_subs = await db.auto_mixer_subscriptions.find({
+            "status": "active",
+            "subscription_end": {"$gt": now}
+        }).to_list(1000)
+        
+        logger.info(f"🤖 Found {len(active_subs)} active subscriptions")
+        
+        for sub in active_subs:
+            try:
+                start_hour = sub.get("window_start_hour", 0)
+                end_hour = sub.get("window_end_hour", 6)
+                player_address = sub.get("player_address", "Unknown")
+                
+                # Check if current hour is within the window
+                in_window = False
+                if start_hour < end_hour:
+                    in_window = start_hour <= current_hour < end_hour
+                else:  # Window crosses midnight
+                    in_window = current_hour >= start_hour or current_hour < end_hour
+                
+                if not in_window:
+                    results.append({
+                        "player": player_address[:20] + "...",
+                        "status": "skipped",
+                        "reason": f"Outside window ({start_hour}:00-{end_hour}:00, current: {current_hour}:00)"
+                    })
+                    continue
+                
+                # Skip rate limit check for manual trigger
+                
+                # Perform auto-mix for this player
+                player = await db.players.find_one({"address": player_address})
+                
+                if not player:
+                    results.append({
+                        "player": player_address[:20] + "...",
+                        "status": "error",
+                        "reason": "Player not found in database"
+                    })
+                    continue
+                
+                player_level = player.get("level", 1)
+                
+                # Get available ingredients for player level
+                available_ingredients = ingredient_system.get_unlocked_ingredients(player_level)
+                
+                if len(available_ingredients) < 2:
+                    results.append({
+                        "player": player_address[:20] + "...",
+                        "status": "error",
+                        "reason": f"Not enough ingredients (level {player_level})"
+                    })
+                    continue
+                
+                # Select random ingredients (2-4)
+                num_ingredients = random.randint(2, min(4, len(available_ingredients)))
+                selected_ingredients = random.sample([ing.id for ing in available_ingredients], num_ingredients)
+                
+                # Create the treat using the game engine
+                treat_result = game_engine.calculate_treat_outcome(
+                    ingredients=selected_ingredients,
+                    player_level=player_level,
+                    player_address=player_address
+                )
+                
+                # Generate treat name
+                flavor_names = ["Cosmic", "Stellar", "Lunar", "Solar", "Galactic", "Nebula", "Quantum", "Nova", "Astral"]
+                treat_names = ["Biscuit", "Crunch", "Delight", "Snack", "Treat", "Nibble", "Morsel", "Bone", "Chew"]
+                treat_name = f"{random.choice(flavor_names)} {random.choice(treat_names)}"
+                
+                rarity = treat_result.get("rarity", "Common")
+                points = treat_result.get("points", 10)
+                xp = treat_result.get("xp", 5)
+                
+                # Save the treat
+                treat_id = str(uuid.uuid4())
+                treat_doc = {
+                    "id": treat_id,
+                    "name": treat_name,
+                    "creator_address": player_address,
+                    "ingredients": selected_ingredients,
+                    "rarity": rarity,
+                    "flavor": treat_result.get("flavor", "Savory"),
+                    "created_at": now,
+                    "ready_at": now,
+                    "image": treat_result.get("image", "🍪"),
+                    "brewing_status": "ready",
+                    "points_reward": points,
+                    "xp_reward": xp,
+                    "auto_mixed": True,
+                    "collected": False
+                }
+                
+                await db.treats.insert_one(treat_doc)
+                
+                # Record the auto-mix in history
+                await db.auto_mix_history.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "subscription_id": sub["id"],
+                    "player_address": player_address,
+                    "treat_id": treat_id,
+                    "treat_name": treat_name,
+                    "treat_rarity": rarity,
+                    "points_earned": points,
+                    "xp_earned": xp,
+                    "ingredients": selected_ingredients,
+                    "created_at": now
+                })
+                
+                # Update subscription stats
+                await db.auto_mixer_subscriptions.update_one(
+                    {"id": sub["id"]},
+                    {"$set": {"last_auto_mix": now}, "$inc": {"total_auto_mixes": 1}}
+                )
+                
+                results.append({
+                    "player": player_address[:20] + "...",
+                    "status": "success",
+                    "treat_name": treat_name,
+                    "rarity": rarity,
+                    "points": points,
+                    "xp": xp
+                })
+                
+                logger.info(f"🤖 ✅ Manual mix: '{treat_name}' ({rarity}) for {player_address[:20]}...")
+                
+            except Exception as e:
+                results.append({
+                    "player": sub.get("player_address", "unknown")[:20] + "...",
+                    "status": "error",
+                    "reason": str(e)
+                })
+                logger.error(f"🤖 ❌ Error: {str(e)}")
+        
+        return {
+            "triggered_at": now.isoformat(),
+            "current_hour": current_hour,
+            "total_active_subs": len(active_subs),
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in manual trigger: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Auto-mixer background task
 async def auto_mixer_processor_loop():
     """Background loop that processes auto-mixes for active subscribers"""
