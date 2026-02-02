@@ -4984,70 +4984,50 @@ async def verify_auto_mixer_payment(request: AutoMixerPaymentVerifyRequest):
                 status_code=400, 
                 detail=f"Payment amount insufficient. Required: {AUTO_MIXER_CONFIG['monthly_fee_doge']} DOGE, Received: {payment_amount} DOGE"
             )
+        
+        # Update subscription
+        now = datetime.utcnow()
+        update_data = {
+            "payment_tx_hash": request.tx_hash,
+            "payment_confirmations": confirmations,
+            "updated_at": now
+        }
+        
+        # If enough confirmations, activate the subscription
+        if confirmations >= AUTO_MIXER_CONFIG["required_confirmations"]:
+            update_data["status"] = "active"
+            update_data["payment_confirmed"] = True
+            update_data["subscription_start"] = now
+            update_data["subscription_end"] = now + timedelta(days=30)
             
-            for output in tx_details.get('outputs', []):
-                addresses = output.get('addresses', [])
-                if AUTO_MIXER_CONFIG["payment_address"] in addresses:
-                    payment_amount += output.get('value', 0) / 100000000  # Convert from satoshis
-                    payment_valid = True
-            
-            if not payment_valid:
-                raise HTTPException(status_code=400, detail="Payment not sent to correct address")
-            
-            if payment_amount < AUTO_MIXER_CONFIG["monthly_fee_doge"]:
-                raise HTTPException(status_code=400, detail=f"Payment amount insufficient. Required: {AUTO_MIXER_CONFIG['monthly_fee_doge']} DOGE, Received: {payment_amount} DOGE")
-            
-            # Update subscription
-            now = datetime.utcnow()
-            update_data = {
-                "payment_tx_hash": request.tx_hash,
-                "payment_confirmations": confirmations,
-                "updated_at": now
-            }
-            
-            # If enough confirmations, activate the subscription
-            if confirmations >= AUTO_MIXER_CONFIG["required_confirmations"]:
-                update_data["status"] = "active"
-                update_data["payment_confirmed"] = True
-                update_data["subscription_start"] = now
-                update_data["subscription_end"] = now + timedelta(days=30)
-                
-                # Record the payment for funds tracking
-                await db.auto_mixer_payments.insert_one({
-                    "id": str(uuid.uuid4()),
-                    "subscription_id": request.subscription_id,
-                    "player_address": subscription["player_address"],
-                    "tx_hash": request.tx_hash,
-                    "amount_doge": payment_amount,
-                    "buy_burn_amount": payment_amount * (AUTO_MIXER_CONFIG["buy_burn_percent"] / 100),
-                    "dev_amount": payment_amount * (AUTO_MIXER_CONFIG["dev_percent"] / 100),
-                    "confirmed_at": now,
-                    "created_at": now
-                })
-            
-            await db.auto_mixer_subscriptions.update_one(
-                {"id": request.subscription_id},
-                {"$set": update_data}
-            )
-            
-            # Get updated subscription
-            updated_sub = await db.auto_mixer_subscriptions.find_one({"id": request.subscription_id}, {"_id": 0})
-            
-            return {
-                "subscription": updated_sub,
-                "confirmations": confirmations,
-                "required_confirmations": AUTO_MIXER_CONFIG["required_confirmations"],
-                "payment_amount": payment_amount,
-                "is_confirmed": confirmations >= AUTO_MIXER_CONFIG["required_confirmations"]
-            }
-            
-        except blockcypher.CoinSymbolError as e:
-            raise HTTPException(status_code=400, detail=f"Invalid coin symbol: {str(e)}")
-        except Exception as e:
-            if "HTTPException" in str(type(e)):
-                raise
-            logger.error(f"BlockCypher API error: {e}")
-            raise HTTPException(status_code=400, detail=f"Transaction verification failed: {str(e)}")
+            # Record the payment for funds tracking
+            await db.auto_mixer_payments.insert_one({
+                "id": str(uuid.uuid4()),
+                "subscription_id": request.subscription_id,
+                "player_address": subscription["player_address"],
+                "tx_hash": request.tx_hash,
+                "amount_doge": payment_amount,
+                "buy_burn_amount": payment_amount * (AUTO_MIXER_CONFIG["buy_burn_percent"] / 100),
+                "dev_amount": payment_amount * (AUTO_MIXER_CONFIG["dev_percent"] / 100),
+                "confirmed_at": now,
+                "created_at": now
+            })
+        
+        await db.auto_mixer_subscriptions.update_one(
+            {"id": request.subscription_id},
+            {"$set": update_data}
+        )
+        
+        # Get updated subscription
+        updated_sub = await db.auto_mixer_subscriptions.find_one({"id": request.subscription_id}, {"_id": 0})
+        
+        return {
+            "subscription": updated_sub,
+            "confirmations": confirmations,
+            "required_confirmations": AUTO_MIXER_CONFIG["required_confirmations"],
+            "payment_amount": payment_amount,
+            "is_confirmed": confirmations >= AUTO_MIXER_CONFIG["required_confirmations"]
+        }
             
     except HTTPException:
         raise
