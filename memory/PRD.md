@@ -14,75 +14,74 @@ DogeFood Lab is a Web3-powered treat creation game where players become scientis
 - **Frontend**: React.js (deployed on Vercel)
 - **Backend**: Python FastAPI (deployed on Render)
 - **Database**: MongoDB Atlas
-- **Payments**: DOGE via BlockCypher API (most reliable, no Cloudflare)
-
-## Current Architecture
-```
-/app
-├── backend/
-│   ├── server.py         # Monolithic FastAPI with all endpoints
-│   ├── services/         # Business logic modules
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── components/   # React components
-│   │   └── contexts/     # State management
-│   └── public/           # Static assets
-└── render-backend/       # Render deployment folder (synced)
-```
+- **Payments**: DOGE via BlockCypher API
 
 ## What's Been Implemented
 
 ### Session: February 2, 2026 (Latest)
-1. **DOGE Verification Fix (CRITICAL)** - COMPLETED & DEPLOYED
-   - Removed unreliable APIs (SoChain 502, DogeChain 403 Cloudflare)
-   - Uses BlockCypher exclusively (most reliable, no protection)
-   - Primary method: Direct transaction lookup
-   - Fallback method: Address-based verification (checks address tx history)
-   - Increased timeouts to 60s
-   - Browser-like headers for compatibility
-   - Better retry logic (2s, 4s, 8s backoff)
 
-2. **Previous fixes in this session:**
-   - Multi-API fallback verification (refined to BlockCypher only)
-   - Transaction caching in `db.tx_verifications`
-   - Funds tracking dashboard (80/20 split) working
+1. **Auto-Mixer Agent Status Dashboard** - COMPLETED & DEPLOYED
+   - New `/api/auto-mixer/agent-status` endpoint with comprehensive metrics
+   - New `/api/auto-mixer/detailed-stats/{player}` for player-specific stats
+   - Beautiful AgentStatsCard UI component showing:
+     - ACTIVE status with animated indicator
+     - Run interval, active subscribers, in-window count
+     - 24h activity (mixes, points, XP)
+     - Rarity distribution breakdown
+     - Top ingredients (7 days)
+     - System health and next run time
+   - PlayerMixerStats component for subscribed users showing:
+     - Subscription progress bar with days remaining
+     - Lifetime stats (total mixes, points, XP, best rarity)
+     - Personal rarity collection
+     - Recent auto-mixes with time ago
+   - Stats visible even without wallet connection
+   - Real-time polling every 30 seconds
 
-### Previous Session: February 2, 2026
-1. **Frontend Deployment Fix (P0)** - COMPLETED
-2. **Auto-Mixer Subscription Feature** - COMPLETED
-3. **Color Scheme Update** - COMPLETED (Sky Blue theme)
-4. **Calendar Date Picker** - COMPLETED
-5. **Dark Mode Support** - COMPLETED
-6. **NFT Holder Logic (DogeOS)** - COMPLETED
+2. **DOGE Verification Fix** - COMPLETED & DEPLOYED
+   - Uses BlockCypher exclusively (most reliable)
+   - Two verification methods: Direct TX + Address lookup
+   - Increased timeouts, better retry logic
 
 ## API Endpoints (Auto-Mixer)
 | Endpoint | Method | Description | Status |
 |----------|--------|-------------|--------|
-| `/api/auto-mixer/config` | GET | Get subscription config | ✅ Working |
-| `/api/auto-mixer/create-subscription` | POST | Create pending subscription | ✅ Working |
-| `/api/auto-mixer/verify-payment` | POST | Verify DOGE payment | ✅ Fixed & Deployed |
-| `/api/auto-mixer/subscription/{address}` | GET | Get subscription status | ✅ Working |
-| `/api/auto-mixer/update-window` | POST | Update mixing window | ✅ Working |
-| `/api/auto-mixer/funds-stats` | GET | Get 80/20 fund split | ✅ Working |
-| `/api/auto-mixer/history/{address}` | GET | Get mix history | ✅ Working |
+| `/api/auto-mixer/config` | GET | Get subscription config | ✅ |
+| `/api/auto-mixer/create-subscription` | POST | Create pending subscription | ✅ |
+| `/api/auto-mixer/verify-payment` | POST | Verify DOGE payment | ✅ |
+| `/api/auto-mixer/subscription/{address}` | GET | Get subscription status | ✅ |
+| `/api/auto-mixer/update-window` | POST | Update mixing window | ✅ |
+| `/api/auto-mixer/funds-stats` | GET | Get 80/20 fund split | ✅ |
+| `/api/auto-mixer/history/{address}` | GET | Get mix history | ✅ |
+| `/api/auto-mixer/agent-status` | GET | **NEW** Global agent status | ✅ |
+| `/api/auto-mixer/detailed-stats/{address}` | GET | **NEW** Player stats | ✅ |
 
-## DOGE Verification Strategy
-```
-Method 1: BlockCypher Direct TX Lookup
-  - URL: api.blockcypher.com/v1/doge/main/txs/{tx_hash}
-  - Returns: confirmations, outputs, payment amount
-  - Retry: 3 attempts with 2s/4s/8s backoff
-
-Method 2: BlockCypher Address Lookup (Fallback)
-  - URL: api.blockcypher.com/v1/doge/main/addrs/{address}
-  - Searches tx_hash in address transaction history
-  - Useful when direct lookup fails
-
-Removed (Unreliable):
-  - SoChain: 502 errors
-  - DogeChain.info: Cloudflare 403
-  - BlockExplorer.one: Cloudflare 403
+## Agent Stats Response Structure
+```json
+{
+  "agent_status": "ACTIVE",
+  "current_time_utc": "2026-02-02T15:39:20",
+  "next_run_time_utc": "2026-02-02T15:40:20",
+  "run_interval_minutes": 10,
+  "mixes_per_hour_config": 2,
+  "subscribers": {
+    "total_active": 2,
+    "currently_in_window": 1,
+    "outside_window": 1
+  },
+  "activity_24h": {
+    "total_mixes": 0,
+    "mixes_last_hour": 0,
+    "total_points_awarded": 0,
+    "total_xp_awarded": 0
+  },
+  "rarity_distribution_24h": {...},
+  "top_ingredients_7d": [...],
+  "performance": {
+    "uptime_status": "healthy",
+    "last_error": null
+  }
+}
 ```
 
 ## Pending Issues
@@ -92,8 +91,3 @@ Removed (Unreliable):
 - Frontend: https://dogefoodlab.vercel.app (Vercel)
 - Backend: https://dogefood-lab-api.onrender.com (Render)
 - Payment Address: DMxBXyfQbkCoZJyFoKMksjn9epLTwhHAyE
-- NFT Contract: DogeOS Testnet
-
-## Test Reports
-- Latest: `/app/test_reports/iteration_3.json` - 100% pass rate
-- DOGE verification tested with real transaction: 58 confirmations ✅
