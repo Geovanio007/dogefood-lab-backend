@@ -832,6 +832,7 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
   const isWindowValid = calculateWindowDuration() >= 1 && calculateWindowDuration() <= 6;
   const hasActiveSubscription = subscription?.status === 'active';
   const hasPendingSubscription = subscription?.status === 'pending';
+  const isConnected = !!playerAddress;
 
   return (
     <div className="space-y-6">
