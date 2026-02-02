@@ -17,7 +17,13 @@ import random
 import asyncio
 from telegram import Bot
 import httpx  # For Firebase verification
-import blockcypher  # For DOGE transaction verification
+
+# Try to import blockcypher, with fallback to None
+try:
+    import blockcypher
+except ImportError:
+    blockcypher = None
+    logging.warning("BlockCypher module not available - DOGE payment verification will use direct API calls")
 
 # Import Phase 2 services
 from services.anti_cheat import AntiCheatSystem
