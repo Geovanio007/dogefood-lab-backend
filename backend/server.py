@@ -5419,7 +5419,7 @@ async def verify_doge_transaction_with_fallback(tx_hash: str, payment_address: s
 
 @api_router.post("/auto-mixer/verify-payment")
 async def verify_auto_mixer_payment(request: AutoMixerPaymentVerifyRequest):
-    """Verify payment for auto-mixer subscription using BlockCypher"""
+    """Verify payment for auto-mixer subscription using multiple DOGE APIs with fallback"""
     try:
         # Find the subscription
         subscription = await db.auto_mixer_subscriptions.find_one({
@@ -5430,17 +5430,44 @@ async def verify_auto_mixer_payment(request: AutoMixerPaymentVerifyRequest):
         if not subscription:
             raise HTTPException(status_code=404, detail="Subscription not found or not pending")
         
-        # Verify the transaction using direct API call
-        api_key = AUTO_MIXER_CONFIG.get("blockcypher_api_key", "")
-        
-        tx_data, confirmations, payment_amount, error = await verify_doge_transaction_blockcypher(
-            request.tx_hash,
-            AUTO_MIXER_CONFIG["payment_address"],
-            api_key
-        )
-        
-        if error:
-            raise HTTPException(status_code=400, detail=error)
+        # Check if this tx_hash was already verified and cached
+        cached_verification = await db.tx_verifications.find_one({"tx_hash": request.tx_hash})
+        if cached_verification:
+            # Use cached result
+            confirmations = cached_verification.get("confirmations", 0)
+            payment_amount = cached_verification.get("payment_amount", 0)
+            logger.info(f"Using cached verification for {request.tx_hash}")
+        else:
+            # Verify the transaction using multiple APIs with fallback
+            api_key = AUTO_MIXER_CONFIG.get("blockcypher_api_key", "")
+            
+            tx_data, confirmations, payment_amount, error = await verify_doge_transaction_with_fallback(
+                request.tx_hash,
+                AUTO_MIXER_CONFIG["payment_address"],
+                api_key
+            )
+            
+            if error:
+                # Provide user-friendly error message
+                if "rate" in error.lower() or "429" in error:
+                    raise HTTPException(
+                        status_code=503, 
+                        detail="Verification services are busy. Please wait 30 seconds and try again."
+                    )
+                raise HTTPException(status_code=400, detail=error)
+            
+            # Cache successful verification
+            await db.tx_verifications.update_one(
+                {"tx_hash": request.tx_hash},
+                {"$set": {
+                    "tx_hash": request.tx_hash,
+                    "confirmations": confirmations,
+                    "payment_amount": payment_amount,
+                    "payment_address": AUTO_MIXER_CONFIG["payment_address"],
+                    "verified_at": datetime.utcnow()
+                }},
+                upsert=True
+            )
         
         if payment_amount < AUTO_MIXER_CONFIG["monthly_fee_doge"]:
             raise HTTPException(
