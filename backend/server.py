@@ -1879,8 +1879,9 @@ async def get_flagged_players(risk_level: str = "high"):
     return {"flagged_players": flagged, "risk_level": risk_level}
 
 # NFT Verification Route
-# DogeFood Lab NFT Contract: 0xA74Dad05f54d32575f82C3e065C4441b8d979a54
+# DogeFood Lab NFT Contract on DogeOS Network
 DOGEFOOD_NFT_CONTRACT = "0xA74Dad05f54d32575f82C3e065C4441b8d979a54"
+DOGEOS_BLOCKSCOUT_URL = "https://blockscout.testnet.dogeos.com"
 
 @api_router.post("/player/{address}/verify-nft")
 async def verify_player_nft(address: str, data: dict = None):
