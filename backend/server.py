@@ -355,6 +355,68 @@ class BuyListingRequest(BaseModel):
 MARKETPLACE_FEE = 0.420  # Fee for successful sales
 
 # =====================================================
+# AUTO-MIXER SUBSCRIPTION SYSTEM
+# =====================================================
+
+# Auto-Mixer Configuration
+AUTO_MIXER_CONFIG = {
+    "monthly_fee_doge": 30,  # 30 DOGE per month
+    "max_window_hours": 6,   # Max 6-hour mixing window
+    "min_window_hours": 1,   # Min 1-hour mixing window
+    "payment_address": "DMxBXyfQbkCoZJyFoKMksjn9epLTwhHAyE",  # Payment address
+    "buy_burn_percent": 80,  # 80% for buy and burn
+    "dev_percent": 20,       # 20% for devs
+    "mixes_per_hour": 2,     # How many auto-mixes per hour during window
+    "blockcypher_api_key": os.environ.get("BLOCKCYPHER_API_KEY", ""),
+    "required_confirmations": 3  # Required confirmations for payment
+}
+
+class AutoMixerSubscription(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    player_address: str
+    player_nickname: Optional[str] = None
+    # Subscription details
+    status: str = "pending"  # "pending", "active", "expired", "cancelled"
+    subscription_start: Optional[datetime] = None
+    subscription_end: Optional[datetime] = None
+    # Mixing window (24-hour format, UTC)
+    window_start_hour: int = 0  # 0-23
+    window_end_hour: int = 6    # 0-23
+    # Payment info
+    payment_tx_hash: Optional[str] = None
+    payment_amount: float = 30.0
+    payment_confirmed: bool = False
+    payment_confirmations: int = 0
+    # Stats
+    total_auto_mixes: int = 0
+    last_auto_mix: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class AutoMixerCreateRequest(BaseModel):
+    player_address: str
+    window_start_hour: int  # 0-23
+    window_end_hour: int    # 0-23
+
+class AutoMixerPaymentVerifyRequest(BaseModel):
+    subscription_id: str
+    tx_hash: str
+
+class AutoMixerWindowUpdateRequest(BaseModel):
+    subscription_id: str
+    player_address: str
+    window_start_hour: int
+    window_end_hour: int
+
+class AutoMixerFundsStats(BaseModel):
+    total_received_doge: float = 0.0
+    buy_burn_amount: float = 0.0
+    dev_amount: float = 0.0
+    total_subscribers: int = 0
+    active_subscribers: int = 0
+    total_auto_mixes: int = 0
+
+# =====================================================
 # KERNEL OF WOW - SPECIAL INGREDIENT SYSTEM
 # =====================================================
 
