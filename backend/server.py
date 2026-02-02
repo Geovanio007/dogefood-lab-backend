@@ -5955,6 +5955,8 @@ async def auto_mixer_processor_loop():
             now = datetime.utcnow()
             current_hour = now.hour
             
+            logger.info(f"🤖 Auto-mixer checking at {now.strftime('%H:%M:%S')} UTC (hour: {current_hour})")
+            
             # Find active subscriptions where current hour is within their window
             # Handle windows that cross midnight
             active_subs = await db.auto_mixer_subscriptions.find({
@@ -5962,10 +5964,13 @@ async def auto_mixer_processor_loop():
                 "subscription_end": {"$gt": now}
             }).to_list(1000)
             
+            logger.info(f"🤖 Found {len(active_subs)} active subscriptions")
+            
             for sub in active_subs:
                 try:
                     start_hour = sub.get("window_start_hour", 0)
                     end_hour = sub.get("window_end_hour", 6)
+                    player_address = sub.get("player_address", "Unknown")
                     
                     # Check if current hour is within the window
                     in_window = False
@@ -5973,6 +5978,8 @@ async def auto_mixer_processor_loop():
                         in_window = start_hour <= current_hour < end_hour
                     else:  # Window crosses midnight
                         in_window = current_hour >= start_hour or current_hour < end_hour
+                    
+                    logger.info(f"🤖 Player {player_address[:20]}... window {start_hour}:00-{end_hour}:00, in_window: {in_window}")
                     
                     if not in_window:
                         continue
@@ -5983,76 +5990,81 @@ async def auto_mixer_processor_loop():
                         minutes_since_last = (now - last_mix).total_seconds() / 60
                         min_interval = 60 / AUTO_MIXER_CONFIG["mixes_per_hour"]
                         if minutes_since_last < min_interval:
+                            logger.info(f"🤖 Skipping {player_address[:20]}... - mixed {minutes_since_last:.1f} mins ago (interval: {min_interval})")
                             continue
                     
                     # Perform auto-mix for this player
-                    player_address = sub["player_address"]
                     player = await db.players.find_one({"address": player_address})
                     
                     if not player:
+                        logger.warning(f"🤖 Player not found: {player_address}")
                         continue
                     
                     player_level = player.get("level", 1)
                     
                     # Get available ingredients for player level
-                    available_ingredients = ingredient_system.get_available_ingredients(player_level)
+                    available_ingredients = ingredient_system.get_unlocked_ingredients(player_level)
                     
                     if len(available_ingredients) < 2:
+                        logger.warning(f"🤖 Not enough ingredients for {player_address[:20]}... (level {player_level})")
                         continue
                     
                     # Select random ingredients (2-4)
                     num_ingredients = random.randint(2, min(4, len(available_ingredients)))
-                    selected_ingredients = random.sample([ing["id"] for ing in available_ingredients], num_ingredients)
+                    selected_ingredients = random.sample([ing.id for ing in available_ingredients], num_ingredients)
+                    
+                    logger.info(f"🤖 Creating treat for {player_address[:20]}... with ingredients: {selected_ingredients}")
                     
                     # Create the treat using the game engine
-                    treat_result = game_engine.create_treat(
+                    treat_result = game_engine.calculate_treat_outcome(
                         ingredients=selected_ingredients,
-                        player_level=player_level
+                        player_level=player_level,
+                        player_address=player_address
                     )
                     
                     # Generate treat name
-                    flavor_names = ["Cosmic", "Stellar", "Lunar", "Solar", "Galactic", "Nebula", "Quantum"]
-                    treat_names = ["Biscuit", "Crunch", "Delight", "Snack", "Treat", "Nibble", "Morsel"]
+                    flavor_names = ["Cosmic", "Stellar", "Lunar", "Solar", "Galactic", "Nebula", "Quantum", "Nova", "Astral"]
+                    treat_names = ["Biscuit", "Crunch", "Delight", "Snack", "Treat", "Nibble", "Morsel", "Bone", "Chew"]
                     treat_name = f"{random.choice(flavor_names)} {random.choice(treat_names)}"
                     
-                    # Save the treat
+                    rarity = treat_result.get("rarity", "Common")
+                    points = treat_result.get("points", 10)
+                    xp = treat_result.get("xp", 5)
+                    timer_seconds = treat_result.get("timer_seconds", 300)
+                    
+                    # Save the treat (ready to collect immediately for auto-mixed)
                     treat_id = str(uuid.uuid4())
                     treat_doc = {
                         "id": treat_id,
                         "name": treat_name,
                         "creator_address": player_address,
                         "ingredients": selected_ingredients,
-                        "rarity": treat_result.get("rarity", "Common"),
+                        "rarity": rarity,
                         "flavor": treat_result.get("flavor", "Savory"),
                         "created_at": now,
+                        "ready_at": now,  # Ready immediately for auto-mixed treats
                         "image": treat_result.get("image", "🍪"),
                         "brewing_status": "ready",
-                        "points_reward": treat_result.get("points", 10),
-                        "xp_reward": treat_result.get("xp", 5),
-                        "auto_mixed": True
+                        "points_reward": points,
+                        "xp_reward": xp,
+                        "auto_mixed": True,
+                        "collected": False
                     }
                     
                     await db.treats.insert_one(treat_doc)
                     
-                    # Update player points and XP
-                    await db.players.update_one(
-                        {"address": player_address},
-                        {"$inc": {
-                            "points": treat_result.get("points", 10),
-                            "experience": treat_result.get("xp", 5)
-                        }}
-                    )
+                    logger.info(f"🤖 Created treat '{treat_name}' ({rarity}) for {player_address[:20]}... - {points} pts, {xp} XP")
                     
-                    # Record the auto-mix
+                    # Record the auto-mix in history
                     await db.auto_mix_history.insert_one({
                         "id": str(uuid.uuid4()),
                         "subscription_id": sub["id"],
                         "player_address": player_address,
                         "treat_id": treat_id,
                         "treat_name": treat_name,
-                        "treat_rarity": treat_result.get("rarity", "Common"),
-                        "points_earned": treat_result.get("points", 10),
-                        "xp_earned": treat_result.get("xp", 5),
+                        "treat_rarity": rarity,
+                        "points_earned": points,
+                        "xp_earned": xp,
                         "ingredients": selected_ingredients,
                         "created_at": now
                     })
@@ -6063,16 +6075,21 @@ async def auto_mixer_processor_loop():
                         {"$set": {"last_auto_mix": now}, "$inc": {"total_auto_mixes": 1}}
                     )
                     
-                    logger.info(f"🤖 Auto-mixed treat '{treat_name}' for {player_address}")
+                    logger.info(f"🤖 ✅ Auto-mixed treat '{treat_name}' for {player_address[:20]}...")
                     
                 except Exception as e:
-                    logger.error(f"Error processing auto-mix for {sub.get('player_address')}: {e}")
+                    logger.error(f"🤖 ❌ Error processing auto-mix for {sub.get('player_address', 'unknown')}: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
                     continue
                     
         except Exception as e:
-            logger.error(f"Error in auto-mixer loop: {e}")
+            logger.error(f"🤖 ❌ Error in auto-mixer loop: {str(e)}")
+            import traceback
+            traceback.print_exc()
         
         # Run every 10 minutes
+        logger.info("🤖 Auto-mixer sleeping for 10 minutes...")
         await asyncio.sleep(600)
 
 # Include the router in the main app
