@@ -1,13 +1,7 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
+  "rewrites": [
+    { "source": "/((?!static|.*\\..*).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
@@ -25,13 +19,19 @@
       ]
     },
     {
-      "source": "/static/:path*",
+      "source": "/static/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
       "source": "/version.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/game-mechanisms.html",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
       ]
@@ -54,37 +54,6 @@
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "headers": {
-        "Cache-Control": "no-cache, no-store, must-revalidate"
-      },
-      "continue": true
-    },
-    {
-      "src": "^/static/(.*)$",
-      "dest": "/static/$1"
-    },
-    {
-      "src": "^/(.*\\.(js|css))$",
-      "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
-      },
-      "dest": "/$1"
-    },
-    {
-      "src": "^/(.*\\.(png|jpg|jpeg|gif|ico|svg|webp|woff|woff2|ttf|eot))$",
-      "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
-      },
-      "dest": "/$1"
-    },
-    {
-      "src": "^/(.*)$",
-      "dest": "/index.html"
     }
   ]
 }
