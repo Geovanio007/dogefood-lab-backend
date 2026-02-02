@@ -6,9 +6,9 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
 import json
@@ -17,6 +17,7 @@ import random
 import asyncio
 from telegram import Bot
 import httpx  # For Firebase verification
+import blockcypher  # For DOGE transaction verification
 
 # Import Phase 2 services
 from services.anti_cheat import AntiCheatSystem
