@@ -1123,6 +1123,283 @@ async def credit_single_nft_holder(address: str):
         logger.error(f"Error crediting NFT holder {address}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.delete("/admin/remove-test-users")
+async def remove_test_users():
+    """
+    Admin endpoint to remove all test users from the database.
+    Removes players with addresses containing 'test', '0xTest', or 'test_' prefix.
+    """
+    try:
+        # Find test users
+        test_users = await db.players.find({
+            "$or": [
+                {"address": {"$regex": "test", "$options": "i"}},
+                {"address": {"$regex": "^0xTest", "$options": "i"}},
+                {"address": {"$regex": "^test_", "$options": "i"}},
+                {"nickname": {"$regex": "^test", "$options": "i"}}
+            ]
+        }).to_list(1000)
+        
+        removed_users = []
+        for user in test_users:
+            address = user.get("address")
+            nickname = user.get("nickname")
+            points = user.get("points", 0)
+            
+            # Remove the player
+            await db.players.delete_one({"address": address})
+            
+            # Also remove their treats
+            await db.treats.delete_many({"creator_address": address})
+            
+            # Remove from auto-mixer subscriptions
+            await db.auto_mixer_subscriptions.delete_many({"player_address": address})
+            
+            removed_users.append({
+                "address": address,
+                "nickname": nickname,
+                "points": points
+            })
+            logger.info(f"🗑️ Removed test user: {address} ({nickname})")
+        
+        return {
+            "success": True,
+            "message": f"Removed {len(removed_users)} test users",
+            "removed_count": len(removed_users),
+            "removed_users": removed_users
+        }
+        
+    except Exception as e:
+        logger.error(f"Error removing test users: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/admin/check-nft-holders")
+async def check_nft_holders_status():
+    """
+    Admin endpoint to check which players have DogeFood NFT but don't have VIP status.
+    Returns list of players who need to be credited.
+    """
+    try:
+        # Get all players
+        all_players = await db.players.find({}).to_list(10000)
+        
+        # Players with VIP status
+        vip_players = [p for p in all_players if p.get("is_nft_holder") or p.get("is_vip")]
+        
+        # Players without VIP but might be holders (need manual check)
+        non_vip_players = [p for p in all_players if not p.get("is_nft_holder") and not p.get("is_vip")]
+        
+        # Players with is_nft_holder=True but no bonus claimed
+        uncredited_vip = [p for p in all_players if p.get("is_nft_holder") and not p.get("vip_bonus_claimed")]
+        
+        return {
+            "total_players": len(all_players),
+            "vip_players": len(vip_players),
+            "non_vip_players": len(non_vip_players),
+            "uncredited_vip_count": len(uncredited_vip),
+            "uncredited_vip": [{"address": p.get("address"), "nickname": p.get("nickname"), "points": p.get("points", 0)} for p in uncredited_vip],
+            "nft_contract": DOGEFOOD_NFT_CONTRACT,
+            "note": "Use /admin/verify-nft-blockchain/{address} to check if a specific address holds the NFT"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking NFT holders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/admin/verify-nft-blockchain/{address}")
+async def verify_nft_on_blockchain(address: str):
+    """
+    Admin endpoint to verify NFT ownership directly on blockchain using Etherscan/Polygonscan API.
+    If holder, credits VIP bonus.
+    """
+    try:
+        # Use Etherscan API to check NFT balance
+        # The DogeFood NFT is on Ethereum mainnet
+        etherscan_api_key = os.environ.get("ETHERSCAN_API_KEY", "")
+        
+        # Check ERC-721 balance
+        url = f"https://api.etherscan.io/api?module=account&action=tokennfttx&contractaddress={DOGEFOOD_NFT_CONTRACT}&address={address}&page=1&offset=100&sort=desc"
+        if etherscan_api_key:
+            url += f"&apikey={etherscan_api_key}"
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=30.0)
+            data = response.json()
+        
+        # Check if address has received any NFTs from this contract
+        is_holder = False
+        nft_count = 0
+        
+        if data.get("status") == "1" and data.get("result"):
+            # Count NFTs currently held (received - sent)
+            received = 0
+            sent = 0
+            for tx in data.get("result", []):
+                if tx.get("to", "").lower() == address.lower():
+                    received += 1
+                if tx.get("from", "").lower() == address.lower():
+                    sent += 1
+            nft_count = received - sent
+            is_holder = nft_count > 0
+        
+        if is_holder:
+            # Credit the player
+            player = await db.players.find_one({"address": address})
+            
+            if player:
+                if not player.get("vip_bonus_claimed"):
+                    await db.players.update_one(
+                        {"address": address},
+                        {
+                            "$set": {
+                                "is_nft_holder": True,
+                                "is_vip": True,
+                                "vip_bonus_claimed": True
+                            },
+                            "$inc": {"points": 500}
+                        }
+                    )
+                    logger.info(f"🌟 Blockchain verified & credited: {address}")
+                    return {
+                        "address": address,
+                        "is_holder": True,
+                        "nft_count": nft_count,
+                        "action": "credited",
+                        "bonus_points": 500,
+                        "contract": DOGEFOOD_NFT_CONTRACT
+                    }
+                else:
+                    await db.players.update_one(
+                        {"address": address},
+                        {"$set": {"is_nft_holder": True, "is_vip": True}}
+                    )
+                    return {
+                        "address": address,
+                        "is_holder": True,
+                        "nft_count": nft_count,
+                        "action": "already_credited",
+                        "contract": DOGEFOOD_NFT_CONTRACT
+                    }
+            else:
+                # Create new VIP player
+                new_player = {
+                    "id": str(uuid.uuid4()),
+                    "address": address,
+                    "nickname": None,
+                    "is_nft_holder": True,
+                    "is_vip": True,
+                    "vip_bonus_claimed": True,
+                    "points": 500,
+                    "level": 1,
+                    "experience": 0,
+                    "created_treats": [],
+                    "last_active": datetime.utcnow(),
+                    "leaderboard_eligible": True
+                }
+                await db.players.insert_one(new_player)
+                return {
+                    "address": address,
+                    "is_holder": True,
+                    "nft_count": nft_count,
+                    "action": "created_new_vip",
+                    "bonus_points": 500,
+                    "contract": DOGEFOOD_NFT_CONTRACT
+                }
+        
+        return {
+            "address": address,
+            "is_holder": False,
+            "nft_count": 0,
+            "contract": DOGEFOOD_NFT_CONTRACT,
+            "message": "Address does not hold DogeFood NFT"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error verifying NFT on blockchain: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/admin/scan-and-credit-all-holders")
+async def scan_and_credit_all_nft_holders():
+    """
+    Admin endpoint to scan all players and verify their NFT ownership on blockchain.
+    Credits VIP bonus to any holder who hasn't received it yet.
+    """
+    try:
+        # Get all players who don't have VIP status yet
+        players_to_check = await db.players.find({
+            "$or": [
+                {"is_nft_holder": {"$ne": True}},
+                {"vip_bonus_claimed": {"$ne": True}}
+            ]
+        }).to_list(10000)
+        
+        credited = []
+        not_holders = []
+        already_credited = []
+        errors = []
+        
+        etherscan_api_key = os.environ.get("ETHERSCAN_API_KEY", "")
+        
+        async with httpx.AsyncClient() as client:
+            for player in players_to_check:
+                address = player.get("address") or ""
+                
+                # Skip non-ethereum addresses (Telegram users, guests, None)
+                if not address or not address.startswith("0x") or len(address) != 42:
+                    continue
+                
+                try:
+                    # Check blockchain
+                    url = f"https://api.etherscan.io/api?module=account&action=tokennfttx&contractaddress={DOGEFOOD_NFT_CONTRACT}&address={address}&page=1&offset=100&sort=desc"
+                    if etherscan_api_key:
+                        url += f"&apikey={etherscan_api_key}"
+                    
+                    response = await client.get(url, timeout=30.0)
+                    data = response.json()
+                    
+                    # Check if holder
+                    is_holder = False
+                    if data.get("status") == "1" and data.get("result"):
+                        received = sum(1 for tx in data.get("result", []) if tx.get("to", "").lower() == address.lower())
+                        sent = sum(1 for tx in data.get("result", []) if tx.get("from", "").lower() == address.lower())
+                        is_holder = (received - sent) > 0
+                    
+                    if is_holder:
+                        if not player.get("vip_bonus_claimed"):
+                            await db.players.update_one(
+                                {"address": address},
+                                {
+                                    "$set": {"is_nft_holder": True, "is_vip": True, "vip_bonus_claimed": True},
+                                    "$inc": {"points": 500}
+                                }
+                            )
+                            credited.append({"address": address, "nickname": player.get("nickname")})
+                            logger.info(f"🌟 Auto-credited: {address}")
+                        else:
+                            already_credited.append(address)
+                    else:
+                        not_holders.append(address)
+                    
+                    # Rate limit - Etherscan has 5 calls/sec limit
+                    await asyncio.sleep(0.25)
+                    
+                except Exception as e:
+                    errors.append({"address": address, "error": str(e)})
+        
+        return {
+            "success": True,
+            "credited_count": len(credited),
+            "credited_players": credited,
+            "already_credited": len(already_credited),
+            "not_holders": len(not_holders),
+            "errors": len(errors),
+            "error_details": errors[:10] if errors else []
+        }
+        
+    except Exception as e:
+        logger.error(f"Error scanning NFT holders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.get("/treats", response_model=List[DogeTreat])
 async def get_all_treats(limit: int = 50):
     treats = await db.treats.find().sort("created_at", -1).limit(limit).to_list(limit)
