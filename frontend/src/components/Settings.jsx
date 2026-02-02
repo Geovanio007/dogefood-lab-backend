@@ -33,7 +33,9 @@ import {
   Sparkles,
   Crown,
   Shield,
-  Info
+  Info,
+  Moon,
+  Sun
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -50,6 +52,12 @@ const Settings = () => {
   const [usernameError, setUsernameError] = useState('');
   const [savingUsername, setSavingUsername] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Check localStorage or system preference
+    const saved = localStorage.getItem('dogefood_dark_mode');
+    if (saved !== null) return saved === 'true';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   
   const { 
     soundEnabled, 
@@ -71,10 +79,14 @@ const Settings = () => {
   const [visualSettings, setVisualSettings] = useState({
     particleEffects: true,
     reducedMotion: false,
-    darkMode: false,
     autoMix: false,
     notifications: true,
   });
+
+  // Save dark mode preference
+  useEffect(() => {
+    localStorage.setItem('dogefood_dark_mode', isDarkMode.toString());
+  }, [isDarkMode]);
 
   // Get effective player address
   const getEffectiveAddress = () => {
@@ -207,7 +219,6 @@ const Settings = () => {
     setVisualSettings({
       particleEffects: true,
       reducedMotion: false,
-      darkMode: false,
       autoMix: false,
       notifications: true,
     });
@@ -215,9 +226,9 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50">
+    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-slate-900' : 'bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50'}`}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-sky-500 to-blue-600 text-white">
+      <div className={`${isDarkMode ? 'bg-gradient-to-r from-slate-800 to-slate-700' : 'bg-gradient-to-r from-sky-500 to-blue-600'} text-white`}>
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
@@ -233,18 +244,31 @@ const Settings = () => {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold">Settings</h1>
-                  <p className="text-sky-100 text-sm">Customize your DogeFood Lab experience</p>
+                  <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-sky-100'}`}>Customize your DogeFood Lab experience</p>
                 </div>
               </div>
             </div>
             
-            {/* Account Status Badge */}
-            {effectiveNFTStatus && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-400 to-sky-500 rounded-full shadow-lg">
-                <Crown className="w-5 h-5" />
-                <span className="font-semibold">VIP Scientist</span>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {/* Dark Mode Toggle */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="text-white hover:bg-white/20"
+                data-testid="dark-mode-toggle"
+              >
+                {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </Button>
+              
+              {/* Account Status Badge */}
+              {effectiveNFTStatus && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-400 to-sky-500 rounded-full shadow-lg">
+                  <Crown className="w-5 h-5" />
+                  <span className="font-semibold">VIP Scientist</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -252,10 +276,10 @@ const Settings = () => {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm p-1 rounded-2xl shadow-sm">
+          <TabsList className={`grid w-full grid-cols-4 p-1 rounded-2xl shadow-sm ${isDarkMode ? 'bg-slate-800' : 'bg-white/80 backdrop-blur-sm'}`}>
             <TabsTrigger 
               value="general" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl transition-all"
+              className={`rounded-xl transition-all ${isDarkMode ? 'data-[state=active]:bg-sky-600 data-[state=active]:text-white text-slate-300' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-blue-500 data-[state=active]:text-white'}`}
               data-testid="tab-general"
             >
               <SettingsIcon className="w-4 h-4 mr-2" />
@@ -263,7 +287,7 @@ const Settings = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="auto-mixer" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl transition-all"
+              className={`rounded-xl transition-all ${isDarkMode ? 'data-[state=active]:bg-sky-600 data-[state=active]:text-white text-slate-300' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-blue-500 data-[state=active]:text-white'}`}
               data-testid="tab-auto-mixer"
             >
               <Bot className="w-4 h-4 mr-2" />
@@ -271,7 +295,7 @@ const Settings = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="audio" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl transition-all"
+              className={`rounded-xl transition-all ${isDarkMode ? 'data-[state=active]:bg-sky-600 data-[state=active]:text-white text-slate-300' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-blue-500 data-[state=active]:text-white'}`}
               data-testid="tab-audio"
             >
               <Music className="w-4 h-4 mr-2" />
@@ -279,7 +303,7 @@ const Settings = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="account" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl transition-all"
+              className={`rounded-xl transition-all ${isDarkMode ? 'data-[state=active]:bg-sky-600 data-[state=active]:text-white text-slate-300' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-sky-500 data-[state=active]:to-blue-500 data-[state=active]:text-white'}`}
               data-testid="tab-account"
             >
               <User className="w-4 h-4 mr-2" />
@@ -289,35 +313,58 @@ const Settings = () => {
 
           {/* General Settings Tab */}
           <TabsContent value="general" className="space-y-6">
-            {/* Notifications */}
-            <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
+            {/* Dark Mode Card */}
+            <Card className={`border-0 shadow-lg ${isDarkMode ? 'bg-slate-800' : 'bg-white/90 backdrop-blur-sm'}`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-800">
-                  <Bell className="w-5 h-5 text-sky-600" />
+                <CardTitle className={`flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                  {isDarkMode ? <Moon className="w-5 h-5 text-sky-400" /> : <Sun className="w-5 h-5 text-sky-600" />}
+                  Appearance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`flex items-center justify-between p-4 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                  <div>
+                    <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Dark Mode</div>
+                    <div className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>Toggle between light and dark themes</div>
+                  </div>
+                  <Switch
+                    checked={isDarkMode}
+                    onCheckedChange={setIsDarkMode}
+                    data-testid="dark-mode-switch"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Notifications */}
+            <Card className={`border-0 shadow-lg ${isDarkMode ? 'bg-slate-800' : 'bg-white/90 backdrop-blur-sm'}`}>
+              <CardHeader>
+                <CardTitle className={`flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                  <Bell className={`w-5 h-5 ${isDarkMode ? 'text-sky-400' : 'text-sky-600'}`} />
                   Notifications
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-muted-foreground'}`}>
                   Configure your notification preferences
                 </p>
               </CardHeader>
               <CardContent>
-                <NotificationSettings />
+                <NotificationSettings isDarkMode={isDarkMode} />
               </CardContent>
             </Card>
 
             {/* Visual Settings */}
-            <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
+            <Card className={`border-0 shadow-lg ${isDarkMode ? 'bg-slate-800' : 'bg-white/90 backdrop-blur-sm'}`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-800">
-                  <Palette className="w-5 h-5 text-sky-600" />
+                <CardTitle className={`flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                  <Palette className={`w-5 h-5 ${isDarkMode ? 'text-sky-400' : 'text-sky-600'}`} />
                   Visual Settings
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                <div className={`flex items-center justify-between p-4 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                   <div>
-                    <div className="font-medium text-slate-800">Particle Effects</div>
-                    <div className="text-sm text-slate-500">Show floating particles and animations</div>
+                    <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Particle Effects</div>
+                    <div className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>Show floating particles and animations</div>
                   </div>
                   <Switch
                     checked={visualSettings.particleEffects}
@@ -326,10 +373,10 @@ const Settings = () => {
                   />
                 </div>
                 
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                <div className={`flex items-center justify-between p-4 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                   <div>
-                    <div className="font-medium text-slate-800">Reduced Motion</div>
-                    <div className="text-sm text-slate-500">Minimize animations for better performance</div>
+                    <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Reduced Motion</div>
+                    <div className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>Minimize animations for better performance</div>
                   </div>
                   <Switch
                     checked={visualSettings.reducedMotion}
@@ -341,18 +388,18 @@ const Settings = () => {
             </Card>
 
             {/* Gameplay Settings */}
-            <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
+            <Card className={`border-0 shadow-lg ${isDarkMode ? 'bg-slate-800' : 'bg-white/90 backdrop-blur-sm'}`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-800">
-                  <Zap className="w-5 h-5 text-sky-600" />
+                <CardTitle className={`flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                  <Zap className={`w-5 h-5 ${isDarkMode ? 'text-sky-400' : 'text-sky-600'}`} />
                   Gameplay
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                <div className={`flex items-center justify-between p-4 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                   <div>
-                    <div className="font-medium text-slate-800">Quick-Mix Mode</div>
-                    <div className="text-sm text-slate-500">Auto-start mixing when ingredients selected</div>
+                    <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Quick-Mix Mode</div>
+                    <div className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>Auto-start mixing when ingredients selected</div>
                   </div>
                   <Switch
                     checked={visualSettings.autoMix}
@@ -361,10 +408,10 @@ const Settings = () => {
                   />
                 </div>
                 
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                <div className={`flex items-center justify-between p-4 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                   <div>
-                    <div className="font-medium text-slate-800">Push Notifications</div>
-                    <div className="text-sm text-slate-500">Get notified about events and features</div>
+                    <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Push Notifications</div>
+                    <div className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>Get notified about events and features</div>
                   </div>
                   <Switch
                     checked={visualSettings.notifications}
@@ -382,13 +429,14 @@ const Settings = () => {
               <AutoMixerSubscription 
                 playerAddress={effectiveAddress}
                 playerNickname={playerData?.nickname}
+                isDarkMode={isDarkMode}
               />
             ) : (
-              <Card className="border-2 border-dashed border-slate-300">
+              <Card className={`border-2 border-dashed ${isDarkMode ? 'border-slate-600 bg-slate-800' : 'border-slate-300'}`}>
                 <CardContent className="py-12 text-center">
-                  <Bot className="w-12 h-12 mx-auto mb-4 text-slate-400" />
-                  <h3 className="text-lg font-semibold text-slate-600 mb-2">Connect to Access Auto-Mixer</h3>
-                  <p className="text-slate-500">Please connect your wallet or sign in to use the Auto-Mixer feature</p>
+                  <Bot className={`w-12 h-12 mx-auto mb-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                  <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-600'}`}>Connect to Access Auto-Mixer</h3>
+                  <p className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>Please connect your wallet or sign in to use the Auto-Mixer feature</p>
                 </CardContent>
               </Card>
             )}
@@ -396,21 +444,21 @@ const Settings = () => {
 
           {/* Audio Settings Tab */}
           <TabsContent value="audio" className="space-y-6">
-            <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
+            <Card className={`border-0 shadow-lg ${isDarkMode ? 'bg-slate-800' : 'bg-white/90 backdrop-blur-sm'}`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-800">
-                  {soundEnabled ? <Volume2 className="w-5 h-5 text-sky-600" /> : <VolumeX className="w-5 h-5 text-slate-400" />}
+                <CardTitle className={`flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                  {soundEnabled ? <Volume2 className={`w-5 h-5 ${isDarkMode ? 'text-sky-400' : 'text-sky-600'}`} /> : <VolumeX className="w-5 h-5 text-slate-400" />}
                   Audio Settings
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Music On/Off Toggle */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
+                <div className={`flex items-center justify-between p-4 rounded-xl border ${isDarkMode ? 'bg-purple-900/30 border-purple-700' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200'}`}>
                   <div className="flex items-center gap-3">
-                    <Music className="w-5 h-5 text-purple-600" />
+                    <Music className={`w-5 h-5 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
                     <div>
-                      <div className="font-medium text-slate-800">Background Music</div>
-                      <div className="text-sm text-slate-500">Play music when entering the game</div>
+                      <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Background Music</div>
+                      <div className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>Play music when entering the game</div>
                     </div>
                   </div>
                   <Switch
@@ -420,10 +468,10 @@ const Settings = () => {
                   />
                 </div>
                 
-                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                <div className={`flex items-center justify-between p-4 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                   <div>
-                    <div className="font-medium text-slate-800">Sound Effects</div>
-                    <div className="text-sm text-slate-500">Enable all game sounds and music</div>
+                    <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Sound Effects</div>
+                    <div className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>Enable all game sounds and music</div>
                   </div>
                   <Switch
                     checked={soundEnabled}
@@ -432,16 +480,17 @@ const Settings = () => {
                   />
                 </div>
                 
-                <div className="p-4 bg-slate-50 rounded-xl">
+                <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                   <div className="flex items-center justify-between mb-4">
-                    <div className="font-medium text-slate-800">Background Music Volume</div>
+                    <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Background Music Volume</div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-500">{musicVolume}%</span>
+                      <span className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>{musicVolume}%</span>
                       <Button 
                         variant="outline" 
                         size="sm"
                         onClick={handleMusicToggle}
                         disabled={!soundEnabled}
+                        className={isDarkMode ? 'border-slate-600 hover:bg-slate-600' : ''}
                         data-testid="play-music-btn"
                       >
                         {isMusicPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -458,16 +507,17 @@ const Settings = () => {
                   />
                 </div>
                 
-                <div className="p-4 bg-slate-50 rounded-xl">
+                <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                   <div className="flex items-center justify-between mb-4">
-                    <div className="font-medium text-slate-800">Effects Volume</div>
+                    <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Effects Volume</div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-500">{effectsVolume}%</span>
+                      <span className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>{effectsVolume}%</span>
                       <Button 
                         variant="outline" 
                         size="sm"
                         onClick={testEffectSound}
                         disabled={!soundEnabled}
+                        className={isDarkMode ? 'border-slate-600 hover:bg-slate-600' : ''}
                         data-testid="test-sound-btn"
                       >
                         Test
@@ -490,11 +540,11 @@ const Settings = () => {
           {/* Account Tab */}
           <TabsContent value="account" className="space-y-6">
             {/* Profile Card */}
-            <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm overflow-hidden">
-              <div className="h-24 bg-gradient-to-r from-sky-500 to-blue-600" />
+            <Card className={`border-0 shadow-lg overflow-hidden ${isDarkMode ? 'bg-slate-800' : 'bg-white/90 backdrop-blur-sm'}`}>
+              <div className={`h-24 ${isDarkMode ? 'bg-gradient-to-r from-slate-700 to-slate-600' : 'bg-gradient-to-r from-sky-500 to-blue-600'}`} />
               <CardContent className="relative pt-0">
                 <div className="flex flex-col md:flex-row md:items-end gap-4 -mt-12">
-                  <div className="w-24 h-24 bg-gradient-to-br from-sky-400 to-blue-500 rounded-2xl flex items-center justify-center text-4xl shadow-xl border-4 border-white">
+                  <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-4xl shadow-xl border-4 ${isDarkMode ? 'bg-gradient-to-br from-sky-600 to-blue-700 border-slate-800' : 'bg-gradient-to-br from-sky-400 to-blue-500 border-white'}`}>
                     {playerData?.selected_character === 'max' ? '🐕' : 
                      playerData?.selected_character === 'rex' ? '🦮' : 
                      playerData?.selected_character === 'luna' ? '🐩' : '👨‍🔬'}
@@ -508,7 +558,7 @@ const Settings = () => {
                             value={newUsername}
                             onChange={(e) => setNewUsername(e.target.value)}
                             placeholder="Enter username"
-                            className="flex-1"
+                            className={`flex-1 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : ''}`}
                             maxLength={20}
                             data-testid="username-input"
                           />
@@ -525,6 +575,7 @@ const Settings = () => {
                             size="sm" 
                             variant="outline"
                             onClick={cancelUsernameEdit}
+                            className={isDarkMode ? 'border-slate-600 hover:bg-slate-700' : ''}
                             data-testid="cancel-username-btn"
                           >
                             <X className="w-4 h-4" />
@@ -536,20 +587,21 @@ const Settings = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <h2 className="text-2xl font-bold text-slate-800">
+                        <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                           {playerData?.nickname || 'Anonymous Scientist'}
                         </h2>
                         <Button 
                           variant="ghost" 
                           size="sm" 
                           onClick={() => setIsEditingUsername(true)}
+                          className={isDarkMode ? 'hover:bg-slate-700' : ''}
                           data-testid="edit-username-btn"
                         >
                           <Edit2 className="w-4 h-4" />
                         </Button>
                       </div>
                     )}
-                    <p className="text-slate-500 text-sm mt-1 font-mono">
+                    <p className={`text-sm mt-1 font-mono ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                       {effectiveAddress ? `${effectiveAddress.slice(0, 8)}...${effectiveAddress.slice(-6)}` : 'Not connected'}
                     </p>
                   </div>
@@ -559,21 +611,21 @@ const Settings = () => {
 
             {/* Status Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className={`border-0 shadow-lg ${effectiveNFTStatus ? 'bg-gradient-to-br from-cyan-50 to-sky-100' : 'bg-white/90'}`}>
+              <Card className={`border-0 shadow-lg ${effectiveNFTStatus ? (isDarkMode ? 'bg-cyan-900/30' : 'bg-gradient-to-br from-cyan-50 to-sky-100') : (isDarkMode ? 'bg-slate-800' : 'bg-white/90')}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-xl ${effectiveNFTStatus ? 'bg-gradient-to-br from-cyan-400 to-sky-500' : 'bg-slate-200'}`}>
-                      {effectiveNFTStatus ? <Crown className="w-6 h-6 text-white" /> : <Shield className="w-6 h-6 text-slate-500" />}
+                    <div className={`p-3 rounded-xl ${effectiveNFTStatus ? 'bg-gradient-to-br from-cyan-400 to-sky-500' : (isDarkMode ? 'bg-slate-700' : 'bg-slate-200')}`}>
+                      {effectiveNFTStatus ? <Crown className="w-6 h-6 text-white" /> : <Shield className={`w-6 h-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-800">Account Status</h3>
-                      <p className={`text-sm ${effectiveNFTStatus ? 'text-sky-700' : 'text-slate-500'}`}>
+                      <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Account Status</h3>
+                      <p className={`text-sm ${effectiveNFTStatus ? (isDarkMode ? 'text-sky-300' : 'text-sky-700') : (isDarkMode ? 'text-slate-400' : 'text-slate-500')}`}>
                         {effectiveNFTStatus ? 'VIP Scientist (NFT Holder)' : 'Regular Scientist'}
                       </p>
                     </div>
                   </div>
                   {effectiveNFTStatus && (
-                    <div className="mt-4 p-3 bg-sky-100 rounded-lg text-sm text-sky-800">
+                    <div className={`mt-4 p-3 rounded-lg text-sm ${isDarkMode ? 'bg-sky-900/50 text-sky-300' : 'bg-sky-100 text-sky-800'}`}>
                       <Sparkles className="w-4 h-4 inline mr-1" />
                       500 Bonus Points + VIP Perks Active
                     </div>
@@ -581,15 +633,15 @@ const Settings = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-lg bg-white/90">
+              <Card className={`border-0 shadow-lg ${isDarkMode ? 'bg-slate-800' : 'bg-white/90'}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4">
                     <div className="p-3 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500">
                       <Info className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-800">Account Type</h3>
-                      <p className="text-sm text-slate-500">
+                      <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Account Type</h3>
+                      <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         {address ? 'Wallet Connected' : 
                          isTelegram ? 'Telegram User' : 
                          effectiveAddress?.startsWith('guest_') ? 'Guest Account' : 
@@ -603,23 +655,23 @@ const Settings = () => {
 
             {/* Player Stats */}
             {playerData && (
-              <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
+              <Card className={`border-0 shadow-lg ${isDarkMode ? 'bg-slate-800' : 'bg-white/90 backdrop-blur-sm'}`}>
                 <CardHeader>
-                  <CardTitle className="text-slate-800">Your Stats</CardTitle>
+                  <CardTitle className={isDarkMode ? 'text-white' : 'text-slate-800'}>Your Stats</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-sky-50 rounded-xl">
-                      <div className="text-3xl font-bold text-sky-600">{playerData.level || 1}</div>
-                      <div className="text-sm text-sky-700">Level</div>
+                    <div className={`text-center p-4 rounded-xl ${isDarkMode ? 'bg-sky-900/30' : 'bg-sky-50'}`}>
+                      <div className={`text-3xl font-bold ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>{playerData.level || 1}</div>
+                      <div className={`text-sm ${isDarkMode ? 'text-sky-400' : 'text-sky-700'}`}>Level</div>
                     </div>
-                    <div className="text-center p-4 bg-emerald-50 rounded-xl">
-                      <div className="text-3xl font-bold text-emerald-600">{playerData.points || 0}</div>
-                      <div className="text-sm text-emerald-700">Points</div>
+                    <div className={`text-center p-4 rounded-xl ${isDarkMode ? 'bg-emerald-900/30' : 'bg-emerald-50'}`}>
+                      <div className={`text-3xl font-bold ${isDarkMode ? 'text-emerald-300' : 'text-emerald-600'}`}>{playerData.points || 0}</div>
+                      <div className={`text-sm ${isDarkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>Points</div>
                     </div>
-                    <div className="text-center p-4 bg-blue-50 rounded-xl">
-                      <div className="text-3xl font-bold text-blue-600">{playerData.experience || 0}</div>
-                      <div className="text-sm text-blue-700">XP</div>
+                    <div className={`text-center p-4 rounded-xl ${isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
+                      <div className={`text-3xl font-bold ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>{playerData.experience || 0}</div>
+                      <div className={`text-sm ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>XP</div>
                     </div>
                   </div>
                 </CardContent>
@@ -627,13 +679,25 @@ const Settings = () => {
             )}
 
             {/* Actions */}
-            <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm">
+            <Card className={`border-0 shadow-lg ${isDarkMode ? 'bg-slate-800' : 'bg-white/90 backdrop-blur-sm'}`}>
               <CardContent className="p-6">
                 <div className="flex gap-3">
-                  <Button variant="outline" size="sm" onClick={playClick} data-testid="export-data-btn">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={playClick}
+                    className={isDarkMode ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}
+                    data-testid="export-data-btn"
+                  >
                     Export Data
                   </Button>
-                  <Button variant="outline" size="sm" onClick={resetSettings} data-testid="reset-settings-btn">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={resetSettings}
+                    className={isDarkMode ? 'border-slate-600 text-slate-300 hover:bg-slate-700' : ''}
+                    data-testid="reset-settings-btn"
+                  >
                     Reset Settings
                   </Button>
                 </div>
@@ -643,7 +707,7 @@ const Settings = () => {
         </Tabs>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-sm text-slate-500">
+        <div className={`mt-8 text-center text-sm ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
           <p>DogeFood Lab v1.0.0 Beta • Built with love for the Dogecoin community</p>
         </div>
       </div>
