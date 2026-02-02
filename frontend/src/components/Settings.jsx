@@ -296,9 +296,9 @@ const Settings = () => {
                   <Bell className="w-5 h-5 text-amber-600" />
                   Notifications
                 </CardTitle>
-                <CardDescription>
+                <p>
                   Configure your notification preferences
-                </CardDescription>
+                </p>
               </CardHeader>
               <CardContent>
                 <NotificationSettings />
