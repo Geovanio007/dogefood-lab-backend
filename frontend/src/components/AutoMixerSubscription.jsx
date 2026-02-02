@@ -605,28 +605,15 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
 
   const fetchData = useCallback(async () => {
     try {
-      // Fetch config, subscription, stats, and agent status in parallel
-      const [configRes, subRes, statsRes, agentRes] = await Promise.all([
+      // Always fetch config, stats, and agent status
+      const [configRes, statsRes, agentRes] = await Promise.all([
         fetch(`${BACKEND_URL}/api/auto-mixer/config`),
-        fetch(`${BACKEND_URL}/api/auto-mixer/subscription/${playerAddress}`),
         fetch(`${BACKEND_URL}/api/auto-mixer/funds-stats`),
         fetch(`${BACKEND_URL}/api/auto-mixer/agent-status`)
       ]);
 
       if (configRes.ok) {
         setConfig(await configRes.json());
-      }
-
-      if (subRes.ok) {
-        const subData = await subRes.json();
-        setSubscription(subData.subscription);
-        if (subData.subscription) {
-          setWindowStart(subData.subscription.window_start_hour);
-          setWindowEnd(subData.subscription.window_end_hour);
-          if (subData.subscription.scheduled_dates) {
-            setSelectedDates(subData.subscription.scheduled_dates.map(d => new Date(d)));
-          }
-        }
       }
 
       if (statsRes.ok) {
@@ -637,20 +624,36 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
         setAgentStatus(await agentRes.json());
       }
 
-      // Fetch player-specific detailed stats if there's an active subscription
-      if (subscription?.status === 'active') {
-        const [historyRes, playerStatsRes] = await Promise.all([
-          fetch(`${BACKEND_URL}/api/auto-mixer/history/${playerAddress}`),
-          fetch(`${BACKEND_URL}/api/auto-mixer/detailed-stats/${playerAddress}`)
-        ]);
-        
-        if (historyRes.ok) {
-          const historyData = await historyRes.json();
-          setMixHistory(historyData.history || []);
+      // Only fetch player-specific data if playerAddress is provided
+      if (playerAddress) {
+        const subRes = await fetch(`${BACKEND_URL}/api/auto-mixer/subscription/${playerAddress}`);
+        if (subRes.ok) {
+          const subData = await subRes.json();
+          setSubscription(subData.subscription);
+          if (subData.subscription) {
+            setWindowStart(subData.subscription.window_start_hour);
+            setWindowEnd(subData.subscription.window_end_hour);
+            if (subData.subscription.scheduled_dates) {
+              setSelectedDates(subData.subscription.scheduled_dates.map(d => new Date(d)));
+            }
+          }
         }
-        
-        if (playerStatsRes.ok) {
-          setPlayerStats(await playerStatsRes.json());
+
+        // Fetch player-specific detailed stats if there's an active subscription
+        if (subscription?.status === 'active') {
+          const [historyRes, playerStatsRes] = await Promise.all([
+            fetch(`${BACKEND_URL}/api/auto-mixer/history/${playerAddress}`),
+            fetch(`${BACKEND_URL}/api/auto-mixer/detailed-stats/${playerAddress}`)
+          ]);
+          
+          if (historyRes.ok) {
+            const historyData = await historyRes.json();
+            setMixHistory(historyData.history || []);
+          }
+          
+          if (playerStatsRes.ok) {
+            setPlayerStats(await playerStatsRes.json());
+          }
         }
       }
     } catch (err) {
@@ -661,10 +664,8 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
   }, [playerAddress, subscription?.status]);
 
   useEffect(() => {
-    if (playerAddress) {
-      fetchData();
-    }
-  }, [playerAddress, fetchData]);
+    fetchData();
+  }, [fetchData]);
 
   // Poll for stats every 30 seconds
   useEffect(() => {
