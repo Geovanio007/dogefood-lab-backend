@@ -1173,6 +1173,55 @@ async def remove_test_users():
         logger.error(f"Error removing test users: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.delete("/admin/remove-placeholder-accounts")
+async def remove_placeholder_accounts():
+    """
+    Admin endpoint to remove placeholder accounts - players who were created
+    but never actually signed up (no selected_character).
+    Only removes accounts with 500 or fewer points (just the signup bonus).
+    """
+    try:
+        # Find placeholder accounts - no character selected and only have signup bonus
+        placeholder_accounts = await db.players.find({
+            "selected_character": {"$exists": False},
+            "points": {"$lte": 500}
+        }).to_list(10000)
+        
+        # Also find accounts where selected_character is None
+        placeholder_accounts_null = await db.players.find({
+            "selected_character": None,
+            "points": {"$lte": 500}
+        }).to_list(10000)
+        
+        # Combine and dedupe
+        all_placeholders = {p.get("address"): p for p in placeholder_accounts + placeholder_accounts_null}
+        
+        removed = []
+        for address, player in all_placeholders.items():
+            if not address:
+                continue
+                
+            # Remove the placeholder account
+            await db.players.delete_one({"address": address})
+            
+            removed.append({
+                "address": address,
+                "nickname": player.get("nickname"),
+                "points": player.get("points", 0)
+            })
+            logger.info(f"🗑️ Removed placeholder account: {address}")
+        
+        return {
+            "success": True,
+            "message": f"Removed {len(removed)} placeholder accounts",
+            "removed_count": len(removed),
+            "removed_accounts": removed[:50]  # Show first 50
+        }
+        
+    except Exception as e:
+        logger.error(f"Error removing placeholder accounts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.get("/admin/check-nft-holders")
 async def check_nft_holders_status():
     """
