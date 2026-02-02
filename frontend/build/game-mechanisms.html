@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧪 DogeFood Lab - How It Works</title>
+    <title>DogeFood Lab - Complete Game Guide</title>
     <style>
         * {
             margin: 0;
@@ -14,8 +14,8 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
             line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1a1a2e;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
             min-height: 100vh;
         }
         
@@ -23,155 +23,320 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.97);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
+            border-radius: 24px;
             margin-top: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
         
         .header {
             text-align: center;
             margin-bottom: 40px;
-            padding: 30px 0;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            border-radius: 15px;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+            border-radius: 20px;
             color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 50%);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
         }
         
         .header h1 {
-            font-size: 3em;
+            font-size: 2.8em;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            position: relative;
         }
         
         .header p {
             font-size: 1.2em;
-            opacity: 0.9;
+            opacity: 0.95;
+            position: relative;
         }
         
         .section {
-            margin-bottom: 40px;
-            padding: 30px;
+            margin-bottom: 35px;
+            padding: 28px;
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-            border-left: 5px solid #667eea;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border-left: 5px solid #f59e0b;
         }
         
         .section h2 {
-            color: #667eea;
-            font-size: 2.2em;
+            color: #b45309;
+            font-size: 1.9em;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
         
         .section h3 {
-            color: #764ba2;
-            font-size: 1.5em;
-            margin: 25px 0 15px 0;
-            border-bottom: 2px solid #f093fb;
-            padding-bottom: 5px;
+            color: #d97706;
+            font-size: 1.4em;
+            margin: 22px 0 12px 0;
+            border-bottom: 2px solid #fcd34d;
+            padding-bottom: 6px;
         }
         
         .section p, .section li {
             margin-bottom: 10px;
-            font-size: 1.1em;
+            font-size: 1.05em;
+            color: #374151;
         }
         
-        .section ul {
+        .section ul, .section ol {
             margin-left: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
         
         .highlight {
-            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 12px;
             margin: 20px 0;
-            border-left: 4px solid #e17055;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .highlight h3 {
+            border-bottom: none;
+            margin-top: 0;
         }
         
         .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+            margin: 25px 0;
         }
         
         .feature-card {
-            background: linear-gradient(135deg, #a8e6cf, #dcedc8);
-            padding: 25px;
-            border-radius: 15px;
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            padding: 22px;
+            border-radius: 14px;
             text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.25);
         }
         
         .feature-card h4 {
-            font-size: 1.3em;
-            margin-bottom: 15px;
-            color: #2d5a27;
+            font-size: 1.2em;
+            margin-bottom: 12px;
+            color: #92400e;
         }
         
+        .feature-card p {
+            color: #78350f;
+            font-size: 0.95em;
+        }
+        
+        /* Ingredient Cards */
+        .ingredient-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .ingredient-card {
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid;
+            transition: transform 0.2s ease;
+        }
+        
+        .ingredient-card:hover {
+            transform: scale(1.02);
+        }
+        
+        .ingredient-card img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 8px;
+            border-radius: 8px;
+        }
+        
+        .ingredient-card .name {
+            font-weight: bold;
+            font-size: 0.95em;
+            margin-bottom: 4px;
+        }
+        
+        .ingredient-card .effect {
+            font-size: 0.8em;
+            opacity: 0.85;
+            padding: 3px 8px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        /* Category Colors */
+        .cat-core { background: linear-gradient(135deg, #fef3c7, #fde68a); border-color: #f59e0b; }
+        .cat-core .name { color: #92400e; }
+        
+        .cat-elonverse { background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-color: #3b82f6; }
+        .cat-elonverse .name { color: #1e40af; }
+        
+        .cat-space { background: linear-gradient(135deg, #e9d5ff, #c4b5fd); border-color: #8b5cf6; }
+        .cat-space .name { color: #5b21b6; }
+        
+        .cat-lab { background: linear-gradient(135deg, #d1fae5, #a7f3d0); border-color: #22c55e; }
+        .cat-lab .name { color: #166534; }
+        
+        .cat-mythic { 
+            background: linear-gradient(135deg, #fef3c7, #fce7f3, #e9d5ff); 
+            border-color: #f59e0b;
+            animation: mythic-glow 2s ease-in-out infinite;
+        }
+        .cat-mythic .name { color: #92400e; }
+        
+        @keyframes mythic-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.5); }
+        }
+        
+        /* Rarity Table */
         .rarity-table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         }
         
         .rarity-table th,
         .rarity-table td {
-            padding: 15px;
+            padding: 14px 12px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #e5e7eb;
         }
         
         .rarity-table th {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f59e0b, #d97706);
             color: white;
-            font-weight: bold;
+            font-weight: 600;
         }
         
-        .rarity-common { background-color: #95a5a6; color: white; }
-        .rarity-uncommon { background-color: #27ae60; color: white; }
-        .rarity-rare { background-color: #3498db; color: white; }
-        .rarity-epic { background-color: #9b59b6; color: white; }
-        .rarity-legendary { background-color: #f39c12; color: white; }
-        .rarity-mythic { background-color: #e74c3c; color: white; }
+        .rarity-common { background-color: #6b7280; color: white; border-radius: 6px; padding: 4px 10px; }
+        .rarity-uncommon { background-color: #22c55e; color: white; border-radius: 6px; padding: 4px 10px; }
+        .rarity-rare { background-color: #3b82f6; color: white; border-radius: 6px; padding: 4px 10px; }
+        .rarity-epic { background-color: #8b5cf6; color: white; border-radius: 6px; padding: 4px 10px; }
+        .rarity-legendary { background-color: #f59e0b; color: white; border-radius: 6px; padding: 4px 10px; }
+        .rarity-mythic { background: linear-gradient(135deg, #f59e0b, #ec4899); color: white; border-radius: 6px; padding: 4px 10px; }
+        
+        /* Recipe Cards */
+        .recipe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .recipe-card {
+            background: white;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            border: 2px solid #e5e7eb;
+        }
+        
+        .recipe-card h4 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            color: #1f2937;
+        }
+        
+        .recipe-ingredients {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 12px 0;
+        }
+        
+        .recipe-ingredient {
+            background: #f3f4f6;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         
         .back-button {
             position: fixed;
             top: 20px;
             left: 20px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #f59e0b, #d97706);
             color: white;
             border: none;
-            padding: 15px 25px;
+            padding: 14px 24px;
             border-radius: 50px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 1.1em;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            font-size: 1em;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
             transition: all 0.3s ease;
             z-index: 1000;
         }
         
         .back-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 6px 25px rgba(245, 158, 11, 0.5);
         }
         
         .emoji {
-            font-size: 1.5em;
-            margin-right: 10px;
+            font-size: 1.4em;
         }
+        
+        /* Category Section Headers */
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin: 20px 0 15px 0;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .category-header.core { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; }
+        .category-header.elonverse { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; }
+        .category-header.space { background: linear-gradient(135deg, #e9d5ff, #c4b5fd); color: #5b21b6; }
+        .category-header.lab { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #166534; }
+        .category-header.mythic { background: linear-gradient(135deg, #fef3c7, #fce7f3); color: #92400e; }
         
         @media (max-width: 768px) {
             .container {
@@ -184,495 +349,540 @@
             }
             
             .section {
-                padding: 20px;
+                padding: 18px;
             }
             
             .section h2 {
-                font-size: 1.8em;
+                font-size: 1.5em;
+            }
+            
+            .back-button {
+                padding: 10px 18px;
+                font-size: 0.9em;
             }
         }
     </style>
 </head>
 <body>
-    <button class="back-button" onclick="window.close()">← Back to Game</button>
+    <button class="back-button" onclick="goBack()">Back to Game</button>
     
     <div class="container">
         <div class="header">
-            <h1>🧪 DogeFood Lab</h1>
-            <p>Complete Game Mechanisms Guide</p>
+            <h1>DogeFood Lab</h1>
+            <p>Complete Game Mechanics Guide</p>
         </div>
 
         <!-- Game Overview -->
         <div class="section">
             <h2><span class="emoji">🎮</span>Game Overview</h2>
-            <p><strong>DogeFood Lab</strong> is a Web3-integrated treat creation game where players become scientists mixing magical ingredients to create unique treats for Doge. Compete with other players, level up your skills, and earn rewards in this playful laboratory experience.</p>
+            <p><strong>DogeFood Lab</strong> is a Web3-powered treat creation game where you become a scientist mixing cosmic ingredients to craft unique treats. Compete on leaderboards, level up, discover secret recipes, and prepare for $LAB token rewards!</p>
             
             <div class="highlight">
-                <h3>🎯 Main Objectives</h3>
+                <h3>Core Objectives</h3>
                 <ul>
-                    <li><strong>Create Treats:</strong> Mix ingredients to craft treats with different rarities</li>
-                    <li><strong>Level Progress:</strong> Gain experience and unlock new ingredients</li>
+                    <li><strong>Create Treats:</strong> Mix 1-5 ingredients to craft treats with varying rarities</li>
+                    <li><strong>Level Up:</strong> Gain XP to unlock new ingredient categories</li>
                     <li><strong>Compete:</strong> Climb the leaderboard by earning points</li>
-                    <li><strong>Collect:</strong> Build your collection of rare and unique treats</li>
+                    <li><strong>Discover:</strong> Find secret recipes for bonus rewards</li>
+                    <li><strong>Collect:</strong> Build your collection of rare and Mythic treats</li>
                 </ul>
             </div>
         </div>
 
-        <!-- Authentication Systems -->
+        <!-- Ingredient System -->
         <div class="section">
-            <h2><span class="emoji">🔐</span>Authentication & Registration</h2>
+            <h2><span class="emoji">🧪</span>Complete Ingredient Guide</h2>
+            <p>Ingredients are organized into 5 categories, each unlocked at different levels. Higher-tier ingredients provide better rarity bonuses and special effects!</p>
             
-            <h3>🔗 Wallet Authentication (Web3)</h3>
-            <ul>
-                <li>Connect your Web3 wallet (MetaMask, WalletConnect, etc.)</li>
-                <li>Register with a custom username (3-20 characters)</li>
-                <li>Sign a message to verify wallet ownership</li>
-                <li>Full access to all game features</li>
-            </ul>
-            
-            <h3>📱 Telegram Authentication</h3>
-            <ul>
-                <li>Play directly through Telegram Mini App</li>
-                <li>Automatic registration using your Telegram profile</li>
-                <li>Use first name or username as your game identity</li>
-                <li>Option to link wallet address later for Web3 features</li>
-            </ul>
-            
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h4>🌐 Hybrid System</h4>
-                    <p>Both authentication methods supported simultaneously</p>
+            <!-- Core Ingredients -->
+            <div class="category-header core">
+                <span>🦴</span> CORE INGREDIENTS (Level 1-5)
+            </div>
+            <p>Your starter ingredients - the foundation of every great treat!</p>
+            <div class="ingredient-grid">
+                <div class="ingredient-card cat-core">
+                    <img src="https://i.ibb.co/hJnhLxKD/Chat-GPT-Image-Dec-29-2025-03-34-58-PM.png" alt="Crunchy Kibble">
+                    <div class="name">🦴 Crunchy Kibble</div>
+                    <div class="effect">Basic - Level 1</div>
                 </div>
-                <div class="feature-card">
-                    <h4>🔗 Account Linking</h4>
-                    <p>Link Telegram account to wallet for full features</p>
+                <div class="ingredient-card cat-core">
+                    <img src="https://i.ibb.co/N6k24F30/Chat-GPT-Image-Dec-29-2025-03-38-01-PM.png" alt="Golden Bone Dust">
+                    <div class="name">✨ Golden Bone Dust</div>
+                    <div class="effect">XP Boost - Level 2</div>
+                </div>
+                <div class="ingredient-card cat-core">
+                    <img src="https://i.ibb.co/gM0STr7K/Chat-GPT-Image-Dec-29-2025-03-38-54-PM.png" alt="Meme Meat Cubes">
+                    <div class="name">🥩 Meme Meat Cubes</div>
+                    <div class="effect">Basic - Level 1</div>
+                </div>
+                <div class="ingredient-card cat-core">
+                    <img src="https://i.ibb.co/jPyM954x/Chat-GPT-Image-Dec-29-2025-03-40-20-PM.png" alt="Shiba Crunch Flakes">
+                    <div class="name">🥣 Shiba Crunch Flakes</div>
+                    <div class="effect">Basic - Level 1</div>
+                </div>
+                <div class="ingredient-card cat-core">
+                    <img src="https://i.ibb.co/KpfGWYZ4/Chat-GPT-Image-Dec-29-2025-05-13-37-PM.png" alt="Woof Whey Powder">
+                    <div class="name">💪 Woof Whey Powder</div>
+                    <div class="effect">Minor XP Boost - Level 3</div>
+                </div>
+            </div>
+            
+            <!-- Elonverse Ingredients -->
+            <div class="category-header elonverse">
+                <span>🚀</span> ELONVERSE INGREDIENTS (Level 6-10)
+            </div>
+            <p>Tech-powered ingredients inspired by the future of space exploration!</p>
+            <div class="ingredient-grid">
+                <div class="ingredient-card cat-elonverse">
+                    <img src="https://i.ibb.co/p6FwwqCz/Chat-GPT-Image-Dec-29-2025-05-14-36-PM.png" alt="Rocket Fuel Syrup">
+                    <div class="name">🚀 Rocket Fuel Syrup</div>
+                    <div class="effect">Rarity Boost - Level 6</div>
+                </div>
+                <div class="ingredient-card cat-elonverse">
+                    <img src="https://i.ibb.co/C3DmPjvX/Chat-GPT-Image-Dec-29-2025-05-14-51-PM.png" alt="Neural Dust">
+                    <div class="name">🧠 Neural Dust</div>
+                    <div class="effect">XP Boost - Level 7</div>
+                </div>
+                <div class="ingredient-card cat-elonverse">
+                    <img src="https://i.ibb.co/tp0ZQWZG/Chat-GPT-Image-Dec-29-2025-05-15-03-PM.png" alt="Starship Alloy Shavings">
+                    <div class="name">⚙️ Starship Alloy Shavings</div>
+                    <div class="effect">Legendary Gate - Level 9</div>
+                </div>
+                <div class="ingredient-card cat-elonverse">
+                    <img src="https://i.ibb.co/Jj39z1mz/Chat-GPT-Image-Dec-29-2025-05-27-05-PM.png" alt="Solar Charge Crystals">
+                    <div class="name">☀️ Solar Charge Crystals</div>
+                    <div class="effect">Timer Reduction - Level 6</div>
+                </div>
+                <div class="ingredient-card cat-elonverse">
+                    <img src="https://i.ibb.co/WvsBkW0r/Chat-GPT-Image-Dec-29-2025-05-27-28-PM.png" alt="X-Signal Spice">
+                    <div class="name">📡 X-Signal Spice</div>
+                    <div class="effect">Visual Effect - Level 8</div>
+                </div>
+                <div class="ingredient-card cat-elonverse">
+                    <img src="https://i.ibb.co/YTRHfSGM/Chat-GPT-Image-Dec-29-2025-05-27-46-PM.png" alt="Mars Regolith Powder">
+                    <div class="name">🔴 Mars Regolith Powder</div>
+                    <div class="effect">Legendary Gate - Level 10</div>
+                </div>
+            </div>
+            
+            <!-- Space Ingredients -->
+            <div class="category-header space">
+                <span>🌌</span> SPACE INGREDIENTS (Level 11-15)
+            </div>
+            <p>Cosmic ingredients harvested from the depths of space!</p>
+            <div class="ingredient-grid">
+                <div class="ingredient-card cat-space">
+                    <img src="https://i.ibb.co/N2YdDKTK/Chat-GPT-Image-Dec-29-2025-05-35-53-PM.png" alt="Moon Cheese">
+                    <div class="name">🌙 Moon Cheese</div>
+                    <div class="effect">Visual Glow - Level 11</div>
+                </div>
+                <div class="ingredient-card cat-space">
+                    <img src="https://i.ibb.co/bnKrW6z/Chat-GPT-Image-Dec-29-2025-05-36-42-PM.png" alt="Cosmic Ice Cubes">
+                    <div class="name">🧊 Cosmic Ice Cubes</div>
+                    <div class="effect">Timer Increase - Level 11</div>
+                </div>
+                <div class="ingredient-card cat-space">
+                    <img src="https://i.ibb.co/QF5t8Twh/Chat-GPT-Image-Dec-29-2025-05-36-57-PM.png" alt="Asteroid Protein">
+                    <div class="name">☄️ Asteroid Protein</div>
+                    <div class="effect">Points Boost - Level 12</div>
+                </div>
+                <div class="ingredient-card cat-space">
+                    <img src="https://i.ibb.co/G4Xp1fHf/Chat-GPT-Image-Dec-29-2025-06-05-41-PM.png" alt="Dark Matter Sprinkles">
+                    <div class="name">🌌 Dark Matter Sprinkles</div>
+                    <div class="effect">Legendary Gate - Level 14</div>
+                </div>
+                <div class="ingredient-card cat-space">
+                    <img src="https://i.ibb.co/67c4cpzW/Chat-GPT-Image-Dec-29-2025-05-47-22-PM.png" alt="Plasma Sugar">
+                    <div class="name">⚡ Plasma Sugar</div>
+                    <div class="effect">XP Boost - Level 12</div>
+                </div>
+                <div class="ingredient-card cat-space">
+                    <img src="https://i.ibb.co/DHtQZCDg/Chat-GPT-Image-Dec-29-2025-05-47-37-PM.png" alt="Zero-G Gel">
+                    <div class="name">🫧 Zero-G Gel</div>
+                    <div class="effect">Mythic Gate - Level 15</div>
+                </div>
+            </div>
+            
+            <!-- Lab Ingredients -->
+            <div class="category-header lab">
+                <span>🧬</span> LAB INGREDIENTS (Level 11-15)
+            </div>
+            <p>Experimental ingredients from cutting-edge laboratory research!</p>
+            <div class="ingredient-grid">
+                <div class="ingredient-card cat-lab">
+                    <img src="https://i.ibb.co/jP4ZB78c/Chat-GPT-Image-Dec-29-2025-05-56-01-PM.png" alt="Radioactive Carrots">
+                    <div class="name">🥕 Radioactive Carrots</div>
+                    <div class="effect">Mutation Chance - Level 11</div>
+                </div>
+                <div class="ingredient-card cat-lab">
+                    <img src="https://i.ibb.co/NngCmPyv/Chat-GPT-Image-Dec-29-2025-05-57-02-PM.png" alt="Quantum Sauce">
+                    <div class="name">🧪 Quantum Sauce</div>
+                    <div class="effect">RNG Boost - Level 13</div>
+                </div>
+                <div class="ingredient-card cat-lab">
+                    <img src="https://i.ibb.co/2Y7x1VCL/Chat-GPT-Image-Dec-29-2025-05-57-23-PM.png" alt="Time-Warp Yeast">
+                    <div class="name">⏰ Time-Warp Yeast</div>
+                    <div class="effect">Timer Randomizer - Level 12</div>
+                </div>
+                <div class="ingredient-card cat-lab">
+                    <img src="https://i.ibb.co/vxnphvHf/Chat-GPT-Image-Dec-29-2025-05-57-40-PM.png" alt="Glitch Spice">
+                    <div class="name">👾 Glitch Spice</div>
+                    <div class="effect">Visual Glitch - Level 14</div>
+                </div>
+                <div class="ingredient-card cat-lab">
+                    <img src="https://i.ibb.co/23f7fwgz/Chat-GPT-Image-Dec-29-2025-05-57-54-PM.png" alt="Nano Vitamins">
+                    <div class="name">💊 Nano Vitamins</div>
+                    <div class="effect">XP Boost - Level 11</div>
+                </div>
+            </div>
+            
+            <!-- Mythic Ingredients -->
+            <div class="category-header mythic">
+                <span>✨</span> MYTHIC INGREDIENTS (Level 16+)
+            </div>
+            <p>Ultra-rare legendary ingredients - required for Mythic-tier treats!</p>
+            <div class="ingredient-grid">
+                <div class="ingredient-card cat-mythic">
+                    <img src="https://i.ibb.co/b5J2fdK8/Chat-GPT-Image-Dec-29-2025-06-05-41-PM.png" alt="Doge Relic Fragment">
+                    <div class="name">🏺 Doge Relic Fragment</div>
+                    <div class="effect">Mythic Required - Level 16</div>
+                </div>
+                <div class="ingredient-card cat-mythic">
+                    <img src="https://i.ibb.co/4wxwLrjg/Chat-GPT-Image-Dec-29-2025-06-06-10-PM.png" alt="Genesis Biscuit">
+                    <div class="name">🍪 Genesis Biscuit</div>
+                    <div class="effect">Mythic Required - Level 18</div>
+                </div>
+                <div class="ingredient-card cat-mythic">
+                    <img src="https://i.ibb.co/qLLBcjDJ/Chat-GPT-Image-Dec-29-2025-06-06-25-PM.png" alt="Cosmic Shiba Hair">
+                    <div class="name">🐕 Cosmic Shiba Hair</div>
+                    <div class="effect">Mythic Required - Level 20</div>
+                </div>
+                <div class="ingredient-card cat-mythic">
+                    <img src="https://i.ibb.co/GLKn4m5/Chat-GPT-Image-Dec-29-2025-06-06-37-PM.png" alt="Singularity Syrup">
+                    <div class="name">🌀 Singularity Syrup</div>
+                    <div class="effect">Mythic Required - Level 25</div>
                 </div>
             </div>
         </div>
 
-        <!-- Treat Creation System -->
+        <!-- Rarity System -->
         <div class="section">
-            <h2><span class="emoji">🧪</span>Treat Creation System</h2>
-            
-            <h3>🥄 Mixing Process</h3>
-            <p>The core gameplay revolves around mixing ingredients to create treats:</p>
-            <ol>
-                <li><strong>Select Ingredients:</strong> Choose 2-5 ingredients from your available collection</li>
-                <li><strong>Mix:</strong> Combine ingredients in the laboratory</li>
-                <li><strong>Wait for Results:</strong> Treats take time to complete based on rarity</li>
-                <li><strong>Collect:</strong> Claim your finished treat and see its stats</li>
-            </ol>
-            
-            <h3>⏱️ Timer System</h3>
-            <ul>
-                <li><strong>Level-Based Scaling:</strong> Higher levels = longer creation times</li>
-                <li><strong>Rarity Impact:</strong> Rarer treats take longer to create</li>
-                <li><strong>Real-Time Tracking:</strong> Live countdown timers for all active treats</li>
-                <li><strong>Notifications:</strong> Get notified when treats are ready</li>
-            </ul>
-            
-            <div class="highlight">
-                <h3>🎲 Randomization System</h3>
-                <p>Treat outcomes are determined by server-side randomization ensuring fairness. The system considers:</p>
-                <ul>
-                    <li>Ingredient combinations and synergies</li>
-                    <li>Player level and experience</li>
-                    <li>Secret combo bonuses</li>
-                    <li>Random chance factors</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Rarity & Treat Types -->
-        <div class="section">
-            <h2><span class="emoji">✨</span>Rarity System & Treat Types</h2>
+            <h2><span class="emoji">✨</span>Rarity System</h2>
+            <p>Your treat's rarity determines its value, points, and XP rewards. Use more ingredients and higher-tier components to increase your chances!</p>
             
             <table class="rarity-table">
                 <thead>
                     <tr>
                         <th>Rarity</th>
-                        <th>Probability</th>
-                        <th>Timer Duration</th>
-                        <th>Points Reward</th>
-                        <th>Experience</th>
+                        <th>Min Ingredients</th>
+                        <th>Points</th>
+                        <th>XP</th>
+                        <th>Requirements</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td class="rarity-common">Common</td>
-                        <td>45%</td>
-                        <td>1-2 hours</td>
-                        <td>10-20 points</td>
-                        <td>5-10 XP</td>
+                        <td><span class="rarity-common">Common</span></td>
+                        <td>1</td>
+                        <td>10-20</td>
+                        <td>5-10</td>
+                        <td>Any ingredient</td>
                     </tr>
                     <tr>
-                        <td class="rarity-uncommon">Uncommon</td>
-                        <td>30%</td>
-                        <td>2-4 hours</td>
-                        <td>25-40 points</td>
-                        <td>15-25 XP</td>
+                        <td><span class="rarity-uncommon">Uncommon</span></td>
+                        <td>2</td>
+                        <td>25-40</td>
+                        <td>15-25</td>
+                        <td>2+ ingredients</td>
                     </tr>
                     <tr>
-                        <td class="rarity-rare">Rare</td>
-                        <td>15%</td>
-                        <td>4-6 hours</td>
-                        <td>50-80 points</td>
-                        <td>30-50 XP</td>
+                        <td><span class="rarity-rare">Rare</span></td>
+                        <td>3</td>
+                        <td>50-80</td>
+                        <td>30-50</td>
+                        <td>3+ ingredients</td>
                     </tr>
                     <tr>
-                        <td class="rarity-epic">Epic</td>
-                        <td>7%</td>
-                        <td>6-8 hours</td>
-                        <td>100-150 points</td>
-                        <td>60-100 XP</td>
+                        <td><span class="rarity-epic">Epic</span></td>
+                        <td>4</td>
+                        <td>100-150</td>
+                        <td>60-100</td>
+                        <td>4+ ingredients</td>
                     </tr>
                     <tr>
-                        <td class="rarity-legendary">Legendary</td>
-                        <td>2.5%</td>
-                        <td>8-12 hours</td>
-                        <td>200-300 points</td>
-                        <td>120-200 XP</td>
+                        <td><span class="rarity-legendary">Legendary</span></td>
+                        <td>5</td>
+                        <td>200-300</td>
+                        <td>120-200</td>
+                        <td>5 ingredients + Legendary Gate</td>
                     </tr>
                     <tr>
-                        <td class="rarity-mythic">Mythic</td>
-                        <td>0.5%</td>
-                        <td>12-24 hours</td>
-                        <td>500-1000 points</td>
-                        <td>250-500 XP</td>
+                        <td><span class="rarity-mythic">Mythic</span></td>
+                        <td>5</td>
+                        <td>500-1000</td>
+                        <td>250-500</td>
+                        <td>5 ingredients + Mythic ingredient</td>
                     </tr>
                 </tbody>
             </table>
-        </div>
-
-        <!-- Ingredient System -->
-        <div class="section">
-            <h2><span class="emoji">🥘</span>Ingredient System</h2>
-            
-            <h3>🔓 Unlocking Ingredients</h3>
-            <p>Ingredients are unlocked as you progress through levels:</p>
-            <ul>
-                <li><strong>Level 1-5:</strong> Basic ingredients (chicken, rice, vegetables)</li>
-                <li><strong>Level 6-10:</strong> Premium ingredients (salmon, beef, exotic spices)</li>
-                <li><strong>Level 11-15:</strong> Rare ingredients (truffle, caviar, gold flakes)</li>
-                <li><strong>Level 16+:</strong> Magical ingredients (secret combinations)</li>
-            </ul>
-            
-            <h3>🤫 Secret Combinations</h3>
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h4>🍯 Sweet Harmony</h4>
-                    <p>Honey + Berries + Vanilla = +25% Epic chance</p>
-                </div>
-                <div class="feature-card">
-                    <h4>🥩 Protein Power</h4>
-                    <p>Chicken + Beef + Fish = +30% XP bonus</p>
-                </div>
-                <div class="feature-card">
-                    <h4>🌿 Herbal Magic</h4>
-                    <p>Basil + Oregano + Thyme = +20% point bonus</p>
-                </div>
-                <div class="feature-card">
-                    <h4>🔥 Ultimate Fusion</h4>
-                    <p>Secret 5-ingredient combo = Guaranteed Legendary+</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Level & Experience System -->
-        <div class="section">
-            <h2><span class="emoji">📈</span>Level & Experience System</h2>
-            
-            <h3>🎯 Experience Gain</h3>
-            <ul>
-                <li><strong>Treat Creation:</strong> 5-500 XP based on rarity</li>
-                <li><strong>Daily Login:</strong> 10 XP bonus</li>
-                <li><strong>First Treat of Day:</strong> 25 XP bonus</li>
-                <li><strong>Secret Combos:</strong> Additional 20-50 XP</li>
-                <li><strong>Sack Completion:</strong> 50 XP bonus every 5 treats</li>
-            </ul>
-            
-            <h3>⬆️ Level Benefits</h3>
-            <ul>
-                <li><strong>New Ingredients:</strong> Unlock rare and exotic ingredients</li>
-                <li><strong>Longer Timers:</strong> Higher rarity chances but longer wait times</li>
-                <li><strong>Prestige Status:</strong> Show off your expertise on leaderboards</li>
-                <li><strong>Future NFT Bonuses:</strong> Better rewards in Web3 seasons</li>
-            </ul>
             
             <div class="highlight">
-                <h3>📊 Level Progression Formula</h3>
-                <p><strong>XP Required = Level × 100</strong></p>
-                <p>Level 1→2: 100 XP | Level 5→6: 500 XP | Level 10→11: 1000 XP</p>
-            </div>
-        </div>
-
-        <!-- Points & Rewards System -->
-        <div class="section">
-            <h2><span class="emoji">🏆</span>Points & Rewards System</h2>
-            
-            <h3>💰 Earning Points</h3>
-            <ul>
-                <li><strong>Treat Creation:</strong> 10-1000 points based on rarity</li>
-                <li><strong>Daily Bonuses:</strong> 25 points for first login</li>
-                <li><strong>Streak Bonuses:</strong> Multipliers for consecutive days</li>
-                <li><strong>Achievement Rewards:</strong> Special milestone bonuses</li>
-                <li><strong>Seasonal Events:</strong> Limited-time point multipliers</li>
-            </ul>
-            
-            <h3>🎁 Reward Tiers</h3>
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h4>🥉 Bronze (100+ points)</h4>
-                    <p>Basic rewards and recognition</p>
-                </div>
-                <div class="feature-card">
-                    <h4>🥈 Silver (500+ points)</h4>
-                    <p>Enhanced bonuses and exclusive content</p>
-                </div>
-                <div class="feature-card">
-                    <h4>🥇 Gold (1000+ points)</h4>
-                    <p>Premium rewards and leaderboard prominence</p>
-                </div>
-                <div class="feature-card">
-                    <h4>💎 Diamond (5000+ points)</h4>
-                    <p>Elite status and maximum benefits</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Leaderboard System -->
-        <div class="section">
-            <h2><span class="emoji">🏅</span>Leaderboard & Competition</h2>
-            
-            <h3>📊 Ranking Factors</h3>
-            <ul>
-                <li><strong>Total Points:</strong> Primary ranking metric</li>
-                <li><strong>Level Achievement:</strong> Secondary sorting criteria</li>
-                <li><strong>Treats Created:</strong> Tertiary factor for ties</li>
-                <li><strong>Rare Collections:</strong> Special recognition for collectors</li>
-            </ul>
-            
-            <h3>🎖️ Special Recognition</h3>
-            <ul>
-                <li><strong>Top 10 Players:</strong> Gold medal display</li>
-                <li><strong>NFT Holders:</strong> Special badges and priority</li>
-                <li><strong>Daily Leaders:</strong> Featured prominently</li>
-                <li><strong>Achievement Holders:</strong> Custom titles and flair</li>
-            </ul>
-            
-            <div class="highlight">
-                <h3>🔄 Real-Time Updates</h3>
-                <p>Leaderboards update in real-time as players create treats and earn points. Rankings are recalculated instantly to maintain competitive integrity.</p>
-            </div>
-        </div>
-
-        <!-- Season System -->
-        <div class="section">
-            <h2><span class="emoji">📅</span>Season System</h2>
-            
-            <h3>🎪 Season 1: Beta Launch</h3>
-            <p><strong>Current Season:</strong> Beta period (2025-2026)</p>
-            <ul>
-                <li><strong>Duration:</strong> Extended for beta testing and optimization</li>
-                <li><strong>Focus:</strong> Game mechanics, balance, and community building</li>
-                <li><strong>Features:</strong> All core gameplay without blockchain integration</li>
-                <li><strong>Rewards:</strong> Points, experience, and treat collections</li>
-            </ul>
-            
-            <h3>🔮 Future Seasons (Upcoming)</h3>
-            <ul>
-                <li><strong>Season 2:</strong> Web3 integration with NFT minting</li>
-                <li><strong>Season 3:</strong> $LAB token rewards and DeFi features</li>
-                <li><strong>Season 4:</strong> Advanced gameplay and community governance</li>
-                <li><strong>Each Season:</strong> 3-month duration with unique themes and rewards</li>
-            </ul>
-            
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h4>🏁 Season Rewards</h4>
-                    <p>Special prizes for top performers each season</p>
-                </div>
-                <div class="feature-card">
-                    <h4>🔄 Fresh Start</h4>
-                    <p>New leaderboards and challenges each season</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Anti-Cheat & Fair Play -->
-        <div class="section">
-            <h2><span class="emoji">🛡️</span>Anti-Cheat & Fair Play</h2>
-            
-            <h3>🔍 Detection Systems</h3>
-            <ul>
-                <li><strong>Rate Limiting:</strong> Maximum treats per hour/day to prevent abuse</li>
-                <li><strong>Pattern Analysis:</strong> Unusual activity flagged for review</li>
-                <li><strong>Server Validation:</strong> All actions verified server-side</li>
-                <li><strong>Automated Monitoring:</strong> 24/7 system monitoring for anomalies</li>
-            </ul>
-            
-            <h3>⚖️ Fair Play Rules</h3>
-            <ul>
-                <li><strong>One Account Policy:</strong> One active account per user</li>
-                <li><strong>No Automation:</strong> Bots and scripts are prohibited</li>
-                <li><strong>Legitimate Play:</strong> All actions must be player-initiated</li>
-                <li><strong>Respect Community:</strong> Maintain positive gaming environment</li>
-            </ul>
-            
-            <div class="highlight">
-                <h3>🚫 Consequences</h3>
-                <p>Violations result in warnings, temporary suspensions, or permanent bans depending on severity. Appeals process available for disputed actions.</p>
-            </div>
-        </div>
-
-        <!-- Web3 Integration (Future) -->
-        <div class="section">
-            <h2><span class="emoji">🌐</span>Web3 Integration (Future Seasons)</h2>
-            
-            <h3>🎨 NFT System</h3>
-            <ul>
-                <li><strong>Treat NFTs:</strong> Convert completed treats to ERC-721 tokens</li>
-                <li><strong>Rarity Preservation:</strong> On-chain rarity and metadata</li>
-                <li><strong>Trading:</strong> Buy, sell, and trade treats with other players</li>
-                <li><strong>Utility:</strong> NFTs provide gameplay bonuses and prestige</li>
-            </ul>
-            
-            <h3>🪙 $LAB Token Economy</h3>
-            <ul>
-                <li><strong>Earn Tokens:</strong> Convert points to $LAB tokens</li>
-                <li><strong>Utility:</strong> Purchase premium ingredients and boosts</li>
-                <li><strong>Governance:</strong> Vote on game updates and features</li>
-                <li><strong>DeFi Integration:</strong> Yield farming and liquidity provision</li>
-            </ul>
-            
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h4>🔗 Blockchain Benefits</h4>
-                    <p>True ownership and transparent rewards</p>
-                </div>
-                <div class="feature-card">
-                    <h4>💼 Economic Value</h4>
-                    <p>Real-world value for in-game achievements</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tips & Strategies -->
-        <div class="section">
-            <h2><span class="emoji">💡</span>Tips & Strategies</h2>
-            
-            <h3>🎯 Optimal Play Strategies</h3>
-            <ul>
-                <li><strong>Daily Login:</strong> Always collect your daily bonus for consistent progress</li>
-                <li><strong>Experiment:</strong> Try different ingredient combinations to discover secrets</li>
-                <li><strong>Plan Timing:</strong> Start long treats before sleep or work</li>
-                <li><strong>Level Focus:</strong> Prioritize leveling up to unlock better ingredients</li>
-                <li><strong>Community:</strong> Share strategies and learn from other players</li>
-            </ul>
-            
-            <h3>⚡ Pro Tips</h3>
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h4>🕐 Timer Management</h4>
-                    <p>Stagger treat creation for continuous rewards</p>
-                </div>
-                <div class="feature-card">
-                    <h4>🧪 Combo Hunting</h4>
-                    <p>Keep notes on successful combinations</p>
-                </div>
-                <div class="feature-card">
-                    <h4>📈 Point Optimization</h4>
-                    <p>Focus on quality over quantity for better rewards</p>
-                </div>
-                <div class="feature-card">
-                    <h4>🏆 Leaderboard Climbing</h4>
-                    <p>Consistency beats sporadic high-value plays</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Technical Information -->
-        <div class="section">
-            <h2><span class="emoji">⚙️</span>Technical Information</h2>
-            
-            <h3>🔧 Platform Details</h3>
-            <ul>
-                <li><strong>Frontend:</strong> React.js with mobile-optimized responsive design</li>
-                <li><strong>Backend:</strong> FastAPI with MongoDB database</li>
-                <li><strong>Authentication:</strong> Web3 wallet integration + Telegram Mini App</li>
-                <li><strong>Real-time:</strong> Live updates for timers and leaderboards</li>
-                <li><strong>Security:</strong> Server-side validation and anti-cheat systems</li>
-            </ul>
-            
-            <h3>📱 Platform Support</h3>
-            <ul>
-                <li><strong>Web Browser:</strong> Chrome, Firefox, Safari, Edge</li>
-                <li><strong>Telegram:</strong> Native Mini App integration</li>
-                <li><strong>Mobile:</strong> Responsive design for all screen sizes</li>
-                <li><strong>Wallet Support:</strong> MetaMask, WalletConnect, Rainbow, and more</li>
-            </ul>
-            
-            <div class="highlight">
-                <h3>🔗 Access Methods</h3>
+                <h3>Rarity Boosting Tips</h3>
                 <ul>
-                    <li><strong>Telegram Bot:</strong> @Dogefoodlabbot</li>
-                    <li><strong>Telegram Mini App:</strong> Launch from bot menu</li>
+                    <li><strong>Legendary Gate:</strong> Use Starship Alloy, Mars Regolith, or Dark Matter to unlock Legendary potential</li>
+                    <li><strong>Mythic Gate:</strong> Zero-G Gel unlocks Mythic potential when combined with Mythic ingredients</li>
+                    <li><strong>Rarity Weight:</strong> Each ingredient has a rarity weight - higher weights boost your chances</li>
                 </ul>
             </div>
         </div>
 
-        <!-- Contact & Support -->
+        <!-- Example Recipes -->
         <div class="section">
-            <h2><span class="emoji">📞</span>Support & Community</h2>
+            <h2><span class="emoji">📖</span>Example Recipes</h2>
+            <p>Here are some proven recipes to inspire your creations!</p>
             
-            <h3>🆘 Getting Help</h3>
-            <ul>
-                <li><strong>In-Game Support:</strong> Check settings menu for help options</li>
-                <li><strong>Technical Issues:</strong> Report bugs through game interface</li>
-                <li><strong>Game Questions:</strong> Refer to this guide or ask community</li>
-                <li><strong>Account Issues:</strong> Contact support with account details</li>
-            </ul>
-            
-            <h3>👥 Community</h3>
-            <ul>
-                <li><strong>Telegram:</strong> Join @Dogefoodlabbot for updates</li>
-                <li><strong>Discord:</strong> Community discussions and strategies</li>
-                <li><strong>Social Media:</strong> Follow for news and events</li>
-                <li><strong>Forums:</strong> Deep strategy discussions and guides</li>
-            </ul>
-            
-            <div class="highlight">
-                <h3>🎉 Stay Updated</h3>
-                <p>Follow our official channels for game updates, new features, seasonal events, and community highlights. Your feedback helps shape the future of DogeFood Lab!</p>
+            <div class="recipe-grid">
+                <div class="recipe-card">
+                    <h4><span class="rarity-common">Common</span> Crunchy Woof Bite</h4>
+                    <div class="recipe-ingredients">
+                        <span class="recipe-ingredient">🦴 Crunchy Kibble</span>
+                        <span class="recipe-ingredient">🥣 Shiba Crunch Flakes</span>
+                    </div>
+                    <p style="color: #6b7280; font-size: 0.9em;">A simple but satisfying treat for beginners.</p>
+                </div>
+                
+                <div class="recipe-card">
+                    <h4><span class="rarity-rare">Rare</span> Lunar Shiba Snack</h4>
+                    <div class="recipe-ingredients">
+                        <span class="recipe-ingredient">🦴 Crunchy Kibble</span>
+                        <span class="recipe-ingredient">🌙 Moon Cheese</span>
+                        <span class="recipe-ingredient">⚡ Plasma Sugar</span>
+                    </div>
+                    <p style="color: #6b7280; font-size: 0.9em;">A glowing moon-powered delicacy!</p>
+                </div>
+                
+                <div class="recipe-card">
+                    <h4><span class="rarity-epic">Epic</span> Rocket Woof Supreme</h4>
+                    <div class="recipe-ingredients">
+                        <span class="recipe-ingredient">🥩 Meme Meat Cubes</span>
+                        <span class="recipe-ingredient">🚀 Rocket Fuel Syrup</span>
+                        <span class="recipe-ingredient">☀️ Solar Charge Crystals</span>
+                        <span class="recipe-ingredient">🧪 Quantum Sauce</span>
+                    </div>
+                    <p style="color: #6b7280; font-size: 0.9em;">Fuel your inner rocket dog with animated flames!</p>
+                </div>
+                
+                <div class="recipe-card">
+                    <h4><span class="rarity-legendary">Legendary</span> Mars Alpha Biscuit</h4>
+                    <div class="recipe-ingredients">
+                        <span class="recipe-ingredient">⚙️ Starship Alloy</span>
+                        <span class="recipe-ingredient">🔴 Mars Regolith</span>
+                        <span class="recipe-ingredient">🌌 Dark Matter</span>
+                        <span class="recipe-ingredient">🧠 Neural Dust</span>
+                        <span class="recipe-ingredient">✨ Golden Bone Dust</span>
+                    </div>
+                    <p style="color: #6b7280; font-size: 0.9em;">The taste of Martian glory with hologram effects!</p>
+                </div>
+                
+                <div class="recipe-card">
+                    <h4><span class="rarity-mythic">Mythic</span> Genesis Doge Relic</h4>
+                    <div class="recipe-ingredients">
+                        <span class="recipe-ingredient">🍪 Genesis Biscuit</span>
+                        <span class="recipe-ingredient">🏺 Doge Relic Fragment</span>
+                        <span class="recipe-ingredient">🐕 Cosmic Shiba Hair</span>
+                        <span class="recipe-ingredient">🌀 Singularity Syrup</span>
+                        <span class="recipe-ingredient">🫧 Zero-G Gel</span>
+                    </div>
+                    <p style="color: #6b7280; font-size: 0.9em;">The legendary first treat - requires Level 25!</p>
+                </div>
             </div>
         </div>
 
-        <div class="section" style="text-align: center; background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
-            <h2><span class="emoji">🚀</span>Ready to Start Your Journey?</h2>
-            <p style="font-size: 1.2em; margin-bottom: 30px;">Now that you understand how everything works, it's time to become the ultimate treat creator!</p>
-            <button class="back-button" onclick="window.close()" style="position: relative; font-size: 1.2em; padding: 20px 40px;">
-                🧪 Back to DogeFood Lab
+        <!-- Kernel of Wow -->
+        <div class="section">
+            <h2><span class="emoji">🌽</span>Kernel of Wow - Daily Special</h2>
+            <p>Every 24 hours, one lucky player is chosen to receive the <strong>Kernel of Wow</strong> - a legendary special ingredient!</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🎲 Random Selection</h4>
+                    <p>Active players are automatically entered into the daily drawing</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⏰ 16-Hour Duration</h4>
+                    <p>Use it before it expires to maximize your bonus!</p>
+                </div>
+                <div class="feature-card">
+                    <h4>✨ Point Multipliers</h4>
+                    <p>Earn bonus points on treats created while holding the Kernel</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🏆 Global Banner</h4>
+                    <p>The current holder is displayed to all players!</p>
+                </div>
+            </div>
+            
+            <div class="highlight">
+                <h3>Kernel Bonus Combos</h3>
+                <ul>
+                    <li><strong>Basic WOW Combo (2+ ingredients):</strong> Small points boost</li>
+                    <li><strong>Super WOW Combo (4+ ingredients):</strong> Medium points boost</li>
+                    <li><strong>Ultra WOW Combo (5 ingredients + Mythic):</strong> Maximum points boost!</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Marketplace -->
+        <div class="section">
+            <h2><span class="emoji">🏪</span>Marketplace</h2>
+            <p>List your treats for sale and browse other players' creations!</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>📝 List Treats</h4>
+                    <p>Set prices in DOGE or $LAB tokens (coming soon)</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔍 Browse & Filter</h4>
+                    <p>Filter by rarity, price, and ingredients</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💰 Trading Fee</h4>
+                    <p>4.20% fee on successful sales</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔒 Secure</h4>
+                    <p>Trading goes live with $LAB token launch</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIP System -->
+        <div class="section">
+            <h2><span class="emoji">👑</span>NFT Holder Benefits</h2>
+            <p>DogeFood NFT holders receive exclusive VIP benefits!</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🎁 500 Bonus Points</h4>
+                    <p>Instant bonus upon wallet verification</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⭐ VIP Badge</h4>
+                    <p>Special VIP status displayed on leaderboards</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💎 Future Rewards</h4>
+                    <p>Priority access to $LAB token airdrops</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🏆 Leaderboard Priority</h4>
+                    <p>NFT holders get special recognition</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anti-Cheat -->
+        <div class="section">
+            <h2><span class="emoji">🛡️</span>Fair Play & Daily Limits</h2>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>📊 Daily Treat Limit</h4>
+                    <p>Maximum treats per day to ensure fair competition</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⏱️ Rate Limiting</h4>
+                    <p>Cooldown between treat creations</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔍 Server Validation</h4>
+                    <p>All actions verified server-side</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💊 Extra Lives</h4>
+                    <p>Purchase additional treats with $LAB (coming soon)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="section">
+            <h2><span class="emoji">🔔</span>Telegram Notifications</h2>
+            <p>Never miss a treat! Enable notifications through our Telegram bot.</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🍖 Treat Ready</h4>
+                    <p>Get notified when your treat is done cooking</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔄 Daily Reset</h4>
+                    <p>Know when your daily limit resets</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🌽 Kernel of Wow</h4>
+                    <p>Alert if you're selected as the holder</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⚙️ Customizable</h4>
+                    <p>Toggle each notification type in settings</p>
+                </div>
+            </div>
+            
+            <div class="highlight">
+                <h3>Setup Instructions</h3>
+                <ol>
+                    <li>Open Telegram and search for <strong>@Dogefoodlabbot</strong></li>
+                    <li>Start the bot and link your game account</li>
+                    <li>Go to Settings in the game and enable notifications</li>
+                    <li>Customize which alerts you want to receive</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Future Features -->
+        <div class="section">
+            <h2><span class="emoji">🚀</span>Coming Soon</h2>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🪙 $LAB Token</h4>
+                    <p>Convert points to tradeable tokens</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🏆 Tournaments</h4>
+                    <p>Compete in 48-hour bracket tournaments</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🎨 NFT Minting</h4>
+                    <p>Convert treats to ERC-721 tokens</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📈 Season 2</h4>
+                    <p>New ingredients, features, and rewards</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer CTA -->
+        <div class="section" style="text-align: center; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border-left: none;">
+            <h2 style="color: white;">Ready to Create?</h2>
+            <p style="font-size: 1.15em; margin-bottom: 25px; opacity: 0.95;">Now you know everything - time to become the ultimate treat scientist!</p>
+            <button class="back-button" onclick="goBack()" style="position: relative; font-size: 1.1em; padding: 16px 32px; background: white; color: #d97706;">
+                Back to DogeFood Lab
             </button>
         </div>
     </div>
 
     <script>
-        // Add smooth scrolling for better navigation
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
-            });
-        });
-
-        // Add back button functionality
         function goBack() {
-            if (window.history.length > 1) {
+            if (window.opener) {
+                window.close();
+            } else if (window.history.length > 1) {
                 window.history.back();
             } else {
-                window.close();
+                window.location.href = '/';
             }
         }
     </script>
