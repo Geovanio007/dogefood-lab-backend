@@ -4820,6 +4820,489 @@ async def check_treat_listed(treat_id: str):
         logger.error(f"Error checking listing status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# =====================================================
+# AUTO-MIXER SUBSCRIPTION ENDPOINTS
+# =====================================================
+
+@api_router.get("/auto-mixer/config")
+async def get_auto_mixer_config():
+    """Get auto-mixer configuration"""
+    return {
+        "monthly_fee_doge": AUTO_MIXER_CONFIG["monthly_fee_doge"],
+        "max_window_hours": AUTO_MIXER_CONFIG["max_window_hours"],
+        "min_window_hours": AUTO_MIXER_CONFIG["min_window_hours"],
+        "payment_address": AUTO_MIXER_CONFIG["payment_address"],
+        "buy_burn_percent": AUTO_MIXER_CONFIG["buy_burn_percent"],
+        "dev_percent": AUTO_MIXER_CONFIG["dev_percent"],
+        "mixes_per_hour": AUTO_MIXER_CONFIG["mixes_per_hour"]
+    }
+
+@api_router.post("/auto-mixer/create-subscription")
+async def create_auto_mixer_subscription(request: AutoMixerCreateRequest):
+    """Create a new auto-mixer subscription (pending payment)"""
+    try:
+        # Validate window hours
+        if not (0 <= request.window_start_hour <= 23 and 0 <= request.window_end_hour <= 23):
+            raise HTTPException(status_code=400, detail="Window hours must be between 0 and 23")
+        
+        # Calculate window duration
+        if request.window_end_hour > request.window_start_hour:
+            duration = request.window_end_hour - request.window_start_hour
+        else:
+            duration = (24 - request.window_start_hour) + request.window_end_hour
+        
+        if duration > AUTO_MIXER_CONFIG["max_window_hours"]:
+            raise HTTPException(status_code=400, detail=f"Window cannot exceed {AUTO_MIXER_CONFIG['max_window_hours']} hours")
+        
+        if duration < AUTO_MIXER_CONFIG["min_window_hours"]:
+            raise HTTPException(status_code=400, detail=f"Window must be at least {AUTO_MIXER_CONFIG['min_window_hours']} hour(s)")
+        
+        # Check for existing active subscription
+        existing = await db.auto_mixer_subscriptions.find_one({
+            "player_address": request.player_address,
+            "status": {"$in": ["active", "pending"]}
+        })
+        
+        if existing:
+            if existing.get("status") == "active":
+                raise HTTPException(status_code=400, detail="You already have an active subscription")
+            # Return existing pending subscription
+            existing["_id"] = str(existing["_id"]) if "_id" in existing else None
+            return {"subscription": {k: v for k, v in existing.items() if k != "_id"}, "existing": True}
+        
+        # Get player nickname
+        player = await db.players.find_one({"address": request.player_address})
+        nickname = player.get("nickname") if player else None
+        
+        subscription_id = str(uuid.uuid4())
+        subscription = {
+            "id": subscription_id,
+            "player_address": request.player_address,
+            "player_nickname": nickname,
+            "status": "pending",
+            "subscription_start": None,
+            "subscription_end": None,
+            "window_start_hour": request.window_start_hour,
+            "window_end_hour": request.window_end_hour,
+            "payment_tx_hash": None,
+            "payment_amount": AUTO_MIXER_CONFIG["monthly_fee_doge"],
+            "payment_confirmed": False,
+            "payment_confirmations": 0,
+            "total_auto_mixes": 0,
+            "last_auto_mix": None,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        await db.auto_mixer_subscriptions.insert_one(subscription)
+        
+        return {
+            "subscription": {k: v for k, v in subscription.items() if k != "_id"},
+            "payment_address": AUTO_MIXER_CONFIG["payment_address"],
+            "payment_amount": AUTO_MIXER_CONFIG["monthly_fee_doge"],
+            "existing": False
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating auto-mixer subscription: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/auto-mixer/verify-payment")
+async def verify_auto_mixer_payment(request: AutoMixerPaymentVerifyRequest):
+    """Verify payment for auto-mixer subscription using BlockCypher"""
+    try:
+        # Find the subscription
+        subscription = await db.auto_mixer_subscriptions.find_one({
+            "id": request.subscription_id,
+            "status": "pending"
+        })
+        
+        if not subscription:
+            raise HTTPException(status_code=404, detail="Subscription not found or not pending")
+        
+        # Verify the transaction using BlockCypher
+        api_key = AUTO_MIXER_CONFIG.get("blockcypher_api_key", "")
+        
+        try:
+            # Get transaction details
+            tx_details = blockcypher.get_transaction_details(
+                tx_hash=request.tx_hash,
+                coin_symbol='doge',
+                api_key=api_key if api_key else None
+            )
+            
+            if not tx_details:
+                raise HTTPException(status_code=400, detail="Transaction not found on blockchain")
+            
+            confirmations = tx_details.get('confirmations', 0)
+            
+            # Check if payment goes to our address and has correct amount
+            payment_valid = False
+            payment_amount = 0
+            
+            for output in tx_details.get('outputs', []):
+                addresses = output.get('addresses', [])
+                if AUTO_MIXER_CONFIG["payment_address"] in addresses:
+                    payment_amount += output.get('value', 0) / 100000000  # Convert from satoshis
+                    payment_valid = True
+            
+            if not payment_valid:
+                raise HTTPException(status_code=400, detail="Payment not sent to correct address")
+            
+            if payment_amount < AUTO_MIXER_CONFIG["monthly_fee_doge"]:
+                raise HTTPException(status_code=400, detail=f"Payment amount insufficient. Required: {AUTO_MIXER_CONFIG['monthly_fee_doge']} DOGE, Received: {payment_amount} DOGE")
+            
+            # Update subscription
+            now = datetime.utcnow()
+            update_data = {
+                "payment_tx_hash": request.tx_hash,
+                "payment_confirmations": confirmations,
+                "updated_at": now
+            }
+            
+            # If enough confirmations, activate the subscription
+            if confirmations >= AUTO_MIXER_CONFIG["required_confirmations"]:
+                update_data["status"] = "active"
+                update_data["payment_confirmed"] = True
+                update_data["subscription_start"] = now
+                update_data["subscription_end"] = now + timedelta(days=30)
+                
+                # Record the payment for funds tracking
+                await db.auto_mixer_payments.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "subscription_id": request.subscription_id,
+                    "player_address": subscription["player_address"],
+                    "tx_hash": request.tx_hash,
+                    "amount_doge": payment_amount,
+                    "buy_burn_amount": payment_amount * (AUTO_MIXER_CONFIG["buy_burn_percent"] / 100),
+                    "dev_amount": payment_amount * (AUTO_MIXER_CONFIG["dev_percent"] / 100),
+                    "confirmed_at": now,
+                    "created_at": now
+                })
+            
+            await db.auto_mixer_subscriptions.update_one(
+                {"id": request.subscription_id},
+                {"$set": update_data}
+            )
+            
+            # Get updated subscription
+            updated_sub = await db.auto_mixer_subscriptions.find_one({"id": request.subscription_id}, {"_id": 0})
+            
+            return {
+                "subscription": updated_sub,
+                "confirmations": confirmations,
+                "required_confirmations": AUTO_MIXER_CONFIG["required_confirmations"],
+                "payment_amount": payment_amount,
+                "is_confirmed": confirmations >= AUTO_MIXER_CONFIG["required_confirmations"]
+            }
+            
+        except blockcypher.CoinSymbolError as e:
+            raise HTTPException(status_code=400, detail=f"Invalid coin symbol: {str(e)}")
+        except Exception as e:
+            if "HTTPException" in str(type(e)):
+                raise
+            logger.error(f"BlockCypher API error: {e}")
+            raise HTTPException(status_code=400, detail=f"Transaction verification failed: {str(e)}")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying payment: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/auto-mixer/subscription/{player_address}")
+async def get_auto_mixer_subscription(player_address: str):
+    """Get player's auto-mixer subscription"""
+    try:
+        subscription = await db.auto_mixer_subscriptions.find_one({
+            "player_address": player_address,
+            "status": {"$in": ["active", "pending"]}
+        }, {"_id": 0})
+        
+        if subscription:
+            # Check if subscription has expired
+            if subscription.get("status") == "active" and subscription.get("subscription_end"):
+                if datetime.utcnow() > subscription["subscription_end"]:
+                    await db.auto_mixer_subscriptions.update_one(
+                        {"id": subscription["id"]},
+                        {"$set": {"status": "expired", "updated_at": datetime.utcnow()}}
+                    )
+                    subscription["status"] = "expired"
+        
+        return {"subscription": subscription, "has_subscription": subscription is not None}
+        
+    except Exception as e:
+        logger.error(f"Error fetching subscription: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/auto-mixer/update-window")
+async def update_auto_mixer_window(request: AutoMixerWindowUpdateRequest):
+    """Update the mixing window for an active subscription"""
+    try:
+        # Validate window hours
+        if not (0 <= request.window_start_hour <= 23 and 0 <= request.window_end_hour <= 23):
+            raise HTTPException(status_code=400, detail="Window hours must be between 0 and 23")
+        
+        # Calculate window duration
+        if request.window_end_hour > request.window_start_hour:
+            duration = request.window_end_hour - request.window_start_hour
+        else:
+            duration = (24 - request.window_start_hour) + request.window_end_hour
+        
+        if duration > AUTO_MIXER_CONFIG["max_window_hours"]:
+            raise HTTPException(status_code=400, detail=f"Window cannot exceed {AUTO_MIXER_CONFIG['max_window_hours']} hours")
+        
+        # Find and verify ownership
+        subscription = await db.auto_mixer_subscriptions.find_one({
+            "id": request.subscription_id,
+            "player_address": request.player_address,
+            "status": "active"
+        })
+        
+        if not subscription:
+            raise HTTPException(status_code=404, detail="Active subscription not found")
+        
+        # Update window
+        await db.auto_mixer_subscriptions.update_one(
+            {"id": request.subscription_id},
+            {"$set": {
+                "window_start_hour": request.window_start_hour,
+                "window_end_hour": request.window_end_hour,
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        
+        updated_sub = await db.auto_mixer_subscriptions.find_one({"id": request.subscription_id}, {"_id": 0})
+        
+        return {"subscription": updated_sub, "message": "Window updated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating window: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/auto-mixer/cancel/{subscription_id}")
+async def cancel_auto_mixer_subscription(subscription_id: str, player_address: str):
+    """Cancel an auto-mixer subscription"""
+    try:
+        subscription = await db.auto_mixer_subscriptions.find_one({
+            "id": subscription_id,
+            "player_address": player_address
+        })
+        
+        if not subscription:
+            raise HTTPException(status_code=404, detail="Subscription not found")
+        
+        await db.auto_mixer_subscriptions.update_one(
+            {"id": subscription_id},
+            {"$set": {"status": "cancelled", "updated_at": datetime.utcnow()}}
+        )
+        
+        return {"message": "Subscription cancelled successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling subscription: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/auto-mixer/funds-stats")
+async def get_auto_mixer_funds_stats():
+    """Get real-time funds statistics for auto-mixer"""
+    try:
+        # Get total payments
+        pipeline = [
+            {"$group": {
+                "_id": None,
+                "total_received": {"$sum": "$amount_doge"},
+                "buy_burn_total": {"$sum": "$buy_burn_amount"},
+                "dev_total": {"$sum": "$dev_amount"},
+                "count": {"$sum": 1}
+            }}
+        ]
+        
+        result = await db.auto_mixer_payments.aggregate(pipeline).to_list(1)
+        
+        # Get subscriber counts
+        total_subs = await db.auto_mixer_subscriptions.count_documents({})
+        active_subs = await db.auto_mixer_subscriptions.count_documents({"status": "active"})
+        
+        # Get total auto mixes
+        mix_pipeline = [
+            {"$match": {"status": "active"}},
+            {"$group": {"_id": None, "total_mixes": {"$sum": "$total_auto_mixes"}}}
+        ]
+        mix_result = await db.auto_mixer_subscriptions.aggregate(mix_pipeline).to_list(1)
+        
+        stats = result[0] if result else {}
+        mix_stats = mix_result[0] if mix_result else {}
+        
+        return {
+            "total_received_doge": round(stats.get("total_received", 0), 2),
+            "buy_burn_amount": round(stats.get("buy_burn_total", 0), 2),
+            "dev_amount": round(stats.get("dev_total", 0), 2),
+            "total_subscribers": total_subs,
+            "active_subscribers": active_subs,
+            "total_auto_mixes": mix_stats.get("total_mixes", 0),
+            "buy_burn_percent": AUTO_MIXER_CONFIG["buy_burn_percent"],
+            "dev_percent": AUTO_MIXER_CONFIG["dev_percent"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching funds stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/auto-mixer/history/{player_address}")
+async def get_auto_mixer_history(player_address: str, limit: int = 20):
+    """Get auto-mix history for a player"""
+    try:
+        history = await db.auto_mix_history.find(
+            {"player_address": player_address}
+        ).sort("created_at", -1).limit(limit).to_list(limit)
+        
+        # Remove MongoDB _id
+        for item in history:
+            item.pop("_id", None)
+        
+        return {"history": history}
+        
+    except Exception as e:
+        logger.error(f"Error fetching auto-mix history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Auto-mixer background task
+async def auto_mixer_processor_loop():
+    """Background loop that processes auto-mixes for active subscribers"""
+    logger.info("🤖 Auto-mixer processor started")
+    
+    while True:
+        try:
+            now = datetime.utcnow()
+            current_hour = now.hour
+            
+            # Find active subscriptions where current hour is within their window
+            # Handle windows that cross midnight
+            active_subs = await db.auto_mixer_subscriptions.find({
+                "status": "active",
+                "subscription_end": {"$gt": now}
+            }).to_list(1000)
+            
+            for sub in active_subs:
+                try:
+                    start_hour = sub.get("window_start_hour", 0)
+                    end_hour = sub.get("window_end_hour", 6)
+                    
+                    # Check if current hour is within the window
+                    in_window = False
+                    if start_hour < end_hour:
+                        in_window = start_hour <= current_hour < end_hour
+                    else:  # Window crosses midnight
+                        in_window = current_hour >= start_hour or current_hour < end_hour
+                    
+                    if not in_window:
+                        continue
+                    
+                    # Check if we've already mixed recently (limit to mixes_per_hour)
+                    last_mix = sub.get("last_auto_mix")
+                    if last_mix:
+                        minutes_since_last = (now - last_mix).total_seconds() / 60
+                        min_interval = 60 / AUTO_MIXER_CONFIG["mixes_per_hour"]
+                        if minutes_since_last < min_interval:
+                            continue
+                    
+                    # Perform auto-mix for this player
+                    player_address = sub["player_address"]
+                    player = await db.players.find_one({"address": player_address})
+                    
+                    if not player:
+                        continue
+                    
+                    player_level = player.get("level", 1)
+                    
+                    # Get available ingredients for player level
+                    available_ingredients = ingredient_system.get_available_ingredients(player_level)
+                    
+                    if len(available_ingredients) < 2:
+                        continue
+                    
+                    # Select random ingredients (2-4)
+                    num_ingredients = random.randint(2, min(4, len(available_ingredients)))
+                    selected_ingredients = random.sample([ing["id"] for ing in available_ingredients], num_ingredients)
+                    
+                    # Create the treat using the game engine
+                    treat_result = game_engine.create_treat(
+                        ingredients=selected_ingredients,
+                        player_level=player_level
+                    )
+                    
+                    # Generate treat name
+                    flavor_names = ["Cosmic", "Stellar", "Lunar", "Solar", "Galactic", "Nebula", "Quantum"]
+                    treat_names = ["Biscuit", "Crunch", "Delight", "Snack", "Treat", "Nibble", "Morsel"]
+                    treat_name = f"{random.choice(flavor_names)} {random.choice(treat_names)}"
+                    
+                    # Save the treat
+                    treat_id = str(uuid.uuid4())
+                    treat_doc = {
+                        "id": treat_id,
+                        "name": treat_name,
+                        "creator_address": player_address,
+                        "ingredients": selected_ingredients,
+                        "rarity": treat_result.get("rarity", "Common"),
+                        "flavor": treat_result.get("flavor", "Savory"),
+                        "created_at": now,
+                        "image": treat_result.get("image", "🍪"),
+                        "brewing_status": "ready",
+                        "points_reward": treat_result.get("points", 10),
+                        "xp_reward": treat_result.get("xp", 5),
+                        "auto_mixed": True
+                    }
+                    
+                    await db.treats.insert_one(treat_doc)
+                    
+                    # Update player points and XP
+                    await db.players.update_one(
+                        {"address": player_address},
+                        {"$inc": {
+                            "points": treat_result.get("points", 10),
+                            "experience": treat_result.get("xp", 5)
+                        }}
+                    )
+                    
+                    # Record the auto-mix
+                    await db.auto_mix_history.insert_one({
+                        "id": str(uuid.uuid4()),
+                        "subscription_id": sub["id"],
+                        "player_address": player_address,
+                        "treat_id": treat_id,
+                        "treat_name": treat_name,
+                        "treat_rarity": treat_result.get("rarity", "Common"),
+                        "points_earned": treat_result.get("points", 10),
+                        "xp_earned": treat_result.get("xp", 5),
+                        "ingredients": selected_ingredients,
+                        "created_at": now
+                    })
+                    
+                    # Update subscription stats
+                    await db.auto_mixer_subscriptions.update_one(
+                        {"id": sub["id"]},
+                        {"$set": {"last_auto_mix": now}, "$inc": {"total_auto_mixes": 1}}
+                    )
+                    
+                    logger.info(f"🤖 Auto-mixed treat '{treat_name}' for {player_address}")
+                    
+                except Exception as e:
+                    logger.error(f"Error processing auto-mix for {sub.get('player_address')}: {e}")
+                    continue
+                    
+        except Exception as e:
+            logger.error(f"Error in auto-mixer loop: {e}")
+        
+        # Run every 10 minutes
+        await asyncio.sleep(600)
+
 # Include the router in the main app
 app.include_router(api_router)
 
