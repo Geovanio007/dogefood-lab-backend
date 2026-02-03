@@ -684,6 +684,47 @@ const MainMenu = () => {
           </Card>
         </div>
 
+        {/* Auto-Mixer Agent Live Banner */}
+        <Link to="/settings" state={{ tab: 'auto-mixer' }} className="block mb-4 sm:mb-6">
+          <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 p-3 sm:p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01] cursor-pointer border border-sky-400/30">
+            {/* Animated background effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-shimmer" />
+            
+            {/* Pulsing dot indicator */}
+            <div className="absolute top-3 right-3 flex items-center gap-1.5">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <span className="text-emerald-300 text-xs font-bold hidden sm:inline">LIVE</span>
+            </div>
+            
+            <div className="flex items-center gap-3 sm:gap-4">
+              {/* Robot Icon */}
+              <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/20">
+                <span className="text-2xl sm:text-3xl">🤖</span>
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
+                  <h3 className="text-base sm:text-xl font-bold text-white">Auto-Mixer Agent</h3>
+                  <Badge className="bg-emerald-500/80 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">ACTIVE</Badge>
+                </div>
+                <p className="text-sky-100 text-xs sm:text-sm line-clamp-1">
+                  Let AI mix treats for you automatically • 30 DOGE/month
+                </p>
+              </div>
+              
+              {/* Arrow icon */}
+              <div className="flex-shrink-0 hidden sm:flex w-10 h-10 bg-white/10 rounded-full items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </Link>
+
         {/* Main Menu Cards - Compact Square Design for Telegram */}
         <div className="grid grid-cols-2 gap-2 sm:gap-6 mb-4 sm:mb-12">
           {/* Enter Lab */}
