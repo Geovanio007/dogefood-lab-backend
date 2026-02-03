@@ -6092,7 +6092,9 @@ async def trigger_auto_mixer_now():
                     "treat_name": treat_name,
                     "rarity": rarity,
                     "points": points,
-                    "xp": xp
+                    "xp": xp,
+                    "treats_in_window": treats_in_window + 1,
+                    "window_limit": window_limit
                 })
                 
                 logger.info(f"🤖 ✅ Manual mix: '{treat_name}' ({rarity}) for {player_address[:20]}...")
