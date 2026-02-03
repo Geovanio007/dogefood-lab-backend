@@ -6177,15 +6177,13 @@ async def auto_mixer_processor_loop():
                         player_address=player_address
                     )
                     
-                    # Generate treat name
-                    flavor_names = ["Cosmic", "Stellar", "Lunar", "Solar", "Galactic", "Nebula", "Quantum", "Nova", "Astral"]
-                    treat_names = ["Biscuit", "Crunch", "Delight", "Snack", "Treat", "Nibble", "Morsel", "Bone", "Chew"]
-                    treat_name = f"{random.choice(flavor_names)} {random.choice(treat_names)}"
-                    
                     rarity = treat_result.get("rarity", "Common")
                     points = treat_result.get("points", 10)
                     xp = treat_result.get("xp", 5)
                     timer_seconds = treat_result.get("timer_seconds", 300)
+                    
+                    # Name treat based on rarity (matching the game's naming convention)
+                    treat_name = f"{rarity} Treat"
                     
                     # Save the treat (ready to collect immediately for auto-mixed)
                     treat_id = str(uuid.uuid4())
