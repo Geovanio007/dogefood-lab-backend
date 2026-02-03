@@ -45,13 +45,26 @@ const Settings = () => {
   const { isTelegram, telegramUser } = useTelegram();
   const { isNFTHolder: gameNFTHolder, dispatch } = useGame();
   const { isNFTHolder: nftVerifiedHolder, nftBalance, vipBonusCredited } = useNFTVerification();
+  const location = useLocation();
   const [playerNFTStatus, setPlayerNFTStatus] = useState(false);
   const [playerData, setPlayerData] = useState(null);
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [savingUsername, setSavingUsername] = useState(false);
-  const [activeTab, setActiveTab] = useState('general');
+  
+  // Get initial tab from navigation state or default to 'general'
+  const [activeTab, setActiveTab] = useState(() => {
+    return location.state?.tab || 'general';
+  });
+  
+  // Update tab when location state changes
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+    }
+  }, [location.state]);
+  
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check localStorage or system preference
     const saved = localStorage.getItem('dogefood_dark_mode');
