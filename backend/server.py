@@ -6102,8 +6102,15 @@ async def trigger_auto_mixer_now():
 
 # Auto-mixer background task
 async def auto_mixer_processor_loop():
-    """Background loop that processes auto-mixes for active subscribers"""
-    logger.info("🤖 Auto-mixer processor started")
+    """
+    Background loop that processes auto-mixes for active subscribers.
+    
+    RESPECTS GAME RULES:
+    - 4 treats per 6-hour window (base) + streak bonuses
+    - Max 16 treats per 24 hours
+    - Uses the same treat creation limits as manual play
+    """
+    logger.info("🤖 Auto-mixer processor started (respects game treat limits)")
     
     while True:
         try:
@@ -6112,8 +6119,7 @@ async def auto_mixer_processor_loop():
             
             logger.info(f"🤖 Auto-mixer checking at {now.strftime('%H:%M:%S')} UTC (hour: {current_hour})")
             
-            # Find active subscriptions where current hour is within their window
-            # Handle windows that cross midnight
+            # Find active subscriptions
             active_subs = await db.auto_mixer_subscriptions.find({
                 "status": "active",
                 "subscription_end": {"$gt": now}
@@ -6127,27 +6133,133 @@ async def auto_mixer_processor_loop():
                     end_hour = sub.get("window_end_hour", 6)
                     player_address = sub.get("player_address", "Unknown")
                     
-                    # Check if current hour is within the window
+                    # Check if current hour is within the subscription window
                     in_window = False
                     if start_hour < end_hour:
                         in_window = start_hour <= current_hour < end_hour
                     else:  # Window crosses midnight
                         in_window = current_hour >= start_hour or current_hour < end_hour
                     
-                    logger.info(f"🤖 Player {player_address[:20]}... window {start_hour}:00-{end_hour}:00, in_window: {in_window}")
-                    
                     if not in_window:
+                        logger.info(f"🤖 {player_address[:15]}... outside subscription window ({start_hour}:00-{end_hour}:00)")
                         continue
                     
-                    # Check if we've already mixed recently (limit to mixes_per_hour)
-                    last_mix = sub.get("last_auto_mix")
-                    if last_mix:
-                        minutes_since_last = (now - last_mix).total_seconds() / 60
-                        min_interval = 60 / AUTO_MIXER_CONFIG["mixes_per_hour"]
-                        if minutes_since_last < min_interval:
-                            logger.info(f"🤖 Skipping {player_address[:20]}... - mixed {minutes_since_last:.1f} mins ago (interval: {min_interval})")
-                            continue
+                    # CHECK GAME TREAT LIMITS using anti_cheat_system
+                    treat_status = await anti_cheat_system.get_daily_treat_status(player_address)
                     
+                    can_create = treat_status.get("can_create_treat", False)
+                    remaining = treat_status.get("remaining_treats", 0)
+                    window_limit = treat_status.get("window_limit", 4)
+                    treats_in_window = treat_status.get("treats_in_window", 0)
+                    streak_bonus = treat_status.get("streak_bonus", {})
+                    
+                    logger.info(f"🤖 {player_address[:15]}... treats: {treats_in_window}/{window_limit}, remaining: {remaining}, can_create: {can_create}")
+                    
+                    if not can_create or remaining <= 0:
+                        logger.info(f"🤖 {player_address[:15]}... at treat limit, skipping")
+                        continue
+                    
+                    # Get player info
+                    player = await db.players.find_one({"address": player_address})
+                    if not player:
+                        logger.warning(f"🤖 Player not found: {player_address}")
+                        continue
+                    
+                    player_level = player.get("level", 1)
+                    
+                    # Get available ingredients for player level
+                    available_ingredients = ingredient_system.get_unlocked_ingredients(player_level)
+                    
+                    if len(available_ingredients) < 2:
+                        logger.warning(f"🤖 {player_address[:15]}... not enough ingredients (level {player_level})")
+                        continue
+                    
+                    # Select random ingredients (2-4)
+                    num_ingredients = random.randint(2, min(4, len(available_ingredients)))
+                    selected_ingredients = random.sample([ing.id for ing in available_ingredients], num_ingredients)
+                    
+                    # Create the treat using the game engine
+                    treat_result = game_engine.calculate_treat_outcome(
+                        ingredients=selected_ingredients,
+                        player_level=player_level,
+                        player_address=player_address
+                    )
+                    
+                    rarity = treat_result.get("rarity", "Common")
+                    base_points = treat_result.get("points", 10)
+                    base_xp = treat_result.get("xp", 5)
+                    
+                    # Apply streak XP multiplier
+                    xp_multiplier = streak_bonus.get("xp_multiplier", 1.0)
+                    xp = int(base_xp * xp_multiplier)
+                    points = base_points
+                    
+                    # Name treat based on rarity
+                    treat_name = f"{rarity} Treat"
+                    
+                    # Save the treat (ready to collect)
+                    treat_id = str(uuid.uuid4())
+                    treat_doc = {
+                        "id": treat_id,
+                        "name": treat_name,
+                        "creator_address": player_address,
+                        "ingredients": selected_ingredients,
+                        "rarity": rarity,
+                        "flavor": treat_result.get("flavor", "Savory"),
+                        "created_at": now,
+                        "ready_at": now,
+                        "image": treat_result.get("image", "🍪"),
+                        "brewing_status": "ready",
+                        "points_reward": points,
+                        "xp_reward": xp,
+                        "auto_mixed": True,
+                        "collected": False
+                    }
+                    
+                    await db.treats.insert_one(treat_doc)
+                    
+                    # Record in auto-mix history
+                    await db.auto_mix_history.insert_one({
+                        "id": str(uuid.uuid4()),
+                        "subscription_id": sub["id"],
+                        "player_address": player_address,
+                        "treat_id": treat_id,
+                        "treat_name": treat_name,
+                        "treat_rarity": rarity,
+                        "points_earned": points,
+                        "xp_earned": xp,
+                        "ingredients": selected_ingredients,
+                        "created_at": now
+                    })
+                    
+                    # Update subscription stats
+                    await db.auto_mixer_subscriptions.update_one(
+                        {"id": sub["id"]},
+                        {"$set": {"last_auto_mix": now}, "$inc": {"total_auto_mixes": 1}}
+                    )
+                    
+                    # Update player streak (same as manual play)
+                    try:
+                        await anti_cheat_system.update_player_streak(player_address)
+                    except:
+                        pass
+                    
+                    logger.info(f"🤖 ✅ Created '{treat_name}' for {player_address[:15]}... ({treats_in_window + 1}/{window_limit} in window)")
+                    
+                except Exception as e:
+                    logger.error(f"🤖 ❌ Error for {sub.get('player_address', 'unknown')[:15]}...: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+                    continue
+                    
+        except Exception as e:
+            logger.error(f"🤖 ❌ Error in auto-mixer loop: {str(e)}")
+            import traceback
+            traceback.print_exc()
+        
+        # Check every 30 minutes (respects game limits, so no need to check frequently)
+        logger.info("🤖 Auto-mixer sleeping for 30 minutes...")
+        await asyncio.sleep(1800)
                     # Perform auto-mix for this player
                     player = await db.players.find_one({"address": player_address})
                     
