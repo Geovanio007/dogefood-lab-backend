@@ -5947,7 +5947,10 @@ async def get_auto_mixer_detailed_stats(player_address: str):
 
 @api_router.post("/auto-mixer/trigger-now")
 async def trigger_auto_mixer_now():
-    """Manually trigger the auto-mixer to run immediately (for testing)"""
+    """
+    Manually trigger the auto-mixer to run immediately (for testing).
+    RESPECTS GAME TREAT LIMITS (4 per 6h window + streak bonuses)
+    """
     try:
         now = datetime.utcnow()
         current_hour = now.hour
@@ -5984,9 +5987,23 @@ async def trigger_auto_mixer_now():
                     })
                     continue
                 
-                # Skip rate limit check for manual trigger
+                # CHECK GAME TREAT LIMITS
+                treat_status = await anti_cheat_system.get_daily_treat_status(player_address)
+                can_create = treat_status.get("can_create_treat", False)
+                remaining = treat_status.get("remaining_treats", 0)
+                window_limit = treat_status.get("window_limit", 4)
+                treats_in_window = treat_status.get("treats_in_window", 0)
+                streak_bonus = treat_status.get("streak_bonus", {})
                 
-                # Perform auto-mix for this player
+                if not can_create or remaining <= 0:
+                    results.append({
+                        "player": player_address[:20] + "...",
+                        "status": "skipped",
+                        "reason": f"At treat limit ({treats_in_window}/{window_limit} in window, {remaining} remaining)"
+                    })
+                    continue
+                
+                # Get player
                 player = await db.players.find_one({"address": player_address})
                 
                 if not player:
