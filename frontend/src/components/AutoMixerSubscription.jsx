@@ -398,8 +398,9 @@ const AgentStatsCard = ({ agentStatus, playerStats, isDark }) => {
                   }`}>
                     {idx + 1}
                   </span>
+                  <span className="text-lg">{item.emoji || '🧪'}</span>
                   <span className={`flex-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                    {item.ingredient_id}
+                    {item.name || item.ingredient_id}
                   </span>
                   <span className={`font-semibold ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
                     {item.usage_count}x
