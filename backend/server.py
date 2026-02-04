@@ -4237,15 +4237,15 @@ async def get_current_tournament():
         
         if not tournament:
             # Return default tournament info for Season 1
-            # Tournament starts 2 weeks before season end (March 1, 2026)
-            # So tournament starts around Feb 15, 2026
+            # Tournament starts 2 weeks before season end (March 31, 2026)
+            # So tournament starts around March 17, 2026
             return {
                 "id": "season1_championship",
                 "name": "Treat Masters Champions League",
                 "season": 1,
                 "status": "qualification",
-                "qualification_ends": "2026-02-15T00:00:00Z",
-                "tournament_starts": "2026-02-15T00:00:00Z",
+                "qualification_ends": "2026-03-17T00:00:00Z",
+                "tournament_starts": "2026-03-17T00:00:00Z",
                 "matches": [],
                 "prize_pool": "$LAB / DOGE Rewards",
                 "champion": None
