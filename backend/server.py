@@ -5755,11 +5755,24 @@ async def get_auto_mixer_agent_status():
             for ing in mix.get("ingredients", []):
                 ingredient_counts[ing] = ingredient_counts.get(ing, 0) + 1
         
-        # Get top 10 ingredients
+        # Get top 10 ingredients with names
         top_ingredients = sorted(ingredient_counts.items(), key=lambda x: x[1], reverse=True)[:10]
         
+        # Map ingredient IDs to names
+        top_ingredients_with_names = []
+        for ing_id, count in top_ingredients:
+            ing_data = ingredient_system.get_ingredient(ing_id)
+            ing_name = ing_data.name if ing_data else ing_id
+            ing_emoji = ing_data.emoji if ing_data else "🧪"
+            top_ingredients_with_names.append({
+                "ingredient_id": ing_id,
+                "name": ing_name,
+                "emoji": ing_emoji,
+                "usage_count": count
+            })
+        
         # Get next scheduled run info
-        next_run_minutes = 10 - (now.minute % 10)
+        next_run_minutes = 30 - (now.minute % 30)
         next_run_time = now + timedelta(minutes=next_run_minutes)
         
         return {
@@ -5767,7 +5780,7 @@ async def get_auto_mixer_agent_status():
             "current_time_utc": now.isoformat(),
             "current_hour_utc": current_hour,
             "next_run_time_utc": next_run_time.isoformat(),
-            "run_interval_minutes": 10,
+            "run_interval_minutes": 30,
             "mixes_per_hour_config": AUTO_MIXER_CONFIG["mixes_per_hour"],
             "subscribers": {
                 "total_active": len(active_subs),
@@ -5782,7 +5795,7 @@ async def get_auto_mixer_agent_status():
                 "avg_mixes_per_hour": round(mixes_last_24h / 24, 1) if mixes_last_24h > 0 else 0
             },
             "rarity_distribution_24h": rarity_breakdown,
-            "top_ingredients_7d": [{"ingredient_id": ing, "usage_count": count} for ing, count in top_ingredients],
+            "top_ingredients_7d": top_ingredients_with_names,
             "performance": {
                 "uptime_status": "healthy",
                 "last_error": None
