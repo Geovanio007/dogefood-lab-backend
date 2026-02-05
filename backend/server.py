@@ -274,6 +274,7 @@ class LeaderboardEntry(BaseModel):
     points: int
     level: int
     is_nft_holder: bool
+    is_dogeonews_holder: bool = False  # $DOGEONEWS token holder (1M+)
     is_vip: bool = False  # VIP status
     rank: int
     selected_character: Optional[str] = None  # Character ID: 'max', 'rex', 'luna'
