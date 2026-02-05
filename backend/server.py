@@ -217,6 +217,8 @@ class Player(BaseModel):
     # Auth type: "wallet", "telegram", "firebase", "guest", or "linked"
     auth_type: str = "wallet"
     is_nft_holder: bool = False
+    is_dogeonews_holder: bool = False  # $DOGEONEWS token holder (1M+ tokens)
+    solana_address: Optional[str] = None  # Linked Solana wallet for token verification
     is_vip: bool = False  # VIP Scientist badge
     vip_bonus_claimed: bool = False  # Track if 500 point bonus was claimed
     leaderboard_eligible: bool = True  # All users can appear on leaderboard
