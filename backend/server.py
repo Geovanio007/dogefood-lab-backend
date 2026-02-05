@@ -1365,6 +1365,218 @@ async def verify_nft_on_blockchain(address: str):
         logger.error(f"Error verifying NFT on DogeOS: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# $DOGEONEWS Token Configuration (Solana)
+DOGEONEWS_TOKEN_ADDRESS = "GHoZwXKEJSsTYeNmBPgQFuKsjVGJ1HMGv5QghtQVdoge"
+DOGEONEWS_MIN_HOLDING = 1_000_000  # 1 million tokens required
+SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
+
+
+@api_router.post("/verify-dogeonews-holder")
+async def verify_dogeonews_token_holder(player_address: str, solana_address: str):
+    """
+    Verify if a Solana wallet holds 1M+ $DOGEONEWS tokens.
+    Links the Solana wallet to the player and grants token holder status.
+    """
+    try:
+        # Get token accounts for the Solana wallet
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getTokenAccountsByOwner",
+            "params": [
+                solana_address,
+                {"mint": DOGEONEWS_TOKEN_ADDRESS},
+                {"encoding": "jsonParsed"}
+            ]
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(SOLANA_RPC_URL, json=payload, timeout=30.0)
+            data = response.json()
+        
+        token_balance = 0
+        is_holder = False
+        
+        if "result" in data and data["result"]["value"]:
+            for account in data["result"]["value"]:
+                parsed = account.get("account", {}).get("data", {}).get("parsed", {})
+                info = parsed.get("info", {})
+                token_amount = info.get("tokenAmount", {})
+                # Get UI amount (already adjusted for decimals)
+                ui_amount = float(token_amount.get("uiAmount", 0) or 0)
+                token_balance += ui_amount
+        
+        is_holder = token_balance >= DOGEONEWS_MIN_HOLDING
+        
+        if is_holder:
+            # Update player with token holder status
+            player = await db.players.find_one({"address": player_address})
+            
+            if player:
+                await db.players.update_one(
+                    {"address": player_address},
+                    {"$set": {
+                        "is_dogeonews_holder": True,
+                        "solana_address": solana_address,
+                        "can_convert_points": True  # Token holders can convert to $LAB
+                    }}
+                )
+                return {
+                    "success": True,
+                    "player_address": player_address,
+                    "solana_address": solana_address,
+                    "token_balance": token_balance,
+                    "min_required": DOGEONEWS_MIN_HOLDING,
+                    "is_holder": True,
+                    "message": f"Verified! You hold {token_balance:,.0f} $DOGEONEWS tokens. You are now eligible for $LAB token claim!"
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "Player not found. Please sign up first."
+                }
+        else:
+            return {
+                "success": False,
+                "player_address": player_address,
+                "solana_address": solana_address,
+                "token_balance": token_balance,
+                "min_required": DOGEONEWS_MIN_HOLDING,
+                "is_holder": False,
+                "message": f"Insufficient balance. You hold {token_balance:,.0f} $DOGEONEWS but need {DOGEONEWS_MIN_HOLDING:,} to qualify."
+            }
+        
+    except Exception as e:
+        logger.error(f"Error verifying $DOGEONEWS holdings: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/check-dogeonews-balance/{solana_address}")
+async def check_dogeonews_balance(solana_address: str):
+    """
+    Check $DOGEONEWS token balance for a Solana wallet (no player link required).
+    """
+    try:
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getTokenAccountsByOwner",
+            "params": [
+                solana_address,
+                {"mint": DOGEONEWS_TOKEN_ADDRESS},
+                {"encoding": "jsonParsed"}
+            ]
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(SOLANA_RPC_URL, json=payload, timeout=30.0)
+            data = response.json()
+        
+        token_balance = 0
+        
+        if "result" in data and data["result"]["value"]:
+            for account in data["result"]["value"]:
+                parsed = account.get("account", {}).get("data", {}).get("parsed", {})
+                info = parsed.get("info", {})
+                token_amount = info.get("tokenAmount", {})
+                ui_amount = float(token_amount.get("uiAmount", 0) or 0)
+                token_balance += ui_amount
+        
+        is_eligible = token_balance >= DOGEONEWS_MIN_HOLDING
+        
+        return {
+            "solana_address": solana_address,
+            "token": "$DOGEONEWS",
+            "token_address": DOGEONEWS_TOKEN_ADDRESS,
+            "balance": token_balance,
+            "min_required": DOGEONEWS_MIN_HOLDING,
+            "is_eligible": is_eligible,
+            "message": "Eligible for $LAB claim!" if is_eligible else f"Need {DOGEONEWS_MIN_HOLDING - token_balance:,.0f} more tokens"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking $DOGEONEWS balance: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/admin/scan-dogeonews-holders")
+async def scan_dogeonews_holders():
+    """
+    Admin endpoint to check all players with linked Solana wallets for $DOGEONEWS holdings.
+    """
+    try:
+        # Find all players with linked Solana addresses
+        players_with_solana = await db.players.find({
+            "solana_address": {"$exists": True, "$ne": None}
+        }).to_list(10000)
+        
+        results = []
+        updated_count = 0
+        
+        for player in players_with_solana:
+            solana_addr = player.get("solana_address")
+            player_addr = player.get("address")
+            
+            try:
+                payload = {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "getTokenAccountsByOwner",
+                    "params": [
+                        solana_addr,
+                        {"mint": DOGEONEWS_TOKEN_ADDRESS},
+                        {"encoding": "jsonParsed"}
+                    ]
+                }
+                
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(SOLANA_RPC_URL, json=payload, timeout=30.0)
+                    data = response.json()
+                
+                token_balance = 0
+                if "result" in data and data["result"]["value"]:
+                    for account in data["result"]["value"]:
+                        parsed = account.get("account", {}).get("data", {}).get("parsed", {})
+                        info = parsed.get("info", {})
+                        token_amount = info.get("tokenAmount", {})
+                        ui_amount = float(token_amount.get("uiAmount", 0) or 0)
+                        token_balance += ui_amount
+                
+                is_holder = token_balance >= DOGEONEWS_MIN_HOLDING
+                
+                if is_holder and not player.get("is_dogeonews_holder"):
+                    await db.players.update_one(
+                        {"address": player_addr},
+                        {"$set": {"is_dogeonews_holder": True, "can_convert_points": True}}
+                    )
+                    updated_count += 1
+                
+                results.append({
+                    "player": player_addr[:20] + "...",
+                    "solana": solana_addr[:20] + "...",
+                    "balance": token_balance,
+                    "is_holder": is_holder,
+                    "updated": is_holder and not player.get("is_dogeonews_holder")
+                })
+                
+            except Exception as e:
+                results.append({
+                    "player": player_addr[:20] + "...",
+                    "error": str(e)
+                })
+        
+        return {
+            "scanned": len(players_with_solana),
+            "updated": updated_count,
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Error scanning $DOGEONEWS holders: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/admin/scan-and-credit-all-holders")
 async def scan_and_credit_all_nft_holders():
     """
