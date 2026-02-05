@@ -2037,6 +2037,7 @@ async def get_leaderboard(limit: int = 50):
             points=player.get("points", 0),
             level=player.get("level", 1),  # Default to level 1
             is_nft_holder=player.get("is_nft_holder", False),
+            is_dogeonews_holder=player.get("is_dogeonews_holder", False),
             is_vip=player.get("is_vip", False),
             rank=rank,
             selected_character=char_id,
