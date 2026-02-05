@@ -245,6 +245,95 @@ const Settings = () => {
     playClick();
   };
 
+  // Check Solana balance without linking
+  const checkSolanaBalance = async () => {
+    if (!solanaAddress.trim()) {
+      setSolanaError('Please enter a Solana wallet address');
+      return;
+    }
+    
+    setSolanaVerifying(true);
+    setSolanaError('');
+    setSolanaSuccess('');
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/check-dogeonews-balance/${solanaAddress.trim()}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSolanaBalance(data);
+        if (data.is_eligible) {
+          setSolanaSuccess(`You hold ${data.balance.toLocaleString()} $DOGEONEWS tokens! Click "Link Wallet" to verify.`);
+        } else {
+          setSolanaError(`Balance: ${data.balance.toLocaleString()} tokens. Need ${(1000000 - data.balance).toLocaleString()} more to qualify.`);
+        }
+      } else {
+        setSolanaError(data.detail || 'Failed to check balance');
+      }
+    } catch (err) {
+      setSolanaError('Failed to check balance. Please try again.');
+    } finally {
+      setSolanaVerifying(false);
+    }
+  };
+
+  // Verify and link Solana wallet
+  const verifySolanaWallet = async () => {
+    if (!solanaAddress.trim()) {
+      setSolanaError('Please enter a Solana wallet address');
+      return;
+    }
+    
+    if (!effectiveAddress) {
+      setSolanaError('Please connect your game account first');
+      return;
+    }
+    
+    setSolanaVerifying(true);
+    setSolanaError('');
+    setSolanaSuccess('');
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/verify-dogeonews-holder?player_address=${effectiveAddress}&solana_address=${solanaAddress.trim()}`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setSolanaSuccess(data.message);
+        setSolanaBalance({ balance: data.token_balance, is_eligible: true });
+        // Refresh player data
+        fetchPlayerData();
+      } else {
+        setSolanaError(data.message || data.error || 'Verification failed');
+        if (data.token_balance !== undefined) {
+          setSolanaBalance({ balance: data.token_balance, is_eligible: false });
+        }
+      }
+    } catch (err) {
+      setSolanaError('Failed to verify wallet. Please try again.');
+    } finally {
+      setSolanaVerifying(false);
+    }
+  };
+
+  // Fetch player data function (if not already defined)
+  const fetchPlayerData = async () => {
+    if (!effectiveAddress) return;
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/player/${effectiveAddress}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPlayerData(data);
+        if (data.solana_address) {
+          setSolanaAddress(data.solana_address);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching player data:', err);
+    }
+  };
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-slate-900' : 'bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50'}`}>
       {/* Header */}
