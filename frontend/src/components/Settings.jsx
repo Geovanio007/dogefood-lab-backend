@@ -810,6 +810,120 @@ const Settings = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Solana Wallet Linking - $DOGEONEWS Token Verification */}
+            <Card className={`border-2 ${isDarkMode ? 'bg-gradient-to-br from-amber-900/30 to-yellow-900/20 border-amber-700' : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200'}`}>
+              <CardHeader>
+                <CardTitle className={`flex items-center gap-3 ${isDarkMode ? 'text-amber-300' : 'text-amber-800'}`}>
+                  <img src="/dogeonews-token.png" alt="$DOGEONEWS" className="w-8 h-8" />
+                  $DOGEONEWS Token Verification
+                </CardTitle>
+                <p className={`text-sm ${isDarkMode ? 'text-amber-400' : 'text-amber-700'}`}>
+                  Link your Solana wallet to verify $DOGEONEWS holdings and become eligible for $LAB token claim
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Current Status */}
+                {playerData?.is_dogeonews_holder ? (
+                  <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-emerald-900/30 border-emerald-700' : 'bg-emerald-50 border-emerald-200'}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-emerald-500">
+                        <Check className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h4 className={`font-semibold ${isDarkMode ? 'text-emerald-300' : 'text-emerald-800'}`}>
+                          Verified $DOGEONEWS Holder!
+                        </h4>
+                        <p className={`text-sm ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                          You are eligible for $LAB token claim at season end
+                        </p>
+                        {playerData?.solana_address && (
+                          <p className={`text-xs font-mono mt-1 ${isDarkMode ? 'text-emerald-500' : 'text-emerald-700'}`}>
+                            Linked: {playerData.solana_address.slice(0, 8)}...{playerData.solana_address.slice(-6)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Info Box */}
+                    <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800/50' : 'bg-amber-100/50'}`}>
+                      <h4 className={`font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                        Requirements
+                      </h4>
+                      <ul className={`text-sm space-y-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                        <li>• Hold <strong>1,000,000+</strong> $DOGEONEWS tokens</li>
+                        <li>• Token Contract: <code className="text-xs bg-black/10 px-1 rounded">GHoZwXK...Vdoge</code></li>
+                        <li>• Network: Solana Mainnet</li>
+                      </ul>
+                    </div>
+
+                    {/* Input Section */}
+                    <div className="space-y-3">
+                      <label className={`block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                        Enter your Solana Wallet Address
+                      </label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={solanaAddress}
+                          onChange={(e) => setSolanaAddress(e.target.value)}
+                          placeholder="e.g., DxDNkQ9sNZCCAexgbYJgxCdnVQkdm3ovCLzMbJgeFpHE"
+                          className={`flex-1 font-mono text-sm ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-500' : ''}`}
+                          data-testid="solana-address-input"
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={checkSolanaBalance}
+                          disabled={solanaVerifying || !solanaAddress.trim()}
+                          variant="outline"
+                          className={`flex-1 ${isDarkMode ? 'border-amber-600 text-amber-300 hover:bg-amber-900/30' : 'border-amber-500 text-amber-700 hover:bg-amber-50'}`}
+                          data-testid="check-balance-btn"
+                        >
+                          {solanaVerifying ? 'Checking...' : 'Check Balance'}
+                        </Button>
+                        <Button
+                          onClick={verifySolanaWallet}
+                          disabled={solanaVerifying || !solanaAddress.trim() || !effectiveAddress}
+                          className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
+                          data-testid="link-wallet-btn"
+                        >
+                          {solanaVerifying ? 'Verifying...' : 'Link & Verify'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Balance Display */}
+                    {solanaBalance && (
+                      <div className={`p-3 rounded-lg ${solanaBalance.is_eligible ? (isDarkMode ? 'bg-emerald-900/30 text-emerald-300' : 'bg-emerald-100 text-emerald-700') : (isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600')}`}>
+                        <div className="flex items-center justify-between">
+                          <span>Your Balance:</span>
+                          <span className="font-bold">{solanaBalance.balance?.toLocaleString() || 0} $DOGEONEWS</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm mt-1">
+                          <span>Required:</span>
+                          <span>1,000,000 $DOGEONEWS</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Error/Success Messages */}
+                    {solanaError && (
+                      <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-red-900/30 text-red-300' : 'bg-red-100 text-red-700'}`}>
+                        {solanaError}
+                      </div>
+                    )}
+                    {solanaSuccess && (
+                      <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-emerald-900/30 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {solanaSuccess}
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
