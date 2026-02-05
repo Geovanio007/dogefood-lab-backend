@@ -490,9 +490,17 @@ const Leaderboard = () => {
                           </td>
                           
                           <td className="py-4 px-2 text-center">
-                            <Badge className={entry.is_nft_holder ? 'vip-badge text-xs' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs'}>
-                              {entry.is_nft_holder ? 'VIP' : 'Scientist'}
-                            </Badge>
+                            <div className="flex items-center justify-center gap-1 flex-wrap">
+                              <Badge className={entry.is_nft_holder ? 'vip-badge text-xs' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs'}>
+                                {entry.is_nft_holder ? 'VIP' : 'Scientist'}
+                              </Badge>
+                              {entry.is_dogeonews_holder && (
+                                <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs flex items-center gap-1">
+                                  <img src="/dogeonews-token.png" alt="$DOGEONEWS" className="w-4 h-4" />
+                                  HOLDER
+                                </Badge>
+                              )}
+                            </div>
                           </td>
                           
                           <td className="py-4 px-2 text-right">
