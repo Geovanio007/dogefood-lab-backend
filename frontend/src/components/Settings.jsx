@@ -53,6 +53,13 @@ const Settings = () => {
   const [usernameError, setUsernameError] = useState('');
   const [savingUsername, setSavingUsername] = useState(false);
   
+  // Solana wallet linking state
+  const [solanaAddress, setSolanaAddress] = useState('');
+  const [solanaVerifying, setSolanaVerifying] = useState(false);
+  const [solanaError, setSolanaError] = useState('');
+  const [solanaSuccess, setSolanaSuccess] = useState('');
+  const [solanaBalance, setSolanaBalance] = useState(null);
+  
   // Get initial tab from navigation state or default to 'general'
   const [activeTab, setActiveTab] = useState(() => {
     return location.state?.tab || 'general';
