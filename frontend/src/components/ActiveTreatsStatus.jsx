@@ -101,7 +101,7 @@ const ActiveTreatsStatus = () => {
     return (
       <Card className="glass-panel border-orange-400">
         <CardContent className="text-center p-6">
-          <div className="text-4xl mb-2">🔗</div>
+          <Link2 className="w-10 h-10 mx-auto mb-2 text-orange-400" />
           <p className="text-slate-600 dark:text-slate-300">Connect your wallet to see your active treats</p>
         </CardContent>
       </Card>
@@ -112,7 +112,7 @@ const ActiveTreatsStatus = () => {
     return (
       <Card className="glass-panel">
         <CardContent className="text-center p-6">
-          <div className="text-4xl mb-2">⏳</div>
+          <Loader2 className="w-10 h-10 mx-auto mb-2 text-sky-400 animate-spin" />
           <p className="text-slate-600 dark:text-slate-300">Loading your treats...</p>
         </CardContent>
       </Card>
@@ -127,7 +127,7 @@ const ActiveTreatsStatus = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-green-700">
               <Trophy className="w-5 h-5" />
-              🎉 Treats Ready for Collection!
+              Treats Ready for Collection!
             </CardTitle>
           </CardHeader>
           <CardContent>
