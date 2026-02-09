@@ -4,7 +4,7 @@ import { useAccount } from 'wagmi';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Clock, Trophy, Zap, ArrowLeft } from 'lucide-react';
+import { Clock, Trophy, Zap, ArrowLeft, Loader2, Link2 } from 'lucide-react';
 
 const ActiveTreatsStatus = () => {
   const { address, isConnected } = useAccount();
