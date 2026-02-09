@@ -194,7 +194,7 @@ const GameLabNew = () => {
       if (response.ok) {
         const result = await response.json();
         toast({
-          title: `${result.outcome.rarity} Treat Created! 🎉`,
+          title: `${result.outcome.rarity} Treat Created!`,
           description: `Your ${result.outcome.rarity.toLowerCase()} treat is brewing for ${result.outcome.timer_duration_hours} hours!`,
           className: "bg-green-100 border-green-400"
         });
@@ -243,7 +243,7 @@ const GameLabNew = () => {
     const readyTime = typeof readyAt === 'number' ? readyAt : new Date(readyAt).getTime();
     const remaining = readyTime - currentTime;
     
-    if (remaining <= 0) return "Ready! 🎉";
+    if (remaining <= 0) return "Ready!";
     
     const hours = Math.floor(remaining / (1000 * 60 * 60));
     const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
