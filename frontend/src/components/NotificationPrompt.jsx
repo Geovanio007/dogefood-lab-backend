@@ -65,7 +65,7 @@ const NotificationPrompt = ({ onClose }) => {
 
         {/* Title */}
         <h3 className="text-xl font-bold text-white text-center mb-2">
-          Never Miss a Treat! 🍖
+          Never Miss a Treat!
         </h3>
 
         {/* Description */}
