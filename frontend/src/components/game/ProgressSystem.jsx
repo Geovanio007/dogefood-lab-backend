@@ -123,7 +123,7 @@ export const LevelUpNotification = () => {
           
           {/* Level Up Message */}
           <h2 className="text-4xl font-bold doge-gradient mb-4">
-            LEVEL UP! 🎉
+            LEVEL UP!
           </h2>
           
           <div className="mb-6">
@@ -146,7 +146,7 @@ export const LevelUpNotification = () => {
               <div className="space-y-2">
                 {levelUp.unlockedFeatures.map((feature, index) => (
                   <Badge key={index} className="bg-green-100 text-green-800 mr-2">
-                    ✨ {feature}
+                    {feature}
                   </Badge>
                 ))}
               </div>
@@ -161,7 +161,7 @@ export const LevelUpNotification = () => {
               className="w-16 h-16 object-contain mx-auto animate-bounce"
             />
             <div className="text-sm text-gray-600 mt-2">
-              You're becoming a legendary creator! 🌟
+              You're becoming a legendary creator!
             </div>
           </div>
           
@@ -170,7 +170,7 @@ export const LevelUpNotification = () => {
             onClick={handleClose}
             className="doge-button px-6 py-3"
           >
-            Continue Creating! 🚀
+            Continue Creating!
           </button>
         </CardContent>
       </Card>
@@ -220,12 +220,12 @@ export const IngredientSack = () => {
           <div className="text-right">
             {isComplete && (
               <Badge className="bg-green-500 text-white animate-pulse">
-                Recipe Complete! 🎉
+                Recipe Complete!
               </Badge>
             )}
             {isNearCompletion && !isComplete && (
               <Badge className="bg-orange-500 text-white">
-                Almost Ready! ⚡
+                Almost Ready!
               </Badge>
             )}
           </div>
@@ -296,9 +296,9 @@ export const IngredientSack = () => {
                     className="flex-shrink-0 bg-white/80 rounded-lg p-2 text-center border border-amber-300 min-w-[60px]"
                   >
                     <div className="text-base mb-1">
-                      {item.rarity === 'Legendary' ? '🌟' : 
-                       item.rarity === 'Epic' ? '⭐' : 
-                       item.rarity === 'Rare' ? '✨' : '🍪'}
+                      {item.rarity === 'Legendary' ? 'L' : 
+                       item.rarity === 'Epic' ? 'E' : 
+                       item.rarity === 'Rare' ? 'R' : 'C'}
                     </div>
                     <div className="text-xs text-gray-600">
                       {item.ingredients?.length || 0} ingredients
@@ -313,7 +313,7 @@ export const IngredientSack = () => {
           {isComplete && (
             <div className="absolute inset-0 flex items-center justify-center bg-green-100/90 rounded-xl animate-in fade-in duration-500">
               <div className="text-center animate-bounce">
-                <div className="text-4xl mb-2">🎉</div>
+                <div className="text-2xl font-bold text-green-700 mb-2">Complete!</div>
                 <div className="font-bold text-green-800">Recipe Complete!</div>
                 <div className="text-sm text-green-600">+{gameConfig.sack.bonusXpPerCompletion} Bonus XP</div>
                 <div className="text-xs text-green-500 mt-1">Sack will reset after bonus</div>
