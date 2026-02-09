@@ -97,7 +97,7 @@ const UserRegistration = ({ onRegistrationComplete }) => {
         setRegistrationStep(3);
         
         toast({
-          title: "🎉 Registration Complete!",
+          title: "Registration Complete!",
           description: `Welcome to DogeFood Lab, ${username}! Your wallet is now registered.`,
           className: "bg-green-100 border-green-400"
         });
@@ -205,7 +205,7 @@ const UserRegistration = ({ onRegistrationComplete }) => {
               <User size={32} className="text-white drop-shadow-lg" />
             </div>
             <CardTitle className="playful-title text-white text-3xl">
-              🎮 Join DogeFood Lab
+              Join DogeFood Lab
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -317,14 +317,14 @@ const UserRegistration = ({ onRegistrationComplete }) => {
                 </div>
                 
                 <div>
-                  <h3 className="text-2xl font-bold text-white mb-2">🎉 Welcome to DogeFood Lab!</h3>
+                  <h3 className="text-2xl font-bold text-white mb-2">Welcome to DogeFood Lab!</h3>
                   <p className="text-white/80">
                     Your registration is complete, <strong>{username}</strong>!
                   </p>
                 </div>
 
                 <Badge className="bg-green-500 text-white px-4 py-2 text-lg">
-                  ✅ Registered Successfully
+                  Registered Successfully
                 </Badge>
 
                 <p className="text-sm text-white/70">
