@@ -36,7 +36,7 @@ const TreatCard = ({ treat, index, ingredientMap = {}, onListForSale, isListed =
           border: 'border-rose-400/60',
           bg: 'from-rose-500/15 to-pink-500/10',
           text: 'text-rose-400',
-          icon: '🔮',
+          icon: 'M',
           shine: 'bg-gradient-to-r from-transparent via-rose-200/40 to-transparent'
         };
       case 'legendary':
@@ -46,7 +46,7 @@ const TreatCard = ({ treat, index, ingredientMap = {}, onListForSale, isListed =
           border: 'border-amber-400/50',
           bg: 'from-amber-500/10 to-yellow-500/5',
           text: 'text-amber-400',
-          icon: '💎',
+          icon: 'L',
           shine: 'bg-gradient-to-r from-transparent via-amber-200/30 to-transparent'
         };
       case 'epic':
@@ -56,7 +56,7 @@ const TreatCard = ({ treat, index, ingredientMap = {}, onListForSale, isListed =
           border: 'border-purple-400/50',
           bg: 'from-purple-500/10 to-pink-500/5',
           text: 'text-purple-400',
-          icon: '⭐',
+          icon: 'E',
           shine: 'bg-gradient-to-r from-transparent via-purple-200/30 to-transparent'
         };
       case 'rare':
@@ -66,7 +66,7 @@ const TreatCard = ({ treat, index, ingredientMap = {}, onListForSale, isListed =
           border: 'border-blue-400/50',
           bg: 'from-blue-500/10 to-cyan-500/5',
           text: 'text-blue-400',
-          icon: '✨',
+          icon: 'R',
           shine: 'bg-gradient-to-r from-transparent via-blue-200/30 to-transparent'
         };
       case 'uncommon':
@@ -76,7 +76,7 @@ const TreatCard = ({ treat, index, ingredientMap = {}, onListForSale, isListed =
           border: 'border-cyan-400/40',
           bg: 'from-cyan-500/10 to-teal-500/5',
           text: 'text-cyan-400',
-          icon: '🌟',
+          icon: 'U',
           shine: 'bg-gradient-to-r from-transparent via-cyan-200/25 to-transparent'
         };
       default:
@@ -86,7 +86,7 @@ const TreatCard = ({ treat, index, ingredientMap = {}, onListForSale, isListed =
           border: 'border-green-400/30',
           bg: 'from-green-500/10 to-emerald-500/5',
           text: 'text-green-400',
-          icon: '🍪',
+          icon: 'C',
           shine: 'bg-gradient-to-r from-transparent via-green-200/20 to-transparent'
         };
     }
