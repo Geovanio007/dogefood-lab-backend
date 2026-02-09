@@ -224,7 +224,7 @@ const Leaderboard = () => {
     return (
       <div className="min-h-screen p-6">
         <div className="text-center py-20">
-          <div className="animate-spin text-6xl mb-4">🏆</div>
+          <div className="animate-spin text-6xl mb-4"><Loader2 className="w-16 h-16 text-yellow-500" /></div>
           <h2 className="text-2xl font-bold text-slate-600 dark:text-slate-200">Loading Leaderboard...</h2>
         </div>
       </div>
@@ -258,7 +258,7 @@ const Leaderboard = () => {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl sm:text-4xl font-bold text-orange-600 dark:text-yellow-400 mb-1 sm:mb-2" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}>🏆 Leaderboard</h1>
+            <h1 className="text-2xl sm:text-4xl font-bold text-orange-600 dark:text-yellow-400 mb-1 sm:mb-2" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}><Trophy className="w-8 h-8 inline mr-2" />Leaderboard</h1>
             <p className="text-xs sm:text-base text-slate-600 dark:text-slate-300">Top VIP Scientists competing for $LAB rewards</p>
           </div>
         </div>
@@ -660,13 +660,13 @@ const Leaderboard = () => {
           
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 rounded-lg">
             <p className="text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm text-center">
-              🎯 <strong>NFT Holder Bonus:</strong> All active NFT holders share 20% baseline pool (4M $LAB)!
+              <strong>NFT Holder Bonus:</strong> All active NFT holders share 20% baseline pool (4M $LAB)!
             </p>
           </div>
           
           <div className="mt-3 p-3 sm:p-4 bg-pink-100 dark:bg-pink-900/30 border border-pink-300 dark:border-pink-700 rounded-lg">
             <p className="text-pink-800 dark:text-pink-200 text-xs sm:text-sm text-center">
-              🏆 <strong>Special Events:</strong> 10% reserved for challenges & competitions (2M $LAB)
+              <strong>Special Events:</strong> 10% reserved for challenges & competitions (2M $LAB)
             </p>
           </div>
         </CardContent>
