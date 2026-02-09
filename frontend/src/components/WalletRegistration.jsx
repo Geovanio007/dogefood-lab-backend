@@ -180,7 +180,7 @@ const WalletRegistration = ({ onRegistrationComplete, registeredPlayers = [] }) 
                     Registering...
                   </span>
                 ) : (
-                  <span>🧪 Start Lab Journey!</span>
+                  <span>Start Lab Journey!</span>
                 )}
               </button>
             </form>
@@ -190,7 +190,7 @@ const WalletRegistration = ({ onRegistrationComplete, registeredPlayers = [] }) 
         {registrationStep === 'complete' && !isAlreadyRegistered && (
           <div className="registration-complete">
             <div className="success-animation">
-              <div className="success-icon">🎉</div>
+              <div className="success-icon text-4xl font-bold text-green-500">✓</div>
               <h3 className="success-title">Welcome to the Lab, {nickname}!</h3>
               <p className="success-message">
                 Your registration is complete! You can now create treats and compete on the leaderboard.
@@ -200,7 +200,7 @@ const WalletRegistration = ({ onRegistrationComplete, registeredPlayers = [] }) 
                   className="doge-button"
                   onClick={() => window.location.reload()}
                 >
-                  Start Creating Treats! 🧪
+                  Start Creating Treats!
                 </button>
               </div>
             </div>
