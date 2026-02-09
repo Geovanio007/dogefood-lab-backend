@@ -81,7 +81,7 @@ const WalletRegistration = ({ onRegistrationComplete, registeredPlayers = [] }) 
     return (
       <div className="wallet-registration-complete">
         <div className="registration-success">
-          <div className="success-icon">🎉</div>
+          <div className="success-icon text-4xl font-bold text-green-500">✓</div>
           <h3 className="success-title">Welcome back, {player?.nickname || 'Scientist'}!</h3>
           <p className="success-message">
             Your wallet is connected and you're ready to create treats!
@@ -111,7 +111,7 @@ const WalletRegistration = ({ onRegistrationComplete, registeredPlayers = [] }) 
         {registrationStep === 'connect' && (
           <div className="connect-step">
             <div className="step-header">
-              <h2 className="step-title">🔗 Connect Your Wallet</h2>
+              <h2 className="step-title">Connect Your Wallet</h2>
               <p className="step-description">
                 Connect your wallet to save your progress and compete on the leaderboard!
               </p>
