@@ -523,7 +523,7 @@ const MainMenu = () => {
                             )}
                           </div>
                           <div className="absolute inset-0 bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="text-white text-xs">📷</span>
+                            <Camera className="w-4 h-4 text-white" />
                           </div>
                         </label>
                         <input
