@@ -70,7 +70,7 @@ const EnhancedGameLab = () => {
           <Card className="game-card max-w-2xl mx-auto">
             <CardHeader className="text-center">
               <CardTitle className="playful-title text-white text-3xl mb-4">
-                🔗 Connect Your Wallet to Start Creating!
+                Connect Your Wallet to Start Creating!
               </CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-6">
@@ -102,7 +102,7 @@ const EnhancedGameLab = () => {
             </Link>
             <div>
               <h1 className="text-4xl font-bold playful-title text-blue-800">
-                🧪 DogeFood Lab
+                DogeFood Lab
               </h1>
               <p className="text-blue-600 font-medium playful-text">
                 Welcome, Scientist! Level {currentLevel}
