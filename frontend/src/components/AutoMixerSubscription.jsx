@@ -5,6 +5,7 @@ import { Badge } from './ui/badge';
 import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { format, addDays, isBefore, isAfter, startOfDay } from 'date-fns';
+import { INGREDIENT_ICONS, getIngredientIcon } from '../config/ingredientIcons';
 import { 
   Bot, 
   Clock, 
