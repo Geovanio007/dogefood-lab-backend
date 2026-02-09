@@ -553,7 +553,7 @@ const Leaderboard = () => {
                             />
                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-500 to-sky-400 flex items-center justify-center">
-                              <span className="text-lg">🧪</span>
+                              <Beaker className="w-4 h-4 text-white" />
                             </div>
                           )}
                         </div>
