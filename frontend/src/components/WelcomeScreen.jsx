@@ -66,8 +66,8 @@ const WelcomeScreen = ({ onPlayNow }) => {
         <div className={`welcome-description mb-8 sm:mb-12 text-base sm:text-2xl md:text-3xl font-semibold ${
           isDarkMode ? 'text-blue-100' : 'text-orange-800'
         }`}>
-          <p className="mb-2 sm:mb-4">🎮 Mix Magical Dogetreats</p>
-          <p className="mb-2 sm:mb-4">🏆 Compete with VIP Scientists</p>
+          <p className="mb-2 sm:mb-4">Mix Magical Dogetreats</p>
+          <p className="mb-2 sm:mb-4">Compete with VIP Scientists</p>
           <p className="mb-2 sm:mb-4 flex items-center justify-center gap-2">
             {/* $LAB Token Logo */}
             <img 
@@ -124,7 +124,7 @@ const WelcomeScreen = ({ onPlayNow }) => {
                 : 'bg-emerald-500/20 text-emerald-700 border border-emerald-500/50 hover:bg-emerald-500/30'
             }`}
           >
-            ✨ New? Create Account (Email/Google/Guest)
+            New? Create Account (Email/Google/Guest)
           </button>
         </div>
 
@@ -132,7 +132,7 @@ const WelcomeScreen = ({ onPlayNow }) => {
         <div className={`mt-8 sm:mt-16 text-xs sm:text-lg opacity-75 ${
           isDarkMode ? 'text-blue-200' : 'text-orange-600'
         }`}>
-          <p>🌟 Web3 Gaming • NFT Rewards • DeFi Integration 🌟</p>
+          <p>Web3 Gaming | NFT Rewards | DeFi Integration</p>
         </div>
       </div>
 
