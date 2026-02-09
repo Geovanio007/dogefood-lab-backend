@@ -127,10 +127,10 @@ const NFTShowcase = () => {
                 
                 <div className="flex gap-2 mt-4">
                   <Button size="sm" variant="outline" className="flex-1 text-xs">
-                    Share 🔗
+                    Share
                   </Button>
                   <Button size="sm" variant="outline" className="flex-1 text-xs">
-                    Gift 🎁
+                    Gift
                   </Button>
                 </div>
               </CardContent>
@@ -147,7 +147,7 @@ const NFTShowcase = () => {
             </p>
             <Link to="/lab">
               <Button className="doge-button">
-                Start Mixing 🧪
+                Start Mixing
               </Button>
             </Link>
           </CardContent>
@@ -157,7 +157,7 @@ const NFTShowcase = () => {
       {/* Future Features Teaser */}
       <Card className="glass-panel mt-8">
         <CardHeader>
-          <CardTitle className="text-center doge-gradient">Coming Soon! 🚀</CardTitle>
+          <CardTitle className="text-center doge-gradient">Coming Soon!</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
