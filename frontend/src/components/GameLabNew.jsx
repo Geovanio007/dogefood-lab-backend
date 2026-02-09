@@ -436,7 +436,7 @@ const GameLabNew = () => {
                   </>
                 ) : (
                   <>
-                    🧪 Mix Treat ({selectedIngredients.length} ingredients)
+                    Mix Treat ({selectedIngredients.length} ingredients)
                   </>
                 )}
               </Button>
@@ -448,7 +448,7 @@ const GameLabNew = () => {
             <Card className="bg-white/10 backdrop-blur-md border-white/20">
               <CardHeader>
                 <CardTitle className="text-2xl text-white flex items-center gap-3">
-                  ⏱️ Active Treats
+                  Active Treats
                   <Badge className="bg-purple-500 text-white">
                     {activeTreats.length}
                   </Badge>
@@ -457,7 +457,7 @@ const GameLabNew = () => {
               <CardContent className="space-y-4">
                 {activeTreats.length === 0 ? (
                   <div className="text-center py-8">
-                    <div className="text-6xl mb-4">🧪</div>
+                    <Beaker className="w-16 h-16 mx-auto mb-4 text-white/50" />
                     <p className="text-white/70">No active treats</p>
                     <p className="text-white/50 text-sm">Mix some ingredients to get started!</p>
                   </div>
@@ -473,7 +473,7 @@ const GameLabNew = () => {
                     
                     // Fallback to local calculation if timer data missing
                     if (isReady === undefined || progress === undefined) {
-                      isReady = formatTimeRemaining(treat.ready_at) === "Ready! 🎉";
+                      isReady = formatTimeRemaining(treat.ready_at) === "Ready!";
                       progress = getProgressPercentage(treat.ready_at, treat.timer_duration);
                       timeRemaining = formatTimeRemaining(treat.ready_at);
                     }
@@ -497,7 +497,7 @@ const GameLabNew = () => {
                             </div>
                           </div>
                           <div className="text-2xl">
-                            {isReady ? '🎉' : '⏳'}
+                            {isReady ? <Check className="w-6 h-6 text-green-600" /> : <Clock className="w-6 h-6 text-yellow-400" />}
                           </div>
                         </div>
                         
