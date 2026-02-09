@@ -640,7 +640,7 @@ const MainMenu = () => {
                   <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                     <div className="relative flex-shrink-0">
                       <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-gradient-to-br from-yellow-400 via-emerald-400 to-sky-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
-                        <span className="text-2xl sm:text-3xl md:text-4xl">🧪</span>
+                        <Beaker className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
                       </div>
                       <div className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-[10px] sm:text-xs font-bold shadow-md">
                         1
