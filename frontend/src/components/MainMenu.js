@@ -885,7 +885,7 @@ const MainMenu = () => {
           <Card className="game-card">
             <CardHeader>
               <CardTitle className="text-center playful-title bubble-text text-white text-3xl">
-                Connect Your Wallet to Get Started! 🔗
+                Connect Your Wallet to Get Started!
               </CardTitle>
             </CardHeader>
             <CardContent>
