@@ -990,7 +990,7 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
                   {mixHistory.slice(0, 5).map((mix) => (
                     <div key={mix.id} className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">🍪</span>
+                        <span className="text-2xl font-bold text-emerald-500">T</span>
                         <div>
                           <div className={`font-medium ${isDark ? 'text-white' : 'text-slate-800'}`}>{mix.treat_name}</div>
                           <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
