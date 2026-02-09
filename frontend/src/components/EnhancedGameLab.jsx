@@ -323,7 +323,7 @@ const EnhancedGameLab = () => {
               <Card className="game-card">
                 <CardHeader>
                   <CardTitle className="playful-title text-white text-xl">
-                    👑 VIP Scientist Perks
+                    <Crown className="w-5 h-5 inline mr-1" /> VIP Scientist Perks
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
