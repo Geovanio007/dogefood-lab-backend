@@ -28,7 +28,7 @@ const TelegramAuth = ({ onAuthComplete }) => {
       setRegistrationComplete(true);
       
       toast({
-        title: "🎉 Welcome to DogeFood Lab!",
+        title: "Welcome to DogeFood Lab!",
         description: `Welcome ${telegramUser?.first_name || 'Doge Scientist'}! Your Telegram account is ready to play.`,
         className: "bg-green-100 border-green-400"
       });

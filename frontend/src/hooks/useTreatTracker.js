@@ -131,7 +131,7 @@ export const useTreatTracker = (playerAddress, demoMode = false) => {
 
     // Show notification
     toast({
-      title: "Treat Ready! 🎉",
+        title: "Treat Ready!",
       description: "Your treat has finished brewing and is ready to collect!",
       className: "bg-green-100 border-green-400"
     });

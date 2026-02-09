@@ -51,7 +51,7 @@ const PointsToBlockchain = () => {
   useEffect(() => {
     if (isConfirmed) {
       toast({
-        title: "Conversion Successful! 🎉",
+        title: "Conversion Successful!",
         description: "Your points have been converted to $LAB tokens",
         className: "bg-green-100 border-green-400"
       });
