@@ -78,10 +78,10 @@ const EnhancedGameLab = () => {
                 Connect your wallet to save progress, earn points, and compete on leaderboards!
               </p>
               <div className="text-white/80 playful-text">
-                <p>✨ Create amazing Dogetreats</p>
-                <p>🏆 Compete with other scientists</p>
-                <p>💎 Earn $LAB rewards</p>
-                <p>📈 Level up your skills</p>
+                <p>Create amazing Dogetreats</p>
+                <p>Compete with other scientists</p>
+                <p>Earn $LAB rewards</p>
+                <p>Level up your skills</p>
               </div>
             </CardContent>
           </Card>
@@ -243,10 +243,10 @@ const EnhancedGameLab = () => {
 
                 {/* Enhanced Instructions */}
                 <div className="text-center text-white/80 playful-text">
-                  <p className="text-lg mb-2">💡 <strong>Pro Tips:</strong></p>
-                  <p>🌟 Mix different ingredient types for higher rarity!</p>
-                  <p>⚡ Higher tier ingredients = more XP and better treats!</p>
-                  <p>🏆 Compete with other scientists on the leaderboard!</p>
+                  <p className="text-lg mb-2"><strong>Pro Tips:</strong></p>
+                  <p>Mix different ingredient types for higher rarity!</p>
+                  <p>Higher tier ingredients = more XP and better treats!</p>
+                  <p>Compete with other scientists on the leaderboard!</p>
                 </div>
               </CardContent>
             </Card>
@@ -279,7 +279,7 @@ const EnhancedGameLab = () => {
                 </div>
                 {isNFTHolder && (
                   <Badge className="vip-badge w-full justify-center">
-                    👑 VIP Scientist Status
+                    <Crown className="w-4 h-4 mr-1" /> VIP Scientist Status
                   </Badge>
                 )}
               </CardContent>
@@ -328,10 +328,10 @@ const EnhancedGameLab = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="text-white/90 playful-text text-sm space-y-2">
-                    <p>✨ <strong>Bonus XP</strong> from all treats</p>
-                    <p>🏆 <strong>Leaderboard eligible</strong> for $LAB rewards</p>
-                    <p>🎯 <strong>Exclusive ingredients</strong> coming soon!</p>
-                    <p>💎 <strong>Priority support</strong> from the team</p>
+                    <p><strong>Bonus XP</strong> from all treats</p>
+                    <p><strong>Leaderboard eligible</strong> for $LAB rewards</p>
+                    <p><strong>Exclusive ingredients</strong> coming soon!</p>
+                    <p><strong>Priority support</strong> from the team</p>
                   </div>
                 </CardContent>
               </Card>
