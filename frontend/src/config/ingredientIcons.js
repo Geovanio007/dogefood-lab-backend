@@ -6,28 +6,28 @@
 export const INGREDIENT_ICONS = {
   // CORE INGREDIENTS (Level 1-5)
   'ING001': {
-    name: 'Crunchy Kibble',
-    emoji: '🦴',
+    name: 'Golden Bone Dust',
+    emoji: '✨',
     icon: 'https://i.ibb.co/hJnhLxKD/Chat-GPT-Image-Dec-29-2025-03-34-58-PM.png'
   },
   'ING002': {
-    name: 'Golden Bone Dust',
-    emoji: '✨',
+    name: 'Meme Meat Cubes',
+    emoji: '🥩',
     icon: 'https://i.ibb.co/N6k24F30/Chat-GPT-Image-Dec-29-2025-03-38-01-PM.png'
   },
   'ING003': {
-    name: 'Meme Meat Cubes',
-    emoji: '🥩',
+    name: 'Shiba Crunch Flakes',
+    emoji: '🥣',
     icon: 'https://i.ibb.co/gM0STr7K/Chat-GPT-Image-Dec-29-2025-03-38-54-PM.png'
   },
   'ING004': {
-    name: 'Shiba Crunch Flakes',
-    emoji: '🥣',
+    name: 'Woof Whey Powder',
+    emoji: '💪',
     icon: 'https://i.ibb.co/jPyM954x/Chat-GPT-Image-Dec-29-2025-03-40-20-PM.png'
   },
   'ING005': {
-    name: 'Woof Whey Powder',
-    emoji: '💪',
+    name: 'Crunchy Kibble',
+    emoji: '🦴',
     icon: 'https://i.ibb.co/KpfGWYZ4/Chat-GPT-Image-Dec-29-2025-05-13-37-PM.png'
   },
 
