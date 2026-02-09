@@ -225,7 +225,7 @@ const ActiveTreatsStatus = () => {
       {activeTreats.length === 0 && readyTreats.length === 0 && (
         <Card className="glass-panel">
           <CardContent className="text-center p-6">
-            <div className="text-4xl mb-2">🧪</div>
+            <Zap className="w-10 h-10 mx-auto mb-2 text-sky-400" />
             <p className="text-gray-600 mb-4">No active treats brewing</p>
             <p className="text-sm text-slate-500 dark:text-slate-300">
               Head to the Lab to start creating some magical treats!
