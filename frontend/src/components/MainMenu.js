@@ -49,7 +49,7 @@ const SeasonCountdown = () => {
   
   return (
     <div className="bg-gradient-to-r from-sky-500/20 to-emerald-500/20 rounded-lg p-3 border border-sky-400/30">
-      <div className="text-xs text-sky-300 mb-1 text-center font-semibold">⏱️ SEASON ENDS IN</div>
+      <div className="text-xs text-sky-300 mb-1 text-center font-semibold">SEASON ENDS IN</div>
       <div className="flex gap-2 justify-center">
         <div className="text-center">
           <div className="bg-sky-500/30 rounded px-2 py-1 min-w-[40px]">
@@ -396,7 +396,7 @@ const MainMenu = () => {
               className="animate-fade-in mb-2 sm:mb-4 scale-75 sm:scale-100 origin-left"
             />
             <p className="text-sm sm:text-2xl text-yellow-500 font-bold drop-shadow-lg">
-              Mix, Test & Upgrade Your Way to the Top! 🚀
+              Mix, Test & Upgrade Your Way to the Top!
             </p>
           </div>
 
@@ -409,7 +409,7 @@ const MainMenu = () => {
               <div className="flex items-center gap-2 flex-wrap">
                 {isNFTHolder && (
                   <Badge className="vip-badge text-xs sm:text-sm whitespace-nowrap">
-                    VIP 👨‍🔬
+                    VIP
                   </Badge>
                 )}
                 <div className="glass-panel p-2 sm:p-3">
@@ -504,7 +504,6 @@ const MainMenu = () => {
                   {guestUser && !isConnected && (
                     <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
                       <Badge className="bg-sky-500/20 text-sky-300 text-[10px] sm:text-xs border border-sky-500/30">
-                        {guestUser.auth_type === 'firebase' ? '🔥 ' : '👤 '}
                         {guestUser.auth_type === 'firebase' ? 'Firebase' : 'Guest'}
                       </Badge>
                     </div>
@@ -535,7 +534,9 @@ const MainMenu = () => {
                           onChange={handleProfileImageUpload}
                         />
                         {isNFTHolder && (
-                          <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-yellow-400 rounded-full flex items-center justify-center text-[10px] sm:text-xs">⭐</div>
+                          <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-yellow-400 rounded-full flex items-center justify-center text-[10px] sm:text-xs">
+                            <Crown className="w-3 h-3 text-yellow-900" />
+                          </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -609,11 +610,11 @@ const MainMenu = () => {
                       
                       {isNFTHolder ? (
                         <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-bold shadow-lg border-0 whitespace-nowrap">
-                          🌟 VIP
+                          <Crown className="w-3 h-3 mr-1 inline" /> VIP
                         </Badge>
                       ) : guestUser && !isConnected && (
                         <Badge className="bg-gradient-to-r from-sky-500 to-emerald-500 text-white px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-bold shadow-lg border-0 whitespace-nowrap">
-                          🎮 Player
+                          Player
                         </Badge>
                       )}
                     </div>
