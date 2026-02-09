@@ -400,7 +400,7 @@ const Leaderboard = () => {
               </p>
               <Link to="/lab">
                 <Button className="doge-button text-sm sm:text-base">
-                  Start Creating Treats 🧪
+                  Start Creating Treats
                 </Button>
               </Link>
             </div>
@@ -451,7 +451,7 @@ const Leaderboard = () => {
                                   />
                                 ) : (
                                   <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-500 to-sky-400 flex items-center justify-center">
-                                    <span className="text-lg">🧪</span>
+                                    <Beaker className="w-5 h-5 text-white" />
                                   </div>
                                 )}
                               </div>
