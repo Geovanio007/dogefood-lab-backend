@@ -42,7 +42,7 @@ const UpdateNotification = () => {
           {/* Content */}
           <div className="flex-1 min-w-0">
             <h3 className="text-white font-bold text-sm">
-              🧪 New Lab Update!
+              New Lab Update!
             </h3>
             <p className="text-white/90 text-xs mt-0.5">
               Fresh experiments await! Tap refresh to get the latest.
