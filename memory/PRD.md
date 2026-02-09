@@ -1,60 +1,77 @@
 # DogeFood Lab - Product Requirements Document
 
 ## Original Problem Statement
-DogeFood Lab is a Web3-powered treat creation game where players become scientists mixing cosmic ingredients to craft unique treats. Players compete on leaderboards, level up, discover secret recipes, and prepare for $LAB token rewards.
-
-## Tech Stack
-- **Frontend**: React.js (deployed on Vercel)
-- **Backend**: Python FastAPI (deployed on Render)
-- **Database**: MongoDB Atlas
-- **Payments**: DOGE via BlockCypher API
+Build a Web3-based game called "DogeFood Lab" where players mix ingredients to create "Dogetreats", compete on leaderboards, and earn rewards. The game includes:
+- Auto-Mixer Subscription Feature with DOGE payments
+- Token holder verification ($DOGEONEWS on Solana)
+- NFT holder verification (DogeFood on DogeOS)
+- Professional UI without emojis
+- Real-time stats dashboard
 
 ## What's Been Implemented
 
-### Session: February 3, 2026 (Latest)
+### Core Game Features
+- Treat mixing system with ingredients
+- Rarity-based treat outcomes (Common, Uncommon, Rare, Epic, Legendary)
+- XP and leveling system
+- Streak bonuses for consecutive play
+- Leaderboard with $LAB token rewards
 
-1. **Auto-Mixer Agent NOW WORKING** ✅
-   - Fixed method calls: `get_unlocked_ingredients()` and `calculate_treat_outcome()`
-   - Agent now creates real treats for subscribed players
-   - Added `/api/auto-mixer/trigger-now` endpoint for manual testing
-   - Comprehensive logging for debugging
+### Auto-Mixer Subscription
+- 30 DOGE/month subscription
+- BlockCypher-based payment verification
+- Background task for automated treat creation
+- Agent respects all game limits (4 treats per 6h + streak bonuses)
+- Real-time stats dashboard
 
-2. **Treat Naming Fixed** ✅
-   - Changed from random names ("Nebula Biscuit") to rarity-based ("Common Treat", "Rare Treat", etc.)
-   - Matches the game's standard naming convention
+### UI/UX Updates (Dec 2025)
+- **Emoji Cleanup**: Removed all emojis from UI text (stars, beakers, trophies, etc.)
+- Replaced with Lucide React icons where needed (Crown, Trophy, Beaker, Check, etc.)
+- Sky-blue theme implementation
+- Professional look without emoji characters
 
-3. **Auto-Mixer Banner on Main Menu** ✅
-   - Professional gradient banner (sky-blue to indigo)
-   - Shows ACTIVE status with pulsing green indicator
-   - Clicking navigates to Auto-Mixer tab in Settings
-   - Responsive design for mobile/Telegram
+### Authentication
+- Wallet connection (wagmi)
+- Guest/Email/Firebase login
+- Telegram authentication
 
-### Previous Session: February 2, 2026
-- DOGE verification fix (BlockCypher fallback)
-- Agent stats dashboard (global + player-specific)
-- Settings dark mode and sky blue theme
-
-## API Endpoints (Auto-Mixer)
-| Endpoint | Method | Description | Status |
-|----------|--------|-------------|--------|
-| `/api/auto-mixer/config` | GET | Get subscription config | ✅ |
-| `/api/auto-mixer/create-subscription` | POST | Create pending subscription | ✅ |
-| `/api/auto-mixer/verify-payment` | POST | Verify DOGE payment | ✅ |
-| `/api/auto-mixer/agent-status` | GET | Global agent status | ✅ |
-| `/api/auto-mixer/detailed-stats/{address}` | GET | Player stats | ✅ |
-| `/api/auto-mixer/trigger-now` | POST | **NEW** Manual trigger for testing | ✅ |
-
-## Auto-Mixer Agent Behavior
-- Runs every **10 minutes**
-- Creates up to **2 mixes per hour** per subscriber
-- Only mixes during player's configured **time window**
-- Treats are created as **"ready"** status (immediately collectible)
-- Treat names follow rarity format: "Common Treat", "Rare Treat", etc.
+### Blockchain Integrations
+- DOGE payment verification (BlockCypher)
+- DogeOS NFT verification (Blockscout API)
+- Solana wallet linking (frontend UI implemented)
 
 ## Deployment Info
-- Frontend: https://dogefoodlab.vercel.app (Vercel)
-- Backend: https://dogefood-lab-api.onrender.com (Render)
-- Payment Address: DMxBXyfQbkCoZJyFoKMksjn9epLTwhHAyE
+- **Frontend**: Vercel (https://dogefoodlab.vercel.app)
+- **Backend**: Render
+- **Database**: MongoDB
 
-## Pending Issues
-1. **Invisible Grey Text on Telegram (P2)** - Needs user clarification
+## Pending Features/Issues
+
+### P0 - Critical
+1. **Solana Token Verification** - Backend endpoint is placeholder, needs real Helius API integration
+   - Token: `GHoZwXKEJSsTYeNmBPgQFuKsjVGJ1HMGv5QghtQVdoge`
+   - Required: 1,000,000+ tokens for eligibility
+
+### P1 - Important
+1. **Invisible Grey Text on Telegram** - Needs investigation
+2. **Backend Refactoring** - server.py is 6000+ lines, needs modularization
+
+### P2 - Nice to Have
+1. More comprehensive testing
+2. Additional ingredient types
+3. Special event system
+
+## Tech Stack
+- **Frontend**: React, Tailwind CSS, shadcn/ui, Lucide React
+- **Backend**: Python, FastAPI, MongoDB (Beanie ODM)
+- **Blockchain**: wagmi, BlockCypher, Solana Web3.js
+- **Deployment**: Vercel (frontend), Render (backend)
+
+## API Endpoints
+- `POST /api/auto-mixer/verify-payment` - Verify DOGE transaction
+- `GET /api/auto-mixer/agent-status` - Get agent stats
+- `POST /api/player/link-solana` - Link Solana wallet
+- `POST /api/player/verify-solana-holdings` - Verify token holdings (placeholder)
+
+## Last Updated
+December 2025 - Emoji cleanup completed and deployed
