@@ -15,7 +15,7 @@ const CharacterSelection = ({ onCharacterSelected }) => {
       description: 'The clever and curious one',
       personality: 'Methodical and analytical, Max loves to understand the science behind every reaction.',
       image: 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/5thty2tp_20250921_1510_Doge%20Scientist%20Trio_simple_compose_01k5p68s01e1p8f81hk4dvm5tm.png', // Max with lab coat
-      traits: ['🧠 Analytical', '🔬 Precise', '📚 Studious'],
+      traits: ['Analytical', 'Precise', 'Studious'],
       bonus: '+10% Experience from treats'
     },
     {
@@ -24,7 +24,7 @@ const CharacterSelection = ({ onCharacterSelected }) => {
       description: 'The mischievous genius',
       personality: 'Bold and experimental, Rex loves to try wild combinations and discover new possibilities.',
       image: 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/w3y5oh69_assets_task_01k5p6sq20fh68gb4hjbs9271e_1758460753_img_0.webp', // Rex the mischievous genius
-      traits: ['⚡ Creative', '🎯 Risk-taker', '🎪 Playful'],
+      traits: ['Creative', 'Risk-taker', 'Playful'],
       bonus: '+15% Rare treat chance'
     },
     {
@@ -33,7 +33,7 @@ const CharacterSelection = ({ onCharacterSelected }) => {
       description: 'The smart and fearless female scientist',
       personality: 'Confident and innovative, Luna excels at optimization and efficiency in the lab.',
       image: 'https://customer-assets.emergentagent.com/job_50ed16dc-caaa-4db1-ad7d-d26be77125c0/artifacts/m1k3hm3c_assets_task_01k5p7arcvf6jt34pk82yke1sh_1758461571_img_0.webp', // Luna - the lady shiba inu
-      traits: ['💪 Fearless', '⚡ Efficient', '🌟 Innovative'],
+      traits: ['Fearless', 'Efficient', 'Innovative'],
       bonus: '+20% Points from treats'
     }
   ];
@@ -57,7 +57,7 @@ const CharacterSelection = ({ onCharacterSelected }) => {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-white mb-4">
-            🧪 Choose Your Scientist! 🧪
+            Choose Your Scientist!
           </h1>
           <p className="text-xl text-white/90 mb-2">
             Select your character to begin your DogeFood Lab adventure
@@ -129,7 +129,7 @@ const CharacterSelection = ({ onCharacterSelected }) => {
                 {/* Selection Indicator */}
                 {selectedCharacter?.id === character.id && (
                   <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 p-2 rounded-full shadow-lg">
-                    <span className="text-2xl">✨</span>
+                    <Check className="w-5 h-5" />
                   </div>
                 )}
               </CardContent>
@@ -150,7 +150,7 @@ const CharacterSelection = ({ onCharacterSelected }) => {
           >
             {selectedCharacter ? (
               <>
-                🚀 Start Adventure with {selectedCharacter.name.split(' ')[2]}! 
+                Start Adventure with {selectedCharacter.name.split(' ')[2]}! 
               </>
             ) : (
               'Please select a character'
@@ -159,7 +159,7 @@ const CharacterSelection = ({ onCharacterSelected }) => {
           
           {selectedCharacter && (
             <p className="text-white/80 mt-4 text-lg">
-              Ready to begin your scientific journey? Let's go! 🧪✨
+              Ready to begin your scientific journey? Let's go!
             </p>
           )}
         </div>
