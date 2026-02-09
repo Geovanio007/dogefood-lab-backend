@@ -303,7 +303,7 @@ const GameLabNew = () => {
               )}
               <div>
                 <h1 className="text-xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">
-                  🧪 DogeFood Laboratory
+                  DogeFood Laboratory
                 </h1>
                 {selectedCharacter && (
                   <div>
@@ -359,7 +359,7 @@ const GameLabNew = () => {
             <Card className="bg-white/10 backdrop-blur-md border-white/20">
               <CardHeader>
                 <CardTitle className="text-2xl text-white flex items-center gap-3">
-                  🧪 Select Ingredients
+                  Select Ingredients
                   <Badge className="bg-blue-500 text-white">
                     {selectedIngredients.length}/5
                   </Badge>
