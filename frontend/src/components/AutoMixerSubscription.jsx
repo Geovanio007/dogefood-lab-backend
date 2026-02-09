@@ -392,22 +392,36 @@ const AgentStatsCard = ({ agentStatus, playerStats, isDark }) => {
               Most Used Ingredients (7 Days)
             </h4>
             <div className="space-y-2">
-              {agentStatus.top_ingredients_7d.slice(0, 5).map((item, idx) => (
-                <div key={item.ingredient_id} className="flex items-center gap-2">
-                  <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${
-                    isDark ? 'bg-sky-900 text-sky-300' : 'bg-sky-100 text-sky-700'
-                  }`}>
-                    {idx + 1}
-                  </span>
-                  <span className="text-lg">{item.emoji || '🧪'}</span>
-                  <span className={`flex-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                    {item.name || item.ingredient_id}
-                  </span>
-                  <span className={`font-semibold ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
-                    {item.usage_count}x
-                  </span>
-                </div>
-              ))}
+              {agentStatus.top_ingredients_7d.slice(0, 5).map((item, idx) => {
+                const ingredientIcon = getIngredientIcon(item.ingredient_id);
+                const ingredientData = INGREDIENT_ICONS[item.ingredient_id];
+                return (
+                  <div key={item.ingredient_id} className="flex items-center gap-2">
+                    <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${
+                      isDark ? 'bg-sky-900 text-sky-300' : 'bg-sky-100 text-sky-700'
+                    }`}>
+                      {idx + 1}
+                    </span>
+                    {ingredientIcon ? (
+                      <img 
+                        src={ingredientIcon} 
+                        alt={ingredientData?.name || item.name || item.ingredient_id}
+                        className="w-8 h-8 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <span className="w-8 h-8 flex items-center justify-center bg-slate-200 dark:bg-slate-700 rounded-lg text-sm">
+                        ?
+                      </span>
+                    )}
+                    <span className={`flex-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      {ingredientData?.name || item.name || item.ingredient_id}
+                    </span>
+                    <span className={`font-semibold ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
+                      {item.usage_count}x
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
