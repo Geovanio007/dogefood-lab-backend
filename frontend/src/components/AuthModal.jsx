@@ -165,7 +165,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
       <Card className="w-full max-w-md bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-sky-400/30">
         <CardHeader className="text-center pb-2">
           <CardTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-sky-400 via-emerald-400 to-yellow-400 bg-clip-text text-transparent">
-            🧪 Join DogeFood Lab
+            Join DogeFood Lab
           </CardTitle>
           <p className="text-slate-400 text-sm mt-2">
             Create an account to start mixing treats!
@@ -240,12 +240,12 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-400 hover:to-emerald-400 py-6"
               >
-                {loading ? 'Creating account...' : '🚀 Start Playing'}
+                {loading ? 'Creating account...' : 'Start Playing'}
               </Button>
               
               <div className="p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
                 <p className="text-yellow-300 text-xs">
-                  💡 <strong>Note:</strong> Guest accounts can play and appear on leaderboard! 
+                  <strong>Note:</strong> Guest accounts can play and appear on leaderboard! 
                   Connect a wallet with DogeFood NFT later to convert points to $LAB tokens.
                 </p>
               </div>
@@ -301,7 +301,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess }) => {
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 py-6"
               >
-                {loading ? 'Please wait...' : mode === 'email' ? '🚀 Create Account' : '🔓 Sign In'}
+                {loading ? 'Please wait...' : mode === 'email' ? 'Create Account' : 'Sign In'}
               </Button>
               
               <div className="text-center">
