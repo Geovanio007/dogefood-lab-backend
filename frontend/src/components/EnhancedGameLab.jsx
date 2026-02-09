@@ -62,7 +62,7 @@ const EnhancedGameLab = () => {
               <span className="font-bold">Back to Menu</span>
             </Link>
             <h1 className="text-4xl font-bold playful-title text-blue-800">
-              🧪 DogeFood Lab
+              DogeFood Lab
             </h1>
           </div>
 
