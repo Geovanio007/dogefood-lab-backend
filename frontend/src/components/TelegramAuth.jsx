@@ -108,7 +108,7 @@ const TelegramAuth = ({ onAuthComplete }) => {
               <CheckCircle size={32} className="text-white" />
             </div>
             <CardTitle className="playful-title text-white text-3xl">
-              🎉 Welcome to DogeFood Lab!
+              Welcome to DogeFood Lab!
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
