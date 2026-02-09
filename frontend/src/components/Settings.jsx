@@ -652,9 +652,7 @@ const Settings = () => {
               <CardContent className="relative pt-0">
                 <div className="flex flex-col md:flex-row md:items-end gap-4 -mt-12">
                   <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-4xl shadow-xl border-4 ${isDarkMode ? 'bg-gradient-to-br from-sky-600 to-blue-700 border-slate-800' : 'bg-gradient-to-br from-sky-400 to-blue-500 border-white'}`}>
-                    {playerData?.selected_character === 'max' ? '🐕' : 
-                     playerData?.selected_character === 'rex' ? '🦮' : 
-                     playerData?.selected_character === 'luna' ? '🐩' : '👨‍🔬'}
+                    <User className="w-12 h-12 text-white" />
                   </div>
                   <div className="flex-1 pb-2">
                     {/* Username Section */}
