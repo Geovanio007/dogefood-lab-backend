@@ -663,7 +663,7 @@ const MainMenu = () => {
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-bold shadow-lg border-0">
-                        🎮 SEASON 1 ACTIVE
+                        SEASON 1 ACTIVE
                       </Badge>
                       <div className="flex gap-1 sm:gap-2 text-[10px] sm:text-xs">
                         <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-400 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
@@ -740,7 +740,7 @@ const MainMenu = () => {
                   Mix magical Dogetreats!
                 </p>
                 <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto">
-                  🧪 Mix
+                  Mix
                 </Button>
               </CardContent>
             </Card>
@@ -783,7 +783,7 @@ const MainMenu = () => {
                   Champions League
                 </p>
                 <Button className="w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
-                  🏆 Enter
+                  <Trophy className="w-3 h-3 mr-1" /> Enter
                 </Button>
               </CardContent>
             </Card>
@@ -840,7 +840,7 @@ const MainMenu = () => {
                   Manage your account
                 </p>
                 <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto">
-                  ⚙️ Manage
+                  <Settings className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Manage
                 </Button>
               </CardContent>
             </Card>
@@ -891,7 +891,7 @@ const MainMenu = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="text-center p-6 bg-gradient-to-br from-green-400/30 to-emerald-500/20 rounded-3xl border-2 border-green-300/50">
-                  <h4 className="font-bold text-2xl mb-3 playful-title text-white bubble-text">For Everyone 🎮</h4>
+                  <h4 className="font-bold text-2xl mb-3 playful-title text-white bubble-text">For Everyone</h4>
                   <ul className="text-white/90 space-y-2 playful-text text-lg">
                     <li>• Play for fun & advance levels</li>
                     <li>• Mix unlimited Dogetreats</li>
@@ -900,7 +900,7 @@ const MainMenu = () => {
                   </ul>
                 </div>
                 <div className="text-center p-6 bg-gradient-to-br from-yellow-400/30 to-orange-500/20 rounded-3xl border-2 border-yellow-300/50">
-                  <h4 className="font-bold text-2xl mb-3 playful-title text-white bubble-text">For NFT Holders ⭐</h4>
+                  <h4 className="font-bold text-2xl mb-3 playful-title text-white bubble-text">For NFT Holders</h4>
                   <ul className="text-white/90 space-y-2 playful-text text-lg">
                     <li>• Head start with bonus resources</li>
                     <li>• Earn points for leaderboard</li>
