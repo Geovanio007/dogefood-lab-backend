@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
 import { useTelegram } from '../contexts/TelegramContext';
-import { ArrowLeft, Trophy, Crown, Star, Users, TrendingUp, Clock, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trophy, Crown, Star, Users, TrendingUp, Clock, Sparkles, Loader2, Beaker } from 'lucide-react';
 import PlayerStatsModal from './PlayerStatsModal';
 import MusicPlayer from './MusicPlayer';
 import ScientistChat from './ScientistChat';
