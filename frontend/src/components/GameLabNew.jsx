@@ -8,6 +8,7 @@ import { Progress } from './ui/progress';
 import { useToast } from './ui/use-toast';
 import { useTelegram } from '../contexts/TelegramContext';
 import CharacterSelection from './CharacterSelection';
+import { Beaker, Check, Clock } from 'lucide-react';
 
 // Helper to get or create a guest ID
 const getGuestId = () => {
