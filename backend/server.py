@@ -4,8 +4,9 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import re
 from pathlib import Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -17,6 +18,33 @@ import random
 import asyncio
 from telegram import Bot
 import httpx  # For Firebase verification
+
+# Security: Input sanitization functions
+def sanitize_string(value: str, max_length: int = 100) -> str:
+    """Sanitize user input strings to prevent injection attacks"""
+    if not value:
+        return ""
+    # Remove potentially dangerous characters
+    sanitized = re.sub(r'[<>"\';{}$]', '', str(value))
+    # Limit length
+    return sanitized[:max_length].strip()
+
+def sanitize_address(address: str) -> str:
+    """Sanitize wallet addresses"""
+    if not address:
+        return ""
+    # Only allow alphanumeric and common address characters
+    sanitized = re.sub(r'[^a-zA-Z0-9_\-]', '', str(address))
+    return sanitized[:100]
+
+def validate_nickname(nickname: str) -> str:
+    """Validate and sanitize nicknames"""
+    if not nickname:
+        raise ValueError("Nickname cannot be empty")
+    sanitized = sanitize_string(nickname, 30)
+    if len(sanitized) < 2:
+        raise ValueError("Nickname must be at least 2 characters")
+    return sanitized
 
 # Try to import blockcypher, with fallback to None
 try:
@@ -35,18 +63,26 @@ from services.treat_game_engine import TreatGameEngine, TreatRarity
 from services.ingredient_system import IngredientSystem
 from services.season_manager import SeasonManager
 
-# Firebase Configuration
-FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "AIzaSyDPDYvwWVhmnTTAcACEdI1agLQcetDV9jQ")
+# Firebase Configuration - MUST be set via environment variables in production
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY")
 FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "dogefood-lab")
+
+if not FIREBASE_API_KEY:
+    logging.warning("⚠️ FIREBASE_API_KEY not set - Firebase authentication will not work")
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # Database connection with Atlas MongoDB
+# SECURITY: MONGO_URL MUST be set via environment variable
+MONGO_URL = os.getenv("MONGO_URL")
+if not MONGO_URL:
+    logging.error("❌ CRITICAL: MONGO_URL environment variable not set!")
+    raise ValueError("MONGO_URL environment variable is required")
+
+DB_NAME = os.getenv("DB_NAME", "dogefood_lab_production")
+
 try:
-    MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://goistheticker_db_user:PTmfplJ3ChiNm1zH@cluster0.px8hllq.mongodb.net/?appName=Cluster0")
-    DB_NAME = os.getenv("DB_NAME", "dogefood_lab_production")
-    
     # Log connection attempt (without sensitive data)
     logging.info(f"Connecting to MongoDB database: {DB_NAME}")
     
@@ -73,7 +109,13 @@ points_system = PointsCollectionSystem(db)
 merkle_generator = MerkleTreeGenerator()
 
 # Initialize Enhanced Game Mechanics (Phase 3)
-game_engine = TreatGameEngine(os.environ.get('GAME_SECRET_KEY', 'development_key_123'))
+# SECURITY: GAME_SECRET_KEY should be set via environment variable in production
+GAME_SECRET_KEY = os.environ.get('GAME_SECRET_KEY')
+if not GAME_SECRET_KEY:
+    logging.warning("⚠️ GAME_SECRET_KEY not set - using development key (NOT SAFE FOR PRODUCTION)")
+    GAME_SECRET_KEY = 'development_key_' + os.urandom(16).hex()
+
+game_engine = TreatGameEngine(GAME_SECRET_KEY)
 ingredient_system = IngredientSystem()
 season_manager = SeasonManager(db)
 
@@ -3534,8 +3576,8 @@ async def simulate_treat_outcome(
 async def delete_player(address: str, admin_key: str):
     """Delete a specific player by address - admin only"""
     
-    expected_key = "dogefood_admin_cleanup_2024"
-    if admin_key != expected_key:
+    if not admin_key or admin_key != ADMIN_SECRET:
+        await asyncio.sleep(2)  # Brute force protection
         raise HTTPException(status_code=403, detail="Invalid admin key")
     
     # Find and delete the player
@@ -3560,12 +3602,11 @@ async def delete_player(address: str, admin_key: str):
 
 
 @api_router.delete("/admin/cleanup-test-players")
-async def cleanup_test_players(admin_key: str = "dogefood_admin_2024"):
+async def cleanup_test_players(admin_key: str = None):
     """Remove test players from the database - admin only"""
     
-    # Simple admin key check (in production, use proper authentication)
-    expected_key = "dogefood_admin_cleanup_2024"
-    if admin_key != expected_key:
+    if not admin_key or admin_key != ADMIN_SECRET:
+        await asyncio.sleep(2)  # Brute force protection
         raise HTTPException(status_code=403, detail="Invalid admin key")
     
     # Define patterns that identify test players
@@ -3726,8 +3767,12 @@ async def api_root():
 # SEASON 1 OFFICIAL LAUNCH - ADMIN ENDPOINTS
 # ============================================
 
-# Admin secret key for protected operations
-ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "dogefood_admin_2025")
+# Admin secret key for protected operations - MUST be set via environment variable
+ADMIN_SECRET = os.environ.get("ADMIN_SECRET")
+if not ADMIN_SECRET:
+    # Generate a secure random admin key if not provided
+    ADMIN_SECRET = os.urandom(32).hex()
+    logging.warning(f"⚠️ ADMIN_SECRET not set - generated temporary key (set env var in production)")
 
 @api_router.post("/admin/reset-leaderboard")
 async def reset_leaderboard(admin_key: str = None):
@@ -3735,7 +3780,9 @@ async def reset_leaderboard(admin_key: str = None):
     Reset the leaderboard by clearing all player points.
     This marks the official start of Season 1.
     """
-    if admin_key != ADMIN_SECRET:
+    if not admin_key or admin_key != ADMIN_SECRET:
+        # Add delay to prevent brute force
+        await asyncio.sleep(2)
         raise HTTPException(status_code=403, detail="Unauthorized: Invalid admin key")
     
     try:
@@ -6574,11 +6621,19 @@ async def auto_mixer_processor_loop():
 # Include the router in the main app
 app.include_router(api_router)
 
+# CORS Configuration - restrict origins in production
+ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', '')
+if ALLOWED_ORIGINS == '*' or not ALLOWED_ORIGINS:
+    logging.warning("⚠️ CORS is set to allow all origins - restrict in production!")
+    cors_origins = ["*"]
+else:
+    cors_origins = [origin.strip() for origin in ALLOWED_ORIGINS.split(',') if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
+    allow_origins=cors_origins,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

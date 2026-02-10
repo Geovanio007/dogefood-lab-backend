@@ -109,9 +109,15 @@ class TreatGameEngine:
         Initialize the game engine with secure randomization
         
         Args:
-            secret_key: Secret key for secure random generation (should be from environment)
+            secret_key: Secret key for secure random generation (MUST be from environment)
         """
-        self.secret_key = secret_key or "default_secret_for_development_only"
+        if not secret_key:
+            # Generate a random key for development but log a warning
+            import os
+            secret_key = os.urandom(32).hex()
+            import logging
+            logging.warning("⚠️ TreatGameEngine: No secret_key provided - generated random key")
+        self.secret_key = secret_key
         
         # Rarity order from most rare to least rare
         self.rarity_order = [
