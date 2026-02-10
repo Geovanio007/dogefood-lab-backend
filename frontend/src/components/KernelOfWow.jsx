@@ -228,7 +228,7 @@ export const KernelBonusResult = ({ bonusInfo }) => {
     `}>
       <div className="relative flex items-center gap-4">
         <div className="relative">
-          <img src={KERNEL_ICON} alt="Kernel" className="w-12 h-12" />
+          <KernelIcon className="w-12 h-12" />
           <TierIcon className="absolute -bottom-1 -right-1 w-5 h-5 text-white drop-shadow-lg" />
         </div>
         
