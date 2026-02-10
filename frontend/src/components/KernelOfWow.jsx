@@ -32,7 +32,7 @@ export const KernelOfWowBanner = ({ currentHolder, onClose }) => {
   return (
     <div className="bg-gradient-to-r from-yellow-500/20 via-amber-500/20 to-yellow-500/20 border-b border-yellow-500/30 px-4 py-2">
       <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 text-sm">
-        <img src={KERNEL_ICON} alt="Kernel of Wow" className="w-6 h-6 animate-pulse" />
+        <KernelIcon className="w-6 h-6 animate-pulse" />
         <span className="text-yellow-200">
           <span className="font-bold text-yellow-400">Kernel of Wow</span> is with{' '}
           <span className="font-bold text-white">{displayName}</span>
