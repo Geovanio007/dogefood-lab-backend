@@ -1598,8 +1598,20 @@ async def verify_dogeonews_token_holder(player_address: str, solana_address: str
 async def check_dogeonews_balance(solana_address: str):
     """
     Check $DOGEONEWS token balance for a Solana wallet (no player link required).
+    Uses Helius API for reliable balance checking.
     """
     try:
+        # Sanitize input
+        solana_address = sanitize_address(solana_address)
+        
+        if not solana_address or len(solana_address) < 32:
+            raise HTTPException(status_code=400, detail="Invalid Solana address")
+        
+        token_balance = 0
+        
+        # Use Helius API if available
+        rpc_url = f"https://mainnet.helius-rpc.com/?api-key={HELIUS_API_KEY}" if HELIUS_API_KEY else "https://api.mainnet-beta.solana.com"
+        
         payload = {
             "jsonrpc": "2.0",
             "id": 1,
@@ -1612,10 +1624,8 @@ async def check_dogeonews_balance(solana_address: str):
         }
         
         async with httpx.AsyncClient() as client:
-            response = await client.post(SOLANA_RPC_URL, json=payload, timeout=30.0)
+            response = await client.post(rpc_url, json=payload, timeout=30.0)
             data = response.json()
-        
-        token_balance = 0
         
         if "result" in data and data["result"]["value"]:
             for account in data["result"]["value"]:
@@ -1637,6 +1647,8 @@ async def check_dogeonews_balance(solana_address: str):
             "message": "Eligible for $LAB claim!" if is_eligible else f"Need {DOGEONEWS_MIN_HOLDING - token_balance:,.0f} more tokens"
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error checking $DOGEONEWS balance: {e}")
         raise HTTPException(status_code=500, detail=str(e))
