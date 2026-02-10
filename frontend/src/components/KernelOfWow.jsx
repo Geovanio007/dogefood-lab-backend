@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Clock, Zap, Star, Crown, AlertCircle } from 'lucide-react';
+import { Sparkles, Clock, Zap, Star, Crown, AlertCircle, Gem } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 
-// Kernel of Wow Icon URL
-const KERNEL_ICON = "https://customer-assets.emergentagent.com/job_treatlabgame/artifacts/pt9v6fui_file_00000000a6ec7230a03b126d8939507c.png";
+// Kernel of Wow Icon Component
+const KernelIcon = ({ className = "w-6 h-6" }) => (
+  <div className={`${className} bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 rounded-lg flex items-center justify-center shadow-lg`}>
+    <Gem className="w-4 h-4 text-white" />
+  </div>
+);
 
 // Format time remaining
 const formatTimeRemaining = (seconds) => {
