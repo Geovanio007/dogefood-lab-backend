@@ -224,7 +224,9 @@ const Leaderboard = () => {
     return (
       <div className="min-h-screen p-6">
         <div className="text-center py-20">
-          <div className="animate-spin text-6xl mb-4"><Loader2 className="w-16 h-16 text-yellow-500" /></div>
+          <div className="flex justify-center mb-4">
+            <Trophy className="w-16 h-16 text-yellow-500 animate-bounce" />
+          </div>
           <h2 className="text-2xl font-bold text-slate-600 dark:text-slate-200">Loading Leaderboard...</h2>
         </div>
       </div>
