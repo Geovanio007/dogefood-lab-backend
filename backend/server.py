@@ -1443,7 +1443,7 @@ HELIUS_API_KEY = os.environ.get("HELIUS_API_KEY")
 SOLANA_RPC_URL = f"https://mainnet.helius-rpc.com/?api-key={HELIUS_API_KEY}" if HELIUS_API_KEY else "https://api.mainnet-beta.solana.com"
 
 if not HELIUS_API_KEY:
-    logger.warning("⚠️ HELIUS_API_KEY not set - using public Solana RPC (rate limited)")
+    logging.warning("⚠️ HELIUS_API_KEY not set - using public Solana RPC (rate limited)")
 
 
 @api_router.post("/verify-dogeonews-holder")
