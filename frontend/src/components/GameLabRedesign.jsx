@@ -6,6 +6,7 @@ import { Badge } from './ui/badge';
 import { Card, CardContent } from './ui/card';
 import INGREDIENT_ICONS from '../config/ingredientIcons';
 import { useAudio } from '../contexts/AudioContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import DailyLimitTracker from './DailyLimitTracker';
 import PlayerStatsModal from './PlayerStatsModal';
 import { KernelOfWowStatus, KernelBonusResult } from './KernelOfWow';
