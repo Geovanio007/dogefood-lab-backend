@@ -4325,20 +4325,49 @@ async def notification_processor_loop():
     while True:
         try:
             now = datetime.utcnow()
+            now_iso = now.isoformat()
             
             # Find all unsent notifications that are ready to be sent
+            # Use multiple time format comparisons for robustness
             pending_notifications = await db.scheduled_notifications.find({
-                "sent": False,
-                "$or": [
-                    {"ready_time": {"$lte": now.isoformat()}},
-                    {"reset_time": {"$lte": now.isoformat()}}
-                ]
+                "sent": False
             }).to_list(100)
             
-            if pending_notifications:
-                logger.info(f"📬 Found {len(pending_notifications)} pending notifications to send")
+            notifications_to_send = []
+            for notif in pending_notifications:
+                should_send = False
+                
+                # Check treat ready time
+                if notif.get("type") == "treat_ready" and notif.get("ready_time"):
+                    ready_time_str = notif["ready_time"]
+                    try:
+                        if isinstance(ready_time_str, str):
+                            ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "").replace("+00:00", ""))
+                        else:
+                            ready_time = ready_time_str
+                        should_send = now >= ready_time
+                    except Exception as e:
+                        logger.warning(f"Error parsing ready_time {ready_time_str}: {e}")
+                
+                # Check limit reset time
+                elif notif.get("type") == "limit_reset" and notif.get("reset_time"):
+                    reset_time_str = notif["reset_time"]
+                    try:
+                        if isinstance(reset_time_str, str):
+                            reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "").replace("+00:00", ""))
+                        else:
+                            reset_time = reset_time_str
+                        should_send = now >= reset_time
+                    except Exception as e:
+                        logger.warning(f"Error parsing reset_time {reset_time_str}: {e}")
+                
+                if should_send:
+                    notifications_to_send.append(notif)
             
-            for notification in pending_notifications:
+            if notifications_to_send:
+                logger.info(f"📬 Found {len(notifications_to_send)} pending notifications ready to send")
+            
+            for notification in notifications_to_send:
                 try:
                     await send_scheduled_notification(notification["id"])
                 except Exception as e:
