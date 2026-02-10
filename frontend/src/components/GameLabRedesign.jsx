@@ -352,6 +352,12 @@ const GameLabRedesign = ({ playerAddress }) => {
           setDailyStatus(data.daily_status);
         }
         
+        // Schedule notification for when treat is ready
+        if (data.treat?.ready_at) {
+          const treatName = `${data.outcome?.rarity || 'Mystery'} Treat`;
+          scheduleTreatReadyNotification(treatName, data.treat.ready_at);
+        }
+        
         // Show brewing animation for 3 seconds before showing result
         setTimeout(() => {
           setShowBrewingAnimation(false);
