@@ -20,6 +20,11 @@ const getIcon = (ingredientId) => {
   return data?.icon || null;
 };
 
+const getIngredientName = (ingredientId, fallbackName) => {
+  const data = INGREDIENT_ICONS[ingredientId];
+  return data?.name || fallbackName || ingredientId;
+};
+
 const getEmoji = (ingredientId) => {
   const data = INGREDIENT_ICONS[ingredientId];
   return data?.emoji || '❓';
@@ -999,7 +1004,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                           </div>
                           
                           <div className="text-white font-medium text-sm truncate">
-                            {ingredient.name}
+                            {getIngredientName(ingredient.id, ingredient.name)}
                           </div>
                           <div className={`text-xs ${style.text} mt-1`}>
                             {ingredient.category}
