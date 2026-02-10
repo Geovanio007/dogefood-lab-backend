@@ -1437,7 +1437,13 @@ async def verify_nft_on_blockchain(address: str):
 # $DOGEONEWS Token Configuration (Solana)
 DOGEONEWS_TOKEN_ADDRESS = "GHoZwXKEJSsTYeNmBPgQFuKsjVGJ1HMGv5QghtQVdoge"
 DOGEONEWS_MIN_HOLDING = 1_000_000  # 1 million tokens required
-SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
+
+# Helius API for reliable Solana RPC
+HELIUS_API_KEY = os.environ.get("HELIUS_API_KEY")
+SOLANA_RPC_URL = f"https://mainnet.helius-rpc.com/?api-key={HELIUS_API_KEY}" if HELIUS_API_KEY else "https://api.mainnet-beta.solana.com"
+
+if not HELIUS_API_KEY:
+    logger.warning("⚠️ HELIUS_API_KEY not set - using public Solana RPC (rate limited)")
 
 
 @api_router.post("/verify-dogeonews-holder")
@@ -1445,35 +1451,98 @@ async def verify_dogeonews_token_holder(player_address: str, solana_address: str
     """
     Verify if a Solana wallet holds 1M+ $DOGEONEWS tokens.
     Links the Solana wallet to the player and grants token holder status.
+    Uses Helius API for reliable token balance checking.
     """
     try:
-        # Get token accounts for the Solana wallet
-        payload = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "getTokenAccountsByOwner",
-            "params": [
-                solana_address,
-                {"mint": DOGEONEWS_TOKEN_ADDRESS},
-                {"encoding": "jsonParsed"}
-            ]
-        }
+        # Sanitize inputs
+        solana_address = sanitize_address(solana_address)
+        player_address = sanitize_address(player_address)
         
-        async with httpx.AsyncClient() as client:
-            response = await client.post(SOLANA_RPC_URL, json=payload, timeout=30.0)
-            data = response.json()
+        if not solana_address or len(solana_address) < 32:
+            raise HTTPException(status_code=400, detail="Invalid Solana address")
         
         token_balance = 0
         is_holder = False
         
-        if "result" in data and data["result"]["value"]:
-            for account in data["result"]["value"]:
-                parsed = account.get("account", {}).get("data", {}).get("parsed", {})
-                info = parsed.get("info", {})
-                token_amount = info.get("tokenAmount", {})
-                # Get UI amount (already adjusted for decimals)
-                ui_amount = float(token_amount.get("uiAmount", 0) or 0)
-                token_balance += ui_amount
+        # Try Helius DAS API first (more reliable for token balances)
+        if HELIUS_API_KEY:
+            try:
+                helius_url = f"https://mainnet.helius-rpc.com/?api-key={HELIUS_API_KEY}"
+                
+                # Use getTokenAccountsByOwner for specific token
+                payload = {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "getTokenAccountsByOwner",
+                    "params": [
+                        solana_address,
+                        {"mint": DOGEONEWS_TOKEN_ADDRESS},
+                        {"encoding": "jsonParsed"}
+                    ]
+                }
+                
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(helius_url, json=payload, timeout=30.0)
+                    data = response.json()
+                
+                if "result" in data and data["result"]["value"]:
+                    for account in data["result"]["value"]:
+                        parsed = account.get("account", {}).get("data", {}).get("parsed", {})
+                        info = parsed.get("info", {})
+                        token_amount = info.get("tokenAmount", {})
+                        ui_amount = float(token_amount.get("uiAmount", 0) or 0)
+                        token_balance += ui_amount
+                
+                logger.info(f"Helius API: {solana_address} has {token_balance:,.0f} $DOGEONEWS tokens")
+                
+            except Exception as helius_error:
+                logger.warning(f"Helius API error, falling back to public RPC: {helius_error}")
+                # Fall back to public RPC
+                payload = {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "getTokenAccountsByOwner",
+                    "params": [
+                        solana_address,
+                        {"mint": DOGEONEWS_TOKEN_ADDRESS},
+                        {"encoding": "jsonParsed"}
+                    ]
+                }
+                async with httpx.AsyncClient() as client:
+                    response = await client.post("https://api.mainnet-beta.solana.com", json=payload, timeout=30.0)
+                    data = response.json()
+                
+                if "result" in data and data["result"]["value"]:
+                    for account in data["result"]["value"]:
+                        parsed = account.get("account", {}).get("data", {}).get("parsed", {})
+                        info = parsed.get("info", {})
+                        token_amount = info.get("tokenAmount", {})
+                        ui_amount = float(token_amount.get("uiAmount", 0) or 0)
+                        token_balance += ui_amount
+        else:
+            # Use public RPC (rate limited)
+            payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "getTokenAccountsByOwner",
+                "params": [
+                    solana_address,
+                    {"mint": DOGEONEWS_TOKEN_ADDRESS},
+                    {"encoding": "jsonParsed"}
+                ]
+            }
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(SOLANA_RPC_URL, json=payload, timeout=30.0)
+                data = response.json()
+            
+            if "result" in data and data["result"]["value"]:
+                for account in data["result"]["value"]:
+                    parsed = account.get("account", {}).get("data", {}).get("parsed", {})
+                    info = parsed.get("info", {})
+                    token_amount = info.get("tokenAmount", {})
+                    ui_amount = float(token_amount.get("uiAmount", 0) or 0)
+                    token_balance += ui_amount
         
         is_holder = token_balance >= DOGEONEWS_MIN_HOLDING
         
@@ -1487,9 +1556,12 @@ async def verify_dogeonews_token_holder(player_address: str, solana_address: str
                     {"$set": {
                         "is_dogeonews_holder": True,
                         "solana_address": solana_address,
+                        "dogeonews_balance": token_balance,
+                        "dogeonews_verified_at": datetime.utcnow().isoformat(),
                         "can_convert_points": True  # Token holders can convert to $LAB
                     }}
                 )
+                logger.info(f"✅ Verified $DOGEONEWS holder: {player_address} with {token_balance:,.0f} tokens")
                 return {
                     "success": True,
                     "player_address": player_address,
@@ -1515,6 +1587,8 @@ async def verify_dogeonews_token_holder(player_address: str, solana_address: str
                 "message": f"Insufficient balance. You hold {token_balance:,.0f} $DOGEONEWS but need {DOGEONEWS_MIN_HOLDING:,} to qualify."
             }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error verifying $DOGEONEWS holdings: {e}")
         raise HTTPException(status_code=500, detail=str(e))
