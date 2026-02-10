@@ -122,25 +122,40 @@ async def auto_select_kernel_holder():
         )
         
         # Get active players (players who have created treats in last 7 days)
+        # MUST have either a valid address OR telegram_id AND a nickname
         seven_days_ago = now - timedelta(days=7)
         
+        # Query for players with valid identifiers who have been active
         active_players = await db.players.find({
-            "last_active": {"$gte": seven_days_ago}
+            "last_active": {"$gte": seven_days_ago},
+            "$or": [
+                {"address": {"$ne": None, "$exists": True, "$ne": ""}},
+                {"telegram_id": {"$ne": None, "$exists": True}}
+            ],
+            "nickname": {"$ne": None, "$exists": True, "$ne": ""}
         }).to_list(1000)
         
-        # Fallback: get players with treats
+        # Fallback: get players with treats who have valid identifiers
         if not active_players:
             treat_creators = await db.treats.distinct("creator_address", {
                 "created_at": {"$gte": seven_days_ago}
             })
+            # Filter out None addresses
+            treat_creators = [addr for addr in treat_creators if addr]
             active_players = await db.players.find({
-                "address": {"$in": treat_creators}
+                "address": {"$in": treat_creators},
+                "nickname": {"$ne": None, "$exists": True, "$ne": ""}
             }).to_list(1000)
         
-        # Final fallback: get any players with points
+        # Final fallback: get any players with points and valid nickname
         if not active_players:
             active_players = await db.players.find({
-                "points": {"$gt": 0}
+                "points": {"$gt": 0},
+                "$or": [
+                    {"address": {"$ne": None, "$exists": True, "$ne": ""}},
+                    {"telegram_id": {"$ne": None, "$exists": True}}
+                ],
+                "nickname": {"$ne": None, "$exists": True, "$ne": ""}
             }).to_list(100)
         
         if not active_players:
@@ -150,13 +165,17 @@ async def auto_select_kernel_holder():
         # Select random player
         selected_player = random.choice(active_players)
         
+        # Get the best identifier for this player
+        player_identifier = selected_player.get("address") or f"tg_{selected_player.get('telegram_id')}"
+        player_nickname = selected_player.get("nickname") or selected_player.get("telegram_first_name") or "Anonymous"
+        
         # Create new holder record (16 hour duration)
         expires_at = now + timedelta(hours=16)
         
         new_holder = {
             "id": str(uuid.uuid4()),
-            "player_address": selected_player.get("address"),
-            "player_nickname": selected_player.get("nickname"),
+            "player_address": player_identifier,
+            "player_nickname": player_nickname,
             "ingredient_id": "KERNEL_WOW",
             "granted_at": now,
             "expires_at": expires_at,
@@ -168,12 +187,18 @@ async def auto_select_kernel_holder():
         await db.special_ingredient_holders.insert_one(new_holder)
         
         # Update player record
-        await db.players.update_one(
-            {"address": selected_player.get("address")},
-            {"$set": {"has_special_ingredient": True, "special_ingredient_expires": expires_at}}
-        )
+        if selected_player.get("address"):
+            await db.players.update_one(
+                {"address": selected_player.get("address")},
+                {"$set": {"has_special_ingredient": True, "special_ingredient_expires": expires_at}}
+            )
+        elif selected_player.get("telegram_id"):
+            await db.players.update_one(
+                {"telegram_id": selected_player.get("telegram_id")},
+                {"$set": {"has_special_ingredient": True, "special_ingredient_expires": expires_at}}
+            )
         
-        logger.info(f"🌟 Kernel of Wow auto-granted to {selected_player.get('nickname') or selected_player.get('address')} until {expires_at}")
+        logger.info(f"🌟 Kernel of Wow auto-granted to {player_nickname} ({player_identifier}) until {expires_at}")
         return True
         
     except Exception as e:
