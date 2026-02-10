@@ -2027,8 +2027,12 @@ async def collect_treat(treat_id: str, data: dict):
 @api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
 async def get_leaderboard(limit: int = 50):
     # Get top players by points (all players, not just NFT holders)
+    # Only include players with valid nicknames
     pipeline = [
-        {"$match": {"points": {"$gt": 0}}},  # Any player with points
+        {"$match": {
+            "points": {"$gt": 0},
+            "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+        }},
         {"$sort": {"points": -1, "level": -1}},
         {"$limit": limit}
     ]
@@ -2056,9 +2060,13 @@ async def get_leaderboard(limit: int = 50):
         char_id = player.get("selected_character")
         char_info = character_data.get(char_id, {})
         
+        # Get the best address identifier
+        player_address = player.get("address") or f"tg_{player.get('telegram_id')}" or f"guest_{player.get('guest_id', 'unknown')}"
+        player_nickname = player.get("nickname") or player.get("telegram_first_name") or "Player"
+        
         leaderboard.append(LeaderboardEntry(
-            address=player["address"],
-            nickname=player.get("nickname", "Player"),  # Default nickname
+            address=player_address,
+            nickname=player_nickname,
             points=player.get("points", 0),
             level=player.get("level", 1),  # Default to level 1
             is_nft_holder=player.get("is_nft_holder", False),
