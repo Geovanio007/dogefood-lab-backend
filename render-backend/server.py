@@ -7054,4 +7054,4 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
-    logger.info("Database connection closed")
+    logger.info("Database connection closed")# Deployment trigger: Sun Feb 15 18:08:55 UTC 2026
