@@ -1,11 +1,12 @@
-from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks, Request
+from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks, Request, Query
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import re
 from pathlib import Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -17,6 +18,33 @@ import random
 import asyncio
 from telegram import Bot
 import httpx  # For Firebase verification
+
+# Security: Input sanitization functions
+def sanitize_string(value: str, max_length: int = 100) -> str:
+    """Sanitize user input strings to prevent injection attacks"""
+    if not value:
+        return ""
+    # Remove potentially dangerous characters
+    sanitized = re.sub(r'[<>"\';{}$]', '', str(value))
+    # Limit length
+    return sanitized[:max_length].strip()
+
+def sanitize_address(address: str) -> str:
+    """Sanitize wallet addresses"""
+    if not address:
+        return ""
+    # Only allow alphanumeric and common address characters
+    sanitized = re.sub(r'[^a-zA-Z0-9_\-]', '', str(address))
+    return sanitized[:100]
+
+def validate_nickname(nickname: str) -> str:
+    """Validate and sanitize nicknames"""
+    if not nickname:
+        raise ValueError("Nickname cannot be empty")
+    sanitized = sanitize_string(nickname, 30)
+    if len(sanitized) < 2:
+        raise ValueError("Nickname must be at least 2 characters")
+    return sanitized
 
 # Try to import blockcypher, with fallback to None
 try:
@@ -35,18 +63,26 @@ from services.treat_game_engine import TreatGameEngine, TreatRarity
 from services.ingredient_system import IngredientSystem
 from services.season_manager import SeasonManager
 
-# Firebase Configuration
-FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "AIzaSyDPDYvwWVhmnTTAcACEdI1agLQcetDV9jQ")
+# Firebase Configuration - MUST be set via environment variables in production
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY")
 FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "dogefood-lab")
+
+if not FIREBASE_API_KEY:
+    logging.warning("⚠️ FIREBASE_API_KEY not set - Firebase authentication will not work")
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # Database connection with Atlas MongoDB
+# SECURITY: MONGO_URL MUST be set via environment variable
+MONGO_URL = os.getenv("MONGO_URL")
+if not MONGO_URL:
+    logging.error("❌ CRITICAL: MONGO_URL environment variable not set!")
+    raise ValueError("MONGO_URL environment variable is required")
+
+DB_NAME = os.getenv("DB_NAME", "dogefood_lab_production")
+
 try:
-    MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://goistheticker_db_user:PTmfplJ3ChiNm1zH@cluster0.px8hllq.mongodb.net/?appName=Cluster0")
-    DB_NAME = os.getenv("DB_NAME", "dogefood_lab_production")
-    
     # Log connection attempt (without sensitive data)
     logging.info(f"Connecting to MongoDB database: {DB_NAME}")
     
@@ -73,7 +109,13 @@ points_system = PointsCollectionSystem(db)
 merkle_generator = MerkleTreeGenerator()
 
 # Initialize Enhanced Game Mechanics (Phase 3)
-game_engine = TreatGameEngine(os.environ.get('GAME_SECRET_KEY', 'development_key_123'))
+# SECURITY: GAME_SECRET_KEY should be set via environment variable in production
+GAME_SECRET_KEY = os.environ.get('GAME_SECRET_KEY')
+if not GAME_SECRET_KEY:
+    logging.warning("⚠️ GAME_SECRET_KEY not set - using development key (NOT SAFE FOR PRODUCTION)")
+    GAME_SECRET_KEY = 'development_key_' + os.urandom(16).hex()
+
+game_engine = TreatGameEngine(GAME_SECRET_KEY)
 ingredient_system = IngredientSystem()
 season_manager = SeasonManager(db)
 
@@ -122,25 +164,40 @@ async def auto_select_kernel_holder():
         )
         
         # Get active players (players who have created treats in last 7 days)
+        # MUST have either a valid address OR telegram_id AND a nickname
         seven_days_ago = now - timedelta(days=7)
         
+        # Query for players with valid identifiers who have been active
         active_players = await db.players.find({
-            "last_active": {"$gte": seven_days_ago}
+            "last_active": {"$gte": seven_days_ago},
+            "$or": [
+                {"address": {"$ne": None, "$exists": True, "$ne": ""}},
+                {"telegram_id": {"$ne": None, "$exists": True}}
+            ],
+            "nickname": {"$ne": None, "$exists": True, "$ne": ""}
         }).to_list(1000)
         
-        # Fallback: get players with treats
+        # Fallback: get players with treats who have valid identifiers
         if not active_players:
             treat_creators = await db.treats.distinct("creator_address", {
                 "created_at": {"$gte": seven_days_ago}
             })
+            # Filter out None addresses
+            treat_creators = [addr for addr in treat_creators if addr]
             active_players = await db.players.find({
-                "address": {"$in": treat_creators}
+                "address": {"$in": treat_creators},
+                "nickname": {"$ne": None, "$exists": True, "$ne": ""}
             }).to_list(1000)
         
-        # Final fallback: get any players with points
+        # Final fallback: get any players with points and valid nickname
         if not active_players:
             active_players = await db.players.find({
-                "points": {"$gt": 0}
+                "points": {"$gt": 0},
+                "$or": [
+                    {"address": {"$ne": None, "$exists": True, "$ne": ""}},
+                    {"telegram_id": {"$ne": None, "$exists": True}}
+                ],
+                "nickname": {"$ne": None, "$exists": True, "$ne": ""}
             }).to_list(100)
         
         if not active_players:
@@ -150,13 +207,17 @@ async def auto_select_kernel_holder():
         # Select random player
         selected_player = random.choice(active_players)
         
+        # Get the best identifier for this player
+        player_identifier = selected_player.get("address") or f"tg_{selected_player.get('telegram_id')}"
+        player_nickname = selected_player.get("nickname") or selected_player.get("telegram_first_name") or "Anonymous"
+        
         # Create new holder record (16 hour duration)
         expires_at = now + timedelta(hours=16)
         
         new_holder = {
             "id": str(uuid.uuid4()),
-            "player_address": selected_player.get("address"),
-            "player_nickname": selected_player.get("nickname"),
+            "player_address": player_identifier,
+            "player_nickname": player_nickname,
             "ingredient_id": "KERNEL_WOW",
             "granted_at": now,
             "expires_at": expires_at,
@@ -168,12 +229,18 @@ async def auto_select_kernel_holder():
         await db.special_ingredient_holders.insert_one(new_holder)
         
         # Update player record
-        await db.players.update_one(
-            {"address": selected_player.get("address")},
-            {"$set": {"has_special_ingredient": True, "special_ingredient_expires": expires_at}}
-        )
+        if selected_player.get("address"):
+            await db.players.update_one(
+                {"address": selected_player.get("address")},
+                {"$set": {"has_special_ingredient": True, "special_ingredient_expires": expires_at}}
+            )
+        elif selected_player.get("telegram_id"):
+            await db.players.update_one(
+                {"telegram_id": selected_player.get("telegram_id")},
+                {"$set": {"has_special_ingredient": True, "special_ingredient_expires": expires_at}}
+            )
         
-        logger.info(f"🌟 Kernel of Wow auto-granted to {selected_player.get('nickname') or selected_player.get('address')} until {expires_at}")
+        logger.info(f"🌟 Kernel of Wow auto-granted to {player_nickname} ({player_identifier}) until {expires_at}")
         return True
         
     except Exception as e:
@@ -380,6 +447,31 @@ AUTO_MIXER_CONFIG = {
     "required_confirmations": 3  # Required confirmations for payment
 }
 
+# Extra Life Packages Configuration
+EXTRA_LIFE_PACKAGES = {
+    "basic": {
+        "id": "basic",
+        "name": "Basic Pack",
+        "treats": 2,
+        "cost_doge": 10,
+        "description": "2 extra treat creations"
+    },
+    "standard": {
+        "id": "standard",
+        "name": "Standard Pack",
+        "treats": 4,
+        "cost_doge": 20,
+        "description": "4 extra treat creations"
+    },
+    "premium": {
+        "id": "premium",
+        "name": "Premium Pack",
+        "treats": 6,
+        "cost_doge": 35,
+        "description": "6 extra treat creations - Best Value!"
+    }
+}
+
 class AutoMixerSubscription(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     player_address: str
@@ -424,6 +516,15 @@ class AutoMixerFundsStats(BaseModel):
     total_subscribers: int = 0
     active_subscribers: int = 0
     total_auto_mixes: int = 0
+
+# Extra Life Purchase Models
+class ExtraLifeCreateRequest(BaseModel):
+    player_address: str
+    package_id: str  # "basic", "standard", or "premium"
+
+class ExtraLifeVerifyRequest(BaseModel):
+    purchase_id: str
+    tx_hash: str
 
 # =====================================================
 # KERNEL OF WOW - SPECIAL INGREDIENT SYSTEM
@@ -575,23 +676,219 @@ async def get_daily_treat_status(address: str):
     """
     try:
         status = await anti_cheat_system.get_daily_treat_status(address)
+        # Add extra life packages info
+        status["extra_life_packages"] = list(EXTRA_LIFE_PACKAGES.values())
+        status["payment_address"] = AUTO_MIXER_CONFIG["payment_address"]
         return status
     except Exception as e:
         logger.error(f"Error getting daily status: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-@api_router.post("/extra-life/{address}")
-async def purchase_extra_life(address: str):
-    """
-    Purchase an extra life for 5000 $LAB tokens.
-    NOTE: $LAB is not yet live - this will return a placeholder response.
-    """
+@api_router.get("/extra-life/packages")
+async def get_extra_life_packages():
+    """Get available extra life packages with DOGE pricing"""
+    return {
+        "packages": list(EXTRA_LIFE_PACKAGES.values()),
+        "payment_address": AUTO_MIXER_CONFIG["payment_address"],
+        "required_confirmations": AUTO_MIXER_CONFIG["required_confirmations"]
+    }
+
+@api_router.post("/extra-life/create")
+async def create_extra_life_purchase(request: ExtraLifeCreateRequest):
+    """Create a new extra life purchase (pending payment)"""
     try:
-        result = await anti_cheat_system.purchase_extra_life(address)
-        return result
+        # Validate package
+        if request.package_id not in EXTRA_LIFE_PACKAGES:
+            raise HTTPException(status_code=400, detail="Invalid package ID")
+        
+        package = EXTRA_LIFE_PACKAGES[request.package_id]
+        
+        # Check for existing pending purchase for this player
+        existing = await db.extra_life_purchases.find_one({
+            "player_address": request.player_address,
+            "status": "pending"
+        })
+        
+        if existing:
+            return {
+                "purchase": {k: v for k, v in existing.items() if k != "_id"},
+                "existing": True,
+                "payment_address": AUTO_MIXER_CONFIG["payment_address"]
+            }
+        
+        # Create new purchase record
+        purchase_id = str(uuid.uuid4())
+        purchase = {
+            "id": purchase_id,
+            "player_address": request.player_address,
+            "package_id": request.package_id,
+            "package_name": package["name"],
+            "treats_amount": package["treats"],
+            "cost_doge": package["cost_doge"],
+            "status": "pending",
+            "payment_tx_hash": None,
+            "payment_confirmed": False,
+            "payment_confirmations": 0,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        await db.extra_life_purchases.insert_one(purchase)
+        
+        return {
+            "purchase": {k: v for k, v in purchase.items() if k != "_id"},
+            "existing": False,
+            "payment_address": AUTO_MIXER_CONFIG["payment_address"]
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error purchasing extra life: {e}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        logger.error(f"Error creating extra life purchase: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/extra-life/verify-payment")
+async def verify_extra_life_payment(request: ExtraLifeVerifyRequest):
+    """Verify payment for extra life purchase"""
+    try:
+        # Find the purchase
+        purchase = await db.extra_life_purchases.find_one({
+            "id": request.purchase_id,
+            "status": "pending"
+        })
+        
+        if not purchase:
+            raise HTTPException(status_code=404, detail="Purchase not found or already processed")
+        
+        expected_amount = purchase["cost_doge"]
+        
+        # Use the existing DOGE verification function
+        # Returns tuple: (tx_data, confirmations, payment_amount, error)
+        tx_data, confirmations, payment_amount, error = await verify_doge_transaction_with_fallback(
+            request.tx_hash,
+            AUTO_MIXER_CONFIG["payment_address"],
+            AUTO_MIXER_CONFIG.get("blockcypher_api_key")
+        )
+        
+        if error is not None:
+            return {
+                "success": False,
+                "message": f"Transaction not found. {error}",
+                "purchase": {k: v for k, v in purchase.items() if k != "_id"}
+            }
+        
+        # Update purchase with payment info
+        now = datetime.utcnow()
+        update_data = {
+            "payment_tx_hash": request.tx_hash,
+            "payment_confirmations": confirmations,
+            "updated_at": now
+        }
+        
+        is_confirmed = confirmations >= AUTO_MIXER_CONFIG["required_confirmations"]
+        amount_valid = payment_amount >= expected_amount
+        
+        if is_confirmed and amount_valid:
+            update_data["status"] = "completed"
+            update_data["payment_confirmed"] = True
+            update_data["completed_at"] = now
+            
+            # Grant extra treats to the player
+            treats_to_grant = purchase["treats_amount"]
+            await db.players.update_one(
+                {"address": purchase["player_address"]},
+                {
+                    "$inc": {"extra_treats_balance": treats_to_grant},
+                    "$push": {
+                        "extra_life_history": {
+                            "purchase_id": request.purchase_id,
+                            "package_id": purchase["package_id"],
+                            "treats_granted": treats_to_grant,
+                            "cost_doge": purchase["cost_doge"],
+                            "tx_hash": request.tx_hash,
+                            "granted_at": now
+                        }
+                    }
+                },
+                upsert=True
+            )
+            
+            logger.info(f"Extra life granted: {treats_to_grant} treats to {purchase['player_address']}")
+        
+        await db.extra_life_purchases.update_one(
+            {"id": request.purchase_id},
+            {"$set": update_data}
+        )
+        
+        # Get updated purchase
+        updated_purchase = await db.extra_life_purchases.find_one({"id": request.purchase_id})
+        
+        return {
+            "success": is_confirmed and amount_valid,
+            "is_confirmed": is_confirmed,
+            "amount_valid": amount_valid,
+            "confirmations": confirmations,
+            "required_confirmations": AUTO_MIXER_CONFIG["required_confirmations"],
+            "amount_received": payment_amount,
+            "expected_amount": expected_amount,
+            "message": "Payment verified! Extra treats added to your account." if (is_confirmed and amount_valid) else f"Payment found with {confirmations} confirmations. Need {AUTO_MIXER_CONFIG['required_confirmations']}.",
+            "purchase": {k: v for k, v in updated_purchase.items() if k != "_id"} if updated_purchase else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying extra life payment: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/extra-life/status/{player_address}")
+async def get_extra_life_status(player_address: str):
+    """Get player's extra life purchase status and balance"""
+    try:
+        # Get pending purchase if any
+        pending_purchase = await db.extra_life_purchases.find_one({
+            "player_address": player_address,
+            "status": "pending"
+        })
+        
+        # Get player's extra treats balance
+        player = await db.players.find_one({"address": player_address})
+        extra_treats_balance = player.get("extra_treats_balance", 0) if player else 0
+        
+        # Get purchase history
+        history = await db.extra_life_purchases.find({
+            "player_address": player_address,
+            "status": "completed"
+        }).sort("completed_at", -1).limit(10).to_list(10)
+        
+        return {
+            "extra_treats_balance": extra_treats_balance,
+            "pending_purchase": {k: v for k, v in pending_purchase.items() if k != "_id"} if pending_purchase else None,
+            "purchase_history": [{k: v for k, v in p.items() if k != "_id"} for p in history],
+            "packages": list(EXTRA_LIFE_PACKAGES.values()),
+            "payment_address": AUTO_MIXER_CONFIG["payment_address"]
+        }
+    except Exception as e:
+        logger.error(f"Error getting extra life status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/extra-life/cancel/{purchase_id}")
+async def cancel_extra_life_purchase(purchase_id: str, player_address: str):
+    """Cancel a pending extra life purchase"""
+    try:
+        result = await db.extra_life_purchases.delete_one({
+            "id": purchase_id,
+            "player_address": player_address,
+            "status": "pending"
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Purchase not found or cannot be cancelled")
+        
+        return {"success": True, "message": "Purchase cancelled"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling extra life purchase: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/streak/{address}")
 async def get_player_streak(address: str):
@@ -1370,7 +1667,13 @@ async def verify_nft_on_blockchain(address: str):
 # $DOGEONEWS Token Configuration (Solana)
 DOGEONEWS_TOKEN_ADDRESS = "GHoZwXKEJSsTYeNmBPgQFuKsjVGJ1HMGv5QghtQVdoge"
 DOGEONEWS_MIN_HOLDING = 1_000_000  # 1 million tokens required
-SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
+
+# Helius API for reliable Solana RPC
+HELIUS_API_KEY = os.environ.get("HELIUS_API_KEY")
+SOLANA_RPC_URL = f"https://mainnet.helius-rpc.com/?api-key={HELIUS_API_KEY}" if HELIUS_API_KEY else "https://api.mainnet-beta.solana.com"
+
+if not HELIUS_API_KEY:
+    logging.warning("⚠️ HELIUS_API_KEY not set - using public Solana RPC (rate limited)")
 
 
 @api_router.post("/verify-dogeonews-holder")
@@ -1378,35 +1681,98 @@ async def verify_dogeonews_token_holder(player_address: str, solana_address: str
     """
     Verify if a Solana wallet holds 1M+ $DOGEONEWS tokens.
     Links the Solana wallet to the player and grants token holder status.
+    Uses Helius API for reliable token balance checking.
     """
     try:
-        # Get token accounts for the Solana wallet
-        payload = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "getTokenAccountsByOwner",
-            "params": [
-                solana_address,
-                {"mint": DOGEONEWS_TOKEN_ADDRESS},
-                {"encoding": "jsonParsed"}
-            ]
-        }
+        # Sanitize inputs
+        solana_address = sanitize_address(solana_address)
+        player_address = sanitize_address(player_address)
         
-        async with httpx.AsyncClient() as client:
-            response = await client.post(SOLANA_RPC_URL, json=payload, timeout=30.0)
-            data = response.json()
+        if not solana_address or len(solana_address) < 32:
+            raise HTTPException(status_code=400, detail="Invalid Solana address")
         
         token_balance = 0
         is_holder = False
         
-        if "result" in data and data["result"]["value"]:
-            for account in data["result"]["value"]:
-                parsed = account.get("account", {}).get("data", {}).get("parsed", {})
-                info = parsed.get("info", {})
-                token_amount = info.get("tokenAmount", {})
-                # Get UI amount (already adjusted for decimals)
-                ui_amount = float(token_amount.get("uiAmount", 0) or 0)
-                token_balance += ui_amount
+        # Try Helius DAS API first (more reliable for token balances)
+        if HELIUS_API_KEY:
+            try:
+                helius_url = f"https://mainnet.helius-rpc.com/?api-key={HELIUS_API_KEY}"
+                
+                # Use getTokenAccountsByOwner for specific token
+                payload = {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "getTokenAccountsByOwner",
+                    "params": [
+                        solana_address,
+                        {"mint": DOGEONEWS_TOKEN_ADDRESS},
+                        {"encoding": "jsonParsed"}
+                    ]
+                }
+                
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(helius_url, json=payload, timeout=30.0)
+                    data = response.json()
+                
+                if "result" in data and data["result"]["value"]:
+                    for account in data["result"]["value"]:
+                        parsed = account.get("account", {}).get("data", {}).get("parsed", {})
+                        info = parsed.get("info", {})
+                        token_amount = info.get("tokenAmount", {})
+                        ui_amount = float(token_amount.get("uiAmount", 0) or 0)
+                        token_balance += ui_amount
+                
+                logger.info(f"Helius API: {solana_address} has {token_balance:,.0f} $DOGEONEWS tokens")
+                
+            except Exception as helius_error:
+                logger.warning(f"Helius API error, falling back to public RPC: {helius_error}")
+                # Fall back to public RPC
+                payload = {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "getTokenAccountsByOwner",
+                    "params": [
+                        solana_address,
+                        {"mint": DOGEONEWS_TOKEN_ADDRESS},
+                        {"encoding": "jsonParsed"}
+                    ]
+                }
+                async with httpx.AsyncClient() as client:
+                    response = await client.post("https://api.mainnet-beta.solana.com", json=payload, timeout=30.0)
+                    data = response.json()
+                
+                if "result" in data and data["result"]["value"]:
+                    for account in data["result"]["value"]:
+                        parsed = account.get("account", {}).get("data", {}).get("parsed", {})
+                        info = parsed.get("info", {})
+                        token_amount = info.get("tokenAmount", {})
+                        ui_amount = float(token_amount.get("uiAmount", 0) or 0)
+                        token_balance += ui_amount
+        else:
+            # Use public RPC (rate limited)
+            payload = {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "getTokenAccountsByOwner",
+                "params": [
+                    solana_address,
+                    {"mint": DOGEONEWS_TOKEN_ADDRESS},
+                    {"encoding": "jsonParsed"}
+                ]
+            }
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(SOLANA_RPC_URL, json=payload, timeout=30.0)
+                data = response.json()
+            
+            if "result" in data and data["result"]["value"]:
+                for account in data["result"]["value"]:
+                    parsed = account.get("account", {}).get("data", {}).get("parsed", {})
+                    info = parsed.get("info", {})
+                    token_amount = info.get("tokenAmount", {})
+                    ui_amount = float(token_amount.get("uiAmount", 0) or 0)
+                    token_balance += ui_amount
         
         is_holder = token_balance >= DOGEONEWS_MIN_HOLDING
         
@@ -1420,9 +1786,12 @@ async def verify_dogeonews_token_holder(player_address: str, solana_address: str
                     {"$set": {
                         "is_dogeonews_holder": True,
                         "solana_address": solana_address,
+                        "dogeonews_balance": token_balance,
+                        "dogeonews_verified_at": datetime.utcnow().isoformat(),
                         "can_convert_points": True  # Token holders can convert to $LAB
                     }}
                 )
+                logger.info(f"✅ Verified $DOGEONEWS holder: {player_address} with {token_balance:,.0f} tokens")
                 return {
                     "success": True,
                     "player_address": player_address,
@@ -1448,6 +1817,8 @@ async def verify_dogeonews_token_holder(player_address: str, solana_address: str
                 "message": f"Insufficient balance. You hold {token_balance:,.0f} $DOGEONEWS but need {DOGEONEWS_MIN_HOLDING:,} to qualify."
             }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error verifying $DOGEONEWS holdings: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -1457,8 +1828,20 @@ async def verify_dogeonews_token_holder(player_address: str, solana_address: str
 async def check_dogeonews_balance(solana_address: str):
     """
     Check $DOGEONEWS token balance for a Solana wallet (no player link required).
+    Uses Helius API for reliable balance checking.
     """
     try:
+        # Sanitize input
+        solana_address = sanitize_address(solana_address)
+        
+        if not solana_address or len(solana_address) < 32:
+            raise HTTPException(status_code=400, detail="Invalid Solana address")
+        
+        token_balance = 0
+        
+        # Use Helius API if available
+        rpc_url = f"https://mainnet.helius-rpc.com/?api-key={HELIUS_API_KEY}" if HELIUS_API_KEY else "https://api.mainnet-beta.solana.com"
+        
         payload = {
             "jsonrpc": "2.0",
             "id": 1,
@@ -1471,10 +1854,8 @@ async def check_dogeonews_balance(solana_address: str):
         }
         
         async with httpx.AsyncClient() as client:
-            response = await client.post(SOLANA_RPC_URL, json=payload, timeout=30.0)
+            response = await client.post(rpc_url, json=payload, timeout=30.0)
             data = response.json()
-        
-        token_balance = 0
         
         if "result" in data and data["result"]["value"]:
             for account in data["result"]["value"]:
@@ -1496,6 +1877,8 @@ async def check_dogeonews_balance(solana_address: str):
             "message": "Eligible for $LAB claim!" if is_eligible else f"Need {DOGEONEWS_MIN_HOLDING - token_balance:,.0f} more tokens"
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error checking $DOGEONEWS balance: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -2002,8 +2385,12 @@ async def collect_treat(treat_id: str, data: dict):
 @api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
 async def get_leaderboard(limit: int = 50):
     # Get top players by points (all players, not just NFT holders)
+    # Only include players with valid nicknames
     pipeline = [
-        {"$match": {"points": {"$gt": 0}}},  # Any player with points
+        {"$match": {
+            "points": {"$gt": 0},
+            "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+        }},
         {"$sort": {"points": -1, "level": -1}},
         {"$limit": limit}
     ]
@@ -2031,9 +2418,13 @@ async def get_leaderboard(limit: int = 50):
         char_id = player.get("selected_character")
         char_info = character_data.get(char_id, {})
         
+        # Get the best address identifier
+        player_address = player.get("address") or f"tg_{player.get('telegram_id')}" or f"guest_{player.get('guest_id', 'unknown')}"
+        player_nickname = player.get("nickname") or player.get("telegram_first_name") or "Player"
+        
         leaderboard.append(LeaderboardEntry(
-            address=player["address"],
-            nickname=player.get("nickname", "Player"),  # Default nickname
+            address=player_address,
+            nickname=player_nickname,
             points=player.get("points", 0),
             level=player.get("level", 1),  # Default to level 1
             is_nft_holder=player.get("is_nft_holder", False),
@@ -2515,6 +2906,9 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 "daily_status": daily_status
             }
             raise HTTPException(status_code=429, detail=error_detail)
+        
+        # Consume extra treat if over base limit (player used purchased extra treats)
+        extra_treat_consumed = await anti_cheat_system.consume_extra_treat_if_needed(treat_data.creator_address)
         
         # Update player streak on treat creation
         streak_result = await anti_cheat_system.update_player_streak(treat_data.creator_address)
@@ -3501,8 +3895,8 @@ async def simulate_treat_outcome(
 async def delete_player(address: str, admin_key: str):
     """Delete a specific player by address - admin only"""
     
-    expected_key = "dogefood_admin_cleanup_2024"
-    if admin_key != expected_key:
+    if not admin_key or admin_key != ADMIN_SECRET:
+        await asyncio.sleep(2)  # Brute force protection
         raise HTTPException(status_code=403, detail="Invalid admin key")
     
     # Find and delete the player
@@ -3527,12 +3921,11 @@ async def delete_player(address: str, admin_key: str):
 
 
 @api_router.delete("/admin/cleanup-test-players")
-async def cleanup_test_players(admin_key: str = "dogefood_admin_2024"):
+async def cleanup_test_players(admin_key: str = None):
     """Remove test players from the database - admin only"""
     
-    # Simple admin key check (in production, use proper authentication)
-    expected_key = "dogefood_admin_cleanup_2024"
-    if admin_key != expected_key:
+    if not admin_key or admin_key != ADMIN_SECRET:
+        await asyncio.sleep(2)  # Brute force protection
         raise HTTPException(status_code=403, detail="Invalid admin key")
     
     # Define patterns that identify test players
@@ -3693,8 +4086,12 @@ async def api_root():
 # SEASON 1 OFFICIAL LAUNCH - ADMIN ENDPOINTS
 # ============================================
 
-# Admin secret key for protected operations
-ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "dogefood_admin_2025")
+# Admin secret key for protected operations - MUST be set via environment variable
+ADMIN_SECRET = os.environ.get("ADMIN_SECRET")
+if not ADMIN_SECRET:
+    # Generate a secure random admin key if not provided
+    ADMIN_SECRET = os.urandom(32).hex()
+    logging.warning(f"⚠️ ADMIN_SECRET not set - generated temporary key (set env var in production)")
 
 @api_router.post("/admin/reset-leaderboard")
 async def reset_leaderboard(admin_key: str = None):
@@ -3702,7 +4099,9 @@ async def reset_leaderboard(admin_key: str = None):
     Reset the leaderboard by clearing all player points.
     This marks the official start of Season 1.
     """
-    if admin_key != ADMIN_SECRET:
+    if not admin_key or admin_key != ADMIN_SECRET:
+        # Add delay to prevent brute force
+        await asyncio.sleep(2)
         raise HTTPException(status_code=403, detail="Unauthorized: Invalid admin key")
     
     try:
@@ -4292,20 +4691,49 @@ async def notification_processor_loop():
     while True:
         try:
             now = datetime.utcnow()
+            now_iso = now.isoformat()
             
             # Find all unsent notifications that are ready to be sent
+            # Use multiple time format comparisons for robustness
             pending_notifications = await db.scheduled_notifications.find({
-                "sent": False,
-                "$or": [
-                    {"ready_time": {"$lte": now.isoformat()}},
-                    {"reset_time": {"$lte": now.isoformat()}}
-                ]
+                "sent": False
             }).to_list(100)
             
-            if pending_notifications:
-                logger.info(f"📬 Found {len(pending_notifications)} pending notifications to send")
+            notifications_to_send = []
+            for notif in pending_notifications:
+                should_send = False
+                
+                # Check treat ready time
+                if notif.get("type") == "treat_ready" and notif.get("ready_time"):
+                    ready_time_str = notif["ready_time"]
+                    try:
+                        if isinstance(ready_time_str, str):
+                            ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "").replace("+00:00", ""))
+                        else:
+                            ready_time = ready_time_str
+                        should_send = now >= ready_time
+                    except Exception as e:
+                        logger.warning(f"Error parsing ready_time {ready_time_str}: {e}")
+                
+                # Check limit reset time
+                elif notif.get("type") == "limit_reset" and notif.get("reset_time"):
+                    reset_time_str = notif["reset_time"]
+                    try:
+                        if isinstance(reset_time_str, str):
+                            reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "").replace("+00:00", ""))
+                        else:
+                            reset_time = reset_time_str
+                        should_send = now >= reset_time
+                    except Exception as e:
+                        logger.warning(f"Error parsing reset_time {reset_time_str}: {e}")
+                
+                if should_send:
+                    notifications_to_send.append(notif)
             
-            for notification in pending_notifications:
+            if notifications_to_send:
+                logger.info(f"📬 Found {len(notifications_to_send)} pending notifications ready to send")
+            
+            for notification in notifications_to_send:
                 try:
                     await send_scheduled_notification(notification["id"])
                 except Exception as e:
@@ -5911,17 +6339,90 @@ async def get_auto_mixer_history(player_address: str, limit: int = 20):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/auto-mixer/debug-subscriptions")
+async def debug_subscriptions(admin_secret: str = Query(..., description="Admin secret key")):
+    """Debug endpoint to see all subscription data - Admin only"""
+    # Verify admin secret
+    expected_secret = os.environ.get("ADMIN_SECRET", "")
+    if not expected_secret or admin_secret != expected_secret:
+        raise HTTPException(status_code=403, detail="Unauthorized - Invalid admin secret")
+    
+    try:
+        now = datetime.utcnow()
+        
+        # Get all subscriptions
+        all_subs = await db.auto_mixer_subscriptions.find({}).sort("created_at", -1).limit(50).to_list(50)
+        
+        debug_info = []
+        for sub in all_subs:
+            sub_end = sub.get("subscription_end")
+            sub_end_parsed = None
+            is_active_now = False
+            
+            if sub_end:
+                if isinstance(sub_end, datetime):
+                    sub_end_parsed = sub_end.isoformat()
+                    is_active_now = sub_end > now
+                elif isinstance(sub_end, str):
+                    sub_end_parsed = sub_end
+                    try:
+                        parsed = datetime.fromisoformat(sub_end.replace("Z", "").replace("+00:00", ""))
+                        is_active_now = parsed > now
+                    except:
+                        pass
+            
+            debug_info.append({
+                "id": sub.get("id"),
+                "player_address": sub.get("player_address", "")[:20] + "...",
+                "status": sub.get("status"),
+                "subscription_end_raw": str(sub_end),
+                "subscription_end_type": type(sub_end).__name__,
+                "subscription_end_parsed": sub_end_parsed,
+                "is_active_now": is_active_now,
+                "created_at": str(sub.get("created_at")),
+                "total_auto_mixes": sub.get("total_auto_mixes", 0)
+            })
+        
+        return {
+            "current_time_utc": now.isoformat(),
+            "total_in_db": await db.auto_mixer_subscriptions.count_documents({}),
+            "status_active": await db.auto_mixer_subscriptions.count_documents({"status": "active"}),
+            "subscriptions": debug_info
+        }
+        
+    except Exception as e:
+        logger.error(f"Debug subscriptions error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.get("/auto-mixer/agent-status")
 async def get_auto_mixer_agent_status():
     """Get detailed status of the auto-mixer agent"""
     try:
         now = datetime.utcnow()
         
-        # Get all active subscriptions
-        active_subs = await db.auto_mixer_subscriptions.find({
-            "status": "active",
-            "subscription_end": {"$gt": now}
+        # Get all active subscriptions - handle both datetime objects and ISO strings
+        # First try to get all active status subscriptions
+        all_active = await db.auto_mixer_subscriptions.find({
+            "status": "active"
         }).to_list(1000)
+        
+        # Filter by subscription_end manually to handle different date formats
+        active_subs = []
+        for sub in all_active:
+            sub_end = sub.get("subscription_end")
+            if sub_end:
+                # Convert to datetime if it's a string
+                if isinstance(sub_end, str):
+                    try:
+                        sub_end = datetime.fromisoformat(sub_end.replace("Z", "").replace("+00:00", ""))
+                    except:
+                        continue
+                if sub_end > now:
+                    active_subs.append(sub)
+            else:
+                # If no end date, include it (might be lifetime or error)
+                active_subs.append(sub)
         
         # Calculate subscribers currently in their window
         current_hour = now.hour
@@ -6512,11 +7013,19 @@ async def auto_mixer_processor_loop():
 # Include the router in the main app
 app.include_router(api_router)
 
+# CORS Configuration - restrict origins in production
+ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', '')
+if ALLOWED_ORIGINS == '*' or not ALLOWED_ORIGINS:
+    logging.warning("⚠️ CORS is set to allow all origins - restrict in production!")
+    cors_origins = ["*"]
+else:
+    cors_origins = [origin.strip() for origin in ALLOWED_ORIGINS.split(',') if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
+    allow_origins=cors_origins,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

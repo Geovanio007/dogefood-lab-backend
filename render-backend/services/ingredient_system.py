@@ -51,16 +51,16 @@ class Ingredient:
 # Complete ingredient catalog
 INGREDIENTS_CATALOG: Dict[str, Ingredient] = {
     # Core Ingredients (Level 1-5)
-    "ING001": Ingredient("ING001", "Crunchy Kibble", IngredientCategory.CORE, 1.0, 
-                        "Basic crunchy base ingredient", SpecialEffect.NONE, 1, "🦴", "#F59E0B"),
-    "ING002": Ingredient("ING002", "Golden Bone Dust", IngredientCategory.CORE, 1.1,
-                        "Premium mineral powder", SpecialEffect.XP_BOOST, 2, "✨", "#EAB308"),
-    "ING003": Ingredient("ING003", "Meme Meat Cubes", IngredientCategory.CORE, 1.0,
+    "ING001": Ingredient("ING001", "Golden Bone Dust", IngredientCategory.CORE, 1.1, 
+                        "Premium mineral powder", SpecialEffect.XP_BOOST, 1, "✨", "#EAB308"),
+    "ING002": Ingredient("ING002", "Meme Meat Cubes", IngredientCategory.CORE, 1.0,
                         "Protein-packed meme meat", SpecialEffect.NONE, 1, "🥩", "#DC2626"),
-    "ING004": Ingredient("ING004", "Shiba Crunch Flakes", IngredientCategory.CORE, 1.0,
+    "ING003": Ingredient("ING003", "Shiba Crunch Flakes", IngredientCategory.CORE, 1.0,
                         "Crispy shiba cereal flakes", SpecialEffect.NONE, 1, "🥣", "#F97316"),
-    "ING005": Ingredient("ING005", "Woof Whey Powder", IngredientCategory.CORE, 1.05,
-                        "Energy-enhancing powder", SpecialEffect.MINOR_XP_BOOST, 3, "💪", "#FBBF24"),
+    "ING004": Ingredient("ING004", "Woof Whey Powder", IngredientCategory.CORE, 1.05,
+                        "Energy-enhancing powder", SpecialEffect.MINOR_XP_BOOST, 2, "💪", "#FBBF24"),
+    "ING005": Ingredient("ING005", "Crunchy Kibble", IngredientCategory.CORE, 1.0,
+                        "Basic crunchy base ingredient", SpecialEffect.NONE, 3, "🦴", "#F59E0B"),
     
     # Elonverse Ingredients (Level 6-10)
     "ING101": Ingredient("ING101", "Rocket Fuel Syrup", IngredientCategory.ELONVERSE, 1.2,
