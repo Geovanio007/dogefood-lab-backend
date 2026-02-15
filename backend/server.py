@@ -676,23 +676,218 @@ async def get_daily_treat_status(address: str):
     """
     try:
         status = await anti_cheat_system.get_daily_treat_status(address)
+        # Add extra life packages info
+        status["extra_life_packages"] = list(EXTRA_LIFE_PACKAGES.values())
+        status["payment_address"] = AUTO_MIXER_CONFIG["payment_address"]
         return status
     except Exception as e:
         logger.error(f"Error getting daily status: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-@api_router.post("/extra-life/{address}")
-async def purchase_extra_life(address: str):
-    """
-    Purchase an extra life for 5000 $LAB tokens.
-    NOTE: $LAB is not yet live - this will return a placeholder response.
-    """
+@api_router.get("/extra-life/packages")
+async def get_extra_life_packages():
+    """Get available extra life packages with DOGE pricing"""
+    return {
+        "packages": list(EXTRA_LIFE_PACKAGES.values()),
+        "payment_address": AUTO_MIXER_CONFIG["payment_address"],
+        "required_confirmations": AUTO_MIXER_CONFIG["required_confirmations"]
+    }
+
+@api_router.post("/extra-life/create")
+async def create_extra_life_purchase(request: ExtraLifeCreateRequest):
+    """Create a new extra life purchase (pending payment)"""
     try:
-        result = await anti_cheat_system.purchase_extra_life(address)
-        return result
+        # Validate package
+        if request.package_id not in EXTRA_LIFE_PACKAGES:
+            raise HTTPException(status_code=400, detail="Invalid package ID")
+        
+        package = EXTRA_LIFE_PACKAGES[request.package_id]
+        
+        # Check for existing pending purchase for this player
+        existing = await db.extra_life_purchases.find_one({
+            "player_address": request.player_address,
+            "status": "pending"
+        })
+        
+        if existing:
+            return {
+                "purchase": {k: v for k, v in existing.items() if k != "_id"},
+                "existing": True,
+                "payment_address": AUTO_MIXER_CONFIG["payment_address"]
+            }
+        
+        # Create new purchase record
+        purchase_id = str(uuid.uuid4())
+        purchase = {
+            "id": purchase_id,
+            "player_address": request.player_address,
+            "package_id": request.package_id,
+            "package_name": package["name"],
+            "treats_amount": package["treats"],
+            "cost_doge": package["cost_doge"],
+            "status": "pending",
+            "payment_tx_hash": None,
+            "payment_confirmed": False,
+            "payment_confirmations": 0,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        await db.extra_life_purchases.insert_one(purchase)
+        
+        return {
+            "purchase": {k: v for k, v in purchase.items() if k != "_id"},
+            "existing": False,
+            "payment_address": AUTO_MIXER_CONFIG["payment_address"]
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error purchasing extra life: {e}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        logger.error(f"Error creating extra life purchase: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/extra-life/verify-payment")
+async def verify_extra_life_payment(request: ExtraLifeVerifyRequest):
+    """Verify payment for extra life purchase"""
+    try:
+        # Find the purchase
+        purchase = await db.extra_life_purchases.find_one({
+            "id": request.purchase_id,
+            "status": "pending"
+        })
+        
+        if not purchase:
+            raise HTTPException(status_code=404, detail="Purchase not found or already processed")
+        
+        expected_amount = purchase["cost_doge"]
+        
+        # Use the existing DOGE verification function
+        tx_result = await verify_doge_transaction_with_fallback(
+            request.tx_hash,
+            AUTO_MIXER_CONFIG["payment_address"],
+            AUTO_MIXER_CONFIG.get("blockcypher_api_key")
+        )
+        
+        if not tx_result["found"]:
+            return {
+                "success": False,
+                "message": "Transaction not found. Please check the hash and try again.",
+                "purchase": {k: v for k, v in purchase.items() if k != "_id"}
+            }
+        
+        # Update purchase with payment info
+        now = datetime.utcnow()
+        update_data = {
+            "payment_tx_hash": request.tx_hash,
+            "payment_confirmations": tx_result.get("confirmations", 0),
+            "updated_at": now
+        }
+        
+        is_confirmed = tx_result.get("confirmations", 0) >= AUTO_MIXER_CONFIG["required_confirmations"]
+        amount_valid = tx_result.get("amount", 0) >= expected_amount
+        
+        if is_confirmed and amount_valid:
+            update_data["status"] = "completed"
+            update_data["payment_confirmed"] = True
+            update_data["completed_at"] = now
+            
+            # Grant extra treats to the player
+            treats_to_grant = purchase["treats_amount"]
+            await db.players.update_one(
+                {"address": purchase["player_address"]},
+                {
+                    "$inc": {"extra_treats_balance": treats_to_grant},
+                    "$push": {
+                        "extra_life_history": {
+                            "purchase_id": request.purchase_id,
+                            "package_id": purchase["package_id"],
+                            "treats_granted": treats_to_grant,
+                            "cost_doge": purchase["cost_doge"],
+                            "tx_hash": request.tx_hash,
+                            "granted_at": now
+                        }
+                    }
+                },
+                upsert=True
+            )
+            
+            logger.info(f"Extra life granted: {treats_to_grant} treats to {purchase['player_address']}")
+        
+        await db.extra_life_purchases.update_one(
+            {"id": request.purchase_id},
+            {"$set": update_data}
+        )
+        
+        # Get updated purchase
+        updated_purchase = await db.extra_life_purchases.find_one({"id": request.purchase_id})
+        
+        return {
+            "success": is_confirmed and amount_valid,
+            "is_confirmed": is_confirmed,
+            "amount_valid": amount_valid,
+            "confirmations": tx_result.get("confirmations", 0),
+            "required_confirmations": AUTO_MIXER_CONFIG["required_confirmations"],
+            "amount_received": tx_result.get("amount", 0),
+            "expected_amount": expected_amount,
+            "message": "Payment verified! Extra treats added to your account." if (is_confirmed and amount_valid) else f"Payment found with {tx_result.get('confirmations', 0)} confirmations. Need {AUTO_MIXER_CONFIG['required_confirmations']}.",
+            "purchase": {k: v for k, v in updated_purchase.items() if k != "_id"} if updated_purchase else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying extra life payment: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/extra-life/status/{player_address}")
+async def get_extra_life_status(player_address: str):
+    """Get player's extra life purchase status and balance"""
+    try:
+        # Get pending purchase if any
+        pending_purchase = await db.extra_life_purchases.find_one({
+            "player_address": player_address,
+            "status": "pending"
+        })
+        
+        # Get player's extra treats balance
+        player = await db.players.find_one({"address": player_address})
+        extra_treats_balance = player.get("extra_treats_balance", 0) if player else 0
+        
+        # Get purchase history
+        history = await db.extra_life_purchases.find({
+            "player_address": player_address,
+            "status": "completed"
+        }).sort("completed_at", -1).limit(10).to_list(10)
+        
+        return {
+            "extra_treats_balance": extra_treats_balance,
+            "pending_purchase": {k: v for k, v in pending_purchase.items() if k != "_id"} if pending_purchase else None,
+            "purchase_history": [{k: v for k, v in p.items() if k != "_id"} for p in history],
+            "packages": list(EXTRA_LIFE_PACKAGES.values()),
+            "payment_address": AUTO_MIXER_CONFIG["payment_address"]
+        }
+    except Exception as e:
+        logger.error(f"Error getting extra life status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/extra-life/cancel/{purchase_id}")
+async def cancel_extra_life_purchase(purchase_id: str, player_address: str):
+    """Cancel a pending extra life purchase"""
+    try:
+        result = await db.extra_life_purchases.delete_one({
+            "id": purchase_id,
+            "player_address": player_address,
+            "status": "pending"
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Purchase not found or cannot be cancelled")
+        
+        return {"success": True, "message": "Purchase cancelled"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling extra life purchase: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/streak/{address}")
 async def get_player_streak(address: str):
