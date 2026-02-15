@@ -1249,20 +1249,16 @@ const GameLabRedesign = ({ playerAddress }) => {
           <div className="text-center">
             {/* Cauldron Animation */}
             <div className="relative w-48 h-48 mx-auto mb-8">
-              {/* Bubbles */}
+              {/* Bubbles - Fixed positions to avoid re-render issues */}
               <div className="absolute inset-0">
-                {[...Array(8)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-4 h-4 bg-yellow-400/60 rounded-full animate-bounce"
-                    style={{
-                      left: `${20 + Math.random() * 60}%`,
-                      bottom: `${30 + Math.random() * 30}%`,
-                      animationDelay: `${i * 0.2}s`,
-                      animationDuration: `${0.8 + Math.random() * 0.4}s`
-                    }}
-                  />
-                ))}
+                <div className="absolute w-4 h-4 bg-yellow-400/60 rounded-full animate-bounce" style={{ left: '25%', bottom: '35%', animationDelay: '0s', animationDuration: '0.9s' }} />
+                <div className="absolute w-4 h-4 bg-yellow-400/60 rounded-full animate-bounce" style={{ left: '40%', bottom: '45%', animationDelay: '0.2s', animationDuration: '1s' }} />
+                <div className="absolute w-4 h-4 bg-yellow-400/60 rounded-full animate-bounce" style={{ left: '55%', bottom: '40%', animationDelay: '0.4s', animationDuration: '0.85s' }} />
+                <div className="absolute w-4 h-4 bg-yellow-400/60 rounded-full animate-bounce" style={{ left: '70%', bottom: '50%', animationDelay: '0.6s', animationDuration: '0.95s' }} />
+                <div className="absolute w-4 h-4 bg-yellow-400/60 rounded-full animate-bounce" style={{ left: '30%', bottom: '55%', animationDelay: '0.8s', animationDuration: '1.1s' }} />
+                <div className="absolute w-4 h-4 bg-yellow-400/60 rounded-full animate-bounce" style={{ left: '60%', bottom: '35%', animationDelay: '1s', animationDuration: '0.9s' }} />
+                <div className="absolute w-4 h-4 bg-yellow-400/60 rounded-full animate-bounce" style={{ left: '45%', bottom: '60%', animationDelay: '1.2s', animationDuration: '1s' }} />
+                <div className="absolute w-4 h-4 bg-yellow-400/60 rounded-full animate-bounce" style={{ left: '35%', bottom: '42%', animationDelay: '1.4s', animationDuration: '0.92s' }} />
               </div>
               
               {/* Cauldron */}
@@ -1276,13 +1272,9 @@ const GameLabRedesign = ({ playerAddress }) => {
               
               {/* Steam */}
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex gap-2">
-                {[...Array(3)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-6 h-12 bg-gradient-to-t from-white/40 to-transparent rounded-full animate-pulse blur-sm"
-                    style={{ animationDelay: `${i * 0.3}s` }}
-                  />
-                ))}
+                <div className="w-6 h-12 bg-gradient-to-t from-white/40 to-transparent rounded-full animate-pulse blur-sm" style={{ animationDelay: '0s' }} />
+                <div className="w-6 h-12 bg-gradient-to-t from-white/40 to-transparent rounded-full animate-pulse blur-sm" style={{ animationDelay: '0.3s' }} />
+                <div className="w-6 h-12 bg-gradient-to-t from-white/40 to-transparent rounded-full animate-pulse blur-sm" style={{ animationDelay: '0.6s' }} />
               </div>
               
               {/* Glow */}
@@ -1290,19 +1282,15 @@ const GameLabRedesign = ({ playerAddress }) => {
             </div>
             
             <h2 className="text-3xl font-bold text-white mb-4 animate-pulse drop-shadow-lg">
-              🧪 Mixing Ingredients... 🧪
+              Mixing Ingredients...
             </h2>
             <p className="text-sky-300 text-lg mb-2">Your treat is being prepared!</p>
             
             {/* Loading dots */}
             <div className="flex justify-center gap-2 mt-6">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-4 h-4 bg-yellow-400 rounded-full animate-bounce"
-                  style={{ animationDelay: `${i * 0.15}s` }}
-                />
-              ))}
+              <div className="w-4 h-4 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+              <div className="w-4 h-4 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+              <div className="w-4 h-4 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
             </div>
           </div>
         </div>
