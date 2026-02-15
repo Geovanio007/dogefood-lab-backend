@@ -5914,8 +5914,12 @@ async def verify_doge_transaction_blockcypher(tx_hash: str, payment_address: str
             "Accept": "application/json",
         }
         
+        logger.info(f"BlockCypher verification: Fetching TX {tx_hash[:20]}...")
+        
         async with httpx.AsyncClient() as client:
             response = await client.get(url, params=params, headers=headers, timeout=60.0)
+            
+            logger.info(f"BlockCypher response status: {response.status_code}")
             
             if response.status_code == 404:
                 return None, 0, 0, "Transaction not found"
@@ -5924,6 +5928,7 @@ async def verify_doge_transaction_blockcypher(tx_hash: str, payment_address: str
                 return None, 0, 0, "RATE_LIMITED"
             
             if response.status_code != 200:
+                logger.error(f"BlockCypher error response: {response.text[:200]}")
                 return None, 0, 0, f"API error: {response.status_code}"
             
             tx_data = response.json()
@@ -5932,18 +5937,24 @@ async def verify_doge_transaction_blockcypher(tx_hash: str, payment_address: str
             payment_amount = 0
             payment_valid = False
             
+            logger.info(f"BlockCypher TX data: confirmations={confirmations}, outputs={len(tx_data.get('outputs', []))}")
+            
             for output in tx_data.get('outputs', []):
                 addresses = output.get('addresses', [])
                 if payment_address in addresses:
                     payment_amount += output.get('value', 0) / 100000000
                     payment_valid = True
+                    logger.info(f"Found payment to {payment_address}: {payment_amount} DOGE")
             
             if not payment_valid:
+                logger.warning(f"Payment not sent to correct address. Expected: {payment_address}")
                 return None, 0, 0, "Payment not sent to correct address"
             
+            logger.info(f"BlockCypher verification SUCCESS: {confirmations} confirmations, {payment_amount} DOGE")
             return tx_data, confirmations, payment_amount, None
             
     except httpx.TimeoutException:
+        logger.error("BlockCypher timeout")
         return None, 0, 0, "TIMEOUT"
     except Exception as e:
         logger.error(f"BlockCypher error: {str(e)}")
