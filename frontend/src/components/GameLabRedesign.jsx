@@ -1398,19 +1398,19 @@ const GameLabRedesign = ({ playerAddress }) => {
               </h2>
               
               <p className="text-red-200 mb-6">
-                You've created {dailyStatus.treats_created_today} / {dailyStatus.total_limit} treats today.
+                You've created {dailyStatus.treats_created_today || dailyStatus.treats_today || 0} / {dailyStatus.total_limit || dailyStatus.daily_limit || 16} treats today.
               </p>
               
               {/* Info Box */}
               <div className="bg-white/10 rounded-xl p-4 mb-6 text-left">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-white text-sm">Base limit:</span>
-                  <span className="text-white font-bold">{dailyStatus.base_limit} treats</span>
+                  <span className="text-white font-bold">{dailyStatus.base_limit || 4} treats per window</span>
                 </div>
-                {dailyStatus.extra_lives_purchased > 0 && (
+                {dailyStatus.extra_treats_balance > 0 && (
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-white text-sm">Bonus treats:</span>
-                    <span className="text-green-400 font-bold">+{dailyStatus.extra_treats_available}</span>
+                    <span className="text-green-400 font-bold">+{dailyStatus.extra_treats_balance}</span>
                   </div>
                 )}
                 {dailyStatus.time_until_reset_seconds > 0 && (
@@ -1423,23 +1423,33 @@ const GameLabRedesign = ({ playerAddress }) => {
                 )}
               </div>
               
-              {/* Extra Life Option */}
+              {/* Extra Life Option - Updated for DOGE payments */}
               <div className="bg-rose-400/20 border border-rose-400/50 rounded-xl p-4 mb-6">
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">❤️</span>
                   <div className="text-left">
                     <h3 className="text-rose-300 font-bold">Want More Treats?</h3>
                     <p className="text-rose-200 text-sm">
-                      Purchase an Extra Life for {dailyStatus.extra_life_cost_lab.toLocaleString()} $LAB to get {dailyStatus.extra_life_treats} more treats!
+                      Purchase Extra Life packs with DOGE to get more treats!
                     </p>
                   </div>
                 </div>
                 
-                {!dailyStatus.lab_token_active && (
-                  <p className="text-rose-300/70 text-xs mt-3 text-center">
-                    ⚠️ $LAB token coming soon! Extra lives will be available after launch.
-                  </p>
-                )}
+                {/* Package Options Preview */}
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="bg-white/10 rounded p-2">
+                    <div className="text-yellow-400 font-bold">10 DOGE</div>
+                    <div className="text-white">+2 treats</div>
+                  </div>
+                  <div className="bg-white/10 rounded p-2">
+                    <div className="text-yellow-400 font-bold">20 DOGE</div>
+                    <div className="text-white">+4 treats</div>
+                  </div>
+                  <div className="bg-white/10 rounded p-2 border border-yellow-500/50">
+                    <div className="text-yellow-400 font-bold">35 DOGE</div>
+                    <div className="text-white">+6 treats</div>
+                  </div>
+                </div>
               </div>
               
               {/* Buttons */}
@@ -1454,14 +1464,16 @@ const GameLabRedesign = ({ playerAddress }) => {
                 <Button
                   onClick={() => {
                     setShowLimitReachedModal(false);
-                    // The DailyLimitTracker will handle showing the purchase modal
+                    // Trigger the Extra Life modal in DailyLimitTracker
+                    // This is handled by the DailyLimitTracker component's "Extra Life" button
+                    const extraLifeBtn = document.querySelector('[data-testid="buy-extra-life-btn"]');
+                    if (extraLifeBtn) extraLifeBtn.click();
                   }}
-                  disabled={!dailyStatus.lab_token_active}
-                  className="flex-1 bg-gradient-to-r from-rose-400 to-rose-500 hover:from-rose-300 hover:to-rose-400 text-white font-bold disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-white font-bold"
                   data-testid="buy-extra-life-from-modal-btn"
                 >
                   <span className="mr-2">❤️</span>
-                  {dailyStatus.lab_token_active ? 'Buy Extra Life' : 'Coming Soon'}
+                  Buy Extra Life
                 </Button>
               </div>
             </CardContent>
