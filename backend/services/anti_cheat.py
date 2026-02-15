@@ -284,6 +284,37 @@ class AntiCheatSystem:
             "current_status": status
         }
     
+    async def consume_extra_treat_if_needed(self, player_address: str) -> Dict:
+        """
+        Check if player needs to use an extra treat for this creation.
+        If base window limit is exceeded but player has extra treats, consume one.
+        Returns: {"consumed": bool, "remaining_balance": int}
+        """
+        # Get current status
+        treats_last_6h = await self._get_recent_treats(player_address, hours=WINDOW_HOURS)
+        treats_in_window = len(treats_last_6h)
+        
+        # Get streak bonus
+        streak_info = await self.get_player_streak(player_address)
+        streak_bonus = get_streak_bonus(streak_info["current_streak"])
+        base_window_limit = WINDOW_TREAT_LIMIT + streak_bonus["bonus_treats"]
+        
+        # Check if over base limit
+        if treats_in_window >= base_window_limit:
+            # Need to consume from extra treats balance
+            player = await self.db.players.find_one({"address": player_address})
+            extra_balance = player.get("extra_treats_balance", 0) if player else 0
+            
+            if extra_balance > 0:
+                # Consume one extra treat
+                await self.db.players.update_one(
+                    {"address": player_address},
+                    {"$inc": {"extra_treats_balance": -1}}
+                )
+                return {"consumed": True, "remaining_balance": extra_balance - 1}
+        
+        return {"consumed": False, "remaining_balance": 0}
+    
     async def validate_treat_creation(self, player_address: str, treat_data: Dict) -> Dict:
         """
         Validate treat creation for anti-cheat
