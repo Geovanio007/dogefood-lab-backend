@@ -6112,11 +6112,28 @@ async def get_auto_mixer_agent_status():
     try:
         now = datetime.utcnow()
         
-        # Get all active subscriptions
-        active_subs = await db.auto_mixer_subscriptions.find({
-            "status": "active",
-            "subscription_end": {"$gt": now}
+        # Get all active subscriptions - handle both datetime objects and ISO strings
+        # First try to get all active status subscriptions
+        all_active = await db.auto_mixer_subscriptions.find({
+            "status": "active"
         }).to_list(1000)
+        
+        # Filter by subscription_end manually to handle different date formats
+        active_subs = []
+        for sub in all_active:
+            sub_end = sub.get("subscription_end")
+            if sub_end:
+                # Convert to datetime if it's a string
+                if isinstance(sub_end, str):
+                    try:
+                        sub_end = datetime.fromisoformat(sub_end.replace("Z", "").replace("+00:00", ""))
+                    except:
+                        continue
+                if sub_end > now:
+                    active_subs.append(sub)
+            else:
+                # If no end date, include it (might be lifetime or error)
+                active_subs.append(sub)
         
         # Calculate subscribers currently in their window
         current_hour = now.hour
