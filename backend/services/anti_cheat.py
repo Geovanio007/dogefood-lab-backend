@@ -72,6 +72,7 @@ class AntiCheatSystem:
         Get player's treat creation status.
         NEW SYSTEM: 4 treats per 6-hour window, max 16 per 24 hours.
         Timer resets 6 hours after the FIRST treat in the current window.
+        Extra treats can be purchased with DOGE.
         """
         now = datetime.utcnow()
         
@@ -82,24 +83,12 @@ class AntiCheatSystem:
         treats_in_window = len(treats_last_6h)
         treats_today = len(treats_last_24h)
         
-        # Get player's extra lives status
+        # Get player's extra treats balance (purchased with DOGE)
         player = await self.db.players.find_one({"address": player_address})
-        extra_lives_purchased = 0
+        extra_treats_balance = 0
         
         if player:
-            extra_lives_purchased = player.get("extra_lives_purchased_today", 0)
-            
-            # Check if we need to reset daily counters (every 24h)
-            last_reset = player.get("daily_reset_at")
-            if last_reset:
-                if isinstance(last_reset, str):
-                    last_reset = datetime.fromisoformat(last_reset.replace("Z", "+00:00").replace("+00:00", ""))
-                if now - last_reset > timedelta(hours=24):
-                    await self.db.players.update_one(
-                        {"address": player_address},
-                        {"$set": {"extra_lives_purchased_today": 0, "daily_reset_at": now}}
-                    )
-                    extra_lives_purchased = 0
+            extra_treats_balance = player.get("extra_treats_balance", 0)
         
         # Get streak bonus
         streak_info = await self.get_player_streak(player_address)
@@ -108,13 +97,14 @@ class AntiCheatSystem:
         # Calculate limits
         window_limit = WINDOW_TREAT_LIMIT + streak_bonus["bonus_treats"]
         daily_limit = MAX_DAILY_TREATS + (streak_bonus["bonus_treats"] * 4)  # Bonus applies to each window
-        extra_from_lives = extra_lives_purchased * EXTRA_LIFE_TREATS
         
-        # Calculate remaining in current window
-        remaining_in_window = max(0, window_limit - treats_in_window + extra_from_lives)
+        # Calculate remaining in current window (including extra treats from purchases)
+        base_remaining_in_window = max(0, window_limit - treats_in_window)
+        remaining_in_window = base_remaining_in_window + extra_treats_balance
         
         # Check daily cap
-        remaining_daily = max(0, daily_limit - treats_today + extra_from_lives)
+        base_remaining_daily = max(0, daily_limit - treats_today)
+        remaining_daily = base_remaining_daily + extra_treats_balance
         
         # Actual remaining is the minimum of window and daily limits
         remaining_treats = min(remaining_in_window, remaining_daily)
@@ -142,11 +132,7 @@ class AntiCheatSystem:
             "remaining_treats": remaining_treats,
             "can_create_treat": can_create,
             "time_until_reset_seconds": int(time_until_reset),
-            "extra_lives_purchased": extra_lives_purchased,
-            "extra_treats_available": extra_from_lives,
-            "extra_life_cost_lab": EXTRA_LIFE_COST_LAB,
-            "extra_life_treats": EXTRA_LIFE_TREATS,
-            "lab_token_active": False,
+            "extra_treats_balance": extra_treats_balance,
             "streak": streak_info,
             "streak_bonus": streak_bonus,
             # Legacy fields for compatibility
