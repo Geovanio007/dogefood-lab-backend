@@ -7,7 +7,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://dogenews-mixer.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://dogemixbot.preview.emergentagent.com')
 
 # Test address for anti-cheat testing
 TEST_ADDRESS = "0xTEST_anticheat_1234567890abcdef12345678"
