@@ -447,6 +447,31 @@ AUTO_MIXER_CONFIG = {
     "required_confirmations": 3  # Required confirmations for payment
 }
 
+# Extra Life Packages Configuration
+EXTRA_LIFE_PACKAGES = {
+    "basic": {
+        "id": "basic",
+        "name": "Basic Pack",
+        "treats": 2,
+        "cost_doge": 10,
+        "description": "2 extra treat creations"
+    },
+    "standard": {
+        "id": "standard",
+        "name": "Standard Pack",
+        "treats": 4,
+        "cost_doge": 20,
+        "description": "4 extra treat creations"
+    },
+    "premium": {
+        "id": "premium",
+        "name": "Premium Pack",
+        "treats": 6,
+        "cost_doge": 35,
+        "description": "6 extra treat creations - Best Value!"
+    }
+}
+
 class AutoMixerSubscription(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     player_address: str
