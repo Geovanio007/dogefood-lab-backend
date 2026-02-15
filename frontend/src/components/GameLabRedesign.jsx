@@ -1326,25 +1326,19 @@ const GameLabRedesign = ({ playerAddress }) => {
               {/* Glow effect */}
               <div className="absolute inset-0 bg-gradient-radial from-yellow-400/50 via-transparent to-transparent rounded-full animate-pulse" />
               
-              {/* Stars floating */}
-              {[...Array(8)].map((_, i) => (
-                <div
-                  key={`star-${i}`}
-                  className="absolute text-2xl animate-ping"
-                  style={{
-                    left: `${20 + Math.random() * 60}%`,
-                    top: `${20 + Math.random() * 60}%`,
-                    animationDelay: `${i * 0.2}s`,
-                    animationDuration: '1.5s'
-                  }}
-                >
-                  ⭐
-                </div>
-              ))}
+              {/* Stars floating - Fixed positions */}
+              <div className="absolute text-2xl animate-ping" style={{ left: '25%', top: '30%', animationDelay: '0s', animationDuration: '1.5s' }}>⭐</div>
+              <div className="absolute text-2xl animate-ping" style={{ left: '70%', top: '25%', animationDelay: '0.2s', animationDuration: '1.5s' }}>⭐</div>
+              <div className="absolute text-2xl animate-ping" style={{ left: '35%', top: '65%', animationDelay: '0.4s', animationDuration: '1.5s' }}>⭐</div>
+              <div className="absolute text-2xl animate-ping" style={{ left: '60%', top: '70%', animationDelay: '0.6s', animationDuration: '1.5s' }}>⭐</div>
+              <div className="absolute text-2xl animate-ping" style={{ left: '45%', top: '20%', animationDelay: '0.8s', animationDuration: '1.5s' }}>⭐</div>
+              <div className="absolute text-2xl animate-ping" style={{ left: '75%', top: '55%', animationDelay: '1s', animationDuration: '1.5s' }}>⭐</div>
+              <div className="absolute text-2xl animate-ping" style={{ left: '20%', top: '50%', animationDelay: '1.2s', animationDuration: '1.5s' }}>⭐</div>
+              <div className="absolute text-2xl animate-ping" style={{ left: '55%', top: '35%', animationDelay: '1.4s', animationDuration: '1.5s' }}>⭐</div>
             </div>
             
             <h2 className="text-4xl font-bold text-white mb-4 drop-shadow-lg animate-pulse">
-              🎉 Treat Collected! 🎉
+              Treat Collected!
             </h2>
             <div className="text-2xl font-bold text-yellow-400 mb-2">
               {collectedTreat.rarity} Treat
@@ -1353,21 +1347,18 @@ const GameLabRedesign = ({ playerAddress }) => {
               +{collectedTreat.points_reward || 0} Points • +{collectedTreat.xp_reward || 0} XP
             </p>
             
-            {/* Confetti effect */}
+            {/* Confetti effect - Fixed positions */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              {[...Array(20)].map((_, i) => (
-                <div
-                  key={`confetti-${i}`}
-                  className="absolute w-3 h-3 rounded-sm"
-                  style={{
-                    left: `${Math.random() * 100}%`,
-                    top: '-20px',
-                    backgroundColor: ['#fbbf24', '#3b82f6', '#10b981', '#f472b6', '#8b5cf6'][i % 5],
-                    animation: `confetti-fall 2s linear ${i * 0.1}s infinite`,
-                    transform: `rotate(${Math.random() * 360}deg)`
-                  }}
-                />
-              ))}
+              <div className="absolute w-3 h-3 rounded-sm" style={{ left: '5%', top: '-20px', backgroundColor: '#fbbf24', animation: 'confetti-fall 2s linear 0s infinite', transform: 'rotate(45deg)' }} />
+              <div className="absolute w-3 h-3 rounded-sm" style={{ left: '15%', top: '-20px', backgroundColor: '#3b82f6', animation: 'confetti-fall 2s linear 0.1s infinite', transform: 'rotate(90deg)' }} />
+              <div className="absolute w-3 h-3 rounded-sm" style={{ left: '25%', top: '-20px', backgroundColor: '#10b981', animation: 'confetti-fall 2s linear 0.2s infinite', transform: 'rotate(135deg)' }} />
+              <div className="absolute w-3 h-3 rounded-sm" style={{ left: '35%', top: '-20px', backgroundColor: '#f472b6', animation: 'confetti-fall 2s linear 0.3s infinite', transform: 'rotate(180deg)' }} />
+              <div className="absolute w-3 h-3 rounded-sm" style={{ left: '45%', top: '-20px', backgroundColor: '#8b5cf6', animation: 'confetti-fall 2s linear 0.4s infinite', transform: 'rotate(225deg)' }} />
+              <div className="absolute w-3 h-3 rounded-sm" style={{ left: '55%', top: '-20px', backgroundColor: '#fbbf24', animation: 'confetti-fall 2s linear 0.5s infinite', transform: 'rotate(270deg)' }} />
+              <div className="absolute w-3 h-3 rounded-sm" style={{ left: '65%', top: '-20px', backgroundColor: '#3b82f6', animation: 'confetti-fall 2s linear 0.6s infinite', transform: 'rotate(315deg)' }} />
+              <div className="absolute w-3 h-3 rounded-sm" style={{ left: '75%', top: '-20px', backgroundColor: '#10b981', animation: 'confetti-fall 2s linear 0.7s infinite', transform: 'rotate(360deg)' }} />
+              <div className="absolute w-3 h-3 rounded-sm" style={{ left: '85%', top: '-20px', backgroundColor: '#f472b6', animation: 'confetti-fall 2s linear 0.8s infinite', transform: 'rotate(45deg)' }} />
+              <div className="absolute w-3 h-3 rounded-sm" style={{ left: '95%', top: '-20px', backgroundColor: '#8b5cf6', animation: 'confetti-fall 2s linear 0.9s infinite', transform: 'rotate(90deg)' }} />
             </div>
           </div>
         </div>
