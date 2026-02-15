@@ -762,16 +762,17 @@ async def verify_extra_life_payment(request: ExtraLifeVerifyRequest):
         expected_amount = purchase["cost_doge"]
         
         # Use the existing DOGE verification function
-        tx_result = await verify_doge_transaction_with_fallback(
+        # Returns tuple: (tx_data, confirmations, payment_amount, error)
+        tx_data, confirmations, payment_amount, error = await verify_doge_transaction_with_fallback(
             request.tx_hash,
             AUTO_MIXER_CONFIG["payment_address"],
             AUTO_MIXER_CONFIG.get("blockcypher_api_key")
         )
         
-        if not tx_result["found"]:
+        if error is not None:
             return {
                 "success": False,
-                "message": "Transaction not found. Please check the hash and try again.",
+                "message": f"Transaction not found. {error}",
                 "purchase": {k: v for k, v in purchase.items() if k != "_id"}
             }
         
@@ -779,12 +780,12 @@ async def verify_extra_life_payment(request: ExtraLifeVerifyRequest):
         now = datetime.utcnow()
         update_data = {
             "payment_tx_hash": request.tx_hash,
-            "payment_confirmations": tx_result.get("confirmations", 0),
+            "payment_confirmations": confirmations,
             "updated_at": now
         }
         
-        is_confirmed = tx_result.get("confirmations", 0) >= AUTO_MIXER_CONFIG["required_confirmations"]
-        amount_valid = tx_result.get("amount", 0) >= expected_amount
+        is_confirmed = confirmations >= AUTO_MIXER_CONFIG["required_confirmations"]
+        amount_valid = payment_amount >= expected_amount
         
         if is_confirmed and amount_valid:
             update_data["status"] = "completed"
@@ -825,11 +826,11 @@ async def verify_extra_life_payment(request: ExtraLifeVerifyRequest):
             "success": is_confirmed and amount_valid,
             "is_confirmed": is_confirmed,
             "amount_valid": amount_valid,
-            "confirmations": tx_result.get("confirmations", 0),
+            "confirmations": confirmations,
             "required_confirmations": AUTO_MIXER_CONFIG["required_confirmations"],
-            "amount_received": tx_result.get("amount", 0),
+            "amount_received": payment_amount,
             "expected_amount": expected_amount,
-            "message": "Payment verified! Extra treats added to your account." if (is_confirmed and amount_valid) else f"Payment found with {tx_result.get('confirmations', 0)} confirmations. Need {AUTO_MIXER_CONFIG['required_confirmations']}.",
+            "message": "Payment verified! Extra treats added to your account." if (is_confirmed and amount_valid) else f"Payment found with {confirmations} confirmations. Need {AUTO_MIXER_CONFIG['required_confirmations']}.",
             "purchase": {k: v for k, v in updated_purchase.items() if k != "_id"} if updated_purchase else None
         }
     except HTTPException:
