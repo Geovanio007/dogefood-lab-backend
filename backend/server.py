@@ -6106,6 +6106,57 @@ async def get_auto_mixer_history(player_address: str, limit: int = 20):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/auto-mixer/debug-subscriptions")
+async def debug_subscriptions():
+    """Debug endpoint to see all subscription data"""
+    try:
+        now = datetime.utcnow()
+        
+        # Get all subscriptions
+        all_subs = await db.auto_mixer_subscriptions.find({}).sort("created_at", -1).limit(50).to_list(50)
+        
+        debug_info = []
+        for sub in all_subs:
+            sub_end = sub.get("subscription_end")
+            sub_end_parsed = None
+            is_active_now = False
+            
+            if sub_end:
+                if isinstance(sub_end, datetime):
+                    sub_end_parsed = sub_end.isoformat()
+                    is_active_now = sub_end > now
+                elif isinstance(sub_end, str):
+                    sub_end_parsed = sub_end
+                    try:
+                        parsed = datetime.fromisoformat(sub_end.replace("Z", "").replace("+00:00", ""))
+                        is_active_now = parsed > now
+                    except:
+                        pass
+            
+            debug_info.append({
+                "id": sub.get("id"),
+                "player_address": sub.get("player_address", "")[:20] + "...",
+                "status": sub.get("status"),
+                "subscription_end_raw": str(sub_end),
+                "subscription_end_type": type(sub_end).__name__,
+                "subscription_end_parsed": sub_end_parsed,
+                "is_active_now": is_active_now,
+                "created_at": str(sub.get("created_at")),
+                "total_auto_mixes": sub.get("total_auto_mixes", 0)
+            })
+        
+        return {
+            "current_time_utc": now.isoformat(),
+            "total_in_db": await db.auto_mixer_subscriptions.count_documents({}),
+            "status_active": await db.auto_mixer_subscriptions.count_documents({"status": "active"}),
+            "subscriptions": debug_info
+        }
+        
+    except Exception as e:
+        logger.error(f"Debug subscriptions error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.get("/auto-mixer/agent-status")
 async def get_auto_mixer_agent_status():
     """Get detailed status of the auto-mixer agent"""
