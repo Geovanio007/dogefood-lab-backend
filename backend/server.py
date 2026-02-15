@@ -2906,6 +2906,9 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             }
             raise HTTPException(status_code=429, detail=error_detail)
         
+        # Consume extra treat if over base limit (player used purchased extra treats)
+        extra_treat_consumed = await anti_cheat_system.consume_extra_treat_if_needed(treat_data.creator_address)
+        
         # Update player streak on treat creation
         streak_result = await anti_cheat_system.update_player_streak(treat_data.creator_address)
         streak_bonus = streak_result.get("streak_bonus", {})
