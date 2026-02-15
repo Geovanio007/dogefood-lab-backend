@@ -6339,8 +6339,13 @@ async def get_auto_mixer_history(player_address: str, limit: int = 20):
 
 
 @api_router.get("/auto-mixer/debug-subscriptions")
-async def debug_subscriptions():
-    """Debug endpoint to see all subscription data"""
+async def debug_subscriptions(admin_secret: str = Query(..., description="Admin secret key")):
+    """Debug endpoint to see all subscription data - Admin only"""
+    # Verify admin secret
+    expected_secret = os.environ.get("ADMIN_SECRET", "")
+    if not expected_secret or admin_secret != expected_secret:
+        raise HTTPException(status_code=403, detail="Unauthorized - Invalid admin secret")
+    
     try:
         now = datetime.utcnow()
         
