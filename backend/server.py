@@ -517,6 +517,15 @@ class AutoMixerFundsStats(BaseModel):
     active_subscribers: int = 0
     total_auto_mixes: int = 0
 
+# Extra Life Purchase Models
+class ExtraLifeCreateRequest(BaseModel):
+    player_address: str
+    package_id: str  # "basic", "standard", or "premium"
+
+class ExtraLifeVerifyRequest(BaseModel):
+    purchase_id: str
+    tx_hash: str
+
 # =====================================================
 # KERNEL OF WOW - SPECIAL INGREDIENT SYSTEM
 # =====================================================
