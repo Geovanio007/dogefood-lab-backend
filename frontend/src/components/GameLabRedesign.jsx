@@ -738,6 +738,24 @@ const GameLabRedesign = ({ playerAddress }) => {
             playerAddress={playerAddress} 
             onStatusUpdate={setDailyStatus}
           />
+          
+          {/* Error Alert */}
+          {error && (
+            <div className="bg-red-500/90 backdrop-blur-xl rounded-xl p-4 text-white border border-red-400">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">⚠️</span>
+                  <span className="font-medium">{error}</span>
+                </div>
+                <button 
+                  onClick={() => setError(null)}
+                  className="text-white/80 hover:text-white text-xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Back Button */}
           <Button 
