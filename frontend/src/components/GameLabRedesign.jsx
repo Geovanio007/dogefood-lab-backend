@@ -266,10 +266,16 @@ const GameLabRedesign = ({ playerAddress }) => {
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await loadPlayerData();
-      await loadIngredients();
-      await loadActiveTreats();
-      setLoading(false);
+      try {
+        await loadPlayerData();
+        await loadIngredients();
+        await loadActiveTreats();
+      } catch (err) {
+        console.error('Error during initial load:', err);
+        setError('Failed to load game data. Please refresh the page.');
+      } finally {
+        setLoading(false);
+      }
     };
     init();
   }, [loadPlayerData, loadIngredients, loadActiveTreats]);
