@@ -400,12 +400,20 @@ const GameLabRedesign = ({ playerAddress }) => {
             setError(errorData.detail?.message || 'Rate limited. Please wait.');
           }
         } else {
-          throw new Error('Failed to create treat');
+          // Try to get the error message from the response
+          try {
+            const errorData = await response.json();
+            const errorMsg = errorData.detail?.message || errorData.detail || errorData.message || `Error ${response.status}`;
+            setError(typeof errorMsg === 'string' ? errorMsg : 'Failed to create treat. Please try again.');
+          } catch {
+            setError(`Failed to create treat (Error ${response.status}). Please try again.`);
+          }
         }
       }
     } catch (err) {
       setShowBrewingAnimation(false);
-      setError(err.message);
+      setError(err.message || 'Network error. Please check your connection.');
+      console.error('Treat creation error:', err);
     } finally {
       setIsBrewing(false);
     }
