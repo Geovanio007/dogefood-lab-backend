@@ -6082,6 +6082,7 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
     """
     Try to match a payment to a pending order and activate it.
     Matches by exact amount (subscription: 30 DOGE, extra life: 10/20/35 DOGE).
+    Excludes test addresses from matching.
     """
     now = datetime.utcnow()
     
@@ -6094,16 +6095,19 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
     # Allow small tolerance (0.1 DOGE) for network fees
     tolerance = 0.1
     
+    # Filter to exclude test addresses
+    real_address_filter = {
+        "player_address": {"$not": {"$regex": "^(TEST_|test_|D_test_)"}}
+    }
+    
     # Check for subscription payment (30 DOGE)
     if abs(amount - subscription_amount) <= tolerance:
-        # Find oldest pending subscription
         pending_sub = await db.auto_mixer_subscriptions.find_one(
-            {"status": "pending"},
-            sort=[("created_at", 1)]  # Oldest first
+            {"status": "pending", **real_address_filter},
+            sort=[("created_at", 1)]
         )
         
         if pending_sub:
-            # Activate subscription
             subscription_end = now + timedelta(days=30)
             await db.auto_mixer_subscriptions.update_one(
                 {"id": pending_sub["id"]},
@@ -6127,18 +6131,18 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
                 "order_id": pending_sub["id"],
                 "player_address": pending_sub["player_address"]
             }
+        else:
+            logger.info(f"No pending subscription found for {amount} DOGE payment")
     
     # Check for extra life payment (10, 20, or 35 DOGE)
     for expected_amount, package in extra_life_amounts.items():
         if abs(amount - expected_amount) <= tolerance:
-            # Find oldest pending purchase for this amount
             pending_purchase = await db.extra_life_purchases.find_one(
-                {"status": "pending", "cost_doge": expected_amount},
+                {"status": "pending", "cost_doge": expected_amount, **real_address_filter},
                 sort=[("created_at", 1)]
             )
             
             if pending_purchase:
-                # Activate purchase and grant treats
                 treats_to_grant = pending_purchase["treats_amount"]
                 
                 await db.extra_life_purchases.update_one(
@@ -6153,7 +6157,6 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
                     }}
                 )
                 
-                # Grant extra treats to player
                 await db.players.update_one(
                     {"address": pending_purchase["player_address"]},
                     {
@@ -6181,6 +6184,8 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
                     "player_address": pending_purchase["player_address"],
                     "treats_granted": treats_to_grant
                 }
+            else:
+                logger.info(f"No pending extra life purchase found for {amount} DOGE payment (expected {expected_amount})")
     
     return None
 
