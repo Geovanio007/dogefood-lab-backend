@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
-import { X, Clock, Zap, Copy, CheckCircle2, ExternalLink, Loader2, Heart, Package, Coins } from 'lucide-react';
+import { X, Clock, Zap, Copy, CheckCircle2, ExternalLink, Loader2, Heart, Package, Coins, RefreshCw } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -37,11 +37,10 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
   // Extra Life purchase state
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [pendingPurchase, setPendingPurchase] = useState(null);
-  const [txHash, setTxHash] = useState('');
-  const [verifying, setVerifying] = useState(false);
   const [creating, setCreating] = useState(false);
   const [purchaseResult, setPurchaseResult] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(false);
 
   // Fetch daily status
   const fetchDailyStatus = useCallback(async () => {
@@ -58,12 +57,14 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
         }
       }
       
-      // Also fetch extra life status
+      // Also fetch extra life status to check for pending purchases
       const extraLifeRes = await fetch(`${API_URL}/api/extra-life/status/${playerAddress}`);
       if (extraLifeRes.ok) {
         const extraLifeData = await extraLifeRes.json();
         if (extraLifeData.pending_purchase) {
           setPendingPurchase(extraLifeData.pending_purchase);
+        } else {
+          setPendingPurchase(null);
         }
       }
     } catch (err) {
@@ -76,6 +77,17 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
   useEffect(() => {
     fetchDailyStatus();
   }, [fetchDailyStatus]);
+
+  // Auto-refresh when there's a pending purchase (check for auto-activation)
+  useEffect(() => {
+    if (!pendingPurchase) return;
+    
+    const interval = setInterval(async () => {
+      await fetchDailyStatus();
+    }, 10000); // Check every 10 seconds for auto-activation
+    
+    return () => clearInterval(interval);
+  }, [pendingPurchase, fetchDailyStatus]);
 
   // Countdown timer
   useEffect(() => {
@@ -143,43 +155,40 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
     }
   };
 
-  const handleVerifyPayment = async () => {
-    if (!txHash.trim() || !pendingPurchase) return;
-    
-    setVerifying(true);
-    setPurchaseResult(null);
+  const handleCheckPayment = async () => {
+    setCheckingPayment(true);
     
     try {
-      const response = await fetch(`${API_URL}/api/extra-life/verify-payment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          purchase_id: pendingPurchase.id,
-          tx_hash: txHash.trim()
-        })
-      });
+      // Trigger manual payment check
+      await fetch(`${API_URL}/api/payments/check-pending`, { method: 'POST' });
       
-      const data = await response.json();
+      // Wait a moment then refresh status
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await fetchDailyStatus();
       
-      if (data.success) {
-        setPurchaseResult({ 
-          success: true, 
-          message: `Payment verified! +${pendingPurchase.treats_amount} extra treats added!` 
-        });
-        setPendingPurchase(null);
-        setTxHash('');
-        setSelectedPackage(null);
-        await fetchDailyStatus();
-      } else {
-        setPurchaseResult({ 
-          success: false, 
-          message: data.message || 'Payment not verified yet. Please try again.'
-        });
+      // Check if purchase was activated
+      const statusRes = await fetch(`${API_URL}/api/extra-life/status/${playerAddress}`);
+      if (statusRes.ok) {
+        const statusData = await statusRes.json();
+        if (!statusData.pending_purchase && pendingPurchase) {
+          // Purchase was completed!
+          setPurchaseResult({ 
+            success: true, 
+            message: `Payment confirmed! +${pendingPurchase.treats_amount} extra treats added!` 
+          });
+          setPendingPurchase(null);
+          setSelectedPackage(null);
+        } else if (statusData.pending_purchase) {
+          setPurchaseResult({ 
+            success: false, 
+            message: 'Payment not detected yet. Make sure you sent the exact amount and wait for 1 confirmation.' 
+          });
+        }
       }
     } catch (err) {
-      setPurchaseResult({ success: false, message: 'Network error. Please try again.' });
+      setPurchaseResult({ success: false, message: 'Error checking payment. Please try again.' });
     } finally {
-      setVerifying(false);
+      setCheckingPayment(false);
     }
   };
 
@@ -192,7 +201,6 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
       });
       setPendingPurchase(null);
       setSelectedPackage(null);
-      setTxHash('');
     } catch (err) {
       console.error('Error cancelling purchase:', err);
     }
@@ -301,7 +309,7 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
         </CardContent>
       </Card>
 
-      {/* Streak Modal - Compact for Telegram */}
+      {/* Streak Modal */}
       {showStreakModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black/80 backdrop-blur-sm">
           <div className="w-full max-w-xs relative">
@@ -338,22 +346,6 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
                   </div>
                 </div>
 
-                <div className="bg-black/20 rounded-lg p-2 mb-2">
-                  <h3 className="text-white font-bold mb-1 text-center text-[10px]">Streak Tiers</h3>
-                  <div className="grid grid-cols-2 gap-0.5">
-                    {Object.entries(STREAK_TIERS).map(([days, tier]) => {
-                      const isAchieved = streak >= parseInt(days);
-                      return (
-                        <div key={days} className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] ${isAchieved ? 'bg-emerald-500/30' : 'bg-white/5'}`}>
-                          <span>{tier.icon}</span>
-                          <span className={`truncate ${isAchieved ? 'text-white' : 'text-white/50'}`}>{tier.title}</span>
-                          <span className={`ml-auto ${isAchieved ? 'text-emerald-300' : 'text-white/40'}`}>{days}d</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
                 <Button onClick={() => setShowStreakModal(false)} className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs h-8">
                   Keep Cooking!
                 </Button>
@@ -363,7 +355,7 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
         </div>
       )}
 
-      {/* Extra Life Modal - DOGE Payment Flow */}
+      {/* Extra Life Modal - Auto Payment Detection */}
       {showExtraLifeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black/80 backdrop-blur-sm overflow-y-auto">
           <div className="w-full max-w-sm relative my-4">
@@ -390,7 +382,7 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
                   )}
                 </div>
 
-                {/* Show pending purchase payment flow */}
+                {/* Show pending purchase - waiting for payment */}
                 {pendingPurchase ? (
                   <div className="space-y-4">
                     <div className="bg-black/30 rounded-lg p-3">
@@ -423,20 +415,18 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
                             <Coins className="w-5 h-5 text-yellow-400" />
                             <span className="text-2xl font-bold text-yellow-300">{pendingPurchase.cost_doge} DOGE</span>
                           </div>
-                          <p className="text-yellow-200/70 text-xs mt-1">Send exact amount</p>
+                          <p className="text-yellow-200/70 text-xs mt-1">Send exact amount for auto-detection</p>
                         </div>
                         
-                        {/* Transaction Hash Input */}
-                        <div>
-                          <label className="block text-rose-200 text-xs mb-1">Transaction Hash:</label>
-                          <input
-                            type="text"
-                            value={txHash}
-                            onChange={(e) => setTxHash(e.target.value)}
-                            placeholder="Paste your DOGE tx hash..."
-                            className="w-full p-2 bg-black/40 border border-rose-500/50 rounded text-white text-sm placeholder-rose-300/50"
-                            data-testid="extra-life-tx-hash-input"
-                          />
+                        {/* Auto-detection notice */}
+                        <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-3">
+                          <div className="flex items-center gap-2 text-green-300">
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span className="text-sm font-medium">Auto-detecting payment...</span>
+                          </div>
+                          <p className="text-green-200/70 text-xs mt-1">
+                            Your treats will be added automatically once payment is confirmed (1 block).
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -458,20 +448,20 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
                         Cancel
                       </Button>
                       <Button
-                        onClick={handleVerifyPayment}
-                        disabled={verifying || !txHash.trim()}
-                        className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-white font-bold"
-                        data-testid="verify-extra-life-payment-btn"
+                        onClick={handleCheckPayment}
+                        disabled={checkingPayment}
+                        className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-bold"
+                        data-testid="check-payment-btn"
                       >
-                        {verifying ? (
+                        {checkingPayment ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                            Verifying...
+                            Checking...
                           </>
                         ) : (
                           <>
-                            <CheckCircle2 className="w-4 h-4 mr-1" />
-                            Verify Payment
+                            <RefreshCw className="w-4 h-4 mr-1" />
+                            Check Now
                           </>
                         )}
                       </Button>
@@ -533,6 +523,17 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
                       </button>
                     ))}
 
+                    {/* Auto-payment notice */}
+                    <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mt-4">
+                      <div className="flex items-center gap-2 text-green-300">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span className="text-sm font-medium">Auto-Payment Detection</span>
+                      </div>
+                      <p className="text-green-200/70 text-xs mt-1">
+                        Just send the exact DOGE amount. Your treats will be added automatically - no transaction hash needed!
+                      </p>
+                    </div>
+
                     {/* Result Message */}
                     {purchaseResult && (
                       <div className={`rounded-lg p-2 text-sm ${purchaseResult.success ? 'bg-green-500/30 text-green-200' : 'bg-red-500/30 text-red-200'}`}>
@@ -543,7 +544,7 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
                     {creating && (
                       <div className="flex items-center justify-center gap-2 text-rose-200">
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="text-sm">Creating purchase...</span>
+                        <span className="text-sm">Creating order...</span>
                       </div>
                     )}
                   </div>
