@@ -4068,6 +4068,15 @@ async def health_check():
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Service unavailable: {str(e)}")
 
+# Lightweight root health check for Render (no DB dependency)
+@app.get("/")
+async def root_health():
+    return {"status": "ok", "service": "dogefood-lab-api"}
+
+@app.get("/health")
+async def simple_health():
+    return {"status": "ok", "service": "dogefood-lab-api"}
+
 # Root endpoint
 @app.get("/")
 async def root():
