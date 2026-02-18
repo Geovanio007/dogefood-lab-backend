@@ -736,6 +736,38 @@ async def create_extra_life_purchase(request: ExtraLifeCreateRequest):
         
         await db.extra_life_purchases.insert_one(purchase)
         
+        # After creating a new order, check if any unmatched payments can now be matched
+        try:
+            unmatched = await db.processed_payments.find_one(
+                {"matched_order_type": "unmatched", "amount": package["cost_doge"]}
+            )
+            if unmatched:
+                activated = await match_and_activate_payment(
+                    unmatched["tx_hash"], unmatched["amount"], unmatched.get("confirmations", 1)
+                )
+                if activated:
+                    await db.processed_payments.update_one(
+                        {"tx_hash": unmatched["tx_hash"]},
+                        {"$set": {
+                            "matched_order_type": activated.get("type"),
+                            "matched_order_id": activated.get("order_id"),
+                            "player_address": activated.get("player_address"),
+                            "rematched_at": datetime.utcnow()
+                        }}
+                    )
+                    logger.info(f"Auto-matched existing payment to new order for {request.player_address}")
+                    # Return the now-completed purchase
+                    updated = await db.extra_life_purchases.find_one({"id": purchase_id})
+                    if updated:
+                        return {
+                            "purchase": {k: v for k, v in updated.items() if k != "_id"},
+                            "existing": False,
+                            "payment_address": AUTO_MIXER_CONFIG["payment_address"],
+                            "auto_matched": True
+                        }
+        except Exception as recheck_err:
+            logger.warning(f"Recheck of unmatched payments failed (non-critical): {recheck_err}")
+        
         return {
             "purchase": {k: v for k, v in purchase.items() if k != "_id"},
             "existing": False,
