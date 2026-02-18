@@ -5914,6 +5914,17 @@ async def create_auto_mixer_subscription(request: AutoMixerCreateRequest):
         nickname = player.get("nickname") if player else None
         
         subscription_id = str(uuid.uuid4())
+        
+        # Generate unique payment amount to avoid collisions between orders
+        base_fee = AUTO_MIXER_CONFIG["monthly_fee_doge"]
+        unique_offset = round(random.randint(1, 99) / 1000, 3)
+        unique_amount = round(base_fee + unique_offset, 3)
+        
+        # Ensure no other pending subscription has the same unique amount
+        while await db.auto_mixer_subscriptions.find_one({"unique_amount": unique_amount, "status": "pending"}):
+            unique_offset = round(random.randint(1, 99) / 1000, 3)
+            unique_amount = round(base_fee + unique_offset, 3)
+        
         subscription = {
             "id": subscription_id,
             "player_address": request.player_address,
@@ -5924,7 +5935,8 @@ async def create_auto_mixer_subscription(request: AutoMixerCreateRequest):
             "window_start_hour": request.window_start_hour,
             "window_end_hour": request.window_end_hour,
             "payment_tx_hash": None,
-            "payment_amount": AUTO_MIXER_CONFIG["monthly_fee_doge"],
+            "payment_amount": base_fee,
+            "unique_amount": unique_amount,
             "payment_confirmed": False,
             "payment_confirmations": 0,
             "total_auto_mixes": 0,
