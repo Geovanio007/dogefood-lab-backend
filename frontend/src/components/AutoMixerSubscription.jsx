@@ -1068,8 +1068,8 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
 
             {/* Amount */}
             <div className={`p-4 rounded-xl text-center ${isDark ? 'bg-sky-900/50' : 'bg-gradient-to-r from-sky-100 to-blue-100'}`}>
-              <div className={`text-3xl font-bold ${isDark ? 'text-sky-300' : 'text-sky-800'}`}>{config.monthly_fee_doge} DOGE</div>
-              <div className={`text-sm ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>Exact Amount Required</div>
+              <div className={`text-3xl font-bold ${isDark ? 'text-sky-300' : 'text-sky-800'}`}>{subscription?.unique_amount || config.monthly_fee_doge} DOGE</div>
+              <div className={`text-sm ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>Send this EXACT amount for auto-detection</div>
             </div>
 
             {/* Auto-detection notice */}
