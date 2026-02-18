@@ -7511,27 +7511,35 @@ async def auto_mixer_processor_loop():
                     # Get player info
                     player = await db.players.find_one({"address": player_address})
                     if not player:
-                        logger.warning(f"🤖 Player not found: {player_address}")
+                        logger.warning(f"Auto-mixer: Player not found: {player_address}")
                         continue
                     
                     player_level = player.get("level", 1)
+                    
+                    # Check player's character bonus (Rex gives rare chance boost)
+                    character_bonuses = player.get("character_bonuses", {})
+                    rare_chance_bonus = character_bonuses.get("rare_chance_bonus", 0.0)
                     
                     # Get available ingredients for player level
                     available_ingredients = ingredient_system.get_unlocked_ingredients(player_level)
                     
                     if len(available_ingredients) < 2:
-                        logger.warning(f"🤖 {player_address[:15]}... not enough ingredients (level {player_level})")
+                        logger.warning(f"Auto-mixer: {player_address[:15]}... not enough ingredients (level {player_level})")
                         continue
                     
-                    # Select random ingredients (2-4)
-                    num_ingredients = random.randint(2, min(4, len(available_ingredients)))
-                    selected_ingredients = random.sample([ing.id for ing in available_ingredients], num_ingredients)
+                    # Select random ingredients (2-4) with variety
+                    # Shuffle the full list for maximum randomness each cycle
+                    all_ingredient_ids = [ing.id for ing in available_ingredients]
+                    random.shuffle(all_ingredient_ids)
+                    num_ingredients = random.randint(2, min(4, len(all_ingredient_ids)))
+                    selected_ingredients = all_ingredient_ids[:num_ingredients]
                     
-                    # Create the treat using the game engine
+                    # Create the treat using the game engine with character bonuses
                     treat_result = game_engine.calculate_treat_outcome(
                         ingredients=selected_ingredients,
                         player_level=player_level,
-                        player_address=player_address
+                        player_address=player_address,
+                        rare_chance_bonus=rare_chance_bonus
                     )
                     
                     rarity = treat_result.get("rarity", "Common")
