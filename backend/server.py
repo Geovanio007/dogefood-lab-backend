@@ -6079,6 +6079,7 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
     """
     Try to match a payment to a pending order and activate it.
     Matches by exact amount (subscription: 30 DOGE, extra life: 10/20/35 DOGE).
+    Excludes test addresses from matching to prevent test data pollution.
     """
     now = datetime.utcnow()
     
@@ -6091,11 +6092,16 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
     # Allow small tolerance (0.1 DOGE) for network fees
     tolerance = 0.1
     
+    # Filter to exclude test addresses
+    real_address_filter = {
+        "player_address": {"$not": {"$regex": "^(TEST_|test_|D_test_)"}}
+    }
+    
     # Check for subscription payment (30 DOGE)
     if abs(amount - subscription_amount) <= tolerance:
-        # Find oldest pending subscription
+        # Find oldest pending subscription from real players
         pending_sub = await db.auto_mixer_subscriptions.find_one(
-            {"status": "pending"},
+            {"status": "pending", **real_address_filter},
             sort=[("created_at", 1)]  # Oldest first
         )
         
@@ -6124,13 +6130,15 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
                 "order_id": pending_sub["id"],
                 "player_address": pending_sub["player_address"]
             }
+        else:
+            logger.info(f"No pending subscription found for {amount} DOGE payment")
     
     # Check for extra life payment (10, 20, or 35 DOGE)
     for expected_amount, package in extra_life_amounts.items():
         if abs(amount - expected_amount) <= tolerance:
-            # Find oldest pending purchase for this amount
+            # Find oldest pending purchase for this amount from real players
             pending_purchase = await db.extra_life_purchases.find_one(
-                {"status": "pending", "cost_doge": expected_amount},
+                {"status": "pending", "cost_doge": expected_amount, **real_address_filter},
                 sort=[("created_at", 1)]
             )
             
@@ -6178,6 +6186,8 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
                     "player_address": pending_purchase["player_address"],
                     "treats_granted": treats_to_grant
                 }
+            else:
+                logger.info(f"No pending extra life purchase found for {amount} DOGE payment (expected {expected_amount})")
     
     return None
 
