@@ -1043,7 +1043,7 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
               Complete Payment
             </CardTitle>
             <p className={isDark ? 'text-sky-400' : 'text-sky-600'}>
-              Send exactly {config.monthly_fee_doge} DOGE to activate your subscription
+              Send exactly {subscription?.unique_amount || config.monthly_fee_doge} DOGE to activate your subscription
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
