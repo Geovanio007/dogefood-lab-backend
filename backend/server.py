@@ -6220,6 +6220,39 @@ async def trigger_payment_check():
     result = await check_and_activate_pending_payments()
     return result
 
+@api_router.post("/payments/recheck-unmatched")
+async def recheck_unmatched_payments():
+    """Re-process previously unmatched payments. Call after new orders are created."""
+    try:
+        unmatched = await db.processed_payments.find(
+            {"matched_order_type": "unmatched", "amount": {"$gt": 0}}
+        ).to_list(length=100)
+        
+        reactivated = 0
+        for payment in unmatched:
+            tx_hash = payment["tx_hash"]
+            amount = payment["amount"]
+            confirmations = payment.get("confirmations", 1)
+            
+            activated = await match_and_activate_payment(tx_hash, amount, confirmations)
+            if activated:
+                reactivated += 1
+                await db.processed_payments.update_one(
+                    {"tx_hash": tx_hash},
+                    {"$set": {
+                        "matched_order_type": activated.get("type"),
+                        "matched_order_id": activated.get("order_id"),
+                        "player_address": activated.get("player_address"),
+                        "rematched_at": datetime.utcnow()
+                    }}
+                )
+                logger.info(f"Re-matched unmatched payment {tx_hash[:20]}... to {activated.get('type')} order")
+        
+        return {"unmatched_checked": len(unmatched), "reactivated": reactivated}
+    except Exception as e:
+        logger.error(f"Error rechecking unmatched payments: {e}")
+        return {"error": str(e)}
+
 # Admin endpoint to manually verify and credit a payment
 @api_router.post("/payments/admin/verify-tx")
 async def admin_verify_transaction(
