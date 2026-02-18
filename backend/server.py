@@ -7352,6 +7352,13 @@ async def startup_event():
     # Start the auto-mixer processor loop
     asyncio.create_task(auto_mixer_processor_loop())
     logger.info("🤖 Auto-mixer processor started")
+    
+    # Start the payment auto-detection loop
+    if AUTO_MIXER_CONFIG.get("tatum_api_key"):
+        asyncio.create_task(payment_check_loop())
+        logger.info("💰 Payment auto-detection started (checking every 30s)")
+    else:
+        logger.warning("⚠️ Payment auto-detection disabled - no Tatum API key")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
