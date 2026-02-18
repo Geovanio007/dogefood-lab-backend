@@ -6135,38 +6135,124 @@ async def check_and_activate_pending_payments():
 async def match_and_activate_payment(tx_hash: str, amount: float, confirmations: int):
     """
     Try to match a payment to a pending order and activate it.
-    Matches by exact amount (subscription: 30 DOGE, extra life: 10/20/35 DOGE).
-    Excludes test addresses from matching to prevent test data pollution.
+    Uses unique_amount field for precise matching (each order has a distinct amount).
+    Falls back to base amount matching for legacy orders without unique_amount.
     """
     now = datetime.utcnow()
-    
-    # Define expected amounts
-    subscription_amount = AUTO_MIXER_CONFIG["monthly_fee_doge"]
-    extra_life_amounts = {
-        pkg["cost_doge"]: pkg for pkg in EXTRA_LIFE_PACKAGES.values()
-    }
-    
-    # Allow small tolerance (0.1 DOGE) for network fees
-    tolerance = 0.1
+    tolerance = 0.001  # Very tight tolerance for unique amounts
     
     # Filter to exclude test addresses
     real_address_filter = {
-        "player_address": {"$not": {"$regex": "^(TEST_|test_|D_test_)"}}
+        "player_address": {"$not": {"$regex": "^(TEST_|test_|D_test_|TESTBOT_)"}}
     }
     
-    # Check for subscription payment (30 DOGE)
-    if abs(amount - subscription_amount) <= tolerance:
-        # Find oldest pending subscription from real players
-        pending_sub = await db.auto_mixer_subscriptions.find_one(
-            {"status": "pending", **real_address_filter},
-            sort=[("created_at", 1)]  # Oldest first
+    # 1. Try EXACT unique amount matching first (new orders have unique_amount)
+    
+    # Check extra life purchases with unique_amount
+    pending_purchase = await db.extra_life_purchases.find_one(
+        {
+            "status": "pending",
+            "unique_amount": {"$gte": amount - tolerance, "$lte": amount + tolerance},
+            **real_address_filter
+        },
+        sort=[("created_at", 1)]
+    )
+    
+    if pending_purchase:
+        treats_to_grant = pending_purchase["treats_amount"]
+        
+        await db.extra_life_purchases.update_one(
+            {"id": pending_purchase["id"]},
+            {"$set": {
+                "status": "completed",
+                "payment_tx_hash": tx_hash,
+                "payment_confirmed": True,
+                "payment_confirmations": confirmations,
+                "completed_at": now,
+                "auto_activated": True
+            }}
         )
         
-        if pending_sub:
-            # Activate subscription
+        # Grant extra treats to player
+        await db.players.update_one(
+            {"address": pending_purchase["player_address"]},
+            {
+                "$inc": {"extra_treats_balance": treats_to_grant},
+                "$push": {
+                    "extra_life_history": {
+                        "purchase_id": pending_purchase["id"],
+                        "package_id": pending_purchase["package_id"],
+                        "treats_granted": treats_to_grant,
+                        "cost_doge": pending_purchase["cost_doge"],
+                        "tx_hash": tx_hash,
+                        "granted_at": now,
+                        "auto_activated": True
+                    }
+                }
+            },
+            upsert=True
+        )
+        
+        logger.info(f"Auto-activated extra life {pending_purchase['id']} for {pending_purchase['player_address']} (+{treats_to_grant} treats, TX: {tx_hash[:20]}...)")
+        
+        return {
+            "type": "extra_life",
+            "order_id": pending_purchase["id"],
+            "player_address": pending_purchase["player_address"],
+            "treats_granted": treats_to_grant
+        }
+    
+    # Check subscriptions with unique_amount
+    pending_sub = await db.auto_mixer_subscriptions.find_one(
+        {
+            "status": "pending",
+            "unique_amount": {"$gte": amount - tolerance, "$lte": amount + tolerance},
+            **real_address_filter
+        },
+        sort=[("created_at", 1)]
+    )
+    
+    if pending_sub:
+        subscription_end = now + timedelta(days=30)
+        await db.auto_mixer_subscriptions.update_one(
+            {"id": pending_sub["id"]},
+            {"$set": {
+                "status": "active",
+                "payment_tx_hash": tx_hash,
+                "payment_confirmed": True,
+                "payment_confirmations": confirmations,
+                "payment_amount": amount,
+                "subscription_start": now,
+                "subscription_end": subscription_end,
+                "activated_at": now,
+                "auto_activated": True
+            }}
+        )
+        
+        logger.info(f"Auto-activated subscription {pending_sub['id']} for {pending_sub['player_address']} (TX: {tx_hash[:20]}...)")
+        
+        return {
+            "type": "subscription",
+            "order_id": pending_sub["id"],
+            "player_address": pending_sub["player_address"]
+        }
+    
+    # 2. FALLBACK: Legacy matching by base amount (for old orders without unique_amount)
+    legacy_tolerance = 0.1
+    
+    subscription_amount = AUTO_MIXER_CONFIG["monthly_fee_doge"]
+    extra_life_amounts = {pkg["cost_doge"]: pkg for pkg in EXTRA_LIFE_PACKAGES.values()}
+    
+    # Check subscription (30 DOGE range)
+    if abs(amount - subscription_amount) <= legacy_tolerance:
+        old_sub = await db.auto_mixer_subscriptions.find_one(
+            {"status": "pending", "unique_amount": {"$exists": False}, **real_address_filter},
+            sort=[("created_at", 1)]
+        )
+        if old_sub:
             subscription_end = now + timedelta(days=30)
             await db.auto_mixer_subscriptions.update_one(
-                {"id": pending_sub["id"]},
+                {"id": old_sub["id"]},
                 {"$set": {
                     "status": "active",
                     "payment_tx_hash": tx_hash,
@@ -6179,32 +6265,20 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
                     "auto_activated": True
                 }}
             )
-            
-            logger.info(f"Auto-activated subscription {pending_sub['id']} for {pending_sub['player_address']} (TX: {tx_hash[:20]}...)")
-            
-            return {
-                "type": "subscription",
-                "order_id": pending_sub["id"],
-                "player_address": pending_sub["player_address"]
-            }
-        else:
-            logger.info(f"No pending subscription found for {amount} DOGE payment")
+            logger.info(f"Legacy-matched subscription {old_sub['id']} for {old_sub['player_address']}")
+            return {"type": "subscription", "order_id": old_sub["id"], "player_address": old_sub["player_address"]}
     
-    # Check for extra life payment (10, 20, or 35 DOGE)
+    # Check extra life (10/20/35 DOGE range)
     for expected_amount, package in extra_life_amounts.items():
-        if abs(amount - expected_amount) <= tolerance:
-            # Find oldest pending purchase for this amount from real players
-            pending_purchase = await db.extra_life_purchases.find_one(
-                {"status": "pending", "cost_doge": expected_amount, **real_address_filter},
+        if abs(amount - expected_amount) <= legacy_tolerance:
+            old_purchase = await db.extra_life_purchases.find_one(
+                {"status": "pending", "cost_doge": expected_amount, "unique_amount": {"$exists": False}, **real_address_filter},
                 sort=[("created_at", 1)]
             )
-            
-            if pending_purchase:
-                # Activate purchase and grant treats
-                treats_to_grant = pending_purchase["treats_amount"]
-                
+            if old_purchase:
+                treats_to_grant = old_purchase["treats_amount"]
                 await db.extra_life_purchases.update_one(
-                    {"id": pending_purchase["id"]},
+                    {"id": old_purchase["id"]},
                     {"$set": {
                         "status": "completed",
                         "payment_tx_hash": tx_hash,
@@ -6214,37 +6288,13 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
                         "auto_activated": True
                     }}
                 )
-                
-                # Grant extra treats to player
                 await db.players.update_one(
-                    {"address": pending_purchase["player_address"]},
-                    {
-                        "$inc": {"extra_treats_balance": treats_to_grant},
-                        "$push": {
-                            "extra_life_history": {
-                                "purchase_id": pending_purchase["id"],
-                                "package_id": pending_purchase["package_id"],
-                                "treats_granted": treats_to_grant,
-                                "cost_doge": expected_amount,
-                                "tx_hash": tx_hash,
-                                "granted_at": now,
-                                "auto_activated": True
-                            }
-                        }
-                    },
+                    {"address": old_purchase["player_address"]},
+                    {"$inc": {"extra_treats_balance": treats_to_grant}, "$push": {"extra_life_history": {"purchase_id": old_purchase["id"], "package_id": old_purchase["package_id"], "treats_granted": treats_to_grant, "cost_doge": expected_amount, "tx_hash": tx_hash, "granted_at": now, "auto_activated": True}}},
                     upsert=True
                 )
-                
-                logger.info(f"Auto-activated extra life {pending_purchase['id']} for {pending_purchase['player_address']} (+{treats_to_grant} treats, TX: {tx_hash[:20]}...)")
-                
-                return {
-                    "type": "extra_life",
-                    "order_id": pending_purchase["id"],
-                    "player_address": pending_purchase["player_address"],
-                    "treats_granted": treats_to_grant
-                }
-            else:
-                logger.info(f"No pending extra life purchase found for {amount} DOGE payment (expected {expected_amount})")
+                logger.info(f"Legacy-matched extra life {old_purchase['id']} for {old_purchase['player_address']}")
+                return {"type": "extra_life", "order_id": old_purchase["id"], "player_address": old_purchase["player_address"], "treats_granted": treats_to_grant}
     
     return None
 
