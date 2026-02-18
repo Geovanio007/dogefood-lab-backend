@@ -413,9 +413,15 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
                         <div className="bg-yellow-500/20 rounded-lg p-3 text-center">
                           <div className="flex items-center justify-center gap-2">
                             <Coins className="w-5 h-5 text-yellow-400" />
-                            <span className="text-2xl font-bold text-yellow-300">{pendingPurchase.cost_doge} DOGE</span>
+                            <span className="text-2xl font-bold text-yellow-300">{pendingPurchase.unique_amount || pendingPurchase.cost_doge} DOGE</span>
                           </div>
-                          <p className="text-yellow-200/70 text-xs mt-1">Send exact amount for auto-detection</p>
+                          <p className="text-yellow-200/70 text-xs mt-1">Send this EXACT amount for auto-detection</p>
+                          <button
+                            onClick={() => copyToClipboard(String(pendingPurchase.unique_amount || pendingPurchase.cost_doge))}
+                            className="mt-2 flex items-center gap-1 mx-auto px-3 py-1 bg-yellow-500/30 hover:bg-yellow-500/50 rounded text-xs text-yellow-200"
+                          >
+                            <Copy className="w-3 h-3" /> Copy Amount
+                          </button>
                         </div>
                         
                         {/* Auto-detection notice */}
