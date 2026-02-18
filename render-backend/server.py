@@ -444,7 +444,8 @@ AUTO_MIXER_CONFIG = {
     "dev_percent": 20,       # 20% for devs
     "mixes_per_hour": 2,     # How many auto-mixes per hour during window
     "blockcypher_api_key": os.environ.get("BLOCKCYPHER_API_KEY", ""),
-    "required_confirmations": 3  # Required confirmations for payment
+    "tatum_api_key": os.environ.get("TATUM_API_KEY", ""),
+    "required_confirmations": 1  # Only 1 confirmation needed now with Tatum
 }
 
 # Extra Life Packages Configuration
@@ -5897,6 +5898,298 @@ async def create_auto_mixer_subscription(request: AutoMixerCreateRequest):
         logger.error(f"Error creating auto-mixer subscription: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# =====================================================
+# TATUM DOGE API - Auto Payment Detection
+# =====================================================
+
+async def get_address_transactions_tatum(payment_address: str, page_size: int = 50):
+    """
+    Get recent transactions for an address using Tatum API.
+    Returns list of transactions with their details.
+    """
+    api_key = AUTO_MIXER_CONFIG.get("tatum_api_key", "")
+    if not api_key:
+        logger.warning("Tatum API key not configured")
+        return []
+    
+    try:
+        url = f"https://api.tatum.io/v3/dogecoin/transaction/address/{payment_address}"
+        headers = {
+            "x-api-key": api_key,
+            "Accept": "application/json"
+        }
+        params = {"pageSize": page_size}
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers, params=params, timeout=30.0)
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.error(f"Tatum API error: {response.status_code} - {response.text[:200]}")
+                return []
+    except Exception as e:
+        logger.error(f"Tatum get_address_transactions error: {e}")
+        return []
+
+async def get_transaction_details_tatum(tx_hash: str):
+    """
+    Get detailed transaction info using Tatum JSON-RPC API.
+    Returns tx details including confirmations.
+    """
+    api_key = AUTO_MIXER_CONFIG.get("tatum_api_key", "")
+    if not api_key:
+        return None
+    
+    try:
+        url = "https://dogecoin-mainnet.gateway.tatum.io/"
+        headers = {
+            "x-api-key": api_key,
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "method": "getrawtransaction",
+            "params": [tx_hash, True]
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, headers=headers, json=payload, timeout=30.0)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "result" in data:
+                    return data["result"]
+            return None
+    except Exception as e:
+        logger.error(f"Tatum get_transaction_details error: {e}")
+        return None
+
+async def check_and_activate_pending_payments():
+    """
+    Background task to check for incoming payments and auto-activate purchases.
+    Runs periodically to detect new payments without requiring tx hash input.
+    """
+    payment_address = AUTO_MIXER_CONFIG["payment_address"]
+    required_confirmations = AUTO_MIXER_CONFIG["required_confirmations"]
+    
+    try:
+        # Get recent transactions to the payment address
+        transactions = await get_address_transactions_tatum(payment_address, 50)
+        
+        if not transactions:
+            return {"checked": 0, "activated": 0}
+        
+        activated_count = 0
+        checked_count = 0
+        
+        for tx in transactions:
+            tx_hash = tx.get("hash")
+            if not tx_hash:
+                continue
+            
+            checked_count += 1
+            
+            # Check if this tx is already processed
+            existing = await db.processed_payments.find_one({"tx_hash": tx_hash})
+            if existing:
+                continue
+            
+            # Get detailed tx info with confirmations
+            tx_details = await get_transaction_details_tatum(tx_hash)
+            if not tx_details:
+                continue
+            
+            confirmations = tx_details.get("confirmations", 0)
+            if confirmations < required_confirmations:
+                continue
+            
+            # Calculate payment amount to our address
+            payment_amount = 0
+            for vout in tx_details.get("vout", []):
+                addresses = vout.get("scriptPubKey", {}).get("addresses", [])
+                if payment_address in addresses:
+                    payment_amount += float(vout.get("value", 0))
+            
+            if payment_amount <= 0:
+                continue
+            
+            # Try to match this payment to a pending order
+            # Match by amount (with small tolerance for fees)
+            activated = await match_and_activate_payment(tx_hash, payment_amount, confirmations)
+            if activated:
+                activated_count += 1
+                
+                # Mark tx as processed
+                await db.processed_payments.insert_one({
+                    "tx_hash": tx_hash,
+                    "amount": payment_amount,
+                    "confirmations": confirmations,
+                    "processed_at": datetime.utcnow(),
+                    "matched_order_type": activated.get("type"),
+                    "matched_order_id": activated.get("order_id")
+                })
+        
+        logger.info(f"Payment check complete: {checked_count} txs checked, {activated_count} activated")
+        return {"checked": checked_count, "activated": activated_count}
+        
+    except Exception as e:
+        logger.error(f"Error in check_and_activate_pending_payments: {e}")
+        return {"checked": 0, "activated": 0, "error": str(e)}
+
+async def match_and_activate_payment(tx_hash: str, amount: float, confirmations: int):
+    """
+    Try to match a payment to a pending order and activate it.
+    Matches by exact amount (subscription: 30 DOGE, extra life: 10/20/35 DOGE).
+    """
+    now = datetime.utcnow()
+    
+    # Define expected amounts
+    subscription_amount = AUTO_MIXER_CONFIG["monthly_fee_doge"]
+    extra_life_amounts = {
+        pkg["cost_doge"]: pkg for pkg in EXTRA_LIFE_PACKAGES.values()
+    }
+    
+    # Allow small tolerance (0.1 DOGE) for network fees
+    tolerance = 0.1
+    
+    # Check for subscription payment (30 DOGE)
+    if abs(amount - subscription_amount) <= tolerance:
+        # Find oldest pending subscription
+        pending_sub = await db.auto_mixer_subscriptions.find_one(
+            {"status": "pending"},
+            sort=[("created_at", 1)]  # Oldest first
+        )
+        
+        if pending_sub:
+            # Activate subscription
+            subscription_end = now + timedelta(days=30)
+            await db.auto_mixer_subscriptions.update_one(
+                {"id": pending_sub["id"]},
+                {"$set": {
+                    "status": "active",
+                    "payment_tx_hash": tx_hash,
+                    "payment_confirmed": True,
+                    "payment_confirmations": confirmations,
+                    "payment_amount": amount,
+                    "subscription_start": now,
+                    "subscription_end": subscription_end,
+                    "activated_at": now,
+                    "auto_activated": True
+                }}
+            )
+            
+            logger.info(f"Auto-activated subscription {pending_sub['id']} for {pending_sub['player_address']} (TX: {tx_hash[:20]}...)")
+            
+            return {
+                "type": "subscription",
+                "order_id": pending_sub["id"],
+                "player_address": pending_sub["player_address"]
+            }
+    
+    # Check for extra life payment (10, 20, or 35 DOGE)
+    for expected_amount, package in extra_life_amounts.items():
+        if abs(amount - expected_amount) <= tolerance:
+            # Find oldest pending purchase for this amount
+            pending_purchase = await db.extra_life_purchases.find_one(
+                {"status": "pending", "cost_doge": expected_amount},
+                sort=[("created_at", 1)]
+            )
+            
+            if pending_purchase:
+                # Activate purchase and grant treats
+                treats_to_grant = pending_purchase["treats_amount"]
+                
+                await db.extra_life_purchases.update_one(
+                    {"id": pending_purchase["id"]},
+                    {"$set": {
+                        "status": "completed",
+                        "payment_tx_hash": tx_hash,
+                        "payment_confirmed": True,
+                        "payment_confirmations": confirmations,
+                        "completed_at": now,
+                        "auto_activated": True
+                    }}
+                )
+                
+                # Grant extra treats to player
+                await db.players.update_one(
+                    {"address": pending_purchase["player_address"]},
+                    {
+                        "$inc": {"extra_treats_balance": treats_to_grant},
+                        "$push": {
+                            "extra_life_history": {
+                                "purchase_id": pending_purchase["id"],
+                                "package_id": pending_purchase["package_id"],
+                                "treats_granted": treats_to_grant,
+                                "cost_doge": expected_amount,
+                                "tx_hash": tx_hash,
+                                "granted_at": now,
+                                "auto_activated": True
+                            }
+                        }
+                    },
+                    upsert=True
+                )
+                
+                logger.info(f"Auto-activated extra life {pending_purchase['id']} for {pending_purchase['player_address']} (+{treats_to_grant} treats, TX: {tx_hash[:20]}...)")
+                
+                return {
+                    "type": "extra_life",
+                    "order_id": pending_purchase["id"],
+                    "player_address": pending_purchase["player_address"],
+                    "treats_granted": treats_to_grant
+                }
+    
+    return None
+
+# Background task to run payment checks periodically
+payment_check_running = False
+
+async def payment_check_loop():
+    """Background loop to check for payments every 30 seconds."""
+    global payment_check_running
+    payment_check_running = True
+    
+    while payment_check_running:
+        try:
+            await check_and_activate_pending_payments()
+        except Exception as e:
+            logger.error(f"Payment check loop error: {e}")
+        
+        await asyncio.sleep(30)  # Check every 30 seconds
+
+# Manual trigger endpoint for payment check
+@api_router.post("/payments/check-pending")
+async def trigger_payment_check():
+    """Manually trigger a payment check (for testing or immediate updates)."""
+    result = await check_and_activate_pending_payments()
+    return result
+
+# Get pending orders for a player
+@api_router.get("/payments/pending/{player_address}")
+async def get_pending_payments(player_address: str):
+    """Get all pending payments for a player."""
+    pending_sub = await db.auto_mixer_subscriptions.find_one({
+        "player_address": player_address,
+        "status": "pending"
+    })
+    
+    pending_extra_life = await db.extra_life_purchases.find_one({
+        "player_address": player_address,
+        "status": "pending"
+    })
+    
+    return {
+        "pending_subscription": {k: v for k, v in pending_sub.items() if k != "_id"} if pending_sub else None,
+        "pending_extra_life": {k: v for k, v in pending_extra_life.items() if k != "_id"} if pending_extra_life else None,
+        "payment_address": AUTO_MIXER_CONFIG["payment_address"],
+        "subscription_cost": AUTO_MIXER_CONFIG["monthly_fee_doge"],
+        "extra_life_packages": list(EXTRA_LIFE_PACKAGES.values())
+    }
+
 async def verify_doge_transaction_blockcypher(tx_hash: str, payment_address: str, api_key: str = None):
     """
     Verify DOGE transaction using BlockCypher API.
@@ -7050,6 +7343,13 @@ async def startup_event():
     # Start the auto-mixer processor loop
     asyncio.create_task(auto_mixer_processor_loop())
     logger.info("🤖 Auto-mixer processor started")
+    
+    # Start the payment auto-detection loop
+    if AUTO_MIXER_CONFIG.get("tatum_api_key"):
+        asyncio.create_task(payment_check_loop())
+        logger.info("💰 Payment auto-detection started (checking every 30s)")
+    else:
+        logger.warning("⚠️ Payment auto-detection disabled - no Tatum API key")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
