@@ -7511,40 +7511,48 @@ async def auto_mixer_processor_loop():
                     # Get player info
                     player = await db.players.find_one({"address": player_address})
                     if not player:
-                        logger.warning(f"🤖 Player not found: {player_address}")
+                        logger.warning(f"Auto-mixer: Player not found: {player_address}")
                         continue
                     
                     player_level = player.get("level", 1)
+                    
+                    # Check player's character bonus (Rex gives rare chance boost)
+                    character_bonuses = player.get("character_bonuses", {})
+                    rare_chance_bonus = character_bonuses.get("rare_chance_bonus", 0.0)
                     
                     # Get available ingredients for player level
                     available_ingredients = ingredient_system.get_unlocked_ingredients(player_level)
                     
                     if len(available_ingredients) < 2:
-                        logger.warning(f"🤖 {player_address[:15]}... not enough ingredients (level {player_level})")
+                        logger.warning(f"Auto-mixer: {player_address[:15]}... not enough ingredients (level {player_level})")
                         continue
                     
-                    # Select random ingredients (2-4)
-                    num_ingredients = random.randint(2, min(4, len(available_ingredients)))
-                    selected_ingredients = random.sample([ing.id for ing in available_ingredients], num_ingredients)
+                    # Select random ingredients (2-4) with variety
+                    # Shuffle the full list for maximum randomness each cycle
+                    all_ingredient_ids = [ing.id for ing in available_ingredients]
+                    random.shuffle(all_ingredient_ids)
+                    num_ingredients = random.randint(2, min(4, len(all_ingredient_ids)))
+                    selected_ingredients = all_ingredient_ids[:num_ingredients]
                     
-                    # Create the treat using the game engine
+                    # Create the treat using the game engine with character bonuses
                     treat_result = game_engine.calculate_treat_outcome(
                         ingredients=selected_ingredients,
                         player_level=player_level,
-                        player_address=player_address
+                        player_address=player_address,
+                        rare_chance_bonus=rare_chance_bonus
                     )
                     
                     rarity = treat_result.get("rarity", "Common")
-                    base_points = treat_result.get("points", 10)
-                    base_xp = treat_result.get("xp", 5)
+                    base_points = treat_result.get("points_reward", 10)
+                    base_xp = treat_result.get("xp_reward", 5)
                     
                     # Apply streak XP multiplier
                     xp_multiplier = streak_bonus.get("xp_multiplier", 1.0)
                     xp = int(base_xp * xp_multiplier)
                     points = base_points
                     
-                    # Name treat based on rarity
-                    treat_name = f"{rarity} Treat"
+                    # Name treat based on rarity and ingredients
+                    treat_name = f"{rarity} Auto-Treat"
                     
                     # Save the treat (ready to collect)
                     treat_id = str(uuid.uuid4())
@@ -7554,10 +7562,12 @@ async def auto_mixer_processor_loop():
                         "creator_address": player_address,
                         "ingredients": selected_ingredients,
                         "rarity": rarity,
+                        "rarity_emoji": treat_result.get("rarity_emoji", ""),
+                        "rarity_color": treat_result.get("rarity_color", ""),
                         "flavor": treat_result.get("flavor", "Savory"),
                         "created_at": now,
                         "ready_at": now,
-                        "image": treat_result.get("image", "🍪"),
+                        "image": treat_result.get("image", ""),
                         "brewing_status": "ready",
                         "points_reward": points,
                         "xp_reward": xp,
