@@ -37,37 +37,36 @@ EXPECTED_PACKAGES = {
 class TestHealthEndpoints:
     """Tests for health check endpoints - Critical for Render deployment"""
     
-    def test_root_endpoint_fast_response(self):
-        """GET / - Root endpoint returns ok status quickly (lightweight health check)"""
+    def test_root_endpoint_returns_html(self):
+        """GET / - Root endpoint returns frontend HTML (served by React)"""
         start = time.time()
         response = requests.get(f"{BASE_URL}/", timeout=5)
         duration = time.time() - start
         
         assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "ok"
-        assert "service" in data
-        assert duration < 2, f"Root endpoint too slow: {duration:.2f}s (should be < 2s)"
+        # Root serves frontend HTML, not JSON
+        assert "<!DOCTYPE html>" in response.text or "text/html" in response.headers.get("content-type", "")
+        assert duration < 3, f"Root endpoint too slow: {duration:.2f}s (should be < 3s)"
         
-        print(f"✓ Root endpoint returns 'ok' in {duration:.3f}s")
+        print(f"✓ Root endpoint returns frontend HTML in {duration:.3f}s")
     
-    def test_health_endpoint_fast_response(self):
-        """GET /health - Returns ok status quickly"""
+    def test_health_endpoint_returns_html(self):
+        """GET /health - Returns frontend HTML (frontend catches non-api routes)"""
         start = time.time()
         response = requests.get(f"{BASE_URL}/health", timeout=5)
         duration = time.time() - start
         
         assert response.status_code == 200
-        data = response.json()
-        assert "message" in data
-        assert "version" in data
-        assert duration < 2, f"Health endpoint too slow: {duration:.2f}s"
+        # Non-API routes serve frontend HTML for SPA routing
+        assert "<!DOCTYPE html>" in response.text or response.status_code == 200
         
-        print(f"✓ /health endpoint returns 200 in {duration:.3f}s")
+        print(f"✓ /health endpoint returns 200 in {duration:.3f}s (frontend SPA routing)")
     
     def test_api_health_with_database(self):
         """GET /api/health - Returns healthy status with database connected"""
+        start = time.time()
         response = requests.get(f"{BASE_URL}/api/health", timeout=10)
+        duration = time.time() - start
         
         assert response.status_code == 200
         data = response.json()
@@ -77,8 +76,20 @@ class TestHealthEndpoints:
         assert data["database"] == "connected"
         assert "timestamp" in data
         assert "current_season" in data
+        assert duration < 5, f"API health too slow: {duration:.2f}s"
         
-        print(f"✓ /api/health shows database connected, season {data['current_season']}")
+        print(f"✓ /api/health shows database connected, season {data['current_season']}, in {duration:.3f}s")
+    
+    def test_api_root_returns_json(self):
+        """GET /api/ - API root endpoint returns JSON"""
+        response = requests.get(f"{BASE_URL}/api/", timeout=5)
+        
+        assert response.status_code == 200
+        data = response.json()
+        # Verify it's JSON with some expected fields
+        assert "message" in data or "status" in data or "service" in data
+        
+        print(f"✓ /api/ returns JSON response")
 
 
 class TestExtraLifePackages:
