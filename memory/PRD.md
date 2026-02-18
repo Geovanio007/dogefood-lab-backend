@@ -24,14 +24,14 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
   - Standard Pack: 4 treats for 20 DOGE
   - Premium Pack: 6 treats for 35 DOGE
 
-#### AUTO-PAYMENT DETECTION (Fixed Feb 2026)
+#### AUTO-PAYMENT DETECTION (Fixed & Deployed Feb 18, 2026)
 - **Tatum API Integration**: Auto-detects incoming DOGE payments using v3 REST API
 - **No TX Hash Required**: Players just send DOGE, system auto-activates
 - **1 Block Confirmation**: Fast activation after 1 confirmation
 - **Background Task**: Checks for payments every 30 seconds
 - **Test Data Protection**: Excludes test addresses (TEST_/test_/D_test_) from matching
 - **Unmatched Re-check**: When new orders are created, automatically checks unmatched payments
-- **Transaction Tracking**: All seen transactions (matched, unmatched, not-incoming) are tracked in processed_payments collection
+- **Transaction Tracking**: All seen transactions tracked in processed_payments collection
 
 ### Blockchain Integrations
 - DOGE payment verification (BlockCypher + Tatum)
@@ -39,19 +39,25 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Solana $DOGEONEWS token verification (Helius API)
 
 ## Deployment Info
-- **Frontend**: https://dogefoodlab.vercel.app (LIVE)
-- **Backend**: https://dogefood-lab-api.onrender.com (Render deployment fixed)
-- **Preview Backend**: Working with auto-payment detection
+- **Frontend**: https://dogefoodlab.vercel.app (LIVE - Deployed Feb 18, 2026)
+- **Backend**: https://dogefood-lab-api.onrender.com (LIVE - Deployed Feb 18, 2026)
+- **Preview Backend**: https://doge-treats-1.preview.emergentagent.com
+
+### Deployment Details
+- **Vercel Project**: dogefood-lab-game (prj_f88xKrAGRj2wWFoFQLYsXrB1Gd1k)
+  - Deployed via Vercel CLI from /app/frontend
+  - Framework: create-react-app
+- **Render Service**: dogefood-lab-api (srv-d595m3khg0os73c5cil0)
+  - Auto-deploys from github.com/Geovanio007/dogefood-lab-backend
+  - Health check path: /health (lightweight, no DB dependency)
+  - All env vars configured via Render API
+- **GitHub Repos**:
+  - Main: github.com/Geovanio007/DogeFoodLab
+  - Backend: github.com/Geovanio007/dogefood-lab-backend
 
 ## API Keys Required
 - `TATUM_API_KEY`: t-6993114e22bda23826c9a014-331bea5c43d540f09d01a110
 - `HELIUS_API_KEY`: e0f50cba-ac9c-4e88-b291-f780d88dfb12
-
-## Recent Fixes (Feb 18, 2026)
-1. **Auto-payment matching fixed**: Now uses Tatum v3 REST API format directly (outputs[].address/value), cleaned 48 test data records polluting matching
-2. **Render deployment fixed**: Added lightweight /health and / endpoints (no DB dependency), delayed background tasks 30s, added healthCheckPath in render.yaml
-3. **New endpoint**: POST /api/payments/recheck-unmatched - re-processes unmatched payments
-4. **Auto-match on order create**: When new extra-life purchase is created, system checks for existing unmatched payments
 
 ## Pending Issues
 1. **Invisible grey text on Telegram**: Needs user screenshot/details
@@ -61,6 +67,7 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - **Frontend**: React, Tailwind CSS, shadcn/ui, Lucide React
 - **Backend**: Python, FastAPI, MongoDB (Motor async driver)
 - **Blockchain**: BlockCypher, Tatum, Helius APIs
+- **Deployments**: Vercel (frontend), Render (backend)
 
 ## Last Updated
-February 18, 2026 - Auto-payment detection fixed, Render deployment fixed
+February 18, 2026 - All deployments successful (Vercel + Render + GitHub)
