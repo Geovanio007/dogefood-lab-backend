@@ -717,6 +717,16 @@ async def create_extra_life_purchase(request: ExtraLifeCreateRequest):
                 "payment_address": AUTO_MIXER_CONFIG["payment_address"]
             }
         
+        # Generate unique payment amount to avoid collisions between orders
+        # Add a small random offset (0.001 - 0.099) to the base price
+        unique_offset = round(random.randint(1, 99) / 1000, 3)
+        unique_amount = round(package["cost_doge"] + unique_offset, 3)
+        
+        # Ensure no other pending order has the same unique amount
+        while await db.extra_life_purchases.find_one({"unique_amount": unique_amount, "status": "pending"}):
+            unique_offset = round(random.randint(1, 99) / 1000, 3)
+            unique_amount = round(package["cost_doge"] + unique_offset, 3)
+        
         # Create new purchase record
         purchase_id = str(uuid.uuid4())
         purchase = {
@@ -726,6 +736,7 @@ async def create_extra_life_purchase(request: ExtraLifeCreateRequest):
             "package_name": package["name"],
             "treats_amount": package["treats"],
             "cost_doge": package["cost_doge"],
+            "unique_amount": unique_amount,
             "status": "pending",
             "payment_tx_hash": None,
             "payment_confirmed": False,
@@ -738,33 +749,35 @@ async def create_extra_life_purchase(request: ExtraLifeCreateRequest):
         
         # After creating a new order, check if any unmatched payments can now be matched
         try:
-            unmatched = await db.processed_payments.find_one(
-                {"matched_order_type": "unmatched", "amount": package["cost_doge"]}
+            # Look for unmatched payments close to the unique amount
+            unmatched_cursor = db.processed_payments.find(
+                {"matched_order_type": "unmatched", "amount": {"$gt": 0}}
             )
-            if unmatched:
-                activated = await match_and_activate_payment(
-                    unmatched["tx_hash"], unmatched["amount"], unmatched.get("confirmations", 1)
-                )
-                if activated:
-                    await db.processed_payments.update_one(
-                        {"tx_hash": unmatched["tx_hash"]},
-                        {"$set": {
-                            "matched_order_type": activated.get("type"),
-                            "matched_order_id": activated.get("order_id"),
-                            "player_address": activated.get("player_address"),
-                            "rematched_at": datetime.utcnow()
-                        }}
+            async for unmatched in unmatched_cursor:
+                if abs(unmatched["amount"] - unique_amount) <= 0.0005:
+                    activated = await match_and_activate_payment(
+                        unmatched["tx_hash"], unmatched["amount"], unmatched.get("confirmations", 1)
                     )
-                    logger.info(f"Auto-matched existing payment to new order for {request.player_address}")
-                    # Return the now-completed purchase
-                    updated = await db.extra_life_purchases.find_one({"id": purchase_id})
-                    if updated:
-                        return {
-                            "purchase": {k: v for k, v in updated.items() if k != "_id"},
-                            "existing": False,
-                            "payment_address": AUTO_MIXER_CONFIG["payment_address"],
-                            "auto_matched": True
-                        }
+                    if activated:
+                        await db.processed_payments.update_one(
+                            {"tx_hash": unmatched["tx_hash"]},
+                            {"$set": {
+                                "matched_order_type": activated.get("type"),
+                                "matched_order_id": activated.get("order_id"),
+                                "player_address": activated.get("player_address"),
+                                "rematched_at": datetime.utcnow()
+                            }}
+                        )
+                        logger.info(f"Auto-matched existing payment to new order for {request.player_address}")
+                        updated = await db.extra_life_purchases.find_one({"id": purchase_id})
+                        if updated:
+                            return {
+                                "purchase": {k: v for k, v in updated.items() if k != "_id"},
+                                "existing": False,
+                                "payment_address": AUTO_MIXER_CONFIG["payment_address"],
+                                "auto_matched": True
+                            }
+                        break
         except Exception as recheck_err:
             logger.warning(f"Recheck of unmatched payments failed (non-critical): {recheck_err}")
         
