@@ -444,7 +444,8 @@ AUTO_MIXER_CONFIG = {
     "dev_percent": 20,       # 20% for devs
     "mixes_per_hour": 2,     # How many auto-mixes per hour during window
     "blockcypher_api_key": os.environ.get("BLOCKCYPHER_API_KEY", ""),
-    "required_confirmations": 3  # Required confirmations for payment
+    "tatum_api_key": os.environ.get("TATUM_API_KEY", ""),
+    "required_confirmations": 1  # Only 1 confirmation needed now with Tatum
 }
 
 # Extra Life Packages Configuration
