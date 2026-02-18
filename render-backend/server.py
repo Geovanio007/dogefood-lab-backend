@@ -4068,14 +4068,9 @@ async def health_check():
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Service unavailable: {str(e)}")
 
-# Root endpoint - Fast response for health checks
+# Root endpoint
 @app.get("/")
 async def root():
-    return {"status": "ok", "service": "DogeFood Lab API"}
-
-# Detailed health check endpoint
-@app.get("/health")
-async def detailed_health():
     return {
         "message": "🧪 DogeFood Lab API",
         "version": "1.0.0",
@@ -6158,15 +6153,9 @@ async def payment_check_loop():
     global payment_check_running
     payment_check_running = True
     
-    # Wait a bit before starting to allow the app to fully initialize
-    await asyncio.sleep(10)
-    logger.info("💰 Payment check loop starting...")
-    
     while payment_check_running:
         try:
-            result = await check_and_activate_pending_payments()
-            if result.get("activated", 0) > 0:
-                logger.info(f"💰 Auto-activated {result['activated']} payment(s)")
+            await check_and_activate_pending_payments()
         except Exception as e:
             logger.error(f"Payment check loop error: {e}")
         
@@ -7343,37 +7332,24 @@ logger = logging.getLogger(__name__)
 @app.on_event("startup")
 async def startup_event():
     """Start background schedulers on app startup"""
-    logger.info("🚀 DogeFood Lab API starting...")
-    logger.info("✅ API ready to accept requests")
+    # Start the Kernel of Wow scheduler loop as a background task
+    asyncio.create_task(kernel_scheduler_loop())
+    logger.info("🚀 Kernel of Wow background scheduler started")
     
-    # NOTE: Background tasks are disabled temporarily to debug Render health check issues
-    # Uncomment the code below once the issue is resolved:
-    """
-    # Delay background task startup to allow health checks to pass first
-    async def delayed_startup():
-        await asyncio.sleep(30)
-        
-        logger.info("📌 Starting background tasks...")
-        
-        asyncio.create_task(kernel_scheduler_loop())
-        logger.info("🎯 Kernel of Wow background scheduler started")
-        
-        asyncio.create_task(notification_processor_loop())
-        logger.info("🔔 Notification processor started")
-        
-        asyncio.create_task(auto_mixer_processor_loop())
-        logger.info("🤖 Auto-mixer processor started")
-        
-        try:
-            tatum_key = AUTO_MIXER_CONFIG.get("tatum_api_key", "")
-            if tatum_key and len(tatum_key) > 10:
-                asyncio.create_task(payment_check_loop())
-                logger.info("💰 Payment auto-detection scheduled")
-        except Exception as e:
-            logger.error(f"⚠️ Failed to start payment checker: {e}")
+    # Start the notification processor loop
+    asyncio.create_task(notification_processor_loop())
+    logger.info("🔔 Notification processor started")
     
-    asyncio.create_task(delayed_startup())
-    """
+    # Start the auto-mixer processor loop
+    asyncio.create_task(auto_mixer_processor_loop())
+    logger.info("🤖 Auto-mixer processor started")
+    
+    # Start the payment auto-detection loop
+    if AUTO_MIXER_CONFIG.get("tatum_api_key"):
+        asyncio.create_task(payment_check_loop())
+        logger.info("💰 Payment auto-detection started (checking every 30s)")
+    else:
+        logger.warning("⚠️ Payment auto-detection disabled - no Tatum API key")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
