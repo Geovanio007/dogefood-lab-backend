@@ -717,6 +717,16 @@ async def create_extra_life_purchase(request: ExtraLifeCreateRequest):
                 "payment_address": AUTO_MIXER_CONFIG["payment_address"]
             }
         
+        # Generate unique payment amount to avoid collisions between orders
+        # Add a small random offset (0.001 - 0.099) to the base price
+        unique_offset = round(random.randint(1, 99) / 1000, 3)
+        unique_amount = round(package["cost_doge"] + unique_offset, 3)
+        
+        # Ensure no other pending order has the same unique amount
+        while await db.extra_life_purchases.find_one({"unique_amount": unique_amount, "status": "pending"}):
+            unique_offset = round(random.randint(1, 99) / 1000, 3)
+            unique_amount = round(package["cost_doge"] + unique_offset, 3)
+        
         # Create new purchase record
         purchase_id = str(uuid.uuid4())
         purchase = {
@@ -726,6 +736,7 @@ async def create_extra_life_purchase(request: ExtraLifeCreateRequest):
             "package_name": package["name"],
             "treats_amount": package["treats"],
             "cost_doge": package["cost_doge"],
+            "unique_amount": unique_amount,
             "status": "pending",
             "payment_tx_hash": None,
             "payment_confirmed": False,
@@ -735,6 +746,40 @@ async def create_extra_life_purchase(request: ExtraLifeCreateRequest):
         }
         
         await db.extra_life_purchases.insert_one(purchase)
+        
+        # After creating a new order, check if any unmatched payments can now be matched
+        try:
+            # Look for unmatched payments close to the unique amount
+            unmatched_cursor = db.processed_payments.find(
+                {"matched_order_type": "unmatched", "amount": {"$gt": 0}}
+            )
+            async for unmatched in unmatched_cursor:
+                if abs(unmatched["amount"] - unique_amount) <= 0.0005:
+                    activated = await match_and_activate_payment(
+                        unmatched["tx_hash"], unmatched["amount"], unmatched.get("confirmations", 1)
+                    )
+                    if activated:
+                        await db.processed_payments.update_one(
+                            {"tx_hash": unmatched["tx_hash"]},
+                            {"$set": {
+                                "matched_order_type": activated.get("type"),
+                                "matched_order_id": activated.get("order_id"),
+                                "player_address": activated.get("player_address"),
+                                "rematched_at": datetime.utcnow()
+                            }}
+                        )
+                        logger.info(f"Auto-matched existing payment to new order for {request.player_address}")
+                        updated = await db.extra_life_purchases.find_one({"id": purchase_id})
+                        if updated:
+                            return {
+                                "purchase": {k: v for k, v in updated.items() if k != "_id"},
+                                "existing": False,
+                                "payment_address": AUTO_MIXER_CONFIG["payment_address"],
+                                "auto_matched": True
+                            }
+                        break
+        except Exception as recheck_err:
+            logger.warning(f"Recheck of unmatched payments failed (non-critical): {recheck_err}")
         
         return {
             "purchase": {k: v for k, v in purchase.items() if k != "_id"},
@@ -4068,19 +4113,25 @@ async def health_check():
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Service unavailable: {str(e)}")
 
-# Lightweight root health check for Render (no DB dependency)
+# Root endpoint - Fast response for health checks
 @app.get("/")
-async def root_health():
-    return {"status": "ok", "service": "dogefood-lab-api"}
+async def root():
+    return {"status": "ok", "service": "DogeFood Lab API"}
 
+# Detailed health check endpoint
 @app.get("/health")
-async def simple_health():
-    return {"status": "ok", "service": "dogefood-lab-api"}
+async def detailed_health():
+    return {
+        "message": "🧪 DogeFood Lab API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
 
 # API Health check
 @api_router.get("/")
 async def api_root():
-    return {"message": "DogeFood Lab API is running!"}
+    return {"message": "DogeFood Lab API is running! 🐕🧪"}
 
 # ============================================
 # SEASON 1 OFFICIAL LAUNCH - ADMIN ENDPOINTS
@@ -5863,6 +5914,17 @@ async def create_auto_mixer_subscription(request: AutoMixerCreateRequest):
         nickname = player.get("nickname") if player else None
         
         subscription_id = str(uuid.uuid4())
+        
+        # Generate unique payment amount to avoid collisions between orders
+        base_fee = AUTO_MIXER_CONFIG["monthly_fee_doge"]
+        unique_offset = round(random.randint(1, 99) / 1000, 3)
+        unique_amount = round(base_fee + unique_offset, 3)
+        
+        # Ensure no other pending subscription has the same unique amount
+        while await db.auto_mixer_subscriptions.find_one({"unique_amount": unique_amount, "status": "pending"}):
+            unique_offset = round(random.randint(1, 99) / 1000, 3)
+            unique_amount = round(base_fee + unique_offset, 3)
+        
         subscription = {
             "id": subscription_id,
             "player_address": request.player_address,
@@ -5873,7 +5935,8 @@ async def create_auto_mixer_subscription(request: AutoMixerCreateRequest):
             "window_start_hour": request.window_start_hour,
             "window_end_hour": request.window_end_hour,
             "payment_tx_hash": None,
-            "payment_amount": AUTO_MIXER_CONFIG["monthly_fee_doge"],
+            "payment_amount": base_fee,
+            "unique_amount": unique_amount,
             "payment_confirmed": False,
             "payment_confirmations": 0,
             "total_auto_mixes": 0,
@@ -5887,7 +5950,7 @@ async def create_auto_mixer_subscription(request: AutoMixerCreateRequest):
         return {
             "subscription": {k: v for k, v in subscription.items() if k != "_id"},
             "payment_address": AUTO_MIXER_CONFIG["payment_address"],
-            "payment_amount": AUTO_MIXER_CONFIG["monthly_fee_doge"],
+            "payment_amount": unique_amount,
             "existing": False
         }
         
@@ -6011,7 +6074,7 @@ async def check_and_activate_pending_payments():
                     payment_amount += float(output.get("value", 0))
             
             if payment_amount <= 0:
-                # Not a payment TO us - mark as seen
+                # Not a payment TO us (might be outgoing tx) - mark as seen
                 await db.processed_payments.insert_one({
                     "tx_hash": tx_hash,
                     "amount": 0,
@@ -6040,6 +6103,7 @@ async def check_and_activate_pending_payments():
             activated = await match_and_activate_payment(tx_hash, payment_amount, confirmations)
             if activated:
                 activated_count += 1
+                # Mark tx as processed with match info
                 await db.processed_payments.insert_one({
                     "tx_hash": tx_hash,
                     "amount": payment_amount,
@@ -6050,8 +6114,8 @@ async def check_and_activate_pending_payments():
                     "player_address": activated.get("player_address")
                 })
             else:
-                # Mark as seen but unmatched
-                logger.warning(f"Unmatched payment: {payment_amount} DOGE in TX {tx_hash[:20]}... - no pending order found")
+                # Mark as seen but unmatched - will not re-check
+                logger.warning(f"Unmatched payment: {payment_amount} DOGE in TX {tx_hash[:20]}... - no pending order found for this amount")
                 await db.processed_payments.insert_one({
                     "tx_hash": tx_hash,
                     "amount": payment_amount,
@@ -6071,36 +6135,124 @@ async def check_and_activate_pending_payments():
 async def match_and_activate_payment(tx_hash: str, amount: float, confirmations: int):
     """
     Try to match a payment to a pending order and activate it.
-    Matches by exact amount (subscription: 30 DOGE, extra life: 10/20/35 DOGE).
-    Excludes test addresses from matching.
+    Uses unique_amount field for precise matching (each order has a distinct amount).
+    Falls back to base amount matching for legacy orders without unique_amount.
     """
     now = datetime.utcnow()
-    
-    # Define expected amounts
-    subscription_amount = AUTO_MIXER_CONFIG["monthly_fee_doge"]
-    extra_life_amounts = {
-        pkg["cost_doge"]: pkg for pkg in EXTRA_LIFE_PACKAGES.values()
-    }
-    
-    # Allow small tolerance (0.1 DOGE) for network fees
-    tolerance = 0.1
+    tolerance = 0.001  # Very tight tolerance for unique amounts
     
     # Filter to exclude test addresses
     real_address_filter = {
-        "player_address": {"$not": {"$regex": "^(TEST_|test_|D_test_)"}}
+        "player_address": {"$not": {"$regex": "^(TEST_|test_|D_test_|TESTBOT_)"}}
     }
     
-    # Check for subscription payment (30 DOGE)
-    if abs(amount - subscription_amount) <= tolerance:
-        pending_sub = await db.auto_mixer_subscriptions.find_one(
-            {"status": "pending", **real_address_filter},
-            sort=[("created_at", 1)]
+    # 1. Try EXACT unique amount matching first (new orders have unique_amount)
+    
+    # Check extra life purchases with unique_amount
+    pending_purchase = await db.extra_life_purchases.find_one(
+        {
+            "status": "pending",
+            "unique_amount": {"$gte": amount - tolerance, "$lte": amount + tolerance},
+            **real_address_filter
+        },
+        sort=[("created_at", 1)]
+    )
+    
+    if pending_purchase:
+        treats_to_grant = pending_purchase["treats_amount"]
+        
+        await db.extra_life_purchases.update_one(
+            {"id": pending_purchase["id"]},
+            {"$set": {
+                "status": "completed",
+                "payment_tx_hash": tx_hash,
+                "payment_confirmed": True,
+                "payment_confirmations": confirmations,
+                "completed_at": now,
+                "auto_activated": True
+            }}
         )
         
-        if pending_sub:
+        # Grant extra treats to player
+        await db.players.update_one(
+            {"address": pending_purchase["player_address"]},
+            {
+                "$inc": {"extra_treats_balance": treats_to_grant},
+                "$push": {
+                    "extra_life_history": {
+                        "purchase_id": pending_purchase["id"],
+                        "package_id": pending_purchase["package_id"],
+                        "treats_granted": treats_to_grant,
+                        "cost_doge": pending_purchase["cost_doge"],
+                        "tx_hash": tx_hash,
+                        "granted_at": now,
+                        "auto_activated": True
+                    }
+                }
+            },
+            upsert=True
+        )
+        
+        logger.info(f"Auto-activated extra life {pending_purchase['id']} for {pending_purchase['player_address']} (+{treats_to_grant} treats, TX: {tx_hash[:20]}...)")
+        
+        return {
+            "type": "extra_life",
+            "order_id": pending_purchase["id"],
+            "player_address": pending_purchase["player_address"],
+            "treats_granted": treats_to_grant
+        }
+    
+    # Check subscriptions with unique_amount
+    pending_sub = await db.auto_mixer_subscriptions.find_one(
+        {
+            "status": "pending",
+            "unique_amount": {"$gte": amount - tolerance, "$lte": amount + tolerance},
+            **real_address_filter
+        },
+        sort=[("created_at", 1)]
+    )
+    
+    if pending_sub:
+        subscription_end = now + timedelta(days=30)
+        await db.auto_mixer_subscriptions.update_one(
+            {"id": pending_sub["id"]},
+            {"$set": {
+                "status": "active",
+                "payment_tx_hash": tx_hash,
+                "payment_confirmed": True,
+                "payment_confirmations": confirmations,
+                "payment_amount": amount,
+                "subscription_start": now,
+                "subscription_end": subscription_end,
+                "activated_at": now,
+                "auto_activated": True
+            }}
+        )
+        
+        logger.info(f"Auto-activated subscription {pending_sub['id']} for {pending_sub['player_address']} (TX: {tx_hash[:20]}...)")
+        
+        return {
+            "type": "subscription",
+            "order_id": pending_sub["id"],
+            "player_address": pending_sub["player_address"]
+        }
+    
+    # 2. FALLBACK: Legacy matching by base amount (for old orders without unique_amount)
+    legacy_tolerance = 0.1
+    
+    subscription_amount = AUTO_MIXER_CONFIG["monthly_fee_doge"]
+    extra_life_amounts = {pkg["cost_doge"]: pkg for pkg in EXTRA_LIFE_PACKAGES.values()}
+    
+    # Check subscription (30 DOGE range)
+    if abs(amount - subscription_amount) <= legacy_tolerance:
+        old_sub = await db.auto_mixer_subscriptions.find_one(
+            {"status": "pending", "unique_amount": {"$exists": False}, **real_address_filter},
+            sort=[("created_at", 1)]
+        )
+        if old_sub:
             subscription_end = now + timedelta(days=30)
             await db.auto_mixer_subscriptions.update_one(
-                {"id": pending_sub["id"]},
+                {"id": old_sub["id"]},
                 {"$set": {
                     "status": "active",
                     "payment_tx_hash": tx_hash,
@@ -6113,30 +6265,20 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
                     "auto_activated": True
                 }}
             )
-            
-            logger.info(f"Auto-activated subscription {pending_sub['id']} for {pending_sub['player_address']} (TX: {tx_hash[:20]}...)")
-            
-            return {
-                "type": "subscription",
-                "order_id": pending_sub["id"],
-                "player_address": pending_sub["player_address"]
-            }
-        else:
-            logger.info(f"No pending subscription found for {amount} DOGE payment")
+            logger.info(f"Legacy-matched subscription {old_sub['id']} for {old_sub['player_address']}")
+            return {"type": "subscription", "order_id": old_sub["id"], "player_address": old_sub["player_address"]}
     
-    # Check for extra life payment (10, 20, or 35 DOGE)
+    # Check extra life (10/20/35 DOGE range)
     for expected_amount, package in extra_life_amounts.items():
-        if abs(amount - expected_amount) <= tolerance:
-            pending_purchase = await db.extra_life_purchases.find_one(
-                {"status": "pending", "cost_doge": expected_amount, **real_address_filter},
+        if abs(amount - expected_amount) <= legacy_tolerance:
+            old_purchase = await db.extra_life_purchases.find_one(
+                {"status": "pending", "cost_doge": expected_amount, "unique_amount": {"$exists": False}, **real_address_filter},
                 sort=[("created_at", 1)]
             )
-            
-            if pending_purchase:
-                treats_to_grant = pending_purchase["treats_amount"]
-                
+            if old_purchase:
+                treats_to_grant = old_purchase["treats_amount"]
                 await db.extra_life_purchases.update_one(
-                    {"id": pending_purchase["id"]},
+                    {"id": old_purchase["id"]},
                     {"$set": {
                         "status": "completed",
                         "payment_tx_hash": tx_hash,
@@ -6146,36 +6288,13 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
                         "auto_activated": True
                     }}
                 )
-                
                 await db.players.update_one(
-                    {"address": pending_purchase["player_address"]},
-                    {
-                        "$inc": {"extra_treats_balance": treats_to_grant},
-                        "$push": {
-                            "extra_life_history": {
-                                "purchase_id": pending_purchase["id"],
-                                "package_id": pending_purchase["package_id"],
-                                "treats_granted": treats_to_grant,
-                                "cost_doge": expected_amount,
-                                "tx_hash": tx_hash,
-                                "granted_at": now,
-                                "auto_activated": True
-                            }
-                        }
-                    },
+                    {"address": old_purchase["player_address"]},
+                    {"$inc": {"extra_treats_balance": treats_to_grant}, "$push": {"extra_life_history": {"purchase_id": old_purchase["id"], "package_id": old_purchase["package_id"], "treats_granted": treats_to_grant, "cost_doge": expected_amount, "tx_hash": tx_hash, "granted_at": now, "auto_activated": True}}},
                     upsert=True
                 )
-                
-                logger.info(f"Auto-activated extra life {pending_purchase['id']} for {pending_purchase['player_address']} (+{treats_to_grant} treats, TX: {tx_hash[:20]}...)")
-                
-                return {
-                    "type": "extra_life",
-                    "order_id": pending_purchase["id"],
-                    "player_address": pending_purchase["player_address"],
-                    "treats_granted": treats_to_grant
-                }
-            else:
-                logger.info(f"No pending extra life purchase found for {amount} DOGE payment (expected {expected_amount})")
+                logger.info(f"Legacy-matched extra life {old_purchase['id']} for {old_purchase['player_address']}")
+                return {"type": "extra_life", "order_id": old_purchase["id"], "player_address": old_purchase["player_address"], "treats_granted": treats_to_grant}
     
     return None
 
@@ -6187,9 +6306,15 @@ async def payment_check_loop():
     global payment_check_running
     payment_check_running = True
     
+    # Wait a bit before starting to allow the app to fully initialize
+    await asyncio.sleep(10)
+    logger.info("💰 Payment check loop starting...")
+    
     while payment_check_running:
         try:
-            await check_and_activate_pending_payments()
+            result = await check_and_activate_pending_payments()
+            if result.get("activated", 0) > 0:
+                logger.info(f"💰 Auto-activated {result['activated']} payment(s)")
         except Exception as e:
             logger.error(f"Payment check loop error: {e}")
         
@@ -6201,6 +6326,154 @@ async def trigger_payment_check():
     """Manually trigger a payment check (for testing or immediate updates)."""
     result = await check_and_activate_pending_payments()
     return result
+
+@api_router.post("/payments/recheck-unmatched")
+async def recheck_unmatched_payments():
+    """Re-process previously unmatched payments. Call after new orders are created."""
+    try:
+        unmatched = await db.processed_payments.find(
+            {"matched_order_type": "unmatched", "amount": {"$gt": 0}}
+        ).to_list(length=100)
+        
+        reactivated = 0
+        for payment in unmatched:
+            tx_hash = payment["tx_hash"]
+            amount = payment["amount"]
+            confirmations = payment.get("confirmations", 1)
+            
+            activated = await match_and_activate_payment(tx_hash, amount, confirmations)
+            if activated:
+                reactivated += 1
+                await db.processed_payments.update_one(
+                    {"tx_hash": tx_hash},
+                    {"$set": {
+                        "matched_order_type": activated.get("type"),
+                        "matched_order_id": activated.get("order_id"),
+                        "player_address": activated.get("player_address"),
+                        "rematched_at": datetime.utcnow()
+                    }}
+                )
+                logger.info(f"Re-matched unmatched payment {tx_hash[:20]}... to {activated.get('type')} order")
+        
+        return {"unmatched_checked": len(unmatched), "reactivated": reactivated}
+    except Exception as e:
+        logger.error(f"Error rechecking unmatched payments: {e}")
+        return {"error": str(e)}
+
+# Admin endpoint to manually verify and credit a payment
+@api_router.post("/payments/admin/verify-tx")
+async def admin_verify_transaction(
+    tx_hash: str,
+    player_address: str,
+    payment_type: str,  # "extra_life" or "subscription"
+    package_id: str = "basic",  # For extra_life: basic, standard, premium
+    admin_secret: str = Query(..., description="Admin secret key")
+):
+    """Admin endpoint to manually verify a transaction and credit the player."""
+    # Verify admin secret
+    expected_secret = os.environ.get("ADMIN_SECRET", "")
+    if not expected_secret or admin_secret != expected_secret:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    try:
+        # Get transaction details from Tatum
+        tx_details = await get_transaction_details_tatum(tx_hash)
+        if not tx_details:
+            # Fallback to BlockCypher
+            tx_data, confirmations, amount, error = await verify_doge_transaction_blockcypher(
+                tx_hash, AUTO_MIXER_CONFIG["payment_address"]
+            )
+            if error:
+                return {"success": False, "error": error}
+        else:
+            confirmations = tx_details.get("confirmations", 0)
+            amount = 0
+            for vout in tx_details.get("vout", []):
+                addresses = vout.get("scriptPubKey", {}).get("addresses", [])
+                if AUTO_MIXER_CONFIG["payment_address"] in addresses:
+                    amount += float(vout.get("value", 0))
+        
+        if amount <= 0:
+            return {"success": False, "error": "No payment found to our address in this transaction"}
+        
+        now = datetime.utcnow()
+        
+        if payment_type == "extra_life":
+            if package_id not in EXTRA_LIFE_PACKAGES:
+                return {"success": False, "error": f"Invalid package_id: {package_id}"}
+            
+            package = EXTRA_LIFE_PACKAGES[package_id]
+            treats_to_grant = package["treats"]
+            
+            # Grant extra treats to player
+            await db.players.update_one(
+                {"address": player_address},
+                {
+                    "$inc": {"extra_treats_balance": treats_to_grant},
+                    "$push": {
+                        "extra_life_history": {
+                            "purchase_id": f"admin_{tx_hash[:16]}",
+                            "package_id": package_id,
+                            "treats_granted": treats_to_grant,
+                            "cost_doge": amount,
+                            "tx_hash": tx_hash,
+                            "granted_at": now,
+                            "admin_granted": True
+                        }
+                    }
+                },
+                upsert=True
+            )
+            
+            # Record the processed payment
+            await db.processed_payments.insert_one({
+                "tx_hash": tx_hash,
+                "amount": amount,
+                "confirmations": confirmations,
+                "processed_at": now,
+                "matched_order_type": "extra_life_admin",
+                "player_address": player_address
+            })
+            
+            return {
+                "success": True,
+                "message": f"Credited {treats_to_grant} extra treats to {player_address}",
+                "tx_hash": tx_hash,
+                "amount": amount,
+                "confirmations": confirmations
+            }
+        
+        elif payment_type == "subscription":
+            subscription_end = now + timedelta(days=30)
+            
+            # Create or update subscription
+            await db.auto_mixer_subscriptions.update_one(
+                {"player_address": player_address, "status": "active"},
+                {"$set": {
+                    "status": "active",
+                    "payment_tx_hash": tx_hash,
+                    "payment_confirmed": True,
+                    "payment_amount": amount,
+                    "subscription_start": now,
+                    "subscription_end": subscription_end,
+                    "admin_activated": True
+                }},
+                upsert=True
+            )
+            
+            return {
+                "success": True,
+                "message": f"Activated subscription for {player_address} until {subscription_end}",
+                "tx_hash": tx_hash,
+                "amount": amount
+            }
+        
+        else:
+            return {"success": False, "error": f"Invalid payment_type: {payment_type}"}
+            
+    except Exception as e:
+        logger.error(f"Admin verify error: {e}")
+        return {"success": False, "error": str(e)}
 
 # Get pending orders for a player
 @api_router.get("/payments/pending/{player_address}")
@@ -7366,7 +7639,7 @@ logger = logging.getLogger(__name__)
 @app.on_event("startup")
 async def startup_event():
     """Start background schedulers on app startup"""
-    logger.info("DogeFood Lab API starting...")
+    logger.info("🚀 DogeFood Lab API starting...")
     
     # Delay background task startup to allow health checks to pass first
     async def delayed_startup():
@@ -7374,34 +7647,34 @@ async def startup_event():
         # This ensures Render's health check passes first
         await asyncio.sleep(30)
         
-        logger.info("Starting background tasks...")
+        logger.info("📌 Starting background tasks...")
         
         # Start the Kernel of Wow scheduler loop as a background task
         asyncio.create_task(kernel_scheduler_loop())
-        logger.info("Kernel of Wow background scheduler started")
+        logger.info("🎯 Kernel of Wow background scheduler started")
         
         # Start the notification processor loop
         asyncio.create_task(notification_processor_loop())
-        logger.info("Notification processor started")
+        logger.info("🔔 Notification processor started")
         
         # Start the auto-mixer processor loop
         asyncio.create_task(auto_mixer_processor_loop())
-        logger.info("Auto-mixer processor started")
+        logger.info("🤖 Auto-mixer processor started")
         
         # Start the payment auto-detection loop (optional, non-blocking)
         try:
             tatum_key = AUTO_MIXER_CONFIG.get("tatum_api_key", "")
             if tatum_key and len(tatum_key) > 10:
                 asyncio.create_task(payment_check_loop())
-                logger.info("Payment auto-detection scheduled")
+                logger.info("💰 Payment auto-detection scheduled")
             else:
-                logger.info("Payment auto-detection disabled - no valid Tatum API key")
+                logger.info("⚠️ Payment auto-detection disabled - no valid Tatum API key")
         except Exception as e:
-            logger.error(f"Failed to start payment checker: {e}")
+            logger.error(f"⚠️ Failed to start payment checker: {e}")
     
     # Schedule delayed startup as a background task
     asyncio.create_task(delayed_startup())
-    logger.info("API ready to accept requests")
+    logger.info("✅ API ready to accept requests")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
