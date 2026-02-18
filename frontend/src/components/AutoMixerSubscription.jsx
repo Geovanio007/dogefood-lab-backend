@@ -1072,43 +1072,44 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
               <div className={`text-sm ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>Exact Amount Required</div>
             </div>
 
-            {/* Transaction Hash Input */}
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>
-                Transaction Hash
-              </label>
-              <input
-                type="text"
-                value={txHash}
-                onChange={(e) => setTxHash(e.target.value)}
-                placeholder="Enter your DOGE transaction hash..."
-                className={`w-full p-3 rounded-xl border-2 transition-all ${
-                  isDark 
-                    ? 'bg-slate-800 border-sky-700 text-white placeholder-slate-500 focus:border-sky-500' 
-                    : 'border-sky-200 focus:border-sky-500 focus:ring-sky-200'
-                }`}
-                data-testid="tx-hash-input"
-              />
-              <p className={`text-xs mt-2 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
-                After sending payment, paste the transaction hash here to verify
+            {/* Auto-detection notice */}
+            <div className={`p-4 rounded-xl border-2 ${isDark ? 'bg-green-900/30 border-green-700/50' : 'bg-green-50 border-green-200'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <RefreshCw className={`w-5 h-5 ${isDark ? 'text-green-400' : 'text-green-600'} animate-spin`} />
+                <span className={`font-bold ${isDark ? 'text-green-300' : 'text-green-700'}`}>Auto-Payment Detection Active</span>
+              </div>
+              <p className={`text-sm ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                Just send the exact amount to the address above. Your subscription will activate automatically once the payment is confirmed (1 block). No transaction hash needed!
               </p>
             </div>
 
             <Button
-              onClick={handleVerifyPayment}
-              disabled={verifying || !txHash.trim()}
-              className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 py-6 text-lg"
-              data-testid="verify-payment-btn"
+              onClick={async () => {
+                setVerifying(true);
+                try {
+                  await fetch(`${BACKEND_URL}/api/payments/check-pending`, { method: 'POST' });
+                  await new Promise(resolve => setTimeout(resolve, 2000));
+                  await fetchData();
+                  setSuccess('Payment check triggered. If you sent payment, it should activate shortly.');
+                } catch (err) {
+                  setError('Error checking payment. Please try again.');
+                } finally {
+                  setVerifying(false);
+                }
+              }}
+              disabled={verifying}
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 py-6 text-lg"
+              data-testid="check-payment-btn"
             >
               {verifying ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Verifying Payment...
+                  Checking for Payment...
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-5 h-5 mr-2" />
-                  Verify Payment
+                  <RefreshCw className="w-5 h-5 mr-2" />
+                  Check Payment Status
                 </>
               )}
             </Button>
