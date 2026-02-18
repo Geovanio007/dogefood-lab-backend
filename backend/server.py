@@ -7535,16 +7535,16 @@ async def auto_mixer_processor_loop():
                     )
                     
                     rarity = treat_result.get("rarity", "Common")
-                    base_points = treat_result.get("points", 10)
-                    base_xp = treat_result.get("xp", 5)
+                    base_points = treat_result.get("points_reward", 10)
+                    base_xp = treat_result.get("xp_reward", 5)
                     
                     # Apply streak XP multiplier
                     xp_multiplier = streak_bonus.get("xp_multiplier", 1.0)
                     xp = int(base_xp * xp_multiplier)
                     points = base_points
                     
-                    # Name treat based on rarity
-                    treat_name = f"{rarity} Treat"
+                    # Name treat based on rarity and ingredients
+                    treat_name = f"{rarity} Auto-Treat"
                     
                     # Save the treat (ready to collect)
                     treat_id = str(uuid.uuid4())
