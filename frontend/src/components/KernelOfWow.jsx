@@ -95,12 +95,9 @@ export const KernelOfWowStatus = ({ playerAddress, onStatusChange }) => {
         {/* Icon */}
         <div className="relative">
           <div className="absolute inset-0 bg-yellow-400/30 rounded-full blur-xl animate-pulse" />
-          <img 
-            src={KERNEL_ICON} 
-            alt="Kernel of Wow" 
-            className="w-16 h-16 relative z-10 drop-shadow-lg animate-bounce"
-            style={{ animationDuration: '2s' }}
-          />
+          <div className="w-16 h-16 relative z-10 drop-shadow-lg animate-bounce bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 rounded-2xl flex items-center justify-center" style={{ animationDuration: '2s' }}>
+            <Gem className="w-9 h-9 text-white" />
+          </div>
         </div>
         
         {/* Info */}
@@ -176,12 +173,9 @@ export const KernelIngredientCard = ({ isSelected, onSelect, disabled }) => {
       <div className="relative flex flex-col items-center gap-2">
         <div className="relative">
           <div className="absolute inset-0 bg-yellow-400/30 rounded-full blur-lg" />
-          <img 
-            src={KERNEL_ICON} 
-            alt="Kernel of Wow" 
-            className={`w-12 h-12 relative z-10 ${isSelected ? 'animate-bounce' : ''}`}
-            style={{ animationDuration: '1.5s' }}
-          />
+          <div className={`w-12 h-12 relative z-10 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 rounded-xl flex items-center justify-center ${isSelected ? 'animate-bounce' : ''}`} style={{ animationDuration: '1.5s' }}>
+            <Gem className="w-7 h-7 text-white" />
+          </div>
         </div>
         
         <div className="text-center">
