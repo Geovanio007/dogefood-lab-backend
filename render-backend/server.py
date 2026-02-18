@@ -4077,20 +4077,10 @@ async def root_health():
 async def simple_health():
     return {"status": "ok", "service": "dogefood-lab-api"}
 
-# Root endpoint
-@app.get("/")
-async def root():
-    return {
-        "message": "🧪 DogeFood Lab API",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "health": "/api/health"
-    }
-
 # API Health check
 @api_router.get("/")
 async def api_root():
-    return {"message": "DogeFood Lab API is running! 🐕🧪"}
+    return {"message": "DogeFood Lab API is running!"}
 
 # ============================================
 # SEASON 1 OFFICIAL LAUNCH - ADMIN ENDPOINTS
