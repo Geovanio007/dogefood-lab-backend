@@ -5950,7 +5950,7 @@ async def create_auto_mixer_subscription(request: AutoMixerCreateRequest):
         return {
             "subscription": {k: v for k, v in subscription.items() if k != "_id"},
             "payment_address": AUTO_MIXER_CONFIG["payment_address"],
-            "payment_amount": AUTO_MIXER_CONFIG["monthly_fee_doge"],
+            "payment_amount": unique_amount,
             "existing": False
         }
         
