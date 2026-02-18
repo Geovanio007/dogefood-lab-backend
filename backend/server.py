@@ -6161,15 +6161,6 @@ async def payment_check_loop():
         
         await asyncio.sleep(30)  # Check every 30 seconds
 
-@app.on_event("startup")
-async def start_payment_checker():
-    """Start the payment checker background task on app startup."""
-    if AUTO_MIXER_CONFIG.get("tatum_api_key"):
-        asyncio.create_task(payment_check_loop())
-        logger.info("Payment auto-detection started (checking every 30s)")
-    else:
-        logger.warning("Payment auto-detection disabled - no Tatum API key")
-
 # Manual trigger endpoint for payment check
 @api_router.post("/payments/check-pending")
 async def trigger_payment_check():
