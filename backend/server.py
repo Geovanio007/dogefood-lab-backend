@@ -6179,6 +6179,121 @@ async def trigger_payment_check():
     result = await check_and_activate_pending_payments()
     return result
 
+# Admin endpoint to manually verify and credit a payment
+@api_router.post("/payments/admin/verify-tx")
+async def admin_verify_transaction(
+    tx_hash: str,
+    player_address: str,
+    payment_type: str,  # "extra_life" or "subscription"
+    package_id: str = "basic",  # For extra_life: basic, standard, premium
+    admin_secret: str = Query(..., description="Admin secret key")
+):
+    """Admin endpoint to manually verify a transaction and credit the player."""
+    # Verify admin secret
+    expected_secret = os.environ.get("ADMIN_SECRET", "")
+    if not expected_secret or admin_secret != expected_secret:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    try:
+        # Get transaction details from Tatum
+        tx_details = await get_transaction_details_tatum(tx_hash)
+        if not tx_details:
+            # Fallback to BlockCypher
+            tx_data, confirmations, amount, error = await verify_doge_transaction_blockcypher(
+                tx_hash, AUTO_MIXER_CONFIG["payment_address"]
+            )
+            if error:
+                return {"success": False, "error": error}
+        else:
+            confirmations = tx_details.get("confirmations", 0)
+            amount = 0
+            for vout in tx_details.get("vout", []):
+                addresses = vout.get("scriptPubKey", {}).get("addresses", [])
+                if AUTO_MIXER_CONFIG["payment_address"] in addresses:
+                    amount += float(vout.get("value", 0))
+        
+        if amount <= 0:
+            return {"success": False, "error": "No payment found to our address in this transaction"}
+        
+        now = datetime.utcnow()
+        
+        if payment_type == "extra_life":
+            if package_id not in EXTRA_LIFE_PACKAGES:
+                return {"success": False, "error": f"Invalid package_id: {package_id}"}
+            
+            package = EXTRA_LIFE_PACKAGES[package_id]
+            treats_to_grant = package["treats"]
+            
+            # Grant extra treats to player
+            await db.players.update_one(
+                {"address": player_address},
+                {
+                    "$inc": {"extra_treats_balance": treats_to_grant},
+                    "$push": {
+                        "extra_life_history": {
+                            "purchase_id": f"admin_{tx_hash[:16]}",
+                            "package_id": package_id,
+                            "treats_granted": treats_to_grant,
+                            "cost_doge": amount,
+                            "tx_hash": tx_hash,
+                            "granted_at": now,
+                            "admin_granted": True
+                        }
+                    }
+                },
+                upsert=True
+            )
+            
+            # Record the processed payment
+            await db.processed_payments.insert_one({
+                "tx_hash": tx_hash,
+                "amount": amount,
+                "confirmations": confirmations,
+                "processed_at": now,
+                "matched_order_type": "extra_life_admin",
+                "player_address": player_address
+            })
+            
+            return {
+                "success": True,
+                "message": f"Credited {treats_to_grant} extra treats to {player_address}",
+                "tx_hash": tx_hash,
+                "amount": amount,
+                "confirmations": confirmations
+            }
+        
+        elif payment_type == "subscription":
+            subscription_end = now + timedelta(days=30)
+            
+            # Create or update subscription
+            await db.auto_mixer_subscriptions.update_one(
+                {"player_address": player_address, "status": "active"},
+                {"$set": {
+                    "status": "active",
+                    "payment_tx_hash": tx_hash,
+                    "payment_confirmed": True,
+                    "payment_amount": amount,
+                    "subscription_start": now,
+                    "subscription_end": subscription_end,
+                    "admin_activated": True
+                }},
+                upsert=True
+            )
+            
+            return {
+                "success": True,
+                "message": f"Activated subscription for {player_address} until {subscription_end}",
+                "tx_hash": tx_hash,
+                "amount": amount
+            }
+        
+        else:
+            return {"success": False, "error": f"Invalid payment_type: {payment_type}"}
+            
+    except Exception as e:
+        logger.error(f"Admin verify error: {e}")
+        return {"success": False, "error": str(e)}
+
 # Get pending orders for a player
 @api_router.get("/payments/pending/{player_address}")
 async def get_pending_payments(player_address: str):
