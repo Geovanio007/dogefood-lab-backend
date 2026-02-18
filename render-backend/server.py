@@ -7341,24 +7341,42 @@ logger = logging.getLogger(__name__)
 @app.on_event("startup")
 async def startup_event():
     """Start background schedulers on app startup"""
-    # Start the Kernel of Wow scheduler loop as a background task
-    asyncio.create_task(kernel_scheduler_loop())
-    logger.info("🚀 Kernel of Wow background scheduler started")
+    logger.info("DogeFood Lab API starting...")
     
-    # Start the notification processor loop
-    asyncio.create_task(notification_processor_loop())
-    logger.info("🔔 Notification processor started")
+    # Delay background task startup to allow health checks to pass first
+    async def delayed_startup():
+        # Wait 30 seconds before starting background tasks
+        # This ensures Render's health check passes first
+        await asyncio.sleep(30)
+        
+        logger.info("Starting background tasks...")
+        
+        # Start the Kernel of Wow scheduler loop as a background task
+        asyncio.create_task(kernel_scheduler_loop())
+        logger.info("Kernel of Wow background scheduler started")
+        
+        # Start the notification processor loop
+        asyncio.create_task(notification_processor_loop())
+        logger.info("Notification processor started")
+        
+        # Start the auto-mixer processor loop
+        asyncio.create_task(auto_mixer_processor_loop())
+        logger.info("Auto-mixer processor started")
+        
+        # Start the payment auto-detection loop (optional, non-blocking)
+        try:
+            tatum_key = AUTO_MIXER_CONFIG.get("tatum_api_key", "")
+            if tatum_key and len(tatum_key) > 10:
+                asyncio.create_task(payment_check_loop())
+                logger.info("Payment auto-detection scheduled")
+            else:
+                logger.info("Payment auto-detection disabled - no valid Tatum API key")
+        except Exception as e:
+            logger.error(f"Failed to start payment checker: {e}")
     
-    # Start the auto-mixer processor loop
-    asyncio.create_task(auto_mixer_processor_loop())
-    logger.info("🤖 Auto-mixer processor started")
-    
-    # Start the payment auto-detection loop
-    if AUTO_MIXER_CONFIG.get("tatum_api_key"):
-        asyncio.create_task(payment_check_loop())
-        logger.info("💰 Payment auto-detection started (checking every 30s)")
-    else:
-        logger.warning("⚠️ Payment auto-detection disabled - no Tatum API key")
+    # Schedule delayed startup as a background task
+    asyncio.create_task(delayed_startup())
+    logger.info("API ready to accept requests")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
