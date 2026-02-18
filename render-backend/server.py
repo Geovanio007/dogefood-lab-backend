@@ -5979,7 +5979,8 @@ async def get_transaction_details_tatum(tx_hash: str):
 async def check_and_activate_pending_payments():
     """
     Background task to check for incoming payments and auto-activate purchases.
-    Runs periodically to detect new payments without requiring tx hash input.
+    Uses Tatum v3 REST API data directly (outputs + blockNumber) to avoid extra RPC calls.
+    Marks all seen transactions (matched or not) to avoid re-processing.
     """
     payment_address = AUTO_MIXER_CONFIG["payment_address"]
     required_confirmations = AUTO_MIXER_CONFIG["required_confirmations"]
@@ -5991,8 +5992,14 @@ async def check_and_activate_pending_payments():
         if not transactions:
             return {"checked": 0, "activated": 0}
         
+        # Get current block height to calculate confirmations from blockNumber
+        current_block = None
+        if transactions and transactions[0].get("blockNumber"):
+            current_block = max(tx.get("blockNumber", 0) for tx in transactions if tx.get("blockNumber"))
+        
         activated_count = 0
         checked_count = 0
+        skipped_count = 0
         
         for tx in transactions:
             tx_hash = tx.get("hash")
@@ -6001,48 +6008,71 @@ async def check_and_activate_pending_payments():
             
             checked_count += 1
             
-            # Check if this tx is already processed
+            # Check if this tx is already processed (matched or seen)
             existing = await db.processed_payments.find_one({"tx_hash": tx_hash})
             if existing:
+                skipped_count += 1
                 continue
             
-            # Get detailed tx info with confirmations
-            tx_details = await get_transaction_details_tatum(tx_hash)
-            if not tx_details:
-                continue
-            
-            confirmations = tx_details.get("confirmations", 0)
-            if confirmations < required_confirmations:
-                continue
-            
-            # Calculate payment amount to our address
+            # Calculate payment amount from Tatum v3 outputs directly
             payment_amount = 0
-            for vout in tx_details.get("vout", []):
-                addresses = vout.get("scriptPubKey", {}).get("addresses", [])
-                if payment_address in addresses:
-                    payment_amount += float(vout.get("value", 0))
+            for output in tx.get("outputs", []):
+                if output.get("address") == payment_address:
+                    payment_amount += float(output.get("value", 0))
             
             if payment_amount <= 0:
+                # Not a payment TO us - mark as seen
+                await db.processed_payments.insert_one({
+                    "tx_hash": tx_hash,
+                    "amount": 0,
+                    "processed_at": datetime.utcnow(),
+                    "matched_order_type": "not_incoming",
+                    "matched_order_id": None
+                })
                 continue
             
+            # Calculate confirmations from blockNumber
+            block_num = tx.get("blockNumber", 0)
+            confirmations = (current_block - block_num + 1) if (current_block and block_num) else 0
+            
+            # If not enough confirmations yet, use JSON-RPC for precise count
+            if confirmations < required_confirmations:
+                tx_details = await get_transaction_details_tatum(tx_hash)
+                if tx_details:
+                    confirmations = tx_details.get("confirmations", 0)
+                if confirmations < required_confirmations:
+                    logger.info(f"TX {tx_hash[:16]}... has {confirmations} confirmations (need {required_confirmations}), skipping for now")
+                    continue
+            
+            logger.info(f"New payment detected: {payment_amount} DOGE in TX {tx_hash[:20]}... ({confirmations} confirmations)")
+            
             # Try to match this payment to a pending order
-            # Match by amount (with small tolerance for fees)
             activated = await match_and_activate_payment(tx_hash, payment_amount, confirmations)
             if activated:
                 activated_count += 1
-                
-                # Mark tx as processed
                 await db.processed_payments.insert_one({
                     "tx_hash": tx_hash,
                     "amount": payment_amount,
                     "confirmations": confirmations,
                     "processed_at": datetime.utcnow(),
                     "matched_order_type": activated.get("type"),
-                    "matched_order_id": activated.get("order_id")
+                    "matched_order_id": activated.get("order_id"),
+                    "player_address": activated.get("player_address")
+                })
+            else:
+                # Mark as seen but unmatched
+                logger.warning(f"Unmatched payment: {payment_amount} DOGE in TX {tx_hash[:20]}... - no pending order found")
+                await db.processed_payments.insert_one({
+                    "tx_hash": tx_hash,
+                    "amount": payment_amount,
+                    "confirmations": confirmations,
+                    "processed_at": datetime.utcnow(),
+                    "matched_order_type": "unmatched",
+                    "matched_order_id": None
                 })
         
-        logger.info(f"Payment check complete: {checked_count} txs checked, {activated_count} activated")
-        return {"checked": checked_count, "activated": activated_count}
+        logger.info(f"Payment check: {checked_count} txs checked, {skipped_count} already seen, {activated_count} newly activated")
+        return {"checked": checked_count, "activated": activated_count, "skipped": skipped_count}
         
     except Exception as e:
         logger.error(f"Error in check_and_activate_pending_payments: {e}")
