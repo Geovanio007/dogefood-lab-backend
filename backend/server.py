@@ -4068,9 +4068,14 @@ async def health_check():
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Service unavailable: {str(e)}")
 
-# Root endpoint
+# Root endpoint - Fast response for health checks
 @app.get("/")
 async def root():
+    return {"status": "ok", "service": "DogeFood Lab API"}
+
+# Detailed health check endpoint
+@app.get("/health")
+async def detailed_health():
     return {
         "message": "🧪 DogeFood Lab API",
         "version": "1.0.0",
