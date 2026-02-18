@@ -6153,9 +6153,15 @@ async def payment_check_loop():
     global payment_check_running
     payment_check_running = True
     
+    # Wait a bit before starting to allow the app to fully initialize
+    await asyncio.sleep(10)
+    logger.info("💰 Payment check loop starting...")
+    
     while payment_check_running:
         try:
-            await check_and_activate_pending_payments()
+            result = await check_and_activate_pending_payments()
+            if result.get("activated", 0) > 0:
+                logger.info(f"💰 Auto-activated {result['activated']} payment(s)")
         except Exception as e:
             logger.error(f"Payment check loop error: {e}")
         
