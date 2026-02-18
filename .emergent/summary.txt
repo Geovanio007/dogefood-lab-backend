@@ -1,112 +1,117 @@
-<analysis>**original_problem_statement**: The user's initial request was to fix a frontend deployment issue, then to build an Auto-Mixer Subscription service with DOGE payments. The scope has since expanded to include robust payment verification, a real-time stats dashboard, fixing core game logic, UI enhancements, integrating a new Solana-based token holder verification system (), a full UI emoji cleanup, fixing ingredient name/image mismatches, resolving notification and leaderboard bugs, and performing a comprehensive security audit.
+<analysis>**original_problem_statement**: The user's initial request was to fix a frontend deployment issue, then to build an Auto-Mixer Subscription service with DOGE payments. The scope expanded to include a new Extra Life feature with DOGE payments and automatic verification via the Tatum API. The user also reported several critical bugs, including a page freeze during treat brewing, a blank page when treat limits are reached, and failures in the payment verification system. Additionally, there are ongoing deployment failures on the Render platform for the backend service.
 
 **PRODUCT REQUIREMENTS**:
 1.  **Auto-Mixer Subscription Feature**:
     *   Players subscribe for 30 DOGE/month to automate in-game mixing.
-    *   Payment verification for the DOGE transaction must be robust.
-    *   Subscribers choose a 6-hour daily window for automation.
-    *   The auto-mixer must follow all existing game rules.
-2.  **Fund Tracking & Stats**:
-    *   Public, real-time breakdown of received DOGE.
-    *   A professional, real-time stats dashboard for the auto-mixer agent.
+    *   Payment verification for the DOGE transaction must be robust and automatic.
+2.  **Extra Life Feature**:
+    *   Players can purchase extra treat creations using DOGE.
+    *   Packages: 2 treats for 10 DOGE, 4 for 20 DOGE, 6 for 35 DOGE.
+    *   The system should automatically create an order when a player selects a package.
+    *   Payment verification must be automatic using the Tatum API, activating the purchase once the transaction is confirmed on the blockchain without requiring the user to paste a transaction hash.
 3.  **UI/UX**:
-    *   Change the UI theme to sky blue.
-    *   Implement a banner on the main menu page to advertise the auto-mixer feature.
     *   Fix invisible grey text on Telegram.
-    *   Remove all emojis from the UI for a professional look, replacing them with icons where necessary.
-4.  **User & Token Management**:
-    *   Grant VIP status and a point bonus to DogeFood NFT holders on the DogeOS network.
-    *   Grant eligibility for end-of-season rewards to holders of >1M  tokens (Solana).
-    *   Display a badge on the leaderboard for  holders.
-    *   Add a Solana wallet linking and verification section in the Settings page.
-5.  **Bug Fixes & Security**:
-    *   Resolve multiple deployment issues.
-    *   Fix the auto-mixer background task and treat naming.
-    *   Correct the mismatch between ingredient names and their corresponding images across the application.
-    *   Ensure Telegram notifications are reliably sent to users when their treats are ready.
-    *   Fix the leaderboard to correctly display real players, excluding guest or un-registered accounts from Kernel of Wow selection.
-    *   Conduct a full security audit, removing all hardcoded API keys and secrets, implementing a strict CORS policy, and adding input sanitization.
-    *   Fix broken image icons and loading states on the frontend.
-    *   Resolve issues with subscription stats not updating correctly.
-    *   Manually verify and activate a user's pending subscription.
+    *   Remove the message about the  token for extra lives.
+4.  **Bug Fixes & Deployments**:
+    *   Resolve Render deployment failures for the backend service.
+    *   Fix frontend page freezes during the brewing animation.
+    *   Fix the frontend from going to a blank page when a player with zero lives tries to create a treat.
+    *   Ensure the extra life payment verification system works reliably.
+    *   Fix an issue where the Kernel of Wow holder could not create treats.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application (React frontend, FastAPI backend) with a functional Auto-Mixer subscription service using DOGE payments. The UI has been professionally updated by removing emojis and fixing ingredient name/image mismatches. A comprehensive security audit has been completed, with all hardcoded keys moved to environment variables, a strict CORS policy enforced, and input validation improved. The Solana-based  token holder verification is now fully functional, using the user-provided Helius API key. Critical bugs related to Telegram notifications, leaderboard data integrity, and subscription stat updates have been resolved.
+A full-stack application (React frontend, FastAPI backend) with a DOGE-based Auto-Mixer subscription service. A new Extra Life feature with DOGE payments has been implemented. The backend includes endpoints for creating and verifying these purchases. The frontend UI has been updated to show the new extra life packages. A new automatic payment verification system using the Tatum API has been partially implemented with a background task to monitor the Dogecoin blockchain, but it is not working correctly and is causing deployment failures on Render. Critical UI bugs related to page freezes and crashes have been fixed and deployed to Vercel.
 
 **Last working item**:
--   Last item agent was working: The agent was manually verifying a subscription for a user named Sus whose payment was made but not reflected in the system. The agent located the transaction on the blockchain, used the  endpoint to activate the subscription, and confirmed the stats updated correctly.
--   Status: USER VERIFICATION PENDING
+-   Last item agent was working: Investigating why the automatic payment verification for the Extra Life feature is failing. A player paid for a package, but the system did not activate it. The user clarified that the expected behavior is for the system to automatically create an order when a package is selected and then monitor for the corresponding payment. The agent confirmed the order creation flow was functional via API tests but identified a potential flaw in the payment matching logic.
+-   Status: IN PROGRESS
 -   Agent Testing Done: Y
 -   Which testing method agent to use? backend testing agent
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: Invisible grey text on Telegram. (P1)
--   Issue 2: Unprotected debug endpoint remains in the code. (P1)
+-   Issue 1: Render deployment is failing due to health check timeouts. (P0)
+-   Issue 2: Automatic payment verification for Extra Life purchases is not working. (P0)
+-   Issue 3: Invisible grey text on Telegram. (P2)
 
 **Issues Detail**:
--   **Issue 1: Invisible grey text on Telegram.**
-    -   **Attempted fixes**: None. This has been pending since the initial request.
+-   **Issue 1: Render deployment is failing due to health check timeouts.**
+    -   **Attempted fixes**: Added a dedicated  endpoint. Delayed background tasks on startup. Completely disabled background tasks on startup. Reverted to a previously working commit. All attempts failed.
     -   **Next debug checklist**:
-        1.  Use the  tool to ask the user: Could you please provide more details or a screenshot of the invisible grey text on Telegram? Understanding where it appears will help me fix it.
-        2.  Based on the user's response, investigate the Telegram bot's message formatting logic, likely within , and adjust text styling.
-    -   **Why fix this issue and what will be achieved with the fix?** It improves the readability of game notifications and enhances the user experience, completing one of the original product requirements.
+        1.  Analyze the application startup sequence in  for any blocking I/O operations (like database connections or initial data queries) that might occur before the web server is ready to accept connections.
+        2.  Review Render's service configuration again, specifically the  and . Ensure the port is correctly exposed and the path is valid.
+        3.  Implement structured logging at the very beginning of the application's lifecycle to trace the startup process and identify exactly where it's getting stuck or slowing down.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a critical blocker. No new backend features or bug fixes can be deployed to production until this is resolved.
+    -   **Status**: IN PROGRESS
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Backend
+    -   **Blocked on other issue**: None. This is a top-level blocker.
+
+-   **Issue 2: Automatic payment verification for Extra Life purchases is not working.**
+    -   **Attempted fixes**: The agent implemented a background task using the Tatum API to check for transactions. It was discovered that a player made a payment, but the system didn't activate it because no corresponding pending purchase was found in the database.
+    -   **Next debug checklist**:
+        1.  Confirm that the frontend correctly calls the  endpoint the moment a user clicks on a package, *before* they are shown the payment address.
+        2.  Refine the  function in  to ensure its logic is sound. It should find a pending purchase that matches the exact DOGE amount of an incoming transaction.
+        3.  Add extensive logging to the  to trace which transactions are found, what amounts they have, and whether a matching pending purchase is found in the database.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a core part of the new feature. Players are paying money but not receiving the service, which breaks the user experience and trust.
+    -   **Status**: IN PROGRESS
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Backend
+    -   **Blocked on other issue**: Blocked by Issue 1 (Render Deployment Failure) for production validation.
+
+-   **Issue 3: Invisible grey text on Telegram.**
+    -   **Attempted fixes**: None.
+    -   **Next debug checklist**: Ask the user for a screenshot or more details about where this text appears. Investigate Telegram bot message formatting in .
+    -   **Why fix this issue and what will be achieved with the fix?** It's a long-standing UX issue from the original request.
     -   **Status**: NOT STARTED
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Backend
     -   **Blocked on other issue**: User feedback.
 
--   **Issue 2: Unprotected debug endpoint remains in the code.**
-    -   **Attempted fixes**: None. The agent added the endpoint for debugging but did not remove it.
-    -   **Next debug checklist**:
-        1.  Locate the  endpoint in .
-        2.  Remove the entire endpoint function and its associated router registration.
-        3.  Alternatively, protect it by making it an admin-only endpoint, requiring the .
-    -   **Why fix this issue and what will be achieved with the fix?** Leaving an unprotected debug endpoint that exposes user data is a significant security risk. Removing or securing it is essential for production integrity.
-    -   **Status**: NOT STARTED
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Backend
-    -   **Blocked on other issue**: None.
-
 **In progress Task List**:
--   None.
+-   **Task 1: Implement Automatic Payment Verification**
+    -   **Where to resume**: The core logic in  for the background task  and the matching function  needs to be debugged and validated. The immediate issue is that the system isn't matching incoming payments to player orders.
+    -   **What will be achieved with this?** A seamless payment experience where users' purchases for subscriptions and extra lives are activated automatically after they send DOGE, without manual intervention.
+    -   **Status**: IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** Both
+    -   **Blocked on something**: Render deployment failure (Issue 1).
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks**:
-    -   (P0) Address the invisible grey text on Telegram issue.
-    -   (P0) Remove or secure the unprotected  endpoint.
+    -   (P0) Resolve the Render deployment health check failure.
+    -   (P0) Finalize and stabilize the Tatum API automatic payment verification system.
+    -   (P1) Address the invisible grey text on Telegram issue once the user provides details.
 -   **Future Tasks**:
-    -   (P1) Refactor the monolithic  file into smaller, more maintainable route-based modules. This is critical for long-term stability.
-    -   (P2) Implement a notification system to remind users with pending subscriptions to submit their transaction hash.
+    -   (P1) Refactor the monolithic  into smaller, route-based modules.
+    -   (P2) Implement a notification system to remind users with pending subscriptions to submit their transaction hash (this might become obsolete with the new automatic system).
 
 **Completed work in this session**
--   **UI Professionalization**: Removed all emojis from the entire frontend codebase, replacing them with  icons where appropriate.
--   **Ingredient Mismatch Fix**: Corrected the names and images of ingredients in both the backend () and frontend configs () to ensure consistency across the lab and subscription pages.
--   **Security Hardening**:
-    -   Removed hardcoded Firebase, MongoDB, and Admin secrets from the codebase.
-    -   Moved all secrets and keys to  files.
-    -   Implemented a strict CORS policy allowing only specific origins defined in .
-    -   Secured all admin endpoints to require an  from the environment.
--   **Deployment Fixes**: Resolved a recurring Render deployment failure by removing a local file reference from .
--   **Solana Integration**: Implemented the live  token verification using the user-provided Helius API key, replacing the previous mocked endpoint.
--   **Bug Fixes**:
-    -   **Notifications**: Fixed the Telegram notification system to ensure users are alerted when treats are ready.
-    -   **Leaderboard**: Corrected the Kernel of Wow selection logic to only include registered players.
-    -   **UI Icons**: Fixed broken/improperly displayed icons for the Kernel of Wow banner and the leaderboard loading state.
-    -   **Subscription Stats**: Resolved a bug where subscription data was not updating correctly due to timezone-unaware datetime comparisons in MongoDB queries.
--   **Manual Subscription Activation**: Investigated a user's pending subscription, found their unlinked payment on the blockchain, and successfully activated their account.
+-   **Extra Life Feature**: Implemented a new feature allowing players to buy extra treat creations with DOGE, including backend endpoints and frontend UI updates in .
+-   **Security**: Secured the temporary debug endpoint  by requiring an admin secret.
+-   **Frontend Bug Fixes**:
+    -   Resolved a page freeze during the brewing animation by removing  from the render path in .
+    -   Fixed a component crash when the daily treat limit was reached by updating the code to handle the new API response structure.
+    -   Added a visible error display component to the main game lab UI.
+-   **Kernel of Wow Fix**: Investigated and confirmed the backend logic for the Kernel of Wow holder was correct. Improved frontend error handling to prevent the user from getting stuck.
+-   **Automatic Payment Integration (Initial)**: Integrated the Tatum API to automatically detect Dogecoin payments. Added the API key to environment variables and created a background task to poll for transactions.
+-   **Deployments**: Successfully deployed multiple frontend updates to Vercel and pushed all code changes to GitHub.
 
 **Earlier issues found/mentioned but not fixed**
 -   **Issue 1: Invisible grey text on Telegram.**
-    -   **Debug checklist**: Requires user clarification or a screenshot to identify where the text appears.
-    -   **Why to solve this issue and what will be achieved with this?** Improves readability and user experience for game-related notifications on the Telegram platform.
+    -   **Debug checklist**: Needs user input (screenshot/details).
+    -   **Why to solve this issue and what will be achieved with this?** Improves user experience for Telegram notifications.
     -   **Should Test frontend/backend/both after fix**: Backend
     -   **Is recurring issue?** Y
+-   **Issue 2: Render deployment health check failure.**
+    -   **Debug checklist**: Investigate startup sequence for blocking I/O, check Render service config, and add more detailed startup logging.
+    -   **Why to solve this issue and what will be achieved with this?** Critical blocker for all backend deployments.
+    -   **Should Test frontend/backend/both after fix**: Backend
+    -   **Is recurring issue?** Y (in the sense that deployment issues persist).
 
 **Known issue recurrence from previous fork**
--   Deployment issues have occurred on both Vercel (previous fork) and Render (this session). The root causes have varied (Git pipeline vs. ), indicating the deployment process is a fragile area that requires careful attention.
+-   Deployment fragility continues to be a recurring theme. Previously on Vercel/Render with git pipelines, now specifically with Render health checks failing on startup for the backend service.
 
 **Code Architecture**
 
@@ -115,85 +120,82 @@ A full-stack application (React frontend, FastAPI backend) with a functional Aut
 -   **Frontend**: React, Tailwind CSS, shadcn/ui, .
 -   **Backend**: Python, FastAPI, MongoDB (Beanie ODM),  background tasks.
 -   **Deployments**: Vercel (Frontend), Render (Backend).
--   **Blockchain APIs**: BlockCypher (DOGE), Helius (Solana).
+-   **Blockchain APIs**: BlockCypher (DOGE), Helius (Solana), Tatum (DOGE).
 -   **Security**: Environment variables for all secrets, strict CORS, admin-only endpoints.
 
 **key DB schema**
 -   **Player**: 
 -   **AutoMixerSubscription**: 
--   **LeaderboardEntry**: 
--   **ScheduledNotification**: 
+-   **ExtraLifePurchase**: 
 
 **changes in tech stack**
--   None.
+-   **Tatum API**: Added for automatic Dogecoin transaction monitoring, replacing the manual transaction hash submission flow.
 
 **All files of reference**
--   : Major changes for security hardening, Solana verification, notification logic, leaderboard queries, and subscription stats.
--   : Updated to correct ingredient names.
--   : Modified to fix Render deployment.
--   : Heavily modified to include secrets for CORS, Admin, Game, Helius, and Firebase.
--   : Updated to match backend ingredient data.
--   : Logic added to use local ingredient names and to trigger notifications on treat creation.
--   : Removed hardcoded API key.
+-   : Heavily modified to add the Extra Life feature, secure the debug endpoint, and implement the Tatum-based automatic payment verification system and background task.
+-   : Updated to correctly use the new  from the player document.
+-   : Overhauled to support the new DOGE-based Extra Life packages and the automatic payment detection flow.
+-   : Fixed critical bugs related to page freezes and crashes, and added better error display.
+-   : Updated to remove the manual transaction hash input and support the new automatic payment detection.
 -   : Added .
--   Multiple frontend components edited to remove emojis (e.g., , , ).
+-   : Mirrored changes from  for Render deployment attempts.
 
 **Areas that need refactoring**:
--   The  file is critically oversized and complex. It urgently needs to be broken down into smaller, feature-based route files (e.g., , , ) to improve maintainability and reduce the risk of introducing new bugs.
+-    is now critically oversized (over 7000 lines) and urgently needs to be broken down into smaller, feature-based route files. The introduction of multiple background tasks within the same file further complicates maintenance.
 
 **key api endpoints**
--   : **Now functional** using Helius API.
--   : Used to verify DOGE transactions and activate subscriptions.
--   : Returns detailed stats for the auto-mixer agent.
--   : Endpoint called by the frontend to schedule a notification.
--   : **A temporary, unsecured endpoint that needs to be removed or protected.**
+-   : Creates a new pending purchase for an extra life package.
+-   : (Now legacy) Manual verification of an extra life purchase via transaction hash.
+-   : Returns the available extra life packages and prices.
+-   : (Admin) Manually triggers the payment check loop.
+-   : (New) A health check endpoint added to debug Render deployments.
+-   **Background Task**:  runs periodically to check for new DOGE transactions and match them with pending purchases.
 
 **Critical Info for New Agent**
--   The user has provided a Helius API key (), which is now integrated and functional for Solana token verification.
--   A comprehensive security audit was performed. All secrets are now managed through environment variables. Do not hardcode any keys. The backend requires , , , etc., to run correctly.
--   The single highest-priority remaining task from the user's list is fixing the invisible grey text on Telegram. You will need to ask the user for a screenshot or more details to proceed.
--   A temporary and unsecured debug endpoint () exists in . This should be removed or secured with admin protection immediately.
+-   **RENDER DEPLOYMENT IS BLOCKED**: The top priority is to fix the backend deployment on Render. It consistently fails the health check during the update phase, preventing any new code from going live. The last known live version does not have the latest fixes.
+-   **AUTOMATIC PAYMENT IS BUGGY**: The second priority is fixing the Tatum API automatic payment logic. The current implementation fails to match incoming payments to orders created by players. The expectation is a seamless flow: user clicks a package -> order is created in DB -> user sends DOGE -> background task sees transaction -> matches it to the order -> activates the purchase.
+-   The user has provided a Tatum API key: . This is stored in the  file as  and must be set on Render.
 
 **documents and test reports created in this job**
--   
+-    (updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User reported subscription data not updating.** (Resolved)
-2.  **User asked to confirm a new subscriber's status.** (Resolved, was pending)
-3.  **User prompted the agent to continue its investigation (repeatedly).** (Agent completed the task)
-4.  **User confirmed the correct ingredient-to-image mapping.** (Implemented)
-5.  **User reported ingredient mapping was still incorrect.** (Resolved via frontend workaround, then fully resolved on backend)
-6.  **User asked to investigate and resolve Render deployment failures.** (Resolved)
-7.  **User requested a deep security check of the game.** (Completed)
-8.  **User provided Helius API key and asked to set Render env vars.** (Completed)
-9.  **User reported broken image icons and loading states.** (Resolved)
-10. **The last message was I think we have an issue on the subscription data not updating....** (Resolved)
+10. User reported Kernel of Wow holder cannot create treats. (Resolved)
+9.  User reported the extra life payment verification system is broken and transactions are not being found. (In Progress)
+8.  Agent added debugging and re-deployed to Render to investigate the payment issue. (Failed)
+7.  Agent confirmed via API tests that the backend logic for the Kernel holder was working, pointing to a frontend issue. (Resolved)
+6.  Agent fixed frontend error handling and deployed the fix to Vercel. (Completed)
+5.  Agent investigated the payment verification issue again, discovering a critical  vs  error in the production code. (Identified)
+4.  User reported page freezing during brewing and blank page on limit reached. (Resolved)
+3.  Agent fixed the two critical frontend bugs and deployed the fix to Vercel. (Completed)
+2.  User requested implementation of automatic payment verification using the Tatum DOGE API to remove the need for manual transaction hash submission. (In Progress)
+1.  User clarified the desired flow for automatic payments: the system must be smarter and automatically create an order when a player chooses a package, then wait for the payment and match it. (Current directive)
 
 **Project Health Check:**
--   **Broken**: Nothing is functionally broken.
--   **Mocked**: No mocked services remain.
+-   **Broken**: Backend deployment to Render is non-functional. The automatic payment verification feature is not working as intended.
+-   **Mocked**: None.
 
 **3rd Party Integrations**
--   **BlockCypher API**: Used for DOGE transaction verification.
--   **DogeOS Blockscout API**: Used for NFT ownership verification.
+-   **BlockCypher API**: Used for DOGE transaction verification (legacy/fallback).
 -   **Helius API**: Active for Solana token verification. Requires User API Key.
--   **Vercel**: Frontend deployment. Requires User API Key.
--   **Render**: Backend deployment. Requires User API Key.
--   **GitHub**: Source control. Requires User PAT.
--   **Firebase**: Used for authentication. Requires User API Key.
--   **Telegram Bot**: Used for notifications. Requires User API Key.
+-   **Tatum API**: Newly added for automatic DOGE payment monitoring. Requires User API Key.
+-   **Vercel**: Frontend deployment.
+-   **Render**: Backend deployment.
+-   **GitHub**: Source control.
+-   **Firebase**: Authentication.
+-   **Telegram Bot**: Notifications.
 
 **Testing status**
 -   **Testing agent used after significant changes**: NO
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: []
--   **Known regressions**: None.
+-   **Known regressions**: Backend deployments to Render are failing.
 
 **Credentials to test flow:**
 -   **Doge Payment Address**: 
--   ** Token Contract**:  (Solana)
+-   **Tatum API Key**: 
 -   **Helius API Key**: 
 
 **What agent forgot to execute**
--   The agent consistently overlooked fixing the invisible grey text on Telegram issue, which has been pending since the beginning.
--   The agent created a debug endpoint () to investigate an issue but forgot to remove or secure it afterward, leaving a potential security vulnerability.</analysis>
+-   The invisible grey text on Telegram issue remains unaddressed, pending user feedback.
+-   The root cause of the Render deployment failure has not been definitively identified and fixed, despite multiple attempts. This is a major oversight that blocks progress.</analysis>
