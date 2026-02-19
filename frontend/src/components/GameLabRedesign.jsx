@@ -590,7 +590,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                   {/* Bonus */}
                   <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 p-3 rounded-lg border-2 border-yellow-400">
                     <p className="text-yellow-900 text-center font-bold text-sm">
-                      ✨ {character.bonus}
+                      ◉ {character.bonus}
                     </p>
                   </div>
 
@@ -627,7 +627,7 @@ const GameLabRedesign = ({ playerAddress }) => {
             
             {selectedCharacter && !selectingCharacter && (
               <p className="text-white/90 mt-4 text-lg drop-shadow-md">
-                Ready to begin your scientific journey? Let&apos;s go! 🧪✨
+                Ready to begin your scientific journey? Let&apos;s go! 🧪◉
               </p>
             )}
             
@@ -806,7 +806,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                   {/* Ingredient Effects */}
                   <div className="bg-black/20 rounded-xl p-4">
                     <h3 className="text-yellow-400 font-bold mb-2 flex items-center gap-2">
-                      <span>✨</span> Ingredient Categories
+                      <span>◉</span> Ingredient Categories
                     </h3>
                     <ul className="text-purple-100 text-sm space-y-1.5">
                       <li>• <span className="text-amber-300">Core</span> - Basic starter ingredients (Lv 1-5)</li>
@@ -910,7 +910,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                       <div className="flex flex-wrap gap-1 mt-2">
                         {validation.special_effects.map((effect, i) => (
                           <Badge key={i} variant="outline" className="text-xs border-yellow-400/50 text-yellow-300">
-                            ✨ {effect}
+                            ◉ {effect}
                           </Badge>
                         ))}
                       </div>
@@ -1126,7 +1126,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                             className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-white font-bold shadow-lg shadow-yellow-500/40 px-6"
                             disabled={collectingTreat === treat.id}
                           >
-                            {collectingTreat === treat.id ? '✨ Collecting...' : '🎁 Tap to Collect!'}
+                            {collectingTreat === treat.id ? '◉ Collecting...' : '🎁 Tap to Collect!'}
                           </Button>
                         ) : (
                           <div className="text-white font-mono text-lg drop-shadow-md">
