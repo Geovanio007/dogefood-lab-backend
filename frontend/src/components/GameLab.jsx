@@ -775,7 +775,7 @@ const GameLab = () => {
                       </div>
                       
                       <div className="text-sm text-gray-600">
-                        Your legendary creation is coming together! ✨
+                        Your legendary creation is coming together! ◉
                       </div>
                     </div>
                   ) : (

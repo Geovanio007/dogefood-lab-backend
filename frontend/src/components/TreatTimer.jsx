@@ -86,9 +86,9 @@ const TreatTimer = ({
           {/* Completion Sparkles */}
           {isFinished && (
             <div className="completion-sparkles">
-              <div className="sparkle sparkle-1">✨</div>
+              <div className="sparkle sparkle-1">◉</div>
               <div className="sparkle sparkle-2">⭐</div>
-              <div className="sparkle sparkle-3">✨</div>
+              <div className="sparkle sparkle-3">◉</div>
               <div className="sparkle sparkle-4">💫</div>
             </div>
           )}

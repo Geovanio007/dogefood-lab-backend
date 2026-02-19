@@ -7,7 +7,7 @@ export const INGREDIENT_ICONS = {
   // CORE INGREDIENTS (Level 1-5)
   'ING001': {
     name: 'Golden Bone Dust',
-    emoji: '✨',
+    emoji: '◉',
     icon: 'https://i.ibb.co/hJnhLxKD/Chat-GPT-Image-Dec-29-2025-03-34-58-PM.png'
   },
   'ING002': {

@@ -389,7 +389,7 @@ export function GameProvider({ children }) {
       flavor,
       image: rarityScore >= 8 ? '🌟' : 
              rarityScore >= 5 ? '⭐' :
-             rarityScore >= 3 ? '✨' : '🍪'
+             rarityScore >= 3 ? '◉' : '🍪'
     };
 
     // Complete mixing first
