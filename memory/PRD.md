@@ -7,19 +7,17 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 
 ### Core Game Features
 - Treat mixing system with ingredients, rarity-based outcomes, XP/leveling, streak bonuses, leaderboards
+- Dark mode by default (synced localStorage key between ThemeContext and Settings)
+- ◉ icon replaces all ✨ throughout the UI
 
 ### Auto-Mixer Agent (Fixed Feb 18, 2026)
-- Points/XP now correctly use `points_reward` and `xp_reward` keys from game engine
-- Ingredients fully randomized each cycle (shuffle + slice, not just sample)
-- Character bonuses (Rex rare chance boost) applied to auto-mixed treats
-- Rarity metadata (emoji, color) stored on auto-mixed treats
-- Fixed in BOTH the background loop and the trigger-now endpoint
+- Points/XP correctly use `points_reward` and `xp_reward` keys from game engine
+- Ingredients fully randomized each cycle with character bonus support
 
 ### Payment Systems
-- **Auto-Mixer Subscription**: 30 DOGE/month with unique amounts per order
-- **Extra Life Feature**: Basic (2 treats ~10 DOGE), Standard (4 ~20 DOGE), Premium (6 ~35 DOGE)
 - **Unique Amount System**: Each order gets distinct amount (base + 0.001-0.099) for precise 1:1 matching
 - **Auto-Payment Detection**: Tatum API v3, 30s polling, precise unique_amount matching
+- **Recheck Unmatched**: POST /api/payments/recheck-unmatched endpoint
 
 ### Blockchain Integrations
 - DOGE: BlockCypher + Tatum APIs
@@ -40,4 +38,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-February 18, 2026 - Auto-mixer agent points/XP/ingredients fix deployed
+February 19, 2026 - Dark mode default, ✨→◉ icon swap, Settings dark mode text fix
