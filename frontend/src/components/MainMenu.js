@@ -48,32 +48,32 @@ const SeasonCountdown = () => {
   }, []);
   
   return (
-    <div className="bg-gradient-to-r from-sky-500/20 to-emerald-500/20 rounded-lg p-3 border border-sky-400/30">
-      <div className="text-xs text-sky-300 mb-1 text-center font-semibold">SEASON ENDS IN</div>
+    <div className="bg-slate-800/60 rounded-lg p-3 border border-white/[0.04]">
+      <div className="text-[10px] sm:text-xs text-white/40 mb-2 text-center font-semibold uppercase tracking-wider">Season ends in</div>
       <div className="flex gap-2 justify-center">
         <div className="text-center">
-          <div className="bg-sky-500/30 rounded px-2 py-1 min-w-[40px]">
-            <span className="text-lg font-bold text-white">{timeLeft.days}</span>
+          <div className="bg-slate-700/60 rounded-md px-2.5 py-1.5 min-w-[40px] border border-yellow-400/10">
+            <span className="text-base sm:text-lg font-bold text-yellow-400 tabular-nums">{timeLeft.days}</span>
           </div>
-          <span className="text-[10px] text-sky-300">DAYS</span>
+          <span className="text-[9px] text-white/40 uppercase mt-0.5 block">Days</span>
         </div>
         <div className="text-center">
-          <div className="bg-sky-500/30 rounded px-2 py-1 min-w-[40px]">
-            <span className="text-lg font-bold text-white">{String(timeLeft.hours).padStart(2, '0')}</span>
+          <div className="bg-slate-700/60 rounded-md px-2.5 py-1.5 min-w-[40px] border border-sky-400/10">
+            <span className="text-base sm:text-lg font-bold text-sky-400 tabular-nums">{String(timeLeft.hours).padStart(2, '0')}</span>
           </div>
-          <span className="text-[10px] text-sky-300">HRS</span>
+          <span className="text-[9px] text-white/40 uppercase mt-0.5 block">Hrs</span>
         </div>
         <div className="text-center">
-          <div className="bg-sky-500/30 rounded px-2 py-1 min-w-[40px]">
-            <span className="text-lg font-bold text-white">{String(timeLeft.minutes).padStart(2, '0')}</span>
+          <div className="bg-slate-700/60 rounded-md px-2.5 py-1.5 min-w-[40px] border border-sky-400/10">
+            <span className="text-base sm:text-lg font-bold text-sky-400 tabular-nums">{String(timeLeft.minutes).padStart(2, '0')}</span>
           </div>
-          <span className="text-[10px] text-sky-300">MIN</span>
+          <span className="text-[9px] text-white/40 uppercase mt-0.5 block">Min</span>
         </div>
         <div className="text-center">
-          <div className="bg-emerald-500/30 rounded px-2 py-1 min-w-[40px]">
-            <span className="text-lg font-bold text-emerald-400">{String(timeLeft.seconds).padStart(2, '0')}</span>
+          <div className="bg-slate-700/60 rounded-md px-2.5 py-1.5 min-w-[40px] border border-white/[0.06]">
+            <span className="text-base sm:text-lg font-bold text-white/60 tabular-nums">{String(timeLeft.seconds).padStart(2, '0')}</span>
           </div>
-          <span className="text-[10px] text-emerald-300">SEC</span>
+          <span className="text-[9px] text-white/40 uppercase mt-0.5 block">Sec</span>
         </div>
       </div>
     </div>
