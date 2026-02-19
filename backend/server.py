@@ -7388,10 +7388,12 @@ async def trigger_auto_mixer_now():
                     "creator_address": player_address,
                     "ingredients": selected_ingredients,
                     "rarity": rarity,
+                    "rarity_emoji": treat_result.get("rarity_emoji", ""),
+                    "rarity_color": treat_result.get("rarity_color", ""),
                     "flavor": treat_result.get("flavor", "Savory"),
                     "created_at": now,
                     "ready_at": now,
-                    "image": treat_result.get("image", "🍪"),
+                    "image": treat_result.get("image", ""),
                     "brewing_status": "ready",
                     "points_reward": points,
                     "xp_reward": xp,
@@ -7421,6 +7423,12 @@ async def trigger_auto_mixer_now():
                     {"$set": {"last_auto_mix": now}, "$inc": {"total_auto_mixes": 1}}
                 )
                 
+                # Update player streak
+                try:
+                    await anti_cheat_system.update_player_streak(player_address)
+                except:
+                    pass
+                
                 results.append({
                     "player": player_address[:20] + "...",
                     "status": "success",
@@ -7428,11 +7436,12 @@ async def trigger_auto_mixer_now():
                     "rarity": rarity,
                     "points": points,
                     "xp": xp,
+                    "ingredients": selected_ingredients,
                     "treats_in_window": treats_in_window + 1,
                     "window_limit": window_limit
                 })
                 
-                logger.info(f"🤖 ✅ Manual mix: '{treat_name}' ({rarity}) for {player_address[:20]}...")
+                logger.info(f"Manual trigger mix: '{treat_name}' ({rarity}, {points}pts) for {player_address[:20]}...")
                 
             except Exception as e:
                 results.append({
