@@ -73,10 +73,10 @@ const Settings = () => {
   }, [location.state]);
   
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage or system preference
-    const saved = localStorage.getItem('dogefood_dark_mode');
-    if (saved !== null) return saved === 'true';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Check localStorage - use same key as ThemeContext for consistency
+    const saved = localStorage.getItem('dogefood-theme');
+    if (saved !== null) return saved === 'dark';
+    return true; // Default to dark mode
   });
   
   const { 
@@ -103,9 +103,17 @@ const Settings = () => {
     notifications: true,
   });
 
-  // Save dark mode preference
+  // Save dark mode preference - use same key as ThemeContext
   useEffect(() => {
-    localStorage.setItem('dogefood_dark_mode', isDarkMode.toString());
+    localStorage.setItem('dogefood-theme', isDarkMode ? 'dark' : 'light');
+    // Also apply dark class to document root for Tailwind
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark-mode', 'dark');
+      document.documentElement.classList.remove('light-mode');
+    } else {
+      document.documentElement.classList.add('light-mode');
+      document.documentElement.classList.remove('dark-mode', 'dark');
+    }
   }, [isDarkMode]);
 
   // Get effective player address
