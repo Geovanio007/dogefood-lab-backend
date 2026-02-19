@@ -689,7 +689,7 @@ const MainMenu = () => {
             <div className="flex items-center gap-3 sm:gap-4">
               {/* Robot Icon */}
               <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/20">
-                <span className="text-2xl sm:text-3xl">🤖</span>
+                <Settings className="w-6 h-6 sm:w-8 sm:h-8 text-sky-300" />
               </div>
               
               <div className="flex-1 min-w-0">
