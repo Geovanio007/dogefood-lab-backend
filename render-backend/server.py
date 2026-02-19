@@ -7345,6 +7345,8 @@ async def trigger_auto_mixer_now():
                     continue
                 
                 player_level = player.get("level", 1)
+                character_bonuses = player.get("character_bonuses", {})
+                rare_chance_bonus = character_bonuses.get("rare_chance_bonus", 0.0)
                 
                 # Get available ingredients for player level
                 available_ingredients = ingredient_system.get_unlocked_ingredients(player_level)
@@ -7357,23 +7359,26 @@ async def trigger_auto_mixer_now():
                     })
                     continue
                 
-                # Select random ingredients (2-4)
-                num_ingredients = random.randint(2, min(4, len(available_ingredients)))
-                selected_ingredients = random.sample([ing.id for ing in available_ingredients], num_ingredients)
+                # Select random ingredients (2-4) with full shuffle for variety
+                all_ingredient_ids = [ing.id for ing in available_ingredients]
+                random.shuffle(all_ingredient_ids)
+                num_ingredients = random.randint(2, min(4, len(all_ingredient_ids)))
+                selected_ingredients = all_ingredient_ids[:num_ingredients]
                 
-                # Create the treat using the game engine
+                # Create the treat using the game engine with character bonuses
                 treat_result = game_engine.calculate_treat_outcome(
                     ingredients=selected_ingredients,
                     player_level=player_level,
-                    player_address=player_address
+                    player_address=player_address,
+                    rare_chance_bonus=rare_chance_bonus
                 )
                 
                 rarity = treat_result.get("rarity", "Common")
-                points = treat_result.get("points", 10)
-                xp = treat_result.get("xp", 5)
+                points = treat_result.get("points_reward", 10)
+                xp = treat_result.get("xp_reward", 5)
                 
-                # Name treat based on rarity (matching the game's naming convention)
-                treat_name = f"{rarity} Treat"
+                # Name treat based on rarity and ingredients
+                treat_name = f"{rarity} Auto-Treat"
                 
                 # Save the treat
                 treat_id = str(uuid.uuid4())
@@ -7383,10 +7388,12 @@ async def trigger_auto_mixer_now():
                     "creator_address": player_address,
                     "ingredients": selected_ingredients,
                     "rarity": rarity,
+                    "rarity_emoji": treat_result.get("rarity_emoji", ""),
+                    "rarity_color": treat_result.get("rarity_color", ""),
                     "flavor": treat_result.get("flavor", "Savory"),
                     "created_at": now,
                     "ready_at": now,
-                    "image": treat_result.get("image", "🍪"),
+                    "image": treat_result.get("image", ""),
                     "brewing_status": "ready",
                     "points_reward": points,
                     "xp_reward": xp,
@@ -7416,6 +7423,12 @@ async def trigger_auto_mixer_now():
                     {"$set": {"last_auto_mix": now}, "$inc": {"total_auto_mixes": 1}}
                 )
                 
+                # Update player streak
+                try:
+                    await anti_cheat_system.update_player_streak(player_address)
+                except:
+                    pass
+                
                 results.append({
                     "player": player_address[:20] + "...",
                     "status": "success",
@@ -7423,11 +7436,12 @@ async def trigger_auto_mixer_now():
                     "rarity": rarity,
                     "points": points,
                     "xp": xp,
+                    "ingredients": selected_ingredients,
                     "treats_in_window": treats_in_window + 1,
                     "window_limit": window_limit
                 })
                 
-                logger.info(f"🤖 ✅ Manual mix: '{treat_name}' ({rarity}) for {player_address[:20]}...")
+                logger.info(f"Manual trigger mix: '{treat_name}' ({rarity}, {points}pts) for {player_address[:20]}...")
                 
             except Exception as e:
                 results.append({
