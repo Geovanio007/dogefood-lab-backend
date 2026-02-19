@@ -490,73 +490,69 @@ const MainMenu = () => {
           </div>
         </div>
         
-        {/* Username Section - Modern Design - Show for wallet users, guest users, or firebase users */}
+        {/* Scientist Profile Card - Professional Game Card */}
         {isLoggedIn && (
           <div className="mb-4 sm:mb-6">
             <Card className="overflow-hidden border-0 shadow-xl">
-              {/* Gradient Border - Same as Season 1 Banner */}
-              <div className="relative bg-gradient-to-r from-sky-400 via-emerald-400 to-yellow-400 p-0.5 sm:p-1">
-                <CardContent className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 rounded-lg p-3 sm:p-4 backdrop-blur-sm">
-                  {/* Decorative Elements - Hidden on mobile */}
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-400/20 to-transparent rounded-full blur-2xl hidden sm:block"></div>
+              <div className="relative">
+                {/* Top accent bar */}
+                <div className="h-1 bg-gradient-to-r from-yellow-400 via-sky-400 to-yellow-400" />
+                
+                <CardContent className="relative bg-slate-900/95 p-4 sm:p-5">
+                  {/* Subtle grid pattern overlay */}
+                  <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
                   
-                  {/* Guest/Firebase user badge */}
+                  {/* Guest/Firebase badge */}
                   {guestUser && !isConnected && (
-                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
-                      <Badge className="bg-sky-500/20 text-sky-300 text-[10px] sm:text-xs border border-sky-500/30">
+                    <div className="absolute top-3 right-3">
+                      <span className="text-[10px] sm:text-xs font-medium text-sky-300 bg-sky-500/10 border border-sky-500/20 rounded-md px-2 py-0.5">
                         {guestUser.auth_type === 'firebase' ? 'Firebase' : 'Guest'}
-                      </Badge>
+                      </span>
                     </div>
                   )}
                   
-                  <div className="flex flex-col gap-3 sm:gap-4 relative z-10">
-                    {/* Profile Section */}
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      {/* Profile Picture - Clickable for upload */}
+                  <div className="flex flex-col gap-4 relative z-10">
+                    {/* Profile header */}
+                    <div className="flex items-center gap-4">
+                      {/* Avatar */}
                       <div className="relative flex-shrink-0 group">
-                        <label htmlFor="profile-upload" className="cursor-pointer">
-                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-sky-400 via-emerald-400 to-yellow-400 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                        <label htmlFor="profile-upload" className="cursor-pointer block">
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 border-sky-400/30 shadow-lg shadow-sky-500/10">
                             {profileImage ? (
                               <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
-                              <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                              <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-700 flex items-center justify-center">
+                                <User className="w-7 h-7 text-sky-300/70" />
+                              </div>
                             )}
                           </div>
                           <div className="absolute inset-0 bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Camera className="w-4 h-4 text-white" />
                           </div>
                         </label>
-                        <input
-                          id="profile-upload"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleProfileImageUpload}
-                        />
+                        <input id="profile-upload" type="file" accept="image/*" className="hidden" onChange={handleProfileImageUpload} />
                         {isNFTHolder && (
-                          <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-yellow-400 rounded-full flex items-center justify-center text-[10px] sm:text-xs">
+                          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
                             <Crown className="w-3 h-3 text-yellow-900" />
                           </div>
                         )}
                       </div>
+                      
+                      {/* Name + edit */}
                       <div className="flex-1 min-w-0">
-                        <div className="text-[10px] sm:text-xs text-emerald-400 font-semibold uppercase tracking-wide">Scientist Profile</div>
+                        <div className="text-[10px] sm:text-xs font-semibold text-sky-400/80 uppercase tracking-widest mb-0.5">Scientist</div>
                         {!isEditingUsername ? (
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm sm:text-lg bg-gradient-to-r from-sky-400 via-emerald-400 to-yellow-400 bg-clip-text text-transparent truncate">
+                            <span className="font-bold text-base sm:text-lg text-white truncate">
                               {username || 'Set username'}
                             </span>
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                setUsernameInput(username);
-                                setIsEditingUsername(true);
-                                setUsernameError('');
-                              }}
+                              onClick={() => { setUsernameInput(username); setIsEditingUsername(true); setUsernameError(''); }}
                               className="p-1 h-auto hover:bg-white/10 flex-shrink-0"
                             >
-                              <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-400" />
+                              <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 text-sky-400/60 hover:text-sky-300" />
                             </Button>
                           </div>
                         ) : (
@@ -566,56 +562,46 @@ const MainMenu = () => {
                                 value={usernameInput}
                                 onChange={(e) => setUsernameInput(e.target.value)}
                                 placeholder="Username"
-                                className="w-24 sm:w-36 h-7 sm:h-8 text-xs sm:text-sm bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                                className="w-24 sm:w-36 h-7 sm:h-8 text-xs sm:text-sm bg-slate-800 border-sky-400/30 text-white placeholder:text-white/40 focus:border-sky-400"
                                 maxLength={20}
                               />
-                              <Button
-                                size="sm"
-                                onClick={handleSaveUsername}
-                                disabled={savingUsername}
-                                className="bg-emerald-500 hover:bg-emerald-600 h-7 sm:h-8 px-2 sm:px-3"
-                              >
+                              <Button size="sm" onClick={handleSaveUsername} disabled={savingUsername} className="bg-sky-500 hover:bg-sky-400 h-7 sm:h-8 px-2 sm:px-3">
                                 {savingUsername ? '...' : <Check className="w-3 h-3 sm:w-4 sm:h-4" />}
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setIsEditingUsername(false)}
-                                className="h-7 sm:h-8 px-1 sm:px-2 text-white/70 hover:text-white hover:bg-white/10"
-                              >
-                                ✕
+                              <Button size="sm" variant="ghost" onClick={() => setIsEditingUsername(false)} className="h-7 sm:h-8 px-1 sm:px-2 text-white/50 hover:text-white hover:bg-white/10">
+                                <X className="w-3 h-3" />
                               </Button>
                             </div>
-                            {usernameError && (
-                              <span className="text-[10px] sm:text-xs text-red-400">{usernameError}</span>
-                            )}
+                            {usernameError && <span className="text-[10px] sm:text-xs text-red-400">{usernameError}</span>}
                           </div>
                         )}
                       </div>
                     </div>
                     
-                    {/* Stats Row - Mobile Optimized */}
-                    <div className="flex items-center justify-between gap-2 sm:gap-3">
-                      <div className="flex items-center gap-2 sm:gap-3 bg-white/5 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2">
-                        <div className="text-center">
-                          <div className="text-[10px] sm:text-xs text-white/60">Level</div>
-                          <div className="font-bold text-sm sm:text-lg text-white">{effectiveLevel || 1}</div>
+                    {/* Stats bar */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 flex items-center gap-3 bg-slate-800/60 rounded-lg px-3 py-2 border border-white/[0.04]">
+                        <div className="text-center flex-1">
+                          <div className="text-[9px] sm:text-[10px] font-medium text-white/40 uppercase tracking-wider">Level</div>
+                          <div className="font-bold text-sm sm:text-lg text-yellow-400 tabular-nums">{effectiveLevel || 1}</div>
                         </div>
-                        <div className="w-px h-6 sm:h-8 bg-white/20"></div>
-                        <div className="text-center">
-                          <div className="text-[10px] sm:text-xs text-white/60">Points</div>
-                          <div className="font-bold text-sm sm:text-lg text-emerald-400">{effectivePoints || 0}</div>
+                        <div className="w-px h-8 bg-white/10" />
+                        <div className="text-center flex-1">
+                          <div className="text-[9px] sm:text-[10px] font-medium text-white/40 uppercase tracking-wider">Points</div>
+                          <div className="font-bold text-sm sm:text-lg text-sky-400 tabular-nums">{effectivePoints || 0}</div>
                         </div>
                       </div>
                       
                       {isNFTHolder ? (
-                        <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-bold shadow-lg border-0 whitespace-nowrap">
-                          <Crown className="w-3 h-3 mr-1 inline" /> VIP
-                        </Badge>
+                        <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-lg px-3 py-2 text-center">
+                          <Crown className="w-4 h-4 text-yellow-400 mx-auto mb-0.5" />
+                          <div className="text-[9px] font-bold text-yellow-400 uppercase">VIP</div>
+                        </div>
                       ) : guestUser && !isConnected && (
-                        <Badge className="bg-gradient-to-r from-sky-500 to-emerald-500 text-white px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-bold shadow-lg border-0 whitespace-nowrap">
-                          Player
-                        </Badge>
+                        <div className="bg-sky-400/10 border border-sky-400/30 rounded-lg px-3 py-2 text-center">
+                          <User className="w-4 h-4 text-sky-400 mx-auto mb-0.5" />
+                          <div className="text-[9px] font-bold text-sky-400 uppercase">Player</div>
+                        </div>
                       )}
                     </div>
                   </div>
