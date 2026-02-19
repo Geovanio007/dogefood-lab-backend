@@ -611,60 +611,60 @@ const MainMenu = () => {
           </div>
         )}
 
-        {/* Season 1 Announcement Banner - Mobile Optimized */}
+        {/* Season 1 Card - Professional Game Card */}
         <div className="mb-4 sm:mb-8">
-          <Card className="overflow-hidden border-0 shadow-2xl">
-            {/* Gradient Background */}
-            <div className="relative bg-gradient-to-r from-sky-400 via-emerald-400 to-yellow-400 p-0.5 sm:p-1">
-              <CardContent className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 dark:from-slate-900/98 dark:via-slate-800/98 dark:to-slate-900/98 rounded-lg p-3 sm:p-6 backdrop-blur-sm">
-                {/* Decorative Elements - Hidden on mobile */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-400/20 to-transparent rounded-full blur-2xl hidden sm:block"></div>
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-sky-400/20 to-transparent rounded-full blur-2xl hidden sm:block"></div>
+          <Card className="overflow-hidden border-0 shadow-xl">
+            <div className="relative">
+              {/* Top accent bar */}
+              <div className="h-1 bg-gradient-to-r from-sky-400 via-yellow-400 to-sky-400" />
+              
+              <CardContent className="relative bg-slate-900/95 p-4 sm:p-6">
+                {/* Subtle grid pattern */}
+                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
                 
-                <div className="flex flex-col gap-4 sm:gap-6 relative z-10">
-                  {/* Top Row - Season Info */}
-                  <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                <div className="flex flex-col gap-4 sm:gap-5 relative z-10">
+                  {/* Season header */}
+                  <div className="flex items-center gap-4">
                     <div className="relative flex-shrink-0">
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-gradient-to-br from-yellow-400 via-emerald-400 to-sky-400 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
-                        <Beaker className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-slate-800 border-2 border-yellow-400/30 flex items-center justify-center shadow-lg shadow-yellow-500/10">
+                        <Beaker className="w-7 h-7 sm:w-8 sm:h-8 text-yellow-400" />
                       </div>
-                      <div className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-[10px] sm:text-xs font-bold shadow-md">
+                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-sky-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md border border-sky-400">
                         1
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-yellow-400 via-emerald-400 to-sky-400 bg-clip-text text-transparent mb-0.5 sm:mb-1">
+                      <h3 className="text-lg sm:text-2xl font-bold text-white mb-0.5">
                         Season 1: Beta
                       </h3>
-                      <p className="text-white/90 dark:text-white/90 text-xs sm:text-sm md:text-base">
-                        Create treats, earn points, climb the leaderboard!
-                        <span className="block mt-0.5 sm:mt-1 text-emerald-400 font-semibold text-[10px] sm:text-sm">
-                          NFT minting coming in Season 2!
-                        </span>
+                      <p className="text-white/50 text-xs sm:text-sm">
+                        Create treats, earn points, climb the leaderboard
+                      </p>
+                      <p className="text-sky-400 font-medium text-[10px] sm:text-xs mt-1">
+                        NFT minting coming in Season 2
                       </p>
                     </div>
                   </div>
                   
-                  {/* Bottom Row - Timer & Status */}
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-bold shadow-lg border-0">
-                        SEASON 1 ACTIVE
-                      </Badge>
-                      <div className="flex gap-1 sm:gap-2 text-[10px] sm:text-xs">
-                        <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-400 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
-                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 rounded-full animate-pulse"></span>
-                          Treats
-                        </div>
-                        <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-400 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
-                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 rounded-full animate-pulse"></span>
-                          Boards
-                        </div>
+                  {/* Status indicators */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="bg-sky-500/10 border border-sky-400/20 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold text-sky-400 uppercase tracking-wide">
+                      Season 1 Active
+                    </div>
+                    <div className="flex gap-1.5 text-[10px] sm:text-xs">
+                      <div className="flex items-center gap-1.5 bg-slate-800/60 border border-white/[0.04] text-white/60 px-2 py-1 rounded-md">
+                        <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full" />
+                        Treats
+                      </div>
+                      <div className="flex items-center gap-1.5 bg-slate-800/60 border border-white/[0.04] text-white/60 px-2 py-1 rounded-md">
+                        <span className="w-1.5 h-1.5 bg-sky-400 rounded-full" />
+                        Boards
                       </div>
                     </div>
-                    {/* Real-time Season Countdown */}
-                    <SeasonCountdown />
                   </div>
+                  
+                  {/* Season countdown */}
+                  <SeasonCountdown />
                 </div>
               </CardContent>
             </div>
