@@ -1348,7 +1348,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                 </div>
               </div>
               
-              {/* Sparkles */}
+              {/* Burst effect */}
               {[...Array(12)].map((_, i) => (
                 <div
                   key={i}
