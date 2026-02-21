@@ -2461,10 +2461,12 @@ async def collect_treat(treat_id: str, data: dict):
                     "base_xp": base_xp_reward,
                     "points_bonus": points_bonus,
                     "xp_bonus": xp_bonus,
+                    "happy_hour_bonus": happy_hour_bonus,
                     "total_points": final_points_reward,
                     "total_xp": final_xp_reward
                 },
                 "character_bonus_applied": bonus_details if bonus_details else None,
+                "happy_hour_active": is_happy_hour(),
                 "leveled_up": leveled_up,
                 "new_level": new_level if leveled_up else None,
                 "treat_id": treat_id
@@ -2475,8 +2477,10 @@ async def collect_treat(treat_id: str, data: dict):
             "message": "Treat collected successfully!",
             "rewards": {
                 "points": final_points_reward,
-                "xp": final_xp_reward
+                "xp": final_xp_reward,
+                "happy_hour_bonus": happy_hour_bonus
             },
+            "happy_hour_active": is_happy_hour(),
             "treat_id": treat_id
         }
     except HTTPException:
