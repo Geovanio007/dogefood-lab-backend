@@ -138,6 +138,52 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Happy Hour Configuration
+HAPPY_HOUR_START_UTC = 15  # 15:00 UTC
+HAPPY_HOUR_DURATION_MINUTES = 60  # 1 hour
+HAPPY_HOUR_BONUS_PERCENT = 0.25  # +25% bonus points
+
+def is_happy_hour() -> bool:
+    """Check if current UTC time is during Happy Hour (15:00-16:00 UTC daily)"""
+    now = datetime.now(timezone.utc)
+    return now.hour == HAPPY_HOUR_START_UTC and now.minute < HAPPY_HOUR_DURATION_MINUTES
+
+def get_happy_hour_status() -> dict:
+    """Get detailed Happy Hour status with timing info"""
+    now = datetime.now(timezone.utc)
+    active = now.hour == HAPPY_HOUR_START_UTC and now.minute < HAPPY_HOUR_DURATION_MINUTES
+    
+    if active:
+        # Calculate remaining time
+        end_minute = HAPPY_HOUR_DURATION_MINUTES
+        remaining_seconds = (end_minute - now.minute - 1) * 60 + (60 - now.second)
+        return {
+            "active": True,
+            "bonus_percent": int(HAPPY_HOUR_BONUS_PERCENT * 100),
+            "remaining_seconds": remaining_seconds,
+            "message": "Happy Hour is LIVE! All treats earn +25% bonus points!",
+            "start_hour_utc": HAPPY_HOUR_START_UTC,
+            "duration_minutes": HAPPY_HOUR_DURATION_MINUTES
+        }
+    else:
+        # Calculate seconds until next happy hour
+        today_start = now.replace(hour=HAPPY_HOUR_START_UTC, minute=0, second=0, microsecond=0)
+        if now >= today_start:
+            next_start = today_start + timedelta(days=1)
+        else:
+            next_start = today_start
+        seconds_until = int((next_start - now).total_seconds())
+        return {
+            "active": False,
+            "bonus_percent": int(HAPPY_HOUR_BONUS_PERCENT * 100),
+            "seconds_until_next": seconds_until,
+            "next_start_utc": next_start.isoformat(),
+            "message": f"Next Happy Hour starts at {HAPPY_HOUR_START_UTC}:00 UTC",
+            "start_hour_utc": HAPPY_HOUR_START_UTC,
+            "duration_minutes": HAPPY_HOUR_DURATION_MINUTES
+        }
+
+
 # Background task flag
 background_task_started = False
 
