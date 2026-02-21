@@ -10,6 +10,7 @@ import { useMusic } from '../contexts/MusicContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import DailyLimitTracker from './DailyLimitTracker';
 import PlayerStatsModal from './PlayerStatsModal';
+import HappyHourBanner from './HappyHourBanner';
 import { KernelOfWowStatus, KernelBonusResult } from './KernelOfWow';
 import { HelpCircle, ChevronDown, ChevronUp, BarChart3, Volume2, VolumeX, Clock } from 'lucide-react';
 
