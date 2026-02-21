@@ -138,6 +138,52 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Happy Hour Configuration
+HAPPY_HOUR_START_UTC = 15  # 15:00 UTC
+HAPPY_HOUR_DURATION_MINUTES = 60  # 1 hour
+HAPPY_HOUR_BONUS_PERCENT = 0.25  # +25% bonus points
+
+def is_happy_hour() -> bool:
+    """Check if current UTC time is during Happy Hour (15:00-16:00 UTC daily)"""
+    now = datetime.now(timezone.utc)
+    return now.hour == HAPPY_HOUR_START_UTC and now.minute < HAPPY_HOUR_DURATION_MINUTES
+
+def get_happy_hour_status() -> dict:
+    """Get detailed Happy Hour status with timing info"""
+    now = datetime.now(timezone.utc)
+    active = now.hour == HAPPY_HOUR_START_UTC and now.minute < HAPPY_HOUR_DURATION_MINUTES
+    
+    if active:
+        # Calculate remaining time
+        end_minute = HAPPY_HOUR_DURATION_MINUTES
+        remaining_seconds = (end_minute - now.minute - 1) * 60 + (60 - now.second)
+        return {
+            "active": True,
+            "bonus_percent": int(HAPPY_HOUR_BONUS_PERCENT * 100),
+            "remaining_seconds": remaining_seconds,
+            "message": "Happy Hour is LIVE! All treats earn +25% bonus points!",
+            "start_hour_utc": HAPPY_HOUR_START_UTC,
+            "duration_minutes": HAPPY_HOUR_DURATION_MINUTES
+        }
+    else:
+        # Calculate seconds until next happy hour
+        today_start = now.replace(hour=HAPPY_HOUR_START_UTC, minute=0, second=0, microsecond=0)
+        if now >= today_start:
+            next_start = today_start + timedelta(days=1)
+        else:
+            next_start = today_start
+        seconds_until = int((next_start - now).total_seconds())
+        return {
+            "active": False,
+            "bonus_percent": int(HAPPY_HOUR_BONUS_PERCENT * 100),
+            "seconds_until_next": seconds_until,
+            "next_start_utc": next_start.isoformat(),
+            "message": f"Next Happy Hour starts at {HAPPY_HOUR_START_UTC}:00 UTC",
+            "start_hour_utc": HAPPY_HOUR_START_UTC,
+            "duration_minutes": HAPPY_HOUR_DURATION_MINUTES
+        }
+
+
 # Background task flag
 background_task_started = False
 
@@ -684,6 +730,12 @@ async def get_daily_treat_status(address: str):
     except Exception as e:
         logger.error(f"Error getting daily status: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@api_router.get("/happy-hour/status")
+async def happy_hour_status():
+    """Get current Happy Hour status - active/upcoming with timing"""
+    return get_happy_hour_status()
+
 
 @api_router.get("/extra-life/packages")
 async def get_extra_life_packages():
@@ -2357,7 +2409,13 @@ async def collect_treat(treat_id: str, data: dict):
                 logger.info(f"🔥 Max bonus: +{xp_bonus} XP ({xp_bonus_percent*100}%) for {player_address}")
         
         # Calculate final rewards with bonuses
-        final_points_reward = base_points_reward + points_bonus
+        happy_hour_bonus = 0
+        if is_happy_hour():
+            happy_hour_bonus = int(base_points_reward * HAPPY_HOUR_BONUS_PERCENT)
+            bonus_details["happy_hour_bonus"] = happy_hour_bonus
+            logger.info(f"Happy Hour bonus: +{happy_hour_bonus} points (+{int(HAPPY_HOUR_BONUS_PERCENT*100)}%) for {player_address}")
+        
+        final_points_reward = base_points_reward + points_bonus + happy_hour_bonus
         final_xp_reward = base_xp_reward + xp_bonus
         
         # Update treat status
@@ -2403,10 +2461,12 @@ async def collect_treat(treat_id: str, data: dict):
                     "base_xp": base_xp_reward,
                     "points_bonus": points_bonus,
                     "xp_bonus": xp_bonus,
+                    "happy_hour_bonus": happy_hour_bonus,
                     "total_points": final_points_reward,
                     "total_xp": final_xp_reward
                 },
                 "character_bonus_applied": bonus_details if bonus_details else None,
+                "happy_hour_active": is_happy_hour(),
                 "leveled_up": leveled_up,
                 "new_level": new_level if leveled_up else None,
                 "treat_id": treat_id
@@ -2417,8 +2477,10 @@ async def collect_treat(treat_id: str, data: dict):
             "message": "Treat collected successfully!",
             "rewards": {
                 "points": final_points_reward,
-                "xp": final_xp_reward
+                "xp": final_xp_reward,
+                "happy_hour_bonus": happy_hour_bonus
             },
+            "happy_hour_active": is_happy_hour(),
             "treat_id": treat_id
         }
     except HTTPException:
