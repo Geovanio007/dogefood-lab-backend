@@ -2409,7 +2409,13 @@ async def collect_treat(treat_id: str, data: dict):
                 logger.info(f"🔥 Max bonus: +{xp_bonus} XP ({xp_bonus_percent*100}%) for {player_address}")
         
         # Calculate final rewards with bonuses
-        final_points_reward = base_points_reward + points_bonus
+        happy_hour_bonus = 0
+        if is_happy_hour():
+            happy_hour_bonus = int(base_points_reward * HAPPY_HOUR_BONUS_PERCENT)
+            bonus_details["happy_hour_bonus"] = happy_hour_bonus
+            logger.info(f"Happy Hour bonus: +{happy_hour_bonus} points (+{int(HAPPY_HOUR_BONUS_PERCENT*100)}%) for {player_address}")
+        
+        final_points_reward = base_points_reward + points_bonus + happy_hour_bonus
         final_xp_reward = base_xp_reward + xp_bonus
         
         # Update treat status
