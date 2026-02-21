@@ -780,6 +780,9 @@ const GameLabRedesign = ({ playerAddress }) => {
           onStatusChange={setHasKernelOfWow}
         />
 
+        {/* Happy Hour Banner */}
+        <HappyHourBanner />
+
         {/* Tips & Guide Section - Collapsible */}
         <Card className="mb-6 bg-gradient-to-br from-purple-600/90 to-indigo-700/90 backdrop-blur-xl border-purple-400/50 shadow-lg">
           <CardContent className="p-0">
