@@ -3,50 +3,43 @@ import { Clock, Zap, Crown, AlertCircle, Gem } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 
-// Kernel of Wow Icon Component
 const KernelIcon = ({ className = "w-6 h-6" }) => (
-  <div className={`${className} bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 rounded-lg flex items-center justify-center shadow-lg`}>
+  <div className={`${className} bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center`}>
     <Gem className="w-4 h-4 text-white" />
   </div>
 );
 
-// Format time remaining
 const formatTimeRemaining = (seconds) => {
   if (seconds <= 0) return 'Expired';
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
+  if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m`;
 };
 
-// Global Kernel of Wow Banner (shows current holder to everyone)
 export const KernelOfWowBanner = ({ currentHolder, onClose }) => {
   if (!currentHolder || !currentHolder.has_holder) return null;
-  
   const holder = currentHolder.holder;
-  const displayName = holder?.player_nickname || 
+  const displayName = holder?.player_nickname ||
     `${holder?.player_address?.slice(0, 6)}...${holder?.player_address?.slice(-4)}`;
-  
+
   return (
-    <div className="bg-gradient-to-r from-yellow-500/20 via-amber-500/20 to-yellow-500/20 border-b border-yellow-500/30 px-4 py-2">
+    <div className="bg-slate-800/80 border-b border-amber-500/30 px-4 py-2.5" data-testid="kernel-wow-banner">
       <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 text-sm">
-        <KernelIcon className="w-6 h-6 animate-pulse" />
-        <span className="text-yellow-200">
-          <span className="font-bold text-yellow-400">Kernel of Wow</span> is with{' '}
-          <span className="font-bold text-white">{displayName}</span>
+        <KernelIcon className="w-6 h-6" />
+        <span className="text-slate-300">
+          <span className="font-bold text-amber-400">Kernel of Wow</span> held by{' '}
+          <span className="font-semibold text-white">{displayName}</span>
         </span>
-        <span className="text-yellow-400/60">|</span>
-        <span className="text-yellow-300/80">
-          {formatTimeRemaining(currentHolder.time_remaining_seconds)} remaining
+        <span className="text-slate-600">|</span>
+        <span className="text-slate-400 font-mono text-xs">
+          {formatTimeRemaining(currentHolder.time_remaining_seconds)} left
         </span>
       </div>
     </div>
   );
 };
 
-// Player's Kernel of Wow Status (shows in Lab if player has it)
 export const KernelOfWowStatus = ({ playerAddress, onStatusChange }) => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -69,13 +62,11 @@ export const KernelOfWowStatus = ({ playerAddress, onStatusChange }) => {
         setLoading(false);
       }
     };
-    
     fetchStatus();
-    const interval = setInterval(fetchStatus, 60000); // Refresh every minute
+    const interval = setInterval(fetchStatus, 60000);
     return () => clearInterval(interval);
   }, [playerAddress, onStatusChange]);
 
-  // Countdown timer
   useEffect(() => {
     if (timeRemaining <= 0) return;
     const timer = setInterval(() => {
@@ -87,156 +78,126 @@ export const KernelOfWowStatus = ({ playerAddress, onStatusChange }) => {
   if (loading || !status?.has_ingredient) return null;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border-2 border-yellow-400/50 bg-gradient-to-br from-yellow-500/20 via-amber-500/10 to-orange-500/20 p-4 mb-4">
-      {/* Animated glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-400/10 to-transparent animate-pulse" />
-      
-      <div className="relative flex items-center gap-4">
-        {/* Icon */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-yellow-400/30 rounded-full blur-xl animate-pulse" />
-          <div className="w-16 h-16 relative z-10 drop-shadow-lg animate-bounce bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 rounded-2xl flex items-center justify-center" style={{ animationDuration: '2s' }}>
-            <Gem className="w-9 h-9 text-white" />
+    <div
+      className="mb-6 rounded-xl border border-amber-500/40 bg-slate-800/90 overflow-hidden"
+      data-testid="kernel-wow-status"
+    >
+      {/* Header bar */}
+      <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-5 py-3 border-b border-amber-500/20 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+            <Gem className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-white font-bold text-sm">Kernel of Wow Active</h3>
+            <p className="text-amber-300/80 text-xs">Bonus points on all treats</p>
           </div>
         </div>
-        
-        {/* Info */}
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-lg font-bold text-yellow-400">Kernel of Wow Active!</h3>
+        <div className="text-right">
+          <div className="flex items-center gap-1.5 text-sm">
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <span className="text-white font-mono font-bold text-base">
+              {formatTimeRemaining(timeRemaining)}
+            </span>
           </div>
-          <p className="text-sm text-yellow-200/80 mb-2">
-            Your treats get bonus points! Choose combos wisely for up to +30% boost!
-          </p>
-          
-          {/* Timer */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5 text-sm">
-              <Clock className="w-4 h-4 text-yellow-400" />
-              <span className="text-white font-mono font-bold">
-                {formatTimeRemaining(timeRemaining)}
-              </span>
-              <span className="text-yellow-300/60">remaining</span>
-            </div>
-            
-            {/* Usage stats */}
-            <div className="flex items-center gap-1.5 text-sm">
-              <Zap className="w-4 h-4 text-sky-400" />
-              <span className="text-sky-400">{status.used_count || 0} treats boosted</span>
-            </div>
-          </div>
+          <div className="text-slate-500 text-[10px] uppercase tracking-wider">remaining</div>
         </div>
       </div>
-      
-      {/* Bonus tiers hint */}
-      <div className="mt-4 pt-3 border-t border-yellow-400/20">
-        <div className="text-xs text-yellow-300/70 mb-2">Bonus Tiers:</div>
-        <div className="flex flex-wrap gap-2">
-          <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs border border-green-500/30">
-            +5% Common
-          </span>
-          <span className="px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs border border-blue-500/30">
-            +15% Rare
-          </span>
-          <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-400 text-xs border border-purple-500/30">
-            +20% Epic
-          </span>
-          <span className="px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs border border-amber-500/30">
-            +30% Legendary
-          </span>
+
+      {/* Body */}
+      <div className="p-4">
+        <p className="text-slate-300 text-xs mb-3">
+          Choose combos wisely for up to +30% boost on treats created while holding the Kernel.
+        </p>
+
+        {/* Usage stat */}
+        <div className="flex items-center gap-2 mb-4">
+          <Zap className="w-3.5 h-3.5 text-sky-400" />
+          <span className="text-sky-300 text-xs font-medium">{status.used_count || 0} treats boosted</span>
+        </div>
+
+        {/* Bonus tiers */}
+        <div className="border-t border-slate-700/60 pt-3">
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Bonus Tiers</div>
+          <div className="flex flex-wrap gap-1.5">
+            <span className="px-2 py-0.5 rounded bg-green-500/15 text-green-400 text-[11px] font-medium border border-green-500/20">
+              +5% Common
+            </span>
+            <span className="px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 text-[11px] font-medium border border-blue-500/20">
+              +15% Rare
+            </span>
+            <span className="px-2 py-0.5 rounded bg-purple-500/15 text-purple-400 text-[11px] font-medium border border-purple-500/20">
+              +20% Epic
+            </span>
+            <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 text-[11px] font-medium border border-amber-500/20">
+              +30% Legendary
+            </span>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// Kernel of Wow Ingredient Card (for Lab ingredient selection)
 export const KernelIngredientCard = ({ isSelected, onSelect, disabled }) => {
   return (
     <button
       onClick={onSelect}
       disabled={disabled}
+      data-testid="kernel-ingredient-card"
       className={`
-        relative overflow-hidden rounded-xl border-2 p-3 transition-all duration-300
-        ${isSelected 
-          ? 'border-yellow-400 bg-gradient-to-br from-yellow-500/30 to-amber-500/20 scale-105 shadow-lg shadow-yellow-500/30' 
-          : 'border-yellow-400/30 bg-gradient-to-br from-yellow-500/10 to-amber-500/5 hover:border-yellow-400/60 hover:scale-102'}
+        relative overflow-hidden rounded-xl border-2 p-3 transition-all duration-200
+        ${isSelected
+          ? 'border-amber-400 bg-amber-500/15 scale-105 shadow-lg shadow-amber-500/20'
+          : 'border-slate-600 bg-slate-800/60 hover:border-amber-400/50 hover:bg-amber-500/5'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
       `}
     >
-      {/* Glow effect when selected */}
-      {isSelected && (
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-400/20 to-transparent animate-pulse" />
-      )}
-      
-      <div className="relative flex flex-col items-center gap-2">
-        <div className="relative">
-          <div className="absolute inset-0 bg-yellow-400/30 rounded-full blur-lg" />
-          <div className={`w-12 h-12 relative z-10 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 rounded-xl flex items-center justify-center ${isSelected ? 'animate-bounce' : ''}`} style={{ animationDuration: '1.5s' }}>
-            <Gem className="w-7 h-7 text-white" />
-          </div>
+      <div className="flex flex-col items-center gap-2">
+        <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
+          <Gem className="w-7 h-7 text-white" />
         </div>
-        
         <div className="text-center">
-          <div className="text-xs font-bold text-yellow-400">Kernel of Wow</div>
-          <div className="text-[10px] text-yellow-300/60">Special</div>
-        </div>
-        
-        {/* Bonus indicator */}
-        <div className="absolute top-1 right-1">
-          <Gem className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+          <div className="text-xs font-bold text-amber-400">Kernel of Wow</div>
+          <div className="text-[10px] text-slate-500">Special</div>
         </div>
       </div>
     </button>
   );
 };
 
-// Kernel Bonus Result Display (shows after treat creation)
 export const KernelBonusResult = ({ bonusInfo }) => {
   if (!bonusInfo) return null;
-  
-  const tierColors = {
-    legendary: 'from-amber-400 to-yellow-500',
-    epic: 'from-purple-400 to-pink-500',
-    rare: 'from-blue-400 to-cyan-500',
-    common: 'from-green-400 to-emerald-500'
+
+  const tierConfig = {
+    legendary: { gradient: 'from-amber-500/20 to-yellow-500/20', border: 'border-amber-500/50', text: 'text-amber-400', Icon: Crown },
+    epic: { gradient: 'from-purple-500/20 to-pink-500/20', border: 'border-purple-500/50', text: 'text-purple-400', Icon: Gem },
+    rare: { gradient: 'from-blue-500/20 to-cyan-500/20', border: 'border-blue-500/50', text: 'text-blue-400', Icon: Zap },
+    common: { gradient: 'from-green-500/20 to-emerald-500/20', border: 'border-green-500/50', text: 'text-green-400', Icon: Zap }
   };
-  
-  const tierIcons = {
-    legendary: Crown,
-    epic: Gem,
-    rare: Zap,
-    common: Zap
-  };
-  
-  const TierIcon = tierIcons[bonusInfo.tier] || Zap;
-  
+
+  const config = tierConfig[bonusInfo.tier] || tierConfig.common;
+  const TierIcon = config.Icon;
+
   return (
-    <div className={`
-      relative overflow-hidden rounded-xl border-2 p-4
-      ${bonusInfo.tier === 'legendary' ? 'border-amber-400 animate-pulse' : 
-        bonusInfo.tier === 'epic' ? 'border-purple-400' :
-        bonusInfo.tier === 'rare' ? 'border-blue-400' : 'border-green-400'}
-      bg-gradient-to-br ${tierColors[bonusInfo.tier] || tierColors.common} bg-opacity-20
-    `}>
-      <div className="relative flex items-center gap-4">
-        <div className="relative">
+    <div
+      className={`rounded-xl border ${config.border} bg-gradient-to-r ${config.gradient} bg-slate-800/80 p-4`}
+      data-testid="kernel-bonus-result"
+    >
+      <div className="flex items-center gap-4">
+        <div className="relative shrink-0">
           <KernelIcon className="w-12 h-12" />
-          <TierIcon className="absolute -bottom-1 -right-1 w-5 h-5 text-white drop-shadow-lg" />
+          <TierIcon className="absolute -bottom-1 -right-1 w-4 h-4 text-white drop-shadow" />
         </div>
-        
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className={`text-lg font-bold bg-gradient-to-r ${tierColors[bonusInfo.tier]} bg-clip-text text-transparent`}>
-              {bonusInfo.tier.toUpperCase()} COMBO!
-            </span>
+        <div className="flex-1 min-w-0">
+          <div className={`text-base font-bold ${config.text}`}>
+            {bonusInfo.tier.toUpperCase()} COMBO
           </div>
-          <p className="text-sm text-white/80">{bonusInfo.description}</p>
+          <p className="text-sm text-slate-300 truncate">{bonusInfo.description}</p>
         </div>
-        
-        <div className="text-right">
+        <div className="text-right shrink-0">
           <div className="text-2xl font-bold text-white">+{bonusInfo.bonus_percent}%</div>
-          <div className="text-xs text-white/60">
+          <div className="text-[10px] text-slate-500">
             +{bonusInfo.points_bonus} pts / +{bonusInfo.xp_bonus} xp
           </div>
         </div>
@@ -245,7 +206,6 @@ export const KernelBonusResult = ({ bonusInfo }) => {
   );
 };
 
-// Hook to fetch current kernel holder
 export const useKernelOfWow = () => {
   const [currentHolder, setCurrentHolder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -264,9 +224,8 @@ export const useKernelOfWow = () => {
         setLoading(false);
       }
     };
-    
     fetchHolder();
-    const interval = setInterval(fetchHolder, 30000); // Refresh every 30s
+    const interval = setInterval(fetchHolder, 30000);
     return () => clearInterval(interval);
   }, []);
 
