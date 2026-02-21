@@ -25,7 +25,7 @@ import {
   Copy,
   ExternalLink,
   Loader2,
-  CircleDot as _unused_CircleDot,
+  Beaker,
   CalendarDays,
   X
 } from 'lucide-react';

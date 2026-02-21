@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CircleDot, Clock, Zap, Crown, AlertCircle, Gem } from 'lucide-react';
+import { Clock, Zap, Crown, AlertCircle, Gem } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -104,7 +104,6 @@ export const KernelOfWowStatus = ({ playerAddress, onStatusChange }) => {
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-lg font-bold text-yellow-400">Kernel of Wow Active!</h3>
-            <CircleDot className="w-5 h-5 text-yellow-400 animate-spin" style={{ animationDuration: '3s' }} />
           </div>
           <p className="text-sm text-yellow-200/80 mb-2">
             Your treats get bonus points! Choose combos wisely for up to +30% boost!
@@ -185,7 +184,7 @@ export const KernelIngredientCard = ({ isSelected, onSelect, disabled }) => {
         
         {/* Bonus indicator */}
         <div className="absolute top-1 right-1">
-          <CircleDot className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+          <Gem className="w-3 h-3 text-yellow-400 fill-yellow-400" />
         </div>
       </div>
     </button>
@@ -205,12 +204,12 @@ export const KernelBonusResult = ({ bonusInfo }) => {
   
   const tierIcons = {
     legendary: Crown,
-    epic: Star,
+    epic: Gem,
     rare: Zap,
-    common: CircleDot
+    common: Zap
   };
   
-  const TierIcon = tierIcons[bonusInfo.tier] || CircleDot;
+  const TierIcon = tierIcons[bonusInfo.tier] || Zap;
   
   return (
     <div className={`
