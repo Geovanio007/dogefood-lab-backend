@@ -25,7 +25,7 @@ import {
   Copy,
   ExternalLink,
   Loader2,
-  Sparkles,
+  CircleDot,
   CalendarDays,
   X
 } from 'lucide-react';
@@ -321,7 +321,7 @@ const AgentStatsCard = ({ agentStatus, playerStats, isDark }) => {
           </div>
           
           <div className={`p-4 rounded-xl border text-center ${isDark ? 'bg-slate-800 border-sky-700' : 'bg-white border-sky-200'}`}>
-            <Sparkles className={`w-5 h-5 mx-auto mb-2 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
+            <CircleDot className={`w-5 h-5 mx-auto mb-2 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />
             <div className={`text-xl font-bold ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>{agentStatus.activity_24h?.total_mixes || 0}</div>
             <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Mixes (24h)</div>
           </div>
@@ -364,7 +364,7 @@ const AgentStatsCard = ({ agentStatus, playerStats, isDark }) => {
         {/* Rarity Distribution */}
         <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}>
           <h4 className={`font-semibold mb-3 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            <Sparkles className="w-4 h-4" />
+            <CircleDot className="w-4 h-4" />
             Rarity Distribution (24h)
           </h4>
           <div className="flex flex-wrap gap-2">
@@ -456,7 +456,7 @@ const PlayerMixerStats = ({ stats, isDark }) => {
     <Card className={`border-2 ${isDark ? 'bg-indigo-900/30 border-indigo-700' : 'bg-gradient-to-br from-indigo-50 to-violet-50 border-indigo-200'}`} data-testid="player-mixer-stats">
       <CardHeader className="pb-3">
         <CardTitle className={`flex items-center gap-2 ${isDark ? 'text-indigo-300' : 'text-indigo-800'}`}>
-          <Sparkles className="w-5 h-5" />
+          <CircleDot className="w-5 h-5" />
           Your Auto-Mixer Performance
         </CardTitle>
         <p className={`text-sm ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
@@ -922,7 +922,7 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
         <Card className={`border-2 ${isDark ? 'bg-emerald-900/30 border-emerald-700' : 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200'}`}>
           <CardHeader>
             <CardTitle className={`flex items-center gap-2 ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>
-              <Sparkles className="w-5 h-5" />
+              <CircleDot className="w-5 h-5" />
               Your Active Subscription
             </CardTitle>
           </CardHeader>

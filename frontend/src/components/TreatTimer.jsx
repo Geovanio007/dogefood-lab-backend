@@ -83,7 +83,7 @@ const TreatTimer = ({
           {/* Glass Shine Effect */}
           <div className="glass-shine"></div>
           
-          {/* Completion Sparkles */}
+          {/* Completion effect */}
           {isFinished && (
             <div className="completion-sparkles">
               <div className="sparkle sparkle-1">◉</div>

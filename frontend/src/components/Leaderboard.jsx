@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
 import { useTelegram } from '../contexts/TelegramContext';
-import { ArrowLeft, Trophy, Crown, Star, Users, TrendingUp, Clock, Sparkles, Loader2, Beaker } from 'lucide-react';
+import { ArrowLeft, Trophy, Crown,  Users, TrendingUp, Clock, CircleDot, Loader2, Beaker } from 'lucide-react';
 import PlayerStatsModal from './PlayerStatsModal';
 import MusicPlayer from './MusicPlayer';
 import ScientistChat from './ScientistChat';
@@ -302,7 +302,7 @@ const Leaderboard = () => {
           {/* Distribution Breakdown */}
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
             <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-yellow-500" />
+              <CircleDot className="w-4 h-4 text-yellow-500" />
               $LAB Distribution Breakdown
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
@@ -634,7 +634,7 @@ const Leaderboard = () => {
       <Card className="glass-panel mt-6 sm:mt-8">
         <CardHeader className="pb-2 sm:pb-4">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <Star className="w-4 h-4 sm:w-5 sm:h-5" />
+            <CircleDot className="w-4 h-4 sm:w-5 sm:h-5" />
             Reward Tiers & Multipliers
           </CardTitle>
         </CardHeader>

@@ -30,7 +30,7 @@ import {
   Bell, 
   Music,
   Bot,
-  Sparkles,
+  CircleDot,
   Crown,
   Shield,
   Info,
@@ -739,7 +739,7 @@ const Settings = () => {
                   </div>
                   {effectiveNFTStatus && (
                     <div className={`mt-4 p-3 rounded-lg text-sm ${isDarkMode ? 'bg-sky-900/50 text-sky-300' : 'bg-sky-100 text-sky-800'}`}>
-                      <Sparkles className="w-4 h-4 inline mr-1" />
+                      <CircleDot className="w-4 h-4 inline mr-1" />
                       500 Bonus Points + VIP Perks Active
                     </div>
                   )}

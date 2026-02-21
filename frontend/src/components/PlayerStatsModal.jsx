@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
-import { X, TrendingUp, Flame, Beaker, Sparkles, Trophy } from 'lucide-react';
+import { X, TrendingUp, Flame, Beaker, CircleDot, Trophy } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -205,7 +205,7 @@ const PlayerStatsModal = ({ playerAddress, onClose }) => {
                   </div>
                   <div className={`${RARITY_BG[stats.stats.best_rarity] || 'bg-slate-800/50'} border border-slate-600/30 rounded p-2`}>
                     <div className="flex items-center gap-1 mb-0.5">
-                      <Sparkles className="w-3 h-3 text-yellow-400" />
+                      <CircleDot className="w-3 h-3 text-yellow-400" />
                       <span className="text-[9px] text-slate-300 uppercase">Best Find</span>
                     </div>
                     <div className={`text-lg font-black ${RARITY_COLORS[stats.stats.best_rarity] || 'text-white'}`}>

@@ -3,7 +3,7 @@ import { Progress } from '../ui/progress';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { useGame } from '../../contexts/GameContext';
-import { Star, Zap, Crown, Sparkles } from 'lucide-react';
+import { Zap, Crown, CircleDot } from 'lucide-react';
 
 // Real-time XP Progress Bar Component
 export const XPProgressBar = () => {
@@ -116,7 +116,7 @@ export const LevelUpNotification = () => {
             <div className="relative inline-block">
               <Crown className="w-20 h-20 text-yellow-500 animate-bounce" />
               <div className="absolute -top-2 -right-2">
-                <Sparkles className="w-8 h-8 text-orange-400 animate-spin" />
+                <CircleDot className="w-8 h-8 text-orange-400 animate-spin" />
               </div>
             </div>
           </div>
@@ -139,9 +139,9 @@ export const LevelUpNotification = () => {
           {levelUp.unlockedFeatures.length > 0 && (
             <div className="mb-6">
               <h3 className="font-bold text-green-600 mb-3 flex items-center justify-center gap-2">
-                <Star className="w-5 h-5" />
+                <CircleDot className="w-5 h-5" />
                 New Features Unlocked!
-                <Star className="w-5 h-5" />
+                <CircleDot className="w-5 h-5" />
               </h3>
               <div className="space-y-2">
                 {levelUp.unlockedFeatures.map((feature, index) => (

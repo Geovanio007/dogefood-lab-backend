@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
-import { ArrowLeft, Zap, Star, Sparkles, Clock, Target, Crown, ChefHat } from 'lucide-react';
+import { ArrowLeft, Zap, CircleDot, Clock, Target, Crown, ChefHat } from 'lucide-react';
 import { useGame } from '../contexts/GameContext';
 import { useWeb3Game } from '../hooks/useWeb3Game';
 import { XPProgressBar, LevelUpNotification, IngredientSack } from './game/ProgressSystem';
@@ -445,7 +445,7 @@ const GameLab = () => {
             <Card className="game-card max-w-2xl mx-auto">
               <CardHeader className="text-center">
                 <div className="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-6 shadow-xl">
-                  <Sparkles size={48} className="text-white drop-shadow-lg" />
+                  <CircleDot size={48} className="text-white drop-shadow-lg" />
                 </div>
                 <CardTitle className="playful-title text-white text-4xl mb-4">
                   🔗 Connect Your Wallet to Start Creating!
@@ -684,7 +684,7 @@ const GameLab = () => {
                     </div>
                     {selectedIngredients.length >= 2 && (
                       <div className="text-xs text-green-600 mt-2 font-medium flex items-center gap-1">
-                        <Star className="w-3 h-3" />
+                        <CircleDot className="w-3 h-3" />
                         Ready for XP! (+{gameConfig.xp.baseXpPerCombo + Math.max(0, selectedIngredients.length - 2) * gameConfig.xp.bonusXpPerExtraIngredient} base XP × {currentDifficulty}x difficulty)
                       </div>
                     )}

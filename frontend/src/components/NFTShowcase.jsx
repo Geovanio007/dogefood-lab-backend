@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
-import { ArrowLeft, Package, Star, Sparkles, Gift, Zap } from 'lucide-react';
+import { ArrowLeft, Package, CircleDot, Gift, Zap } from 'lucide-react';
 import TreatIcon from './TreatIcon';
 
 const NFTShowcase = () => {
@@ -21,8 +21,8 @@ const NFTShowcase = () => {
 
   const getRarityIcon = (rarity) => {
     switch (rarity) {
-      case 'Legendary': return <Sparkles className="w-4 h-4" />;
-      case 'Epic': return <Star className="w-4 h-4" />;
+      case 'Legendary': return <CircleDot className="w-4 h-4" />;
+      case 'Epic': return <CircleDot className="w-4 h-4" />;
       case 'Rare': return <Zap className="w-4 h-4" />;
       default: return <Gift className="w-4 h-4" />;
     }
@@ -65,7 +65,7 @@ const NFTShowcase = () => {
         
         <Card className="glass-panel">
           <CardContent className="p-6 text-center">
-            <Star className="w-8 h-8 mx-auto mb-2 text-purple-600" />
+            <CircleDot className="w-8 h-8 mx-auto mb-2 text-purple-600" />
             <div className="font-bold text-2xl text-purple-600">
               {createdTreats.filter(t => t.rarity === 'Legendary').length}
             </div>
@@ -85,7 +85,7 @@ const NFTShowcase = () => {
         
         <Card className="glass-panel">
           <CardContent className="p-6 text-center">
-            <Sparkles className="w-8 h-8 mx-auto mb-2 text-green-600" />
+            <CircleDot className="w-8 h-8 mx-auto mb-2 text-green-600" />
             <div className="font-bold text-2xl text-green-600">{points}</div>
             <div className="text-sm text-gray-600">Total Points</div>
           </CardContent>

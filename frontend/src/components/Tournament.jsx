@@ -501,7 +501,7 @@ const Tournament = () => {
                     isUserQualified ? 'bg-green-500/20' : 'bg-slate-700'
                   }`}>
                     {isUserQualified ? (
-                      <Star className="w-7 h-7 text-green-400" />
+                      <CircleDot className="w-7 h-7 text-green-400" />
                     ) : (
                       <Users className="w-7 h-7 text-slate-400" />
                     )}

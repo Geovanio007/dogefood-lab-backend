@@ -14,7 +14,7 @@ import {
   TrendingUp, 
   ChevronDown,
   X,
-  Sparkles,
+  CircleDot,
   Clock,
   ShoppingCart,
   AlertCircle,
@@ -435,7 +435,7 @@ const Marketplace = () => {
             <p className="text-slate-500 mb-6">Be the first to list your treats on the marketplace!</p>
             <Link to="/nfts">
               <Button className="bg-gradient-to-r from-yellow-500 to-sky-500 text-slate-900 font-bold">
-                <Sparkles className="w-4 h-4 mr-2" />
+                <CircleDot className="w-4 h-4 mr-2" />
                 List a Treat
               </Button>
             </Link>

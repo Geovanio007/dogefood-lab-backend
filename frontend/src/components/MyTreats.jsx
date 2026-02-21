@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
-import { ArrowLeft, Crown, Sparkles, Wallet, Filter, Grid3X3, List, Trophy, Beaker, Coins, ChevronDown, Tag, Store, X, Loader2, Check } from 'lucide-react';
+import { ArrowLeft, Crown, CircleDot, Wallet, Filter, Grid3X3, List, Trophy, Beaker, Coins, ChevronDown, Tag, Store, X, Loader2, Check } from 'lucide-react';
 import { useGame } from '../contexts/GameContext';
 import { useTelegram } from '../contexts/TelegramContext';
 import TreatIcon from './TreatIcon';
@@ -506,7 +506,7 @@ const MyTreats = () => {
             color="amber"
           />
           <StatsCard 
-            icon={Sparkles} 
+            icon={CircleDot} 
             value={effectiveNFTStatus ? '1+' : '0'} 
             label="DogeFood NFTs" 
             color="purple"

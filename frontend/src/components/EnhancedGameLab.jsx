@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
-import { ArrowLeft, Beaker, Sparkles, Clock, Star, Crown, Shuffle } from 'lucide-react';
+import { ArrowLeft, Beaker, CircleDot, Clock, Crown, Shuffle } from 'lucide-react';
 
 const EnhancedGameLab = () => {
   const { isConnected, address } = useAccount();
@@ -168,7 +168,7 @@ const EnhancedGameLab = () => {
                         <div className="text-xs text-white/60">Tier {ingredient.tier}</div>
                         {isSelected && (
                           <div className="absolute top-2 right-2">
-                            <Star className="w-5 h-5 text-yellow-400 fill-current" />
+                            <CircleDot className="w-5 h-5 text-yellow-400 fill-current" />
                           </div>
                         )}
                       </div>
@@ -206,7 +206,7 @@ const EnhancedGameLab = () => {
                   <div className="mixing-bowl relative">
                     {mixing.active && (
                       <div className="mixing-animation absolute inset-0 flex items-center justify-center">
-                        <Sparkles className="w-12 h-12 text-yellow-400 animate-spin" />
+                        <CircleDot className="w-12 h-12 text-yellow-400 animate-spin" />
                       </div>
                     )}
                     {selectedIngredients.length >= 2 && !mixing.active && (
