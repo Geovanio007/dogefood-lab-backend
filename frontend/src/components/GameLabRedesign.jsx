@@ -6,11 +6,12 @@ import { Badge } from './ui/badge';
 import { Card, CardContent } from './ui/card';
 import INGREDIENT_ICONS from '../config/ingredientIcons';
 import { useAudio } from '../contexts/AudioContext';
+import { useMusic } from '../contexts/MusicContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import DailyLimitTracker from './DailyLimitTracker';
 import PlayerStatsModal from './PlayerStatsModal';
 import { KernelOfWowStatus, KernelBonusResult } from './KernelOfWow';
-import { HelpCircle, ChevronDown, ChevronUp, BarChart3, Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronUp, BarChart3, Volume2, VolumeX, CircleDot } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
