@@ -747,15 +747,14 @@ const MainMenu = () => {
                 <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
                   <Palette className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
                 </div>
-                <h3 className="text-sm sm:text-2xl font-bold text-white mb-1 sm:mb-2 flex items-center gap-1">
-                  <TreatIcon size="sm" className="sm:hidden" />
+                <h3 className="text-sm sm:text-2xl font-bold text-white mb-1 sm:mb-2">
                   Treats
                 </h3>
                 <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
                   View your collections!
                 </p>
-                <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto flex items-center justify-center gap-1">
-                  <TreatIcon size="xs" /> View
+                <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto">
+                  <Palette className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> View
                 </Button>
               </CardContent>
             </Card>
@@ -815,7 +814,7 @@ const MainMenu = () => {
                 <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
                   Buy & sell treats
                 </p>
-                <Button className="w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto bg-gradient-to-r from-yellow-500 to-sky-500 text-slate-900">
+                <Button className="w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto bg-gradient-to-r from-yellow-500 to-sky-500 text-white">
                   <Store className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Browse
                 </Button>
               </CardContent>
