@@ -83,9 +83,15 @@ const RARITY_STYLES = {
 const GameLabRedesign = ({ playerAddress }) => {
   const navigate = useNavigate();
   const { playClick, playBrewing, playMix, playSuccess, playCollect, playRare, playLevelUp, startLabAmbient, stopLabAmbient, soundEnabled, toggleSound } = useAudio();
+  const { stopMusic } = useMusic();
   const { scheduleTreatReadyNotification } = useNotifications();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Stop menu music when entering lab (lab has its own ambient sound)
+  useEffect(() => {
+    stopMusic();
+  }, [stopMusic]);
   
   // Character selection state
   const [showCharacterSelection, setShowCharacterSelection] = useState(false);
