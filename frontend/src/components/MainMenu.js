@@ -86,7 +86,14 @@ const MainMenu = () => {
   const { nftBalance, isNFTHolder, loading: nftLoading } = useNFTVerification();
   const { user, currentLevel, points, dispatch, loadPlayerData } = useGame();
   const { telegramUser, isTelegram } = useTelegram();
+  const { showPlayer, stopMusic } = useMusic();
   const navigate = useNavigate();
+  
+  // Auto-play music when menu loads
+  useEffect(() => {
+    showPlayer();
+    return () => {}; // Don't stop on unmount - let lab page handle it
+  }, [showPlayer]);
   
   // Auth modal state
   const [showAuthModal, setShowAuthModal] = useState(false);
