@@ -8,16 +8,20 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 ### Core Game Features
 - Treat mixing system with ingredients, rarity-based outcomes, XP/leveling, streak bonuses, leaderboards
 - Dark mode by default (synced localStorage key between ThemeContext and Settings)
-- ◉ icon replaces all ✨ throughout the UI
+- All star icons replaced with circle icon throughout UI
 
-### Auto-Mixer Agent (Fixed Feb 18, 2026)
-- Points/XP correctly use `points_reward` and `xp_reward` keys from game engine
-- Ingredients fully randomized each cycle with character bonus support
+### UI Redesigns (Feb 21, 2026)
+- **Music Player**: Yellow/sky-blue/white color theme with gradient accent bar, animated equalizer bars, yellow play button
+- **Scientist Profile Card**: Professional game card with slate-900 bg, yellow/sky accent bar, clean stats bar, dot grid pattern overlay
+- **Season Card**: Professional game card matching profile style, clean countdown timer with per-unit color coding, status indicators
+- **All emojis removed** from MainMenu cards and replaced with Lucide icons
+
+### Auto-Mixer Agent
+- Points/XP correctly use game engine keys, ingredients randomized, character bonuses applied
 
 ### Payment Systems
-- **Unique Amount System**: Each order gets distinct amount (base + 0.001-0.099) for precise 1:1 matching
-- **Auto-Payment Detection**: Tatum API v3, 30s polling, precise unique_amount matching
-- **Recheck Unmatched**: POST /api/payments/recheck-unmatched endpoint
+- Unique Amount System for precise 1:1 payment matching
+- Auto-Payment Detection via Tatum API v3, 30s polling
 
 ### Blockchain Integrations
 - DOGE: BlockCypher + Tatum APIs
@@ -38,4 +42,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-February 19, 2026 - Dark mode default, ✨→◉ icon swap, Settings dark mode text fix
+February 21, 2026 - Music player, profile card, season card redesign deployed
