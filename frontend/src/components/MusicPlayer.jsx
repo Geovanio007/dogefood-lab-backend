@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useMusic } from '../contexts/MusicContext';
 import { Volume2, VolumeX, SkipForward, SkipBack, Play, Pause, Music } from 'lucide-react';
 
@@ -9,19 +9,11 @@ const MusicPlayer = () => {
     volume, 
     setVolume, 
     currentTrack, 
+    currentTrackIndex,
     nextTrack, 
     prevTrack, 
-    tracks,
-    isMuted,
-    toggleMute 
+    playlist
   } = useMusic();
-
-  useEffect(() => {
-    const savedVolume = localStorage.getItem('dogefood_music_volume');
-    if (savedVolume) {
-      setVolume(parseFloat(savedVolume));
-    }
-  }, [setVolume]);
 
   const handleVolumeChange = (e) => {
     const newVolume = parseFloat(e.target.value);
@@ -29,11 +21,10 @@ const MusicPlayer = () => {
     localStorage.setItem('dogefood_music_volume', newVolume.toString());
   };
 
-  const currentTrackInfo = tracks[currentTrack];
+  const isMuted = volume === 0;
 
   return (
     <div data-testid="music-player" className="relative overflow-hidden">
-      {/* Main container */}
       <div className="bg-slate-900/90 backdrop-blur-md border border-sky-400/20 rounded-xl p-3 shadow-lg">
         
         {/* Top accent line */}
@@ -46,13 +37,12 @@ const MusicPlayer = () => {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-xs font-semibold text-white truncate">
-              {currentTrackInfo?.name || 'No Track'}
+              {currentTrack?.title || 'No Track'}
             </div>
             <div className="text-[10px] text-sky-300/70">
-              Track {currentTrack + 1} of {tracks.length}
+              {currentTrack?.artist || ''} {playlist.length > 0 ? `- Track ${currentTrackIndex + 1}/${playlist.length}` : ''}
             </div>
           </div>
-          {/* Playing indicator */}
           {isPlaying && (
             <div className="flex items-end gap-[2px] h-3">
               <div className="w-[2px] bg-yellow-400 rounded-full animate-bounce" style={{ height: '60%', animationDelay: '0ms', animationDuration: '600ms' }} />
@@ -65,7 +55,6 @@ const MusicPlayer = () => {
 
         {/* Controls row */}
         <div className="flex items-center justify-between">
-          {/* Playback controls */}
           <div className="flex items-center gap-1">
             <button
               data-testid="music-prev-btn"
@@ -90,18 +79,13 @@ const MusicPlayer = () => {
             </button>
           </div>
 
-          {/* Volume controls */}
           <div className="flex items-center gap-2">
             <button
               data-testid="music-mute-btn"
-              onClick={toggleMute}
+              onClick={() => setVolume(isMuted ? 0.1 : 0)}
               className="w-7 h-7 rounded-md flex items-center justify-center text-sky-300 hover:text-white hover:bg-sky-400/20 transition-all"
             >
-              {isMuted || volume === 0 ? (
-                <VolumeX className="w-3.5 h-3.5" />
-              ) : (
-                <Volume2 className="w-3.5 h-3.5" />
-              )}
+              {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             </button>
             <div className="relative w-16 h-7 flex items-center">
               <input
@@ -110,11 +94,11 @@ const MusicPlayer = () => {
                 min="0"
                 max="1"
                 step="0.01"
-                value={isMuted ? 0 : volume}
+                value={volume}
                 onChange={handleVolumeChange}
                 className="w-full h-1 rounded-full appearance-none cursor-pointer"
                 style={{
-                  background: `linear-gradient(to right, #38bdf8 0%, #facc15 ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.1) ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.1) 100%)`
+                  background: `linear-gradient(to right, #38bdf8 0%, #facc15 ${volume * 100}%, rgba(255,255,255,0.1) ${volume * 100}%, rgba(255,255,255,0.1) 100%)`
                 }}
               />
             </div>
@@ -122,7 +106,6 @@ const MusicPlayer = () => {
         </div>
       </div>
 
-      {/* Inline styles for range slider thumb */}
       <style>{`
         input[type="range"]::-webkit-slider-thumb {
           -webkit-appearance: none;
