@@ -731,6 +731,12 @@ async def get_daily_treat_status(address: str):
         logger.error(f"Error getting daily status: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
+@api_router.get("/happy-hour/status")
+async def happy_hour_status():
+    """Get current Happy Hour status - active/upcoming with timing"""
+    return get_happy_hour_status()
+
+
 @api_router.get("/extra-life/packages")
 async def get_extra_life_packages():
     """Get available extra life packages with DOGE pricing"""
