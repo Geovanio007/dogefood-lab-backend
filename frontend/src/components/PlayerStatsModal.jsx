@@ -155,7 +155,7 @@ const PlayerStatsModal = ({ playerAddress, onClose }) => {
           <X className="w-4 h-4 text-white" />
         </button>
 
-        <Card className="w-full bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-slate-700 overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto" data-testid="player-stats-modal">
+        <Card ref={cardRef} className="w-full bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-slate-700 overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto" data-testid="player-stats-modal">
           {loading ? (
             <CardContent className="p-8 text-center">
               <div className="animate-spin text-5xl mb-4">🧪</div>
