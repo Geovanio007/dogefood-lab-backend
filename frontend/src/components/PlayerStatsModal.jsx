@@ -86,6 +86,57 @@ const PlayerStatsModal = ({ playerAddress, onClose }) => {
 
   const formatAddress = (addr) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
+  const getShareText = () => {
+    if (!stats) return '';
+    const name = stats.player.nickname || 'Scientist';
+    return [
+      `${name} | DogeFood Lab`,
+      `Level ${stats.player.level} | Rank #${stats.rank || '?'}`,
+      `${stats.player.points.toLocaleString()} pts | ${stats.stats.treats_created} treats`,
+      `Streak: ${stats.streak.current} days | Best: ${stats.stats.best_rarity}`,
+      '',
+      'Play now at dogefoodlab.vercel.app'
+    ].join('\n');
+  };
+
+  const handleShareImage = async () => {
+    if (!cardRef.current) return;
+    setSharing(true);
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: '#0f172a',
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+
+      if (navigator.share && blob) {
+        const file = new File([blob], 'dogefood-stats.png', { type: 'image/png' });
+        await navigator.share({ files: [file], text: getShareText() });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'dogefood-stats.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      setShareSuccess(true);
+      setTimeout(() => setShareSuccess(false), 2000);
+    } catch (e) {
+      if (e.name !== 'AbortError') console.error('Share error:', e);
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const handleShareTwitter = () => {
+    const text = getShareText();
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div 
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-2"
