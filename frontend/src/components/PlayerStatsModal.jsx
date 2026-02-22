@@ -341,6 +341,33 @@ const PlayerStatsModal = ({ playerAddress, onClose }) => {
                     <div className="text-[8px] text-slate-400">Pts/Day</div>
                   </div>
                 </div>
+
+                {/* Share Buttons */}
+                <div className="flex gap-2 mt-3 pt-2 border-t border-slate-700/60">
+                  <button
+                    onClick={handleShareImage}
+                    disabled={sharing}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                    data-testid="share-stats-image-btn"
+                  >
+                    {sharing ? (
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : shareSuccess ? (
+                      <Check className="w-3.5 h-3.5" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    {sharing ? 'Saving...' : shareSuccess ? 'Saved!' : 'Save Stats'}
+                  </button>
+                  <button
+                    onClick={handleShareTwitter}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold transition-colors"
+                    data-testid="share-stats-twitter-btn"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    Share on X
+                  </button>
+                </div>
               </div>
             </CardContent>
           ) : null}
