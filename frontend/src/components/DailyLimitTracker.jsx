@@ -367,8 +367,37 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
               <X className="w-4 h-4 text-white" />
             </button>
             
-            <Card className="bg-gradient-to-b from-rose-600 via-rose-700 to-red-800 border-rose-400 shadow-2xl">
+            <Card className={`${
+              purchaseResult?.success 
+                ? 'bg-gradient-to-b from-green-600 via-green-700 to-emerald-800 border-green-400' 
+                : 'bg-gradient-to-b from-rose-600 via-rose-700 to-red-800 border-rose-400'
+            } shadow-2xl transition-all duration-500`}>
               <CardContent className="p-4">
+                {purchaseResult?.success ? (
+                  /* === SUCCESS STATE === */
+                  <div className="text-center py-4" data-testid="extra-life-success">
+                    <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-white/20 flex items-center justify-center">
+                      <CheckCircle2 className="w-10 h-10 text-white" />
+                    </div>
+                    <h2 className="text-xl font-bold text-white mb-1">Payment Confirmed!</h2>
+                    <p className="text-green-100 text-sm mb-4">{purchaseResult.message}</p>
+                    <div className="bg-white/15 rounded-lg p-3 mb-4">
+                      <div className="text-3xl font-black text-white">
+                        +{pendingPurchase?.treats_amount || selectedPackage?.treats || '?'} Treats
+                      </div>
+                      <p className="text-green-200 text-xs mt-1">Added to your account</p>
+                    </div>
+                    <Button
+                      onClick={closeModal}
+                      className="w-full bg-white text-green-700 hover:bg-green-50 font-bold py-2.5"
+                      data-testid="extra-life-success-close-btn"
+                    >
+                      Continue Mixing
+                    </Button>
+                  </div>
+                ) : (
+                  /* === NORMAL STATE === */
+                  <>
                 <div className="text-center mb-4">
                   <div className="text-4xl mb-1">
                     <Heart className="w-12 h-12 mx-auto text-white" />
