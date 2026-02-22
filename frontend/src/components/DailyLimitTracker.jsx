@@ -384,7 +384,7 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
                     <p className="text-green-100 text-sm mb-4">{purchaseResult.message}</p>
                     <div className="bg-white/15 rounded-lg p-3 mb-4">
                       <div className="text-3xl font-black text-white">
-                        +{pendingPurchase?.treats_amount || selectedPackage?.treats || '?'} Treats
+                        +{purchaseResult.treats_amount || pendingPurchase?.treats_amount || selectedPackage?.treats || '?'} Treats
                       </div>
                       <p className="text-green-200 text-xs mt-1">Added to your account</p>
                     </div>
