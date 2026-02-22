@@ -174,7 +174,8 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
           // Purchase was completed!
           setPurchaseResult({ 
             success: true, 
-            message: `Payment confirmed! +${pendingPurchase.treats_amount} extra treats added!` 
+            message: `Payment confirmed! +${pendingPurchase.treats_amount} extra treats added!`,
+            treats_amount: pendingPurchase.treats_amount
           });
           setPendingPurchase(null);
           setSelectedPackage(null);
