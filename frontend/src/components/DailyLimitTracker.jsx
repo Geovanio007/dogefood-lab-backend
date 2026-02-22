@@ -584,6 +584,8 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
                     )}
                   </div>
                 )}
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
