@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
-import { X, TrendingUp, Flame, Beaker, Trophy, Gem } from 'lucide-react';
+import { X, TrendingUp, Flame, Beaker, Trophy, Gem, Share2, Download, Check } from 'lucide-react';
+import html2canvas from 'html2canvas';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -35,6 +36,9 @@ const PlayerStatsModal = ({ playerAddress, onClose }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sharing, setSharing] = useState(false);
+  const [shareSuccess, setShareSuccess] = useState(false);
+  const cardRef = useRef(null);
 
   useEffect(() => {
     const fetchStats = async () => {
