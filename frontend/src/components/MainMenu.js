@@ -400,7 +400,7 @@ const navItems = [
 
 // ─── Left Sidebar ────────────────────────────────────────────
 const Sidebar = ({ onAuthRequired }) => (
-  <nav className="hidden lg:flex flex-col w-52 shrink-0 sticky top-[65px] self-start h-[calc(100vh-65px)] py-4" data-testid="menu-sidebar">
+  <nav className="hidden lg:flex flex-col w-52 shrink-0 py-4" data-testid="menu-sidebar">
     {/* Share / Invite button */}
     <button className="mx-3 mb-4 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 transition-all text-white text-sm font-semibold shadow-lg shadow-sky-500/20">
       <Share2 className="w-4 h-4" />
