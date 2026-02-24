@@ -716,6 +716,9 @@ const MainMenu = () => {
               <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500" />
             </button>
 
+            {/* Theme Toggle */}
+            <ThemeToggle className="!p-1.5 !w-8 !h-8" />
+
             <ConnectButton.Custom>
               {({ account, chain, openAccountModal, openConnectModal, mounted, authenticationStatus }) => {
                 const ready = mounted && authenticationStatus !== 'loading';
