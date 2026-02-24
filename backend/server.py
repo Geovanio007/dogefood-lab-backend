@@ -2590,13 +2590,17 @@ async def collect_treat(treat_id: str, data: dict):
 
 # Leaderboard Routes
 @api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
-async def get_leaderboard(limit: int = 200):
-    # Get top players by points (all players, not just NFT holders)
-    # Only include players with valid nicknames
+async def get_leaderboard(limit: int = 50):
+    # Only players who have created at least 1 treat qualify for the leaderboard
+    # Must have a valid nickname and points from actual gameplay
     pipeline = [
         {"$match": {
             "points": {"$gt": 0},
-            "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+            "nickname": {"$ne": None, "$exists": True, "$ne": ""},
+            "$or": [
+                {"total_treats_created": {"$gt": 0}},
+                {"created_treats.0": {"$exists": True}}
+            ]
         }},
         {"$sort": {"points": -1, "level": -1}},
         {"$limit": limit}
