@@ -1126,7 +1126,7 @@ const MainMenu = () => {
         </main>
 
         {/* RIGHT SIDEBAR — Live Chat (Desktop only) */}
-        <aside className="hidden lg:flex flex-col w-80 shrink-0 sticky top-[56px] self-start h-[calc(100vh-56px)] border-l border-white/[0.06]" data-testid="chat-sidebar">
+        <aside className="hidden lg:flex flex-col w-80 shrink-0 border-l border-white/[0.06]" data-testid="chat-sidebar">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
             <MessageCircle className="w-4 h-4 text-emerald-400" />
             <span className="text-sm font-bold text-white flex-1">Live Chat</span>
