@@ -883,6 +883,10 @@ label, .label {
   @apply bg-white/40 rounded-full hover:bg-white/60;
 }
 
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* ================================
    TELEGRAM MINI APP STYLES
    ================================ */
