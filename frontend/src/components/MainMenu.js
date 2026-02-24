@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
@@ -9,13 +9,13 @@ import { useNFTVerification } from '../hooks/useNFTVerification';
 import { useTelegram } from '../contexts/TelegramContext';
 import DogeFoodLogo from './DogeFoodLogo';
 import MusicPlayer from './MusicPlayer';
-import ScientistChat from './ScientistChat';
 import { useMusic } from '../contexts/MusicContext';
 import {
   Beaker, Trophy, Settings, Palette, Clock, User, Check, Edit2, X,
   Wallet, UserPlus, Crown, Store, Camera, Zap, ChevronRight,
-  BookOpen, Activity, TrendingUp, Share2, Home, Star, Gift,
-  ArrowRight, ChevronLeft, Users, MessageCircle, Send
+  BookOpen, Activity, TrendingUp, Share2, Home, Star,
+  ArrowRight, ChevronLeft, Users, MessageCircle, Send,
+  Rocket, Reply, Smile
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -67,8 +67,221 @@ const SeasonCountdown = ({ compact }) => {
   );
 };
 
-// ─── Live Activity Feed ──────────────────────────────────────
-const LiveActivityFeed = ({ tableMode }) => {
+// ─── Emoji Picker (simple) ───────────────────────────────────
+const QUICK_EMOJIS = ['😀','😂','🔥','❤️','👍','👏','🎉','💎','✨','🐶','🏆','💪','🤩','😎','🚀','⭐','💛','🎯','🪄','🎮'];
+
+const EmojiPicker = ({ onSelect, onClose }) => (
+  <div className="absolute bottom-full mb-2 left-0 bg-[#1a2035] border border-white/10 rounded-xl p-2 shadow-xl z-50" data-testid="emoji-picker">
+    <div className="grid grid-cols-10 gap-1">
+      {QUICK_EMOJIS.map((e) => (
+        <button key={e} onClick={() => { onSelect(e); onClose(); }} className="w-7 h-7 flex items-center justify-center hover:bg-white/10 rounded text-base transition-colors">
+          {e}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+// ─── Live Chat Component ─────────────────────────────────────
+const LiveChat = ({ isLoggedIn, effectiveAddress, username }) => {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [msgInput, setMsgInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
+  const chatEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+
+  const fetchMessages = useCallback(async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/chat/messages?limit=50`);
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data.messages || []);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 5000);
+    return () => clearInterval(interval);
+  }, [fetchMessages]);
+
+  useEffect(() => {
+    if (chatEndRef.current && chatContainerRef.current) {
+      const container = chatContainerRef.current;
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+      if (isNearBottom) {
+        chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [messages]);
+
+  const timeAgo = (iso) => {
+    if (!iso) return '';
+    const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  };
+
+  const handleSend = async () => {
+    if (!msgInput.trim() || !effectiveAddress || sending) return;
+    setSending(true);
+    try {
+      const body = {
+        player_id: effectiveAddress,
+        message: msgInput.trim()
+      };
+      if (replyTo) {
+        body.reply_to = replyTo.message_id;
+        body.reply_nickname = replyTo.player_nickname;
+        body.reply_text = replyTo.message;
+      }
+      const res = await fetch(`${BACKEND_URL}/api/chat/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        setMsgInput('');
+        setReplyTo(null);
+        setShowEmoji(false);
+        fetchMessages();
+      }
+    } catch (e) { console.error(e); }
+    finally { setSending(false); }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-2 p-3">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-10 bg-white/5 rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full" data-testid="live-chat">
+      {/* Messages */}
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
+        {messages.length === 0 && (
+          <div className="text-center py-12">
+            <MessageCircle className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+            <p className="text-slate-500 text-xs">No messages yet. Be the first to say hello!</p>
+          </div>
+        )}
+        {messages.map((msg, idx) => (
+          <div key={msg.message_id || idx} className="group px-2 py-1.5 rounded-lg hover:bg-white/[0.02] transition-colors">
+            <div className="flex items-start gap-2">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shrink-0 mt-0.5 overflow-hidden">
+                {msg.player_image ? (
+                  <img src={msg.player_image} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-3 h-3 text-white" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-sky-400 truncate">{msg.player_nickname || 'Anonymous'}</span>
+                  <span className="text-[9px] text-slate-600">{timeAgo(msg.created_at)}</span>
+                  {isLoggedIn && (
+                    <button
+                      onClick={() => setReplyTo(msg)}
+                      className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-white/10 rounded"
+                      title="Reply"
+                    >
+                      <Reply className="w-3 h-3 text-slate-500" />
+                    </button>
+                  )}
+                </div>
+                {msg.reply_nickname && (
+                  <div className="flex items-center gap-1 mt-0.5 mb-0.5 pl-2 border-l-2 border-sky-500/30">
+                    <Reply className="w-2.5 h-2.5 text-slate-500 shrink-0" />
+                    <span className="text-[9px] text-slate-500 truncate">
+                      <span className="font-medium text-sky-400/70">{msg.reply_nickname}</span>: {msg.reply_text}
+                    </span>
+                  </div>
+                )}
+                <p className={`text-[12px] text-slate-300 break-words leading-relaxed ${msg.emoji_only ? 'text-xl' : ''}`}>
+                  {msg.message}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+        <div ref={chatEndRef} />
+      </div>
+
+      {/* Input Area */}
+      <div className="border-t border-white/[0.06] p-2">
+        {replyTo && (
+          <div className="flex items-center gap-1.5 mb-1.5 px-2 py-1 bg-sky-500/10 rounded-lg border border-sky-500/20">
+            <Reply className="w-3 h-3 text-sky-400 shrink-0" />
+            <span className="text-[10px] text-sky-400 truncate flex-1">
+              Replying to <span className="font-semibold">{replyTo.player_nickname}</span>
+            </span>
+            <button onClick={() => setReplyTo(null)} className="text-slate-400 hover:text-white">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+        {isLoggedIn ? (
+          <div className="relative flex items-center gap-1.5">
+            <div className="relative">
+              <button
+                onClick={() => setShowEmoji(!showEmoji)}
+                className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-yellow-400"
+                data-testid="emoji-btn"
+              >
+                <Smile className="w-4 h-4" />
+              </button>
+              {showEmoji && <EmojiPicker onSelect={(e) => setMsgInput(prev => prev + e)} onClose={() => setShowEmoji(false)} />}
+            </div>
+            <input
+              type="text"
+              value={msgInput}
+              onChange={(e) => setMsgInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Send a message..."
+              maxLength={500}
+              className="flex-1 bg-[#0d1117] border border-white/[0.06] rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500/30"
+              data-testid="chat-input"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!msgInput.trim() || sending}
+              className="p-2 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-700 disabled:text-slate-500 rounded-lg transition-colors text-white"
+              data-testid="chat-send-btn"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="text-center py-2">
+            <p className="text-[10px] text-slate-500">Connect wallet or sign up to chat</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Live Activity Table ─────────────────────────────────────
+const LiveActivityTable = () => {
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -91,12 +304,12 @@ const LiveActivityFeed = ({ tableMode }) => {
 
   const rarityColor = {
     Common: 'text-slate-400', Uncommon: 'text-green-400', Rare: 'text-blue-400',
-    Epic: 'text-purple-400', Legendary: 'text-amber-400', Mythic: 'text-pink-400'
+    Epic: 'text-purple-400', Legendary: 'text-yellow-400', Mythic: 'text-pink-400'
   };
 
   const rarityBg = {
     Common: 'bg-slate-500/10', Uncommon: 'bg-green-500/10', Rare: 'bg-blue-500/10',
-    Epic: 'bg-purple-500/10', Legendary: 'bg-amber-500/10', Mythic: 'bg-pink-500/10'
+    Epic: 'bg-purple-500/10', Legendary: 'bg-yellow-500/10', Mythic: 'bg-pink-500/10'
   };
 
   const timeAgo = (iso) => {
@@ -110,7 +323,7 @@ const LiveActivityFeed = ({ tableMode }) => {
 
   if (loading) {
     return (
-      <div className="space-y-2 p-3">
+      <div className="space-y-2 p-4">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="h-10 bg-white/5 rounded-lg animate-pulse" />
         ))}
@@ -118,86 +331,54 @@ const LiveActivityFeed = ({ tableMode }) => {
     );
   }
 
-  // Table mode for main content area
-  if (tableMode) {
-    return (
-      <div data-testid="live-activity-feed">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-[11px] text-slate-500 uppercase tracking-wider border-b border-white/5">
-                <th className="px-4 py-3 font-medium">Treat</th>
-                <th className="px-4 py-3 font-medium hidden sm:table-cell">Time</th>
-                <th className="px-4 py-3 font-medium">Scientist</th>
-                <th className="px-4 py-3 font-medium">Rarity</th>
-                <th className="px-4 py-3 font-medium text-right">Points</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activity.map((item, idx) => (
-                <tr key={idx} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-7 h-7 rounded-lg ${rarityBg[item.rarity] || 'bg-slate-500/10'} flex items-center justify-center shrink-0`}>
-                        <Beaker className={`w-3.5 h-3.5 ${rarityColor[item.rarity] || 'text-slate-400'}`} />
-                      </div>
-                      <span className="text-xs text-white truncate max-w-[120px]">{item.treat_name || 'Unnamed'}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5 hidden sm:table-cell">
-                    <span className="text-[11px] text-slate-500">{timeAgo(item.created_at)}</span>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 flex items-center justify-center shrink-0">
-                        <User className="w-2.5 h-2.5 text-white" />
-                      </div>
-                      <span className="text-xs text-slate-300 truncate max-w-[100px]">{item.player_nickname}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span className={`text-[11px] font-medium ${rarityColor[item.rarity] || 'text-slate-400'}`}>
-                      {item.rarity}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <span className="text-xs font-bold text-emerald-400">+{item.points_reward}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {activity.length === 0 && (
-          <div className="text-center py-8 text-slate-500 text-xs">No recent activity</div>
-        )}
-      </div>
-    );
-  }
-
-  // Chat-style mode for sidebar
   return (
-    <div className="space-y-1 p-2" data-testid="live-activity-feed">
-      {activity.map((item, idx) => (
-        <div key={idx} className="flex items-start gap-2.5 px-2 py-2 rounded-lg hover:bg-white/[0.03] transition-colors">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 flex items-center justify-center shrink-0 mt-0.5">
-            <User className="w-3 h-3 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-[11px] font-semibold text-white truncate">{item.player_nickname}</span>
-              <span className="text-[9px] text-slate-600">{timeAgo(item.created_at)}</span>
-            </div>
-            <div className="bg-[#1a2035] rounded-lg px-2.5 py-1.5">
-              <span className="text-[11px] text-slate-300">
-                Created a <span className={`font-semibold ${rarityColor[item.rarity] || 'text-slate-300'}`}>{item.rarity}</span> treat
-              </span>
-              <span className="text-[11px] text-slate-400"> — {item.treat_name || 'Unnamed'} </span>
-              <span className="text-[11px] font-bold text-yellow-400">+{item.points_reward} pts</span>
-            </div>
-          </div>
-        </div>
-      ))}
+    <div data-testid="live-activity-table">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="text-[11px] text-slate-500 uppercase tracking-wider border-b border-white/5">
+              <th className="px-4 py-3 font-medium">Treat</th>
+              <th className="px-4 py-3 font-medium hidden sm:table-cell">Time</th>
+              <th className="px-4 py-3 font-medium">Scientist</th>
+              <th className="px-4 py-3 font-medium">Rarity</th>
+              <th className="px-4 py-3 font-medium text-right">Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            {activity.map((item, idx) => (
+              <tr key={idx} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                <td className="px-4 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-7 h-7 rounded-lg ${rarityBg[item.rarity] || 'bg-slate-500/10'} flex items-center justify-center shrink-0`}>
+                      <Beaker className={`w-3.5 h-3.5 ${rarityColor[item.rarity] || 'text-slate-400'}`} />
+                    </div>
+                    <span className="text-xs text-white truncate max-w-[120px]">{item.treat_name || 'Unnamed'}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-2.5 hidden sm:table-cell">
+                  <span className="text-[11px] text-slate-500">{timeAgo(item.created_at)}</span>
+                </td>
+                <td className="px-4 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 flex items-center justify-center shrink-0">
+                      <User className="w-2.5 h-2.5 text-white" />
+                    </div>
+                    <span className="text-xs text-slate-300 truncate max-w-[100px]">{item.player_nickname}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-2.5">
+                  <span className={`text-[11px] font-medium ${rarityColor[item.rarity] || 'text-slate-400'}`}>
+                    {item.rarity}
+                  </span>
+                </td>
+                <td className="px-4 py-2.5 text-right">
+                  <span className="text-xs font-bold text-emerald-400">+{item.points_reward}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {activity.length === 0 && (
         <div className="text-center py-8 text-slate-500 text-xs">No recent activity</div>
       )}
@@ -212,12 +393,12 @@ const navItems = [
   { path: '/nfts', icon: Palette, label: 'My Treats', color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
   { path: '/leaderboard', icon: Trophy, label: 'Leaderboard', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
   { path: '/marketplace', icon: Store, label: 'Marketplace', color: 'text-sky-400', bgColor: 'bg-sky-500/10' },
-  { path: '/tournament', icon: Crown, label: 'Tournament', color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
+  { path: '/tournament', icon: Crown, label: 'Tournament', color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
   { path: '/settings', icon: Settings, label: 'Settings', color: 'text-slate-400', bgColor: 'bg-slate-500/10' },
 ];
 
 // ─── Left Sidebar ────────────────────────────────────────────
-const Sidebar = ({ onAuthRequired, currentPath }) => (
+const Sidebar = ({ onAuthRequired }) => (
   <nav className="hidden lg:flex flex-col w-52 shrink-0 sticky top-[65px] self-start h-[calc(100vh-65px)] py-4" data-testid="menu-sidebar">
     {/* Share / Invite button */}
     <button className="mx-3 mb-4 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 transition-all text-white text-sm font-semibold shadow-lg shadow-indigo-500/20">
@@ -227,7 +408,7 @@ const Sidebar = ({ onAuthRequired, currentPath }) => (
 
     <div className="space-y-0.5 px-2 flex-1">
       {navItems.map((item) => {
-        const isActive = currentPath === item.path || (item.path === '/' && currentPath === '/');
+        const isActive = item.path === '/';
         return (
           <Link
             key={item.path}
@@ -265,9 +446,10 @@ const Sidebar = ({ onAuthRequired, currentPath }) => (
       </a>
     </div>
 
-    {/* Footer */}
-    <div className="px-4 py-3 mt-auto">
-      <div className="text-[9px] text-slate-600 text-center">Built for the Dogecoin community</div>
+    {/* Logo at bottom of sidebar */}
+    <div className="px-3 mt-4 mb-2">
+      <DogeFoodLogo size="medium" showText={false} showBeta={false} className="mx-auto" />
+      <div className="text-[9px] text-slate-600 text-center mt-2">Built for the Dogecoin community</div>
     </div>
   </nav>
 );
@@ -320,7 +502,7 @@ const PromoBanner = ({ icon: Icon, iconBg, title, subtitle, borderColor, gradien
   </button>
 );
 
-// ─── Feature Card (Game Card style) ──────────────────────────
+// ─── Feature Card ────────────────────────────────────────────
 const FeatureCard = ({ icon: Icon, label, gradient, iconColor, borderColor, to, onClick, badge, testId }) => (
   <Link to={to} onClick={onClick} className="block group" data-testid={testId}>
     <div className={`relative overflow-hidden rounded-xl border ${borderColor} bg-gradient-to-b ${gradient} p-4 sm:p-5 text-center hover:scale-[1.03] transition-all`}>
@@ -365,6 +547,7 @@ const MainMenu = () => {
   const [gameStats, setGameStats] = useState(null);
   const [happyHour, setHappyHour] = useState(null);
   const [activityTab, setActivityTab] = useState('live');
+  const [showMobileChat, setShowMobileChat] = useState(false);
 
   const [guestUser, setGuestUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('dogefood_player')); } catch { return null; }
@@ -489,17 +672,17 @@ const MainMenu = () => {
   return (
     <div className="min-h-screen bg-[#0d1117] pb-20 lg:pb-0" data-testid="main-menu">
 
-      {/* ─── Top Header ──────────────────────────────────── */}
+      {/* ─── Top Header (no logo - moved to sidebar) ───── */}
       <header className="sticky top-0 z-40 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/[0.06]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-[60px] flex items-center justify-between gap-3">
-          {/* Left: Logo */}
-          <div className="flex items-center gap-4">
-            <DogeFoodLogo size="small" showText={false} showBeta={true} className="shrink-0" />
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-[56px] flex items-center justify-between gap-3">
+          {/* Left: Mobile logo only */}
+          <div className="flex items-center gap-3 lg:hidden">
+            <DogeFoodLogo size="small" showText={false} showBeta={false} className="shrink-0" />
           </div>
+          <div className="hidden lg:block" />
 
           {/* Right: Stats + Wallet */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Game Stats (compact) */}
             {gameStats && (
               <div className="hidden sm:flex items-center gap-3 bg-[#151b28] rounded-xl px-3 py-1.5 border border-white/[0.06]">
                 <div className="flex items-center gap-1.5">
@@ -514,7 +697,6 @@ const MainMenu = () => {
               </div>
             )}
 
-            {/* User balance/level */}
             {isLoggedIn && (
               <div className="flex items-center gap-2 bg-[#151b28] rounded-xl px-3 py-1.5 border border-white/[0.06]">
                 {isNFTHolder && <Crown className="w-3.5 h-3.5 text-yellow-400" />}
@@ -523,7 +705,16 @@ const MainMenu = () => {
               </div>
             )}
 
-            {/* Wallet Connect */}
+            {/* Mobile chat toggle */}
+            <button
+              onClick={() => setShowMobileChat(!showMobileChat)}
+              className="lg:hidden relative p-2 bg-[#151b28] rounded-xl border border-white/[0.06] text-slate-400 hover:text-white transition-colors"
+              data-testid="mobile-chat-toggle"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500" />
+            </button>
+
             <ConnectButton.Custom>
               {({ account, chain, openAccountModal, openConnectModal, mounted, authenticationStatus }) => {
                 const ready = mounted && authenticationStatus !== 'loading';
@@ -560,11 +751,30 @@ const MainMenu = () => {
         </div>
       </header>
 
+      {/* ─── Mobile Chat Overlay ─────────────────────────── */}
+      {showMobileChat && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-[#0d1117] flex flex-col" data-testid="mobile-chat-overlay">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
+            <button onClick={() => setShowMobileChat(false)} className="text-slate-400 hover:text-white">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <MessageCircle className="w-4 h-4 text-emerald-400" />
+            <span className="text-sm font-bold text-white flex-1">Live Chat</span>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <LiveChat isLoggedIn={isLoggedIn} effectiveAddress={effectiveAddress} username={username} />
+          </div>
+        </div>
+      )}
+
       {/* ─── Main Layout (3-column) ──────────────────────── */}
       <div className="max-w-[1600px] mx-auto flex">
 
-        {/* LEFT SIDEBAR (Desktop only) */}
-        <Sidebar onAuthRequired={handleLabAccess} currentPath="/" />
+        <Sidebar onAuthRequired={handleLabAccess} />
 
         {/* CENTER CONTENT */}
         <main className="flex-1 min-w-0 px-3 sm:px-5 py-4 space-y-5">
@@ -574,7 +784,6 @@ const MainMenu = () => {
             <div className="bg-[#151b28] rounded-xl border border-white/[0.06] overflow-hidden" data-testid="player-profile-card">
               <div className="h-0.5 bg-gradient-to-r from-yellow-400 via-sky-400 to-purple-400" />
               <div className="p-3 sm:p-4 flex items-center gap-3">
-                {/* Avatar */}
                 <label htmlFor="profile-upload" className="cursor-pointer block relative group shrink-0">
                   <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-sky-500/20">
                     {profileImage ? (
@@ -596,7 +805,6 @@ const MainMenu = () => {
                 </label>
                 <input id="profile-upload" type="file" accept="image/*" className="hidden" onChange={handleProfileImageUpload} />
 
-                {/* Name & edit */}
                 <div className="flex-1 min-w-0">
                   <div className="text-[9px] text-sky-400/70 uppercase tracking-widest font-semibold">Scientist</div>
                   {!isEditingUsername ? (
@@ -616,7 +824,6 @@ const MainMenu = () => {
                   )}
                 </div>
 
-                {/* Quick Stats (desktop) */}
                 <div className="hidden sm:flex items-center gap-3 bg-[#0d1117] rounded-xl px-4 py-2 border border-white/[0.06]">
                   <div className="text-center">
                     <div className="text-[9px] text-slate-500 uppercase">Level</div>
@@ -666,13 +873,13 @@ const MainMenu = () => {
               testId="promo-leaderboard"
             />
             <PromoBanner
-              icon={Gift}
-              iconBg="bg-gradient-to-br from-amber-500 to-orange-600"
+              icon={Rocket}
+              iconBg="bg-gradient-to-br from-yellow-500 to-yellow-600"
               title="Season 1 Rewards"
               subtitle="Earn points for $LAB airdrop!"
-              borderColor="border-amber-500/20"
-              gradientFrom="from-amber-900/30"
-              gradientTo="to-orange-900/20"
+              borderColor="border-yellow-500/20"
+              gradientFrom="from-yellow-900/30"
+              gradientTo="to-yellow-900/20"
               onClick={() => navigate('/tournament')}
               testId="promo-rewards"
             />
@@ -680,12 +887,11 @@ const MainMenu = () => {
 
           {/* ── Featured Banner (Lab CTA + Happy Hour) ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Lab CTA */}
             <Link to="/lab" onClick={handleLabAccess}>
               <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#1a2744] to-[#151b28] border border-sky-500/10 p-5 sm:p-6 hover:border-sky-400/30 transition-all group" data-testid="enter-lab-btn">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-sky-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                 <div className="relative flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-xl shadow-yellow-500/20 group-hover:scale-110 transition-transform">
+                  <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-2xl flex items-center justify-center shadow-xl shadow-yellow-500/20 group-hover:scale-110 transition-transform">
                     <Beaker className="w-8 h-8 text-white" />
                   </div>
                   <div>
@@ -701,16 +907,15 @@ const MainMenu = () => {
               </div>
             </Link>
 
-            {/* Happy Hour / Season Info */}
             <div className={`relative overflow-hidden rounded-xl p-5 sm:p-6 border transition-all ${
               happyHour?.active
-                ? 'bg-gradient-to-br from-[#2a1f0d] to-[#1a1708] border-yellow-500/20'
+                ? 'bg-gradient-to-br from-[#2a2a0d] to-[#1a1a08] border-yellow-500/20'
                 : 'bg-gradient-to-br from-[#151b28] to-[#0d1117] border-white/[0.06]'
             }`}>
               <div className="flex items-center gap-4">
                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-xl ${
                   happyHour?.active
-                    ? 'bg-gradient-to-br from-yellow-400 to-amber-500 shadow-yellow-500/20'
+                    ? 'bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-yellow-500/20'
                     : 'bg-gradient-to-br from-slate-600 to-slate-700 shadow-slate-500/10'
                 }`}>
                   <Zap className={`w-8 h-8 ${happyHour?.active ? 'text-white' : 'text-slate-300'}`} />
@@ -738,7 +943,7 @@ const MainMenu = () => {
             </div>
           </div>
 
-          {/* ── Feature Cards (Game-style carousel) ── */}
+          {/* ── Feature Cards ── */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -753,7 +958,7 @@ const MainMenu = () => {
               <FeatureCard
                 icon={Beaker}
                 label="Lab"
-                gradient="from-yellow-500/20 to-orange-600/10"
+                gradient="from-yellow-500/20 to-yellow-600/10"
                 iconColor="text-yellow-300"
                 borderColor="border-yellow-500/15"
                 to="/lab"
@@ -791,9 +996,9 @@ const MainMenu = () => {
               <FeatureCard
                 icon={Crown}
                 label="Tourney"
-                gradient="from-amber-500/20 to-orange-600/10"
-                iconColor="text-amber-300"
-                borderColor="border-amber-500/15"
+                gradient="from-yellow-500/20 to-yellow-600/10"
+                iconColor="text-yellow-300"
+                borderColor="border-yellow-500/15"
                 to="/tournament"
                 testId="feature-tournament"
               />
@@ -802,7 +1007,6 @@ const MainMenu = () => {
 
           {/* ── Live Activity Table ── */}
           <div className="bg-[#151b28] rounded-xl border border-white/[0.06] overflow-hidden">
-            {/* Tabs */}
             <div className="flex items-center gap-0 border-b border-white/[0.06]">
               {[
                 { key: 'live', label: 'Live Activity', color: 'text-emerald-400' },
@@ -832,9 +1036,8 @@ const MainMenu = () => {
               ))}
             </div>
 
-            {/* Tab Content */}
             {activityTab === 'live' ? (
-              <LiveActivityFeed tableMode={true} />
+              <LiveActivityTable />
             ) : (
               <div className="p-4">
                 {gameStats ? (
@@ -877,37 +1080,37 @@ const MainMenu = () => {
           </div>
         </main>
 
-        {/* RIGHT SIDEBAR (Desktop only) — Live Chat-style Activity */}
-        <aside className="hidden lg:flex flex-col w-72 shrink-0 sticky top-[65px] self-start h-[calc(100vh-65px)] border-l border-white/[0.06]" data-testid="activity-sidebar">
+        {/* RIGHT SIDEBAR — Live Chat (Desktop) */}
+        <aside className="hidden lg:flex flex-col w-80 shrink-0 sticky top-[56px] self-start h-[calc(100vh-56px)] border-l border-white/[0.06]" data-testid="chat-sidebar">
           {/* Header */}
           <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
             <MessageCircle className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm font-bold text-white flex-1">Live Feed</span>
+            <span className="text-sm font-bold text-white flex-1">Live Chat</span>
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative rounded-full h-2 w-2 bg-emerald-500" />
             </span>
             {gameStats && (
-              <span className="text-[10px] text-slate-500 ml-1">{gameStats.total_players} online</span>
+              <span className="text-[10px] text-slate-500 ml-1">{gameStats.total_players} players</span>
             )}
           </div>
 
-          {/* Daily Bonus Card */}
-          <div className="mx-3 mt-3 p-3 rounded-xl bg-gradient-to-br from-amber-900/30 to-orange-900/20 border border-amber-500/15">
+          {/* Season Countdown Card */}
+          <div className="mx-3 mt-3 p-3 rounded-xl bg-gradient-to-br from-indigo-900/30 to-purple-900/20 border border-indigo-500/15">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
-                <Gift className="w-4.5 h-4.5 text-amber-400" />
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shrink-0">
+                <Rocket className="w-4 h-4 text-white" />
               </div>
               <div>
                 <div className="text-xs font-bold text-white">Season 1 Countdown</div>
-                <div className="text-[10px] text-amber-300/70 mt-0.5"><SeasonCountdown compact /></div>
+                <div className="text-[10px] text-indigo-300/70 mt-0.5"><SeasonCountdown compact /></div>
               </div>
             </div>
           </div>
 
-          {/* Activity Messages */}
-          <div className="flex-1 overflow-y-auto mt-2">
-            <LiveActivityFeed />
+          {/* Chat Area */}
+          <div className="flex-1 overflow-hidden mt-2">
+            <LiveChat isLoggedIn={isLoggedIn} effectiveAddress={effectiveAddress} username={username} />
           </div>
         </aside>
       </div>
@@ -915,24 +1118,6 @@ const MainMenu = () => {
       {/* Mobile Nav */}
       <MobileNav onAuthRequired={handleLabAccess} />
       <MusicPlayer />
-      <ScientistChat />
-
-      {/* Mobile Activity (shown below content on small screens) */}
-      <div className="lg:hidden px-3 pb-24">
-        <div className="bg-[#151b28] rounded-xl border border-white/[0.06] overflow-hidden mt-4">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
-            <Activity className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm font-bold text-white">Live Activity</span>
-            <span className="relative flex h-1.5 w-1.5 ml-1">
-              <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-500" />
-            </span>
-          </div>
-          <div className="max-h-[300px] overflow-y-auto">
-            <LiveActivityFeed />
-          </div>
-        </div>
-      </div>
 
       {/* ─── Auth Modal ───────────────────────────────────── */}
       {showAuthModal && (
@@ -943,7 +1128,7 @@ const MainMenu = () => {
             </button>
             {!showGuestSignup ? (
               <>
-                <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"><Beaker className="w-7 h-7 text-white" /></div>
+                <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"><Beaker className="w-7 h-7 text-white" /></div>
                 <h3 className="text-lg font-bold text-white text-center mb-1">Join the Lab!</h3>
                 <p className="text-slate-400 text-xs text-center mb-5">Connect wallet or sign up to start mixing</p>
                 <div className="space-y-3">
