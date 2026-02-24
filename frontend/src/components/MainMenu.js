@@ -918,7 +918,7 @@ const MainMenu = () => {
                     ? 'bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-yellow-500/20'
                     : 'bg-gradient-to-br from-slate-600 to-slate-700 shadow-slate-500/10'
                 }`}>
-                  <Zap className={`w-8 h-8 ${happyHour?.active ? 'text-white' : 'text-slate-300'}`} />
+                  <Clock className={`w-8 h-8 ${happyHour?.active ? 'text-white' : 'text-slate-300'}`} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-0.5">
