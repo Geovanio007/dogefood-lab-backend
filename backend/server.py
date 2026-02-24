@@ -776,6 +776,100 @@ async def get_recent_activity(limit: int = 20):
         return {"activity": []}
 
 
+# ─── Live Chat Endpoints ──────────────────────────────────────
+
+@api_router.get("/chat/messages")
+async def get_chat_messages(limit: int = 50):
+    """Get recent chat messages for the live feed"""
+    try:
+        pipeline = [
+            {"$sort": {"created_at": -1}},
+            {"$limit": limit},
+            {"$lookup": {
+                "from": "players",
+                "localField": "player_id",
+                "foreignField": "address",
+                "as": "player_info"
+            }},
+            {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArray": True}},
+            {"$project": {
+                "_id": 0,
+                "message_id": {"$toString": "$_id"},
+                "player_id": 1,
+                "player_nickname": {"$ifNull": ["$player_info.nickname", "$nickname"]},
+                "player_image": {"$ifNull": ["$player_info.profile_image", None]},
+                "message": 1,
+                "reply_to": 1,
+                "reply_nickname": 1,
+                "reply_text": 1,
+                "emoji_only": 1,
+                "created_at": 1
+            }}
+        ]
+        messages = await db.chat_messages.aggregate(pipeline).to_list(limit)
+        for m in messages:
+            if m.get("created_at"):
+                m["created_at"] = m["created_at"].isoformat() if hasattr(m["created_at"], 'isoformat') else str(m["created_at"])
+        messages.reverse()
+        return {"messages": messages}
+    except Exception as e:
+        logger.error(f"Error fetching chat messages: {e}")
+        return {"messages": []}
+
+
+@api_router.post("/chat/send")
+async def send_chat_message(data: dict):
+    """Send a chat message (registered players only)"""
+    try:
+        player_id = data.get("player_id")
+        message = data.get("message", "").strip()
+        reply_to = data.get("reply_to")
+        reply_nickname = data.get("reply_nickname")
+        reply_text = data.get("reply_text")
+
+        if not player_id or not message:
+            raise HTTPException(status_code=400, detail="player_id and message required")
+        if len(message) > 500:
+            raise HTTPException(status_code=400, detail="Message too long (max 500 chars)")
+
+        player = await db.players.find_one({"address": player_id}, {"_id": 0, "nickname": 1, "profile_image": 1})
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+
+        emoji_chars = set('😀😁😂🤣😃😄😅😆😉😊😋😎😍😘🥰😗😙🥲😚☺😌😛😝😜🤪🤨🧐🤓😎🥳🤩😏😒😞😔😟😕🙁☹😣😖😫😩🥺😢😭😤😠😡🤬🤯😳🥵🥶😱😨😰😥😓🫣🤗🫡🤔🫢🤭🤫🤥😶😐😑😬🫠🫨🙄😯😦😧😮😲🥱😴🤤😪😵🫥🤐🥴🤢🤮🤧😷🤒🤕🤑🤠😈👿👹👺🤡💩👻💀☠👽👾🤖🎃😺😸😹😻😼😽🙀😿😾🫶🤲👐🙌👏🤝👍👎👊✊🤛🤜🤞✌🫰🤟🤘👌🤌🤏👈👉👆🖕👇☝🫵👋🤚🖐✋🖖🫳🫴👊👏🔥❤💛💚💙💜🖤🤍🤎💔❣💕💞💓💗💖💘💝🏆🎯🎮🎲🎰🎪🎨🎭🎬🎤🎧🎼🎵🎶🐕🐶🐩🦮🐕‍🦺🐾💎✨🌟⭐💫🎉🎊🪄')
+        is_emoji_only = all(c in emoji_chars or c == ' ' for c in message)
+
+        doc = {
+            "player_id": player_id,
+            "nickname": player.get("nickname", "Anonymous"),
+            "message": message,
+            "emoji_only": is_emoji_only,
+            "created_at": datetime.utcnow()
+        }
+        if reply_to:
+            doc["reply_to"] = reply_to
+        if reply_nickname:
+            doc["reply_nickname"] = reply_nickname
+        if reply_text:
+            doc["reply_text"] = reply_text[:100]
+
+        result = await db.chat_messages.insert_one(doc)
+
+        return {
+            "success": True,
+            "message_id": str(result.inserted_id),
+            "player_nickname": player.get("nickname", "Anonymous"),
+            "player_image": player.get("profile_image"),
+            "message": message,
+            "emoji_only": is_emoji_only,
+            "created_at": doc["created_at"].isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending chat message: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send message")
+
 
 @api_router.get("/extra-life/packages")
 async def get_extra_life_packages():
