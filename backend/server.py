@@ -737,6 +737,46 @@ async def happy_hour_status():
     return get_happy_hour_status()
 
 
+@api_router.get("/activity/recent")
+async def get_recent_activity(limit: int = 20):
+    """Get recent global treat activity for the live feed"""
+    try:
+        pipeline = [
+            {"$sort": {"created_at": -1}},
+            {"$limit": limit},
+            {"$lookup": {
+                "from": "players",
+                "localField": "player_address",
+                "foreignField": "address",
+                "as": "player_info"
+            }},
+            {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArray": True}},
+            {"$project": {
+                "_id": 0,
+                "treat_name": "$name",
+                "rarity": 1,
+                "points_reward": 1,
+                "xp_reward": 1,
+                "player_nickname": {"$ifNull": ["$player_info.nickname", "Anonymous"]},
+                "player_address": 1,
+                "created_at": 1,
+                "emoji": 1
+            }}
+        ]
+        treats = await db.treats.aggregate(pipeline).to_list(limit)
+        
+        # Convert datetime to ISO string
+        for t in treats:
+            if t.get("created_at"):
+                t["created_at"] = t["created_at"].isoformat() if hasattr(t["created_at"], 'isoformat') else str(t["created_at"])
+        
+        return {"activity": treats}
+    except Exception as e:
+        logger.error(f"Error fetching recent activity: {e}")
+        return {"activity": []}
+
+
+
 @api_router.get("/extra-life/packages")
 async def get_extra_life_packages():
     """Get available extra life packages with DOGE pricing"""
