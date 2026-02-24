@@ -2655,10 +2655,14 @@ async def get_game_stats():
     try:
         # Total registered players
         total_players = await db.players.count_documents({})
-        # Leaderboard-eligible players (with points > 0 and a valid nickname)
+        # Leaderboard-eligible players (with points > 0, valid nickname, AND at least 1 treat created)
         eligible_players = await db.players.count_documents({
             "points": {"$gt": 0},
-            "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+            "nickname": {"$ne": None, "$exists": True, "$ne": ""},
+            "$or": [
+                {"total_treats_created": {"$gt": 0}},
+                {"created_treats.0": {"$exists": True}}
+            ]
         })
         nft_holders = await db.players.count_documents({"is_nft_holder": True})
         total_treats = await db.treats.count_documents({})
