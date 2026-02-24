@@ -41,16 +41,19 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 
 ### Main Menu Redesign (Feb 24, 2026) - COMPLETE
 - Complete redesign of `MainMenu.js` to mirror professional gaming platform reference image
-- **3-column layout**: Left sidebar navigation | Center content area | Right sidebar live feed
-- **Left sidebar**: Share & Earn CTA, navigation with icons (Home, Lab, My Treats, Leaderboard, Marketplace, Tournament, Settings, Game Guide)
-- **3 Promotional Banners**: VIP Club, Leaderboard, Season 1 Rewards - each with gradient backgrounds, icons, and click navigation
+- **3-column layout**: Left sidebar navigation | Center content area | Right sidebar live chat
+- **Left sidebar**: Share & Earn CTA, navigation with icons (Home, Lab, My Treats, Leaderboard, Marketplace, Tournament, Settings, Game Guide), DogeFoodLab logo at bottom
+- **3 Promotional Banners**: VIP Club (Crown), Leaderboard (Trophy), Season 1 Rewards (Rocket) - each with gradient backgrounds and click navigation
 - **Featured Cards**: Enter the Lab (CTA) and Happy Hour status
-- **Feature Grid**: 5 game-style cards (Lab, Auto-Mix, Treats, Market, Tourney) with icons and gradients
-- **Live Activity Table**: Tabbed view with "Live Activity" (treat creation feed) and "Game Stats" (player count, VIP holders, treats, countdown)
-- **Right Sidebar**: Chat-style live activity feed with Season 1 Countdown card
-- **Mobile**: Bottom navigation bar, stacked layout, inline activity feed
+- **Feature Grid**: 5 game-style cards (Lab, Auto-Mix, Treats, Market, Tourney) with yellow theme
+- **Live Activity Table**: Tabbed view with "Live Activity" (treat creation feed) and "Game Stats"
+- **Right Sidebar - Live Chat**: Real-time chat for registered players with emoji picker, reply functionality, chat-style message feed. Non-logged users see read-only view with "Connect wallet or sign up to chat"
+- **Mobile**: Bottom navigation, chat toggle button opening full-screen chat overlay, consistent layout
 - **Auth Modal**: Preserved wallet connect + guest signup flows
-- **Testing**: Backend 100% (8/8 tests), Frontend 95% verified via Playwright
+- **Removed**: ScientistChat component, logo from header (moved to sidebar)
+- **Color**: All orange accents replaced with yellow
+- **Backend**: New `GET /api/chat/messages` and `POST /api/chat/send` endpoints with MongoDB `chat_messages` collection
+- **Testing**: Backend 100% (8/8), Frontend 100% verified via Playwright
 
 ## Pending Issues
 1. Invisible grey text on Telegram (P2 - needs user details)
