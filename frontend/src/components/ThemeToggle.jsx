@@ -8,24 +8,16 @@ const ThemeToggle = ({ className = "" }) => {
   return (
     <button
       onClick={toggleTheme}
-      className={`theme-toggle relative inline-flex items-center justify-center p-3 rounded-full transition-all duration-300 hover:scale-110 active:scale-95 ${className}`}
+      className={`relative inline-flex items-center justify-center p-2 rounded-xl bg-[#151b28] border border-white/[0.06] hover:bg-white/[0.06] transition-all duration-200 ${className}`}
       aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
       title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+      data-testid="theme-toggle"
     >
-      {/* Background with gradient */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 opacity-90 transition-all duration-300"></div>
-      
-      {/* Icon */}
-      <div className="relative z-10 flex items-center justify-center">
-        {isDarkMode ? (
-          <Sun className="w-6 h-6 text-white drop-shadow-lg transition-transform duration-300 rotate-0 scale-100" />
-        ) : (
-          <Moon className="w-6 h-6 text-white drop-shadow-lg transition-transform duration-300 rotate-0 scale-100" />
-        )}
-      </div>
-      
-      {/* Glow effect */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 opacity-30 blur-lg scale-150 transition-all duration-300"></div>
+      {isDarkMode ? (
+        <Sun className="w-4 h-4 text-yellow-400" />
+      ) : (
+        <Moon className="w-4 h-4 text-sky-400" />
+      )}
     </button>
   );
 };
