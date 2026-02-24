@@ -8,29 +8,27 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 ### Core Game Features
 - Treat mixing system with ingredients, rarity-based outcomes, XP/leveling, streak bonuses, leaderboards
 - Dark mode by default
-- All sparkle/star icons removed from UI
+
+### NFT Holder Verification System (Feb 22, 2026) - FIXED
+- **Batch verification endpoint**: `POST /api/admin/verify-all-nft-holders` — scans ALL wallet-based players against DogeOS blockchain, credits 500 points + VIP status to uncredited holders
+- **Server-side blockchain fallback**: `POST /api/verify-nft/{address}` now double-checks on-chain via Blockscout API when frontend reports `is_holder=false`, preventing frontend detection failures
+- **Result**: 24 previously uncredited NFT holders received their 500 bonus points and VIP status
+
+### Player Count Alignment (Feb 22, 2026) - FIXED
+- **Root cause**: Stats card counted all players with points > 0 (35), but leaderboard required points > 0 AND valid nickname (32)
+- **Fix**: Aligned `/api/stats`, `/api/player/{address}/profile`, and `/api/leaderboard` to use identical filter: `{points > 0, nickname exists & non-empty}`
+- **Leaderboard limit**: Increased default from 50 to 200 to show all eligible players
+- **Result**: All three endpoints now return consistent count (52 players)
 
 ### Happy Hour Feature (Feb 21, 2026)
 - Daily at 15:00 UTC for 1 hour, +25% bonus points on treats collected
 - `GET /api/happy-hour/status` endpoint with countdown
-- Professional banner on lab page
 
 ### Extra Life Payment Success Modal (Feb 22, 2026)
-- Modal turns GREEN when payment is confirmed (gradient: green-600 → emerald-800)
-- Shows CheckCircle2 icon, "Payment Confirmed!" heading, "+X Treats" count
-- "Continue Mixing" CTA button to dismiss
-- Stores treats_amount in purchaseResult for display after pendingPurchase is cleared
+- Modal turns GREEN when payment confirmed with CheckCircle2 icon and "+X Treats" confirmation
 
 ### Player Stats Card Sharing (Feb 22, 2026)
-- **Save Stats**: Uses html2canvas to capture stats card as PNG image, downloads or uses Web Share API
-- **Share on X**: Opens Twitter intent URL with pre-formatted stats text (name, level, rank, points, streak)
-- Both buttons at bottom of PlayerStatsModal with proper data-testids
-
-### UI Redesigns
-- KernelOfWow card: Professional slate-800 with amber accents
-- Game Mechanisms page: Sky blue dark theme
-- Music Player: Yellow/sky-blue theme, minimized by default
-- MainMenu cards: TreatIcon removed from Treats card, Marketplace button text fixed to white
+- Save Stats (html2canvas PNG) + Share on X (Twitter intent) buttons
 
 ### Payment Systems
 - Unique Amount System for precise payment matching
@@ -46,8 +44,8 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 
 ## Tech Stack
 - Frontend: React, Tailwind CSS, shadcn/ui, Lucide React, html2canvas
-- Backend: Python, FastAPI, MongoDB (Motor async)
+- Backend: Python, FastAPI, MongoDB (Motor async), httpx (blockchain API calls)
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-February 22, 2026 - Extra Life green success modal + Stats card sharing deployed
+February 22, 2026 - NFT holder batch verification + player count alignment fix deployed
