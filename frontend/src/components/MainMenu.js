@@ -1112,15 +1112,15 @@ const MainMenu = () => {
           {/* ── Mobile Logo ── */}
           <div className="lg:hidden text-center py-4">
             <DogeFoodLogo size="medium" showText={false} showBeta={false} className="mx-auto" />
-            <div className="text-[9px] text-slate-600 mt-2">Built for the Dogecoin community</div>
+            <div className="text-[10px] text-white mt-2">Built with love for the Dogecoin community</div>
           </div>
 
           {/* ── Powered By Footer ── */}
           <div className="text-center py-6">
-            <div className="text-[10px] text-slate-600 uppercase tracking-widest mb-3">Powered by</div>
+            <div className="text-[10px] text-white uppercase tracking-widest mb-3">Powered by</div>
             <img
               src="https://customer-assets.emergentagent.com/job_dogefoodlab/artifacts/ckey490s_20250812_154617.jpg"
-              alt="DOGEOS" className="max-w-[200px] sm:max-w-[350px] mx-auto rounded-lg border border-white/5 opacity-70 hover:opacity-100 transition-opacity"
+              alt="DOGEOS" className="max-w-[220px] sm:max-w-[380px] mx-auto rounded-lg border border-white/10"
             />
           </div>
         </main>
