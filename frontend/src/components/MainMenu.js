@@ -555,7 +555,6 @@ const MainMenu = () => {
   const [gameStats, setGameStats] = useState(null);
   const [happyHour, setHappyHour] = useState(null);
   const [activityTab, setActivityTab] = useState('live');
-  const [showMobileChat, setShowMobileChat] = useState(false);
 
   const [guestUser, setGuestUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('dogefood_player')); } catch { return null; }
