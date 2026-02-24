@@ -562,8 +562,8 @@ const MainMenu = () => {
   const [playerLevel, setPlayerLevel] = useState(1);
   const [playerPoints, setPlayerPoints] = useState(0);
 
-  const isLoggedIn = isConnected || guestUser;
-  const effectiveAddress = address || guestUser?.guest_id || guestUser?.id;
+  const isLoggedIn = isConnected || guestUser || (isTelegram && telegramUser);
+  const effectiveAddress = address || guestUser?.guest_id || guestUser?.id || (telegramUser ? `tg_${telegramUser.id}` : null);
   const effectiveLevel = isConnected ? currentLevel : playerLevel;
   const effectivePoints = isConnected ? points : playerPoints;
   const isAuthenticated = isConnected || isTelegram || guestUser;
