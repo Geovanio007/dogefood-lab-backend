@@ -39,6 +39,19 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - **Backend**: https://dogefood-lab-api.onrender.com (LIVE)
 - **GitHub**: Geovanio007/DogeFoodLab + Geovanio007/dogefood-lab-backend
 
+### Main Menu Redesign (Feb 24, 2026) - COMPLETE
+- Complete redesign of `MainMenu.js` to mirror professional gaming platform reference image
+- **3-column layout**: Left sidebar navigation | Center content area | Right sidebar live feed
+- **Left sidebar**: Share & Earn CTA, navigation with icons (Home, Lab, My Treats, Leaderboard, Marketplace, Tournament, Settings, Game Guide)
+- **3 Promotional Banners**: VIP Club, Leaderboard, Season 1 Rewards - each with gradient backgrounds, icons, and click navigation
+- **Featured Cards**: Enter the Lab (CTA) and Happy Hour status
+- **Feature Grid**: 5 game-style cards (Lab, Auto-Mix, Treats, Market, Tourney) with icons and gradients
+- **Live Activity Table**: Tabbed view with "Live Activity" (treat creation feed) and "Game Stats" (player count, VIP holders, treats, countdown)
+- **Right Sidebar**: Chat-style live activity feed with Season 1 Countdown card
+- **Mobile**: Bottom navigation bar, stacked layout, inline activity feed
+- **Auth Modal**: Preserved wallet connect + guest signup flows
+- **Testing**: Backend 100% (8/8 tests), Frontend 95% verified via Playwright
+
 ## Pending Issues
 1. Invisible grey text on Telegram (P2 - needs user details)
 
@@ -48,4 +61,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-February 22, 2026 - NFT holder batch verification + player count alignment fix deployed
+February 24, 2026 - Main menu redesign complete (3-column layout matching reference image)
