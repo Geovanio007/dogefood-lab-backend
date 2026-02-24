@@ -678,19 +678,19 @@ const MainMenu = () => {
   // RENDER
   // ═══════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#0d1117] pb-20 lg:pb-0" data-testid="main-menu">
+    <div className="min-h-screen bg-[#0d1117]" data-testid="main-menu">
 
-      {/* ─── Top Header (no logo - moved to sidebar) ───── */}
+      {/* ─── Top Header ──────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/[0.06]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-[56px] flex items-center justify-between gap-3">
-          {/* Left: Mobile logo only */}
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-6 h-[56px] flex items-center justify-between gap-2">
+          {/* Left: Mobile logo */}
           <div className="flex items-center gap-3 lg:hidden">
             <DogeFoodLogo size="small" showText={false} showBeta={false} className="shrink-0" />
           </div>
           <div className="hidden lg:block" />
 
           {/* Right: Stats + Wallet */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {gameStats && (
               <div className="hidden sm:flex items-center gap-3 bg-[#151b28] rounded-xl px-3 py-1.5 border border-white/[0.06]">
                 <div className="flex items-center gap-1.5">
@@ -706,22 +706,12 @@ const MainMenu = () => {
             )}
 
             {isLoggedIn && (
-              <div className="flex items-center gap-2 bg-[#151b28] rounded-xl px-3 py-1.5 border border-white/[0.06]">
+              <div className="flex items-center gap-1.5 bg-[#151b28] rounded-xl px-2.5 py-1.5 border border-white/[0.06]">
                 {isNFTHolder && <Crown className="w-3.5 h-3.5 text-yellow-400" />}
                 <span className="text-xs font-bold text-sky-400 tabular-nums">{(effectivePoints || 0).toLocaleString()}</span>
                 <span className="text-[10px] text-slate-500">pts</span>
               </div>
             )}
-
-            {/* Mobile chat toggle */}
-            <button
-              onClick={() => setShowMobileChat(!showMobileChat)}
-              className="lg:hidden relative p-2 bg-[#151b28] rounded-xl border border-white/[0.06] text-slate-400 hover:text-white transition-colors"
-              data-testid="mobile-chat-toggle"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500" />
-            </button>
 
             {/* Theme Toggle */}
             <ThemeToggle className="!p-1.5 !w-8 !h-8" />
@@ -734,26 +724,26 @@ const MainMenu = () => {
                 if (!connected) return (
                   <button
                     onClick={openConnectModal}
-                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold h-9 px-4 rounded-xl transition-colors"
+                    className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold h-8 sm:h-9 px-3 sm:px-4 rounded-xl transition-colors"
                     data-testid="connect-wallet-btn"
                   >
-                    <Wallet className="w-3.5 h-3.5" /> Connect
+                    <Wallet className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Connect</span>
                   </button>
                 );
                 if (chain.unsupported) return (
-                  <button onClick={openAccountModal} className="bg-red-500/20 text-red-400 text-xs font-semibold h-9 px-4 rounded-xl border border-red-500/30">
+                  <button onClick={openAccountModal} className="bg-red-500/20 text-red-400 text-xs font-semibold h-8 sm:h-9 px-3 rounded-xl border border-red-500/30">
                     Wrong Network
                   </button>
                 );
                 return (
                   <button
                     onClick={openAccountModal}
-                    className="flex items-center gap-2 bg-[#151b28] hover:bg-white/[0.06] border border-white/[0.06] text-white text-xs font-semibold h-9 px-4 rounded-xl transition-colors"
+                    className="flex items-center gap-1.5 bg-[#151b28] hover:bg-white/[0.06] border border-white/[0.06] text-white text-xs font-semibold h-8 sm:h-9 px-3 rounded-xl transition-colors"
                   >
                     <div className="w-5 h-5 rounded-full bg-gradient-to-br from-sky-400 to-indigo-500 flex items-center justify-center">
                       <User className="w-2.5 h-2.5 text-white" />
                     </div>
-                    <span className="font-mono text-slate-300">{account.address.slice(0, 4)}...{account.address.slice(-3)}</span>
+                    <span className="font-mono text-slate-300 hidden sm:inline">{account.address.slice(0, 4)}...{account.address.slice(-3)}</span>
                   </button>
                 );
               }}
@@ -762,25 +752,8 @@ const MainMenu = () => {
         </div>
       </header>
 
-      {/* ─── Mobile Chat Overlay ─────────────────────────── */}
-      {showMobileChat && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-[#0d1117] flex flex-col" data-testid="mobile-chat-overlay">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
-            <button onClick={() => setShowMobileChat(false)} className="text-slate-400 hover:text-white">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <MessageCircle className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm font-bold text-white flex-1">Live Chat</span>
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <LiveChat isLoggedIn={isLoggedIn} effectiveAddress={effectiveAddress} username={username} />
-          </div>
-        </div>
-      )}
+      {/* ─── Mobile Navigation Strip ─────────────────────── */}
+      <MobileNavStrip onAuthRequired={handleLabAccess} />
 
       {/* ─── Main Layout (3-column) ──────────────────────── */}
       <div className="max-w-[1600px] mx-auto flex">
