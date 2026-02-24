@@ -1104,9 +1104,12 @@ async def get_player_weekly_stats(address: str):
         avg_treats_per_day = total_treats / 7 if total_treats > 0 else 0
         avg_points_per_day = total_points / 7 if total_points > 0 else 0
         
-        # Get player rank from leaderboard
+        # Get player rank from leaderboard — use same filter as /leaderboard endpoint
         leaderboard_cursor = db.players.find(
-            {"points": {"$gt": 0}},
+            {
+                "points": {"$gt": 0},
+                "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+            },
             {"address": 1, "points": 1}
         ).sort("points", -1)
         leaderboard_list = await leaderboard_cursor.to_list(length=1000)
