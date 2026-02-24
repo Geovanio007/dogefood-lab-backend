@@ -2595,15 +2595,17 @@ async def collect_treat(treat_id: str, data: dict):
 # Leaderboard Routes
 @api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
 async def get_leaderboard(limit: int = 50):
-    # Only players who have created at least 1 treat qualify for the leaderboard
-    # Must have a valid nickname and points from actual gameplay
+    # Only players who have earned points from actual gameplay qualify
+    # VIP holders with only 500 bonus points (no gameplay) are excluded
     pipeline = [
         {"$match": {
             "points": {"$gt": 0},
             "nickname": {"$ne": None, "$exists": True, "$ne": ""},
             "$or": [
-                {"total_treats_created": {"$gt": 0}},
-                {"created_treats.0": {"$exists": True}}
+                # Non-VIP players: any points mean gameplay
+                {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
+                # VIP players: must have more than 500 (the bonus amount)
+                {"vip_bonus_claimed": True, "points": {"$gt": 500}}
             ]
         }},
         {"$sort": {"points": -1, "level": -1}},
