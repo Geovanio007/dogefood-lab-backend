@@ -1765,6 +1765,102 @@ async def verify_nft_on_blockchain(address: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.post("/admin/verify-all-nft-holders")
+async def verify_all_nft_holders_blockchain():
+    """
+    Batch-verify ALL wallet-based players against the DogeOS blockchain.
+    Finds players who hold the NFT but are not marked as holders,
+    credits them with VIP bonus, and also checks if any marked holders
+    no longer hold the NFT.
+    """
+    try:
+        # Get all wallet-based players (0x addresses)
+        all_wallet_players = await db.players.find(
+            {"address": {"$regex": "^0x", "$options": "i"}},
+            {"address": 1, "is_nft_holder": 1, "is_vip": 1, "vip_bonus_claimed": 1, "points": 1, "nickname": 1, "_id": 0}
+        ).to_list(1000)
+        
+        results = {
+            "total_checked": len(all_wallet_players),
+            "newly_credited": [],
+            "already_credited": [],
+            "not_holders": [],
+            "errors": []
+        }
+        
+        async with httpx.AsyncClient() as client:
+            for player in all_wallet_players:
+                address = player.get("address")
+                try:
+                    url = f"{DOGEOS_BLOCKSCOUT_URL}/api?module=account&action=tokenbalance&contractaddress={DOGEFOOD_NFT_CONTRACT}&address={address}"
+                    response = await client.get(url, timeout=15.0)
+                    data = response.json()
+                    
+                    nft_count = 0
+                    if data.get("status") == "1" and data.get("result"):
+                        try:
+                            nft_count = int(data.get("result", "0"))
+                        except (ValueError, TypeError):
+                            nft_count = 0
+                    
+                    is_holder = nft_count > 0
+                    
+                    if is_holder:
+                        if not player.get("vip_bonus_claimed", False):
+                            # NFT holder who hasn't received bonus yet
+                            await db.players.update_one(
+                                {"address": address},
+                                {
+                                    "$set": {
+                                        "is_nft_holder": True,
+                                        "is_vip": True,
+                                        "vip_bonus_claimed": True
+                                    },
+                                    "$inc": {"points": 500}
+                                }
+                            )
+                            results["newly_credited"].append({
+                                "address": address,
+                                "nickname": player.get("nickname"),
+                                "nft_count": nft_count,
+                                "old_points": player.get("points", 0),
+                                "new_points": player.get("points", 0) + 500
+                            })
+                            logger.info(f"NFT batch verify: Credited {address} with 500 bonus points")
+                        else:
+                            # Already credited — ensure flags are correct
+                            await db.players.update_one(
+                                {"address": address},
+                                {"$set": {"is_nft_holder": True, "is_vip": True}}
+                            )
+                            results["already_credited"].append(address)
+                    else:
+                        results["not_holders"].append(address)
+                    
+                    # Rate limit: small delay between requests
+                    await asyncio.sleep(0.2)
+                    
+                except Exception as e:
+                    results["errors"].append({"address": address, "error": str(e)})
+                    logger.error(f"NFT batch verify error for {address}: {e}")
+        
+        return {
+            "success": True,
+            "total_checked": results["total_checked"],
+            "newly_credited_count": len(results["newly_credited"]),
+            "newly_credited": results["newly_credited"],
+            "already_credited_count": len(results["already_credited"]),
+            "not_holder_count": len(results["not_holders"]),
+            "error_count": len(results["errors"]),
+            "errors": results["errors"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in batch NFT verification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 # $DOGEONEWS Token Configuration (Solana)
 DOGEONEWS_TOKEN_ADDRESS = "GHoZwXKEJSsTYeNmBPgQFuKsjVGJ1HMGv5QghtQVdoge"
 DOGEONEWS_MIN_HOLDING = 1_000_000  # 1 million tokens required
