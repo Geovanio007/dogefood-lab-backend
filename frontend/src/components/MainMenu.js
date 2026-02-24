@@ -455,28 +455,35 @@ const Sidebar = ({ onAuthRequired }) => (
   </nav>
 );
 
-// ─── Mobile Bottom Nav ───────────────────────────────────────
-const MobileNav = ({ onAuthRequired }) => (
-  <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0d1117]/95 backdrop-blur-xl border-t border-white/5" data-testid="mobile-nav">
-    <div className="flex items-center justify-around px-2 py-1.5 max-w-md mx-auto">
-      {[
-        { path: '/', icon: Home, label: 'Home', color: 'text-sky-400' },
-        { path: '/lab', icon: Beaker, label: 'Lab', color: 'text-yellow-400', needsAuth: true },
-        { path: '/nfts', icon: Palette, label: 'Treats', color: 'text-purple-400' },
-        { path: '/leaderboard', icon: Trophy, label: 'Ranks', color: 'text-emerald-400' },
-        { path: '/marketplace', icon: Store, label: 'Market', color: 'text-sky-400' },
-        { path: '/settings', icon: Settings, label: 'More', color: 'text-slate-400' },
-      ].map((item) => (
-        <Link
-          key={item.path}
-          to={item.path}
-          onClick={item.needsAuth ? onAuthRequired : undefined}
-          className="flex flex-col items-center gap-0.5 px-2 py-1"
-        >
-          <item.icon className={`w-5 h-5 ${item.color}`} />
-          <span className="text-[9px] text-slate-400">{item.label}</span>
-        </Link>
-      ))}
+// ─── Mobile Navigation Strip (horizontal scrollable) ─────────
+const MobileNavStrip = ({ onAuthRequired }) => (
+  <div className="lg:hidden overflow-x-auto scrollbar-hide border-b border-white/[0.06] bg-[#0d1117]" data-testid="mobile-nav-strip">
+    <div className="flex items-center gap-1 px-3 py-2 min-w-max">
+      {navItems.map((item) => {
+        const isActive = item.path === '/';
+        return (
+          <Link
+            key={item.path}
+            to={item.path}
+            onClick={item.needsAuth ? onAuthRequired : undefined}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-nowrap transition-all shrink-0
+              ${isActive ? 'bg-white/[0.06] border border-sky-500/20' : 'hover:bg-white/[0.04] border border-transparent'}`}
+            data-testid={`mobile-nav-${item.label.toLowerCase().replace(/\s/g, '-')}`}
+          >
+            <item.icon className={`w-3.5 h-3.5 ${item.color}`} />
+            <span className={`text-[11px] ${isActive ? 'text-white font-semibold' : 'text-slate-400'}`}>{item.label}</span>
+          </Link>
+        );
+      })}
+      <a
+        href="/game-mechanisms.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/[0.04] border border-transparent shrink-0"
+      >
+        <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+        <span className="text-[11px] text-slate-400">Guide</span>
+      </a>
     </div>
   </div>
 );
