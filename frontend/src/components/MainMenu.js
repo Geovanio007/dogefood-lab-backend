@@ -760,7 +760,34 @@ const MainMenu = () => {
         <Sidebar onAuthRequired={handleLabAccess} />
 
         {/* CENTER CONTENT */}
-        <main className="flex-1 min-w-0 px-3 sm:px-5 py-4 space-y-5">
+        <main className="flex-1 min-w-0 px-3 sm:px-5 py-4 space-y-4 sm:space-y-5">
+
+          {/* ── Mobile: Share & Earn + Quick Stats ── */}
+          <div className="lg:hidden space-y-3">
+            <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 transition-all text-white text-sm font-semibold shadow-lg shadow-sky-500/20" data-testid="mobile-share-earn">
+              <Share2 className="w-4 h-4" />
+              <span>Share & Earn</span>
+            </button>
+            {gameStats && (
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <div className="flex items-center gap-1.5 bg-[#151b28] rounded-lg px-3 py-1.5 border border-white/[0.06] shrink-0">
+                  <Users className="w-3 h-3 text-sky-400" />
+                  <span className="text-[11px] font-semibold text-white">{gameStats.total_players}</span>
+                  <span className="text-[9px] text-slate-500">players</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-[#151b28] rounded-lg px-3 py-1.5 border border-white/[0.06] shrink-0">
+                  <Beaker className="w-3 h-3 text-yellow-400" />
+                  <span className="text-[11px] font-semibold text-white">{(gameStats.total_treats || 0).toLocaleString()}</span>
+                  <span className="text-[9px] text-slate-500">treats</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-[#151b28] rounded-lg px-3 py-1.5 border border-white/[0.06] shrink-0">
+                  <Crown className="w-3 h-3 text-yellow-400" />
+                  <span className="text-[11px] font-semibold text-white">{gameStats.nft_holders}</span>
+                  <span className="text-[9px] text-slate-500">VIP</span>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* ── Player Profile Card ── */}
           {isLoggedIn && (
