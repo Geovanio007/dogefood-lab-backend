@@ -1108,10 +1108,14 @@ async def get_player_weekly_stats(address: str):
         leaderboard_cursor = db.players.find(
             {
                 "points": {"$gt": 0},
-                "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+                "nickname": {"$ne": None, "$exists": True, "$ne": ""},
+                "$or": [
+                    {"total_treats_created": {"$gt": 0}},
+                    {"created_treats.0": {"$exists": True}}
+                ]
             },
             {"address": 1, "points": 1}
-        ).sort("points", -1)
+        ).sort("points", -1).limit(50)
         leaderboard_list = await leaderboard_cursor.to_list(length=1000)
         
         player_rank = None
@@ -2590,13 +2594,17 @@ async def collect_treat(treat_id: str, data: dict):
 
 # Leaderboard Routes
 @api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
-async def get_leaderboard(limit: int = 200):
-    # Get top players by points (all players, not just NFT holders)
-    # Only include players with valid nicknames
+async def get_leaderboard(limit: int = 50):
+    # Only players who have created at least 1 treat qualify for the leaderboard
+    # Must have a valid nickname and points from actual gameplay
     pipeline = [
         {"$match": {
             "points": {"$gt": 0},
-            "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+            "nickname": {"$ne": None, "$exists": True, "$ne": ""},
+            "$or": [
+                {"total_treats_created": {"$gt": 0}},
+                {"created_treats.0": {"$exists": True}}
+            ]
         }},
         {"$sort": {"points": -1, "level": -1}},
         {"$limit": limit}
@@ -2651,10 +2659,14 @@ async def get_game_stats():
     try:
         # Total registered players
         total_players = await db.players.count_documents({})
-        # Leaderboard-eligible players (with points > 0 and a valid nickname)
+        # Leaderboard-eligible players (with points > 0, valid nickname, AND at least 1 treat created)
         eligible_players = await db.players.count_documents({
             "points": {"$gt": 0},
-            "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+            "nickname": {"$ne": None, "$exists": True, "$ne": ""},
+            "$or": [
+                {"total_treats_created": {"$gt": 0}},
+                {"created_treats.0": {"$exists": True}}
+            ]
         })
         nft_holders = await db.players.count_documents({"is_nft_holder": True})
         total_treats = await db.treats.count_documents({})
