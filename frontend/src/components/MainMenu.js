@@ -1100,7 +1100,6 @@ const MainMenu = () => {
       </div>
 
       {/* Mobile Nav */}
-      <MobileNav onAuthRequired={handleLabAccess} />
       <MusicPlayer />
 
       {/* ─── Auth Modal ───────────────────────────────────── */}
