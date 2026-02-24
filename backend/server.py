@@ -7998,6 +7998,12 @@ async def startup_event():
     """Start background schedulers on app startup"""
     logger.info("🚀 DogeFood Lab API starting...")
     
+    # Create indexes for chat
+    try:
+        await db.chat_messages.create_index([("created_at", -1)])
+    except Exception as e:
+        logger.error(f"Failed to create chat index: {e}")
+    
     # Delay background task startup to allow health checks to pass first
     async def delayed_startup():
         # Wait 30 seconds before starting background tasks
