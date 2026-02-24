@@ -680,7 +680,7 @@ const MainMenu = () => {
     <div className="min-h-screen bg-[#0d1117]" data-testid="main-menu">
 
       {/* ─── Top Header ──────────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-[#0d1117]/90 backdrop-blur-xl border-b border-white/[0.06]">
+      <header className="z-40 bg-[#0d1117] border-b border-white/[0.06]">
         <div className="max-w-[1600px] mx-auto px-3 sm:px-6 h-[56px] flex items-center justify-between gap-2">
           {/* Left: Mobile logo */}
           <div className="flex items-center gap-3 lg:hidden">
