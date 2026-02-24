@@ -2590,7 +2590,7 @@ async def collect_treat(treat_id: str, data: dict):
 
 # Leaderboard Routes
 @api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
-async def get_leaderboard(limit: int = 50):
+async def get_leaderboard(limit: int = 200):
     # Get top players by points (all players, not just NFT holders)
     # Only include players with valid nicknames
     pipeline = [
