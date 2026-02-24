@@ -116,7 +116,7 @@ const LiveChat = ({ isLoggedIn, effectiveAddress, username }) => {
       const container = chatContainerRef.current;
       const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
       if (isNearBottom) {
-        chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }
   }, [messages]);
