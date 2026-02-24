@@ -1099,7 +1099,7 @@ const MainMenu = () => {
           <div className="mx-3 mt-3 p-3 rounded-xl bg-gradient-to-br from-indigo-900/30 to-purple-900/20 border border-indigo-500/15">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shrink-0">
-                <Rocket className="w-4 h-4 text-white" />
+                <span className="text-white font-black text-sm leading-none">S1</span>
               </div>
               <div>
                 <div className="text-xs font-bold text-white">Season 1 Countdown</div>
