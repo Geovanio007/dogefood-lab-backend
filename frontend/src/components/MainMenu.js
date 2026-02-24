@@ -494,7 +494,7 @@ const MainMenu = () => {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-[60px] flex items-center justify-between gap-3">
           {/* Left: Logo */}
           <div className="flex items-center gap-4">
-            <DogeFoodLogo size="sm" showText={false} showBeta={true} className="shrink-0" />
+            <DogeFoodLogo size="small" showText={false} showBeta={true} className="shrink-0" />
           </div>
 
           {/* Right: Stats + Wallet */}
