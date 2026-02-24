@@ -750,7 +750,7 @@ async def get_recent_activity(limit: int = 20):
                 "foreignField": "address",
                 "as": "player_info"
             }},
-            {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArray": True}},
+            {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArrays": True}},
             {"$project": {
                 "_id": 0,
                 "treat_name": "$name",
@@ -791,7 +791,7 @@ async def get_chat_messages(limit: int = 50):
                 "foreignField": "address",
                 "as": "player_info"
             }},
-            {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArray": True}},
+            {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArrays": True}},
             {"$project": {
                 "_id": 0,
                 "message_id": {"$toString": "$_id"},
