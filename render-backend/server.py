@@ -1110,8 +1110,8 @@ async def get_player_weekly_stats(address: str):
                 "points": {"$gt": 0},
                 "nickname": {"$ne": None, "$exists": True, "$ne": ""},
                 "$or": [
-                    {"total_treats_created": {"$gt": 0}},
-                    {"created_treats.0": {"$exists": True}}
+                    {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
+                    {"vip_bonus_claimed": True, "points": {"$gt": 500}}
                 ]
             },
             {"address": 1, "points": 1}
@@ -2595,15 +2595,17 @@ async def collect_treat(treat_id: str, data: dict):
 # Leaderboard Routes
 @api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
 async def get_leaderboard(limit: int = 50):
-    # Only players who have created at least 1 treat qualify for the leaderboard
-    # Must have a valid nickname and points from actual gameplay
+    # Only players who have earned points from actual gameplay qualify
+    # VIP holders with only 500 bonus points (no gameplay) are excluded
     pipeline = [
         {"$match": {
             "points": {"$gt": 0},
             "nickname": {"$ne": None, "$exists": True, "$ne": ""},
             "$or": [
-                {"total_treats_created": {"$gt": 0}},
-                {"created_treats.0": {"$exists": True}}
+                # Non-VIP players: any points mean gameplay
+                {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
+                # VIP players: must have more than 500 (the bonus amount)
+                {"vip_bonus_claimed": True, "points": {"$gt": 500}}
             ]
         }},
         {"$sort": {"points": -1, "level": -1}},
@@ -2659,13 +2661,14 @@ async def get_game_stats():
     try:
         # Total registered players
         total_players = await db.players.count_documents({})
-        # Leaderboard-eligible players (with points > 0, valid nickname, AND at least 1 treat created)
+        # Leaderboard-eligible players: must have earned gameplay points
+        # VIP holders need > 500 (beyond the bonus), non-VIP just > 0
         eligible_players = await db.players.count_documents({
             "points": {"$gt": 0},
             "nickname": {"$ne": None, "$exists": True, "$ne": ""},
             "$or": [
-                {"total_treats_created": {"$gt": 0}},
-                {"created_treats.0": {"$exists": True}}
+                {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
+                {"vip_bonus_claimed": True, "points": {"$gt": 500}}
             ]
         })
         nft_holders = await db.players.count_documents({"is_nft_holder": True})
