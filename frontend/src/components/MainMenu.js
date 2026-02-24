@@ -9,6 +9,7 @@ import { useNFTVerification } from '../hooks/useNFTVerification';
 import { useTelegram } from '../contexts/TelegramContext';
 import DogeFoodLogo from './DogeFoodLogo';
 import MusicPlayer from './MusicPlayer';
+import ThemeToggle from './ThemeToggle';
 import { useMusic } from '../contexts/MusicContext';
 import {
   Beaker, Trophy, Settings, Palette, Clock, User, Check, Edit2, X,
