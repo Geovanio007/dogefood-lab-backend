@@ -2553,7 +2553,13 @@ async def get_leaderboard(limit: int = 50):
 @api_router.get("/stats")
 async def get_game_stats():
     try:
+        # Total registered players
         total_players = await db.players.count_documents({})
+        # Leaderboard-eligible players (with points > 0 and a valid nickname)
+        eligible_players = await db.players.count_documents({
+            "points": {"$gt": 0},
+            "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+        })
         nft_holders = await db.players.count_documents({"is_nft_holder": True})
         total_treats = await db.treats.count_documents({})
         
@@ -2565,7 +2571,8 @@ async def get_game_stats():
         )
         
         return {
-            "total_players": total_players,
+            "total_players": eligible_players,
+            "total_registered": total_players,
             "nft_holders": nft_holders,
             "total_treats": total_treats,
             "active_today": active_players
