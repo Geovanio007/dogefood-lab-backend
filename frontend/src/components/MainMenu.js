@@ -1054,19 +1054,53 @@ const MainMenu = () => {
             )}
           </div>
 
+          {/* ── Mobile Live Chat (inline, visible on mobile) ── */}
+          <div className="lg:hidden bg-[#151b28] rounded-xl border border-white/[0.06] overflow-hidden" data-testid="mobile-inline-chat">
+            {/* Chat Header */}
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
+              <MessageCircle className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-bold text-white flex-1">Live Chat</span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+            </div>
+            {/* Season Countdown */}
+            <div className="mx-3 mt-3 p-2.5 rounded-xl bg-gradient-to-br from-indigo-900/30 to-purple-900/20 border border-indigo-500/15">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shrink-0">
+                  <span className="text-white font-black text-xs leading-none">S1</span>
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white">Season 1 Countdown</div>
+                  <div className="text-[10px] text-indigo-300/70 mt-0.5"><SeasonCountdown compact /></div>
+                </div>
+              </div>
+            </div>
+            {/* Chat Messages */}
+            <div className="h-[350px] overflow-hidden">
+              <LiveChat isLoggedIn={isLoggedIn} effectiveAddress={effectiveAddress} username={username} />
+            </div>
+          </div>
+
+          {/* ── Mobile Logo ── */}
+          <div className="lg:hidden text-center py-4">
+            <DogeFoodLogo size="medium" showText={false} showBeta={false} className="mx-auto" />
+            <div className="text-[9px] text-slate-600 mt-2">Built for the Dogecoin community</div>
+          </div>
+
           {/* ── Powered By Footer ── */}
           <div className="text-center py-6">
             <div className="text-[10px] text-slate-600 uppercase tracking-widest mb-3">Powered by</div>
             <img
               src="https://customer-assets.emergentagent.com/job_dogefoodlab/artifacts/ckey490s_20250812_154617.jpg"
-              alt="DOGEOS" className="max-w-[250px] sm:max-w-[350px] mx-auto rounded-lg border border-white/5 opacity-70 hover:opacity-100 transition-opacity"
+              alt="DOGEOS" className="max-w-[200px] sm:max-w-[350px] mx-auto rounded-lg border border-white/5 opacity-70 hover:opacity-100 transition-opacity"
             />
           </div>
         </main>
 
-        {/* RIGHT SIDEBAR — Live Chat (Desktop) */}
+        {/* RIGHT SIDEBAR — Live Chat (Desktop only) */}
         <aside className="hidden lg:flex flex-col w-80 shrink-0 sticky top-[56px] self-start h-[calc(100vh-56px)] border-l border-white/[0.06]" data-testid="chat-sidebar">
-          {/* Header */}
           <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
             <MessageCircle className="w-4 h-4 text-emerald-400" />
             <span className="text-sm font-bold text-white flex-1">Live Chat</span>
@@ -1078,8 +1112,6 @@ const MainMenu = () => {
               <span className="text-[10px] text-slate-500 ml-1">{gameStats.total_players} players</span>
             )}
           </div>
-
-          {/* Season Countdown Card */}
           <div className="mx-3 mt-3 p-3 rounded-xl bg-gradient-to-br from-indigo-900/30 to-purple-900/20 border border-indigo-500/15">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shrink-0">
@@ -1091,8 +1123,6 @@ const MainMenu = () => {
               </div>
             </div>
           </div>
-
-          {/* Chat Area */}
           <div className="flex-1 overflow-hidden mt-2">
             <LiveChat isLoggedIn={isLoggedIn} effectiveAddress={effectiveAddress} username={username} />
           </div>
