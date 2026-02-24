@@ -1110,8 +1110,8 @@ async def get_player_weekly_stats(address: str):
                 "points": {"$gt": 0},
                 "nickname": {"$ne": None, "$exists": True, "$ne": ""},
                 "$or": [
-                    {"total_treats_created": {"$gt": 0}},
-                    {"created_treats.0": {"$exists": True}}
+                    {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
+                    {"vip_bonus_claimed": True, "points": {"$gt": 500}}
                 ]
             },
             {"address": 1, "points": 1}
