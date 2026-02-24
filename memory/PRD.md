@@ -64,4 +64,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-February 24, 2026 - Main menu redesign v2: Live Chat, logo moved, ScientistChat removed, orange→yellow, Rocket icon
+February 24, 2026 - Main menu v3: Refer & Earn card, theme toggle, sky blue Share button, S1 countdown icon, clock Happy Hour icon. Deployed to GitHub, Vercel (dogefoodlab.vercel.app), Render (dogefood-lab-api.onrender.com)
