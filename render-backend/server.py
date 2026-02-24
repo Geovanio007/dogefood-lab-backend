@@ -1104,9 +1104,12 @@ async def get_player_weekly_stats(address: str):
         avg_treats_per_day = total_treats / 7 if total_treats > 0 else 0
         avg_points_per_day = total_points / 7 if total_points > 0 else 0
         
-        # Get player rank from leaderboard
+        # Get player rank from leaderboard — use same filter as /leaderboard endpoint
         leaderboard_cursor = db.players.find(
-            {"points": {"$gt": 0}},
+            {
+                "points": {"$gt": 0},
+                "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+            },
             {"address": 1, "points": 1}
         ).sort("points", -1)
         leaderboard_list = await leaderboard_cursor.to_list(length=1000)
@@ -1760,6 +1763,102 @@ async def verify_nft_on_blockchain(address: str):
     except Exception as e:
         logger.error(f"Error verifying NFT on DogeOS: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/admin/verify-all-nft-holders")
+async def verify_all_nft_holders_blockchain():
+    """
+    Batch-verify ALL wallet-based players against the DogeOS blockchain.
+    Finds players who hold the NFT but are not marked as holders,
+    credits them with VIP bonus, and also checks if any marked holders
+    no longer hold the NFT.
+    """
+    try:
+        # Get all wallet-based players (0x addresses)
+        all_wallet_players = await db.players.find(
+            {"address": {"$regex": "^0x", "$options": "i"}},
+            {"address": 1, "is_nft_holder": 1, "is_vip": 1, "vip_bonus_claimed": 1, "points": 1, "nickname": 1, "_id": 0}
+        ).to_list(1000)
+        
+        results = {
+            "total_checked": len(all_wallet_players),
+            "newly_credited": [],
+            "already_credited": [],
+            "not_holders": [],
+            "errors": []
+        }
+        
+        async with httpx.AsyncClient() as client:
+            for player in all_wallet_players:
+                address = player.get("address")
+                try:
+                    url = f"{DOGEOS_BLOCKSCOUT_URL}/api?module=account&action=tokenbalance&contractaddress={DOGEFOOD_NFT_CONTRACT}&address={address}"
+                    response = await client.get(url, timeout=15.0)
+                    data = response.json()
+                    
+                    nft_count = 0
+                    if data.get("status") == "1" and data.get("result"):
+                        try:
+                            nft_count = int(data.get("result", "0"))
+                        except (ValueError, TypeError):
+                            nft_count = 0
+                    
+                    is_holder = nft_count > 0
+                    
+                    if is_holder:
+                        if not player.get("vip_bonus_claimed", False):
+                            # NFT holder who hasn't received bonus yet
+                            await db.players.update_one(
+                                {"address": address},
+                                {
+                                    "$set": {
+                                        "is_nft_holder": True,
+                                        "is_vip": True,
+                                        "vip_bonus_claimed": True
+                                    },
+                                    "$inc": {"points": 500}
+                                }
+                            )
+                            results["newly_credited"].append({
+                                "address": address,
+                                "nickname": player.get("nickname"),
+                                "nft_count": nft_count,
+                                "old_points": player.get("points", 0),
+                                "new_points": player.get("points", 0) + 500
+                            })
+                            logger.info(f"NFT batch verify: Credited {address} with 500 bonus points")
+                        else:
+                            # Already credited — ensure flags are correct
+                            await db.players.update_one(
+                                {"address": address},
+                                {"$set": {"is_nft_holder": True, "is_vip": True}}
+                            )
+                            results["already_credited"].append(address)
+                    else:
+                        results["not_holders"].append(address)
+                    
+                    # Rate limit: small delay between requests
+                    await asyncio.sleep(0.2)
+                    
+                except Exception as e:
+                    results["errors"].append({"address": address, "error": str(e)})
+                    logger.error(f"NFT batch verify error for {address}: {e}")
+        
+        return {
+            "success": True,
+            "total_checked": results["total_checked"],
+            "newly_credited_count": len(results["newly_credited"]),
+            "newly_credited": results["newly_credited"],
+            "already_credited_count": len(results["already_credited"]),
+            "not_holder_count": len(results["not_holders"]),
+            "error_count": len(results["errors"]),
+            "errors": results["errors"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in batch NFT verification: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # $DOGEONEWS Token Configuration (Solana)
@@ -2550,7 +2649,13 @@ async def get_leaderboard(limit: int = 50):
 @api_router.get("/stats")
 async def get_game_stats():
     try:
+        # Total registered players
         total_players = await db.players.count_documents({})
+        # Leaderboard-eligible players (with points > 0 and a valid nickname)
+        eligible_players = await db.players.count_documents({
+            "points": {"$gt": 0},
+            "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+        })
         nft_holders = await db.players.count_documents({"is_nft_holder": True})
         total_treats = await db.treats.count_documents({})
         
@@ -2562,7 +2667,8 @@ async def get_game_stats():
         )
         
         return {
-            "total_players": total_players,
+            "total_players": eligible_players,
+            "total_registered": total_players,
             "nft_holders": nft_holders,
             "total_treats": total_treats,
             "active_today": active_players
@@ -2759,7 +2865,23 @@ async def verify_nft_ownership(address: str, is_holder: str = "false"):
         else:
             is_holder_bool = bool(is_holder)
         
-        logger.info(f"🔍 NFT verification for {address}: is_holder={is_holder} -> {is_holder_bool}")
+        # Server-side blockchain verification as fallback
+        # If frontend says not a holder, double-check on-chain for 0x addresses
+        if not is_holder_bool and address.startswith("0x"):
+            try:
+                url = f"{DOGEOS_BLOCKSCOUT_URL}/api?module=account&action=tokenbalance&contractaddress={DOGEFOOD_NFT_CONTRACT}&address={address}"
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(url, timeout=10.0)
+                    data = resp.json()
+                if data.get("status") == "1" and data.get("result"):
+                    nft_count = int(data.get("result", "0"))
+                    if nft_count > 0:
+                        is_holder_bool = True
+                        logger.info(f"Server-side NFT check overrode frontend: {address} holds {nft_count} NFTs")
+            except Exception as e:
+                logger.warning(f"Server-side NFT check failed for {address}: {e}")
+        
+        logger.info(f"NFT verification for {address}: is_holder={is_holder} -> {is_holder_bool}")
         
         # Check if player exists
         existing_player = await db.players.find_one({"address": address})
