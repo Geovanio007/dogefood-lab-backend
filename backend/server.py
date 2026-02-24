@@ -2865,7 +2865,23 @@ async def verify_nft_ownership(address: str, is_holder: str = "false"):
         else:
             is_holder_bool = bool(is_holder)
         
-        logger.info(f"🔍 NFT verification for {address}: is_holder={is_holder} -> {is_holder_bool}")
+        # Server-side blockchain verification as fallback
+        # If frontend says not a holder, double-check on-chain for 0x addresses
+        if not is_holder_bool and address.startswith("0x"):
+            try:
+                url = f"{DOGEOS_BLOCKSCOUT_URL}/api?module=account&action=tokenbalance&contractaddress={DOGEFOOD_NFT_CONTRACT}&address={address}"
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(url, timeout=10.0)
+                    data = resp.json()
+                if data.get("status") == "1" and data.get("result"):
+                    nft_count = int(data.get("result", "0"))
+                    if nft_count > 0:
+                        is_holder_bool = True
+                        logger.info(f"Server-side NFT check overrode frontend: {address} holds {nft_count} NFTs")
+            except Exception as e:
+                logger.warning(f"Server-side NFT check failed for {address}: {e}")
+        
+        logger.info(f"NFT verification for {address}: is_holder={is_holder} -> {is_holder_bool}")
         
         # Check if player exists
         existing_player = await db.players.find_one({"address": address})
