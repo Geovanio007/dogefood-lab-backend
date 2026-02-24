@@ -1,1070 +1,671 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAccount, useDisconnect } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { useGame } from '../contexts/GameContext';
 import { useNFTVerification } from '../hooks/useNFTVerification';
 import { useTelegram } from '../contexts/TelegramContext';
-import ThemeToggle from './ThemeToggle';
 import DogeFoodLogo from './DogeFoodLogo';
-import TreatIcon from './TreatIcon';
 import MusicPlayer from './MusicPlayer';
 import ScientistChat from './ScientistChat';
 import { useMusic } from '../contexts/MusicContext';
-import { Beaker, Trophy, Settings, Palette, Clock, User, Check, Edit2, X, Wallet, UserPlus, Crown, Store, Camera } from 'lucide-react';
+import {
+  Beaker, Trophy, Settings, Palette, Clock, User, Check, Edit2, X,
+  Wallet, UserPlus, Crown, Store, Camera, Zap, ChevronRight,
+  BookOpen, Activity, TrendingUp
+} from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-
-// Season 1 End Date - 90 days from Dec 1, 2025 (Season started Dec 1, 2025)
 const SEASON_1_END = new Date('2026-03-31T00:00:00Z').getTime();
 
-// Season Countdown Component
+// ─── Compact Season Countdown ────────────────────────────────
 const SeasonCountdown = () => {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  
   useEffect(() => {
-    const calculateTimeLeft = () => {
-      const now = Date.now();
-      const diff = SEASON_1_END - now;
-      
-      if (diff <= 0) {
-        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-      }
-      
+    const calc = () => {
+      const diff = SEASON_1_END - Date.now();
+      if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
       return {
-        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((diff % (1000 * 60)) / 1000)
+        days: Math.floor(diff / 86400000),
+        hours: Math.floor((diff % 86400000) / 3600000),
+        minutes: Math.floor((diff % 3600000) / 60000),
+        seconds: Math.floor((diff % 60000) / 1000)
       };
     };
-    
-    setTimeLeft(calculateTimeLeft());
-    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
-    return () => clearInterval(timer);
+    setTimeLeft(calc());
+    const t = setInterval(() => setTimeLeft(calc()), 1000);
+    return () => clearInterval(t);
   }, []);
-  
+
+  const units = [
+    { val: timeLeft.days, label: 'D', color: 'text-yellow-400' },
+    { val: String(timeLeft.hours).padStart(2, '0'), label: 'H', color: 'text-sky-400' },
+    { val: String(timeLeft.minutes).padStart(2, '0'), label: 'M', color: 'text-sky-400' },
+    { val: String(timeLeft.seconds).padStart(2, '0'), label: 'S', color: 'text-slate-400' }
+  ];
+
   return (
-    <div className="bg-slate-800/60 rounded-lg p-3 border border-white/[0.04]">
-      <div className="text-[10px] sm:text-xs text-white/40 mb-2 text-center font-semibold uppercase tracking-wider">Season ends in</div>
-      <div className="flex gap-2 justify-center">
-        <div className="text-center">
-          <div className="bg-slate-700/60 rounded-md px-2.5 py-1.5 min-w-[40px] border border-yellow-400/10">
-            <span className="text-base sm:text-lg font-bold text-yellow-400 tabular-nums">{timeLeft.days}</span>
+    <div className="flex gap-1.5">
+      {units.map((u, i) => (
+        <div key={i} className="text-center">
+          <div className="bg-slate-800 rounded px-1.5 py-0.5 min-w-[28px] border border-white/5">
+            <span className={`text-xs font-bold tabular-nums ${u.color}`}>{u.val}</span>
           </div>
-          <span className="text-[9px] text-white/40 uppercase mt-0.5 block">Days</span>
+          <span className="text-[8px] text-white/30 uppercase">{u.label}</span>
         </div>
-        <div className="text-center">
-          <div className="bg-slate-700/60 rounded-md px-2.5 py-1.5 min-w-[40px] border border-sky-400/10">
-            <span className="text-base sm:text-lg font-bold text-sky-400 tabular-nums">{String(timeLeft.hours).padStart(2, '0')}</span>
-          </div>
-          <span className="text-[9px] text-white/40 uppercase mt-0.5 block">Hrs</span>
-        </div>
-        <div className="text-center">
-          <div className="bg-slate-700/60 rounded-md px-2.5 py-1.5 min-w-[40px] border border-sky-400/10">
-            <span className="text-base sm:text-lg font-bold text-sky-400 tabular-nums">{String(timeLeft.minutes).padStart(2, '0')}</span>
-          </div>
-          <span className="text-[9px] text-white/40 uppercase mt-0.5 block">Min</span>
-        </div>
-        <div className="text-center">
-          <div className="bg-slate-700/60 rounded-md px-2.5 py-1.5 min-w-[40px] border border-white/[0.06]">
-            <span className="text-base sm:text-lg font-bold text-white/60 tabular-nums">{String(timeLeft.seconds).padStart(2, '0')}</span>
-          </div>
-          <span className="text-[9px] text-white/40 uppercase mt-0.5 block">Sec</span>
-        </div>
-      </div>
+      ))}
     </div>
   );
 };
 
+// ─── Live Activity Feed ──────────────────────────────────────
+const LiveActivityFeed = () => {
+  const [activity, setActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchActivity = useCallback(async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/activity/recent?limit=15`);
+      if (res.ok) {
+        const data = await res.json();
+        setActivity(data.activity || []);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    fetchActivity();
+    const interval = setInterval(fetchActivity, 30000);
+    return () => clearInterval(interval);
+  }, [fetchActivity]);
+
+  const rarityColor = {
+    Common: 'text-slate-400', Uncommon: 'text-green-400', Rare: 'text-blue-400',
+    Epic: 'text-purple-400', Legendary: 'text-amber-400', Mythic: 'text-pink-400'
+  };
+
+  const rarityBg = {
+    Common: 'bg-slate-500/10', Uncommon: 'bg-green-500/10', Rare: 'bg-blue-500/10',
+    Epic: 'bg-purple-500/10', Legendary: 'bg-amber-500/10', Mythic: 'bg-pink-500/10'
+  };
+
+  const timeAgo = (iso) => {
+    if (!iso) return '';
+    const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 60) return 'now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+    return `${Math.floor(diff / 86400)}d`;
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-10 bg-white/5 rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1" data-testid="live-activity-feed">
+      {activity.map((item, idx) => (
+        <div
+          key={idx}
+          className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+        >
+          <div className={`w-7 h-7 rounded-lg ${rarityBg[item.rarity] || 'bg-slate-500/10'} flex items-center justify-center shrink-0`}>
+            <Beaker className={`w-3.5 h-3.5 ${rarityColor[item.rarity] || 'text-slate-400'}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-white text-xs font-medium truncate">{item.player_nickname}</span>
+              <span className={`text-[10px] font-medium ${rarityColor[item.rarity] || 'text-slate-400'}`}>
+                {item.rarity}
+              </span>
+            </div>
+            <div className="text-[10px] text-slate-500 truncate">
+              {item.treat_name || 'Unnamed treat'}
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="text-xs font-bold text-yellow-400">+{item.points_reward}</div>
+            <div className="text-[9px] text-slate-500">{timeAgo(item.created_at)}</div>
+          </div>
+        </div>
+      ))}
+      {activity.length === 0 && (
+        <div className="text-center py-8 text-slate-500 text-xs">No recent activity</div>
+      )}
+    </div>
+  );
+};
+
+// ─── Navigation Sidebar (Desktop) ────────────────────────────
+const navItems = [
+  { path: '/lab', icon: Beaker, label: 'Lab', color: 'text-yellow-400', needsAuth: true },
+  { path: '/nfts', icon: Palette, label: 'My Treats', color: 'text-purple-400' },
+  { path: '/leaderboard', icon: Trophy, label: 'Leaderboard', color: 'text-emerald-400' },
+  { path: '/marketplace', icon: Store, label: 'Marketplace', color: 'text-sky-400' },
+  { path: '/tournament', icon: Crown, label: 'Tournament', color: 'text-amber-400' },
+  { path: '/settings', icon: Settings, label: 'Settings', color: 'text-slate-400' },
+];
+
+const Sidebar = ({ onAuthRequired }) => (
+  <nav className="hidden lg:flex flex-col w-48 shrink-0 sticky top-4 self-start" data-testid="menu-sidebar">
+    <div className="space-y-0.5">
+      {navItems.map((item) => (
+        <Link
+          key={item.path}
+          to={item.path}
+          onClick={item.needsAuth ? onAuthRequired : undefined}
+          className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-white/[0.06] transition-colors group"
+        >
+          <item.icon className={`w-4 h-4 ${item.color} group-hover:scale-110 transition-transform`} />
+          <span className="text-sm text-slate-300 group-hover:text-white transition-colors">{item.label}</span>
+          <ChevronRight className="w-3 h-3 text-slate-600 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+        </Link>
+      ))}
+      <div className="my-2 mx-3 h-px bg-white/5" />
+      <a
+        href="/game-mechanisms.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-white/[0.06] transition-colors group"
+      >
+        <BookOpen className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+        <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Game Guide</span>
+      </a>
+    </div>
+  </nav>
+);
+
+// ─── Mobile Bottom Nav ───────────────────────────────────────
+const MobileNav = ({ onAuthRequired }) => (
+  <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-lg border-t border-white/5" data-testid="mobile-nav">
+    <div className="flex items-center justify-around px-2 py-1.5 max-w-md mx-auto">
+      {navItems.slice(0, 5).map((item) => (
+        <Link
+          key={item.path}
+          to={item.path}
+          onClick={item.needsAuth ? onAuthRequired : undefined}
+          className="flex flex-col items-center gap-0.5 px-2 py-1"
+        >
+          <item.icon className={`w-5 h-5 ${item.color}`} />
+          <span className="text-[9px] text-slate-400">{item.label.split(' ')[0]}</span>
+        </Link>
+      ))}
+      <Link to="/settings" className="flex flex-col items-center gap-0.5 px-2 py-1">
+        <Settings className="w-5 h-5 text-slate-400" />
+        <span className="text-[9px] text-slate-400">More</span>
+      </Link>
+    </div>
+  </div>
+);
+
+// ═════════════════════════════════════════════════════════════
+// MAIN MENU COMPONENT
+// ═════════════════════════════════════════════════════════════
 const MainMenu = () => {
   const { address, isConnected } = useAccount();
   const { nftBalance, isNFTHolder, loading: nftLoading } = useNFTVerification();
   const { user, currentLevel, points, dispatch, loadPlayerData } = useGame();
   const { telegramUser, isTelegram } = useTelegram();
-  const { showPlayer, stopMusic } = useMusic();
+  const { showPlayer } = useMusic();
   const navigate = useNavigate();
-  
-  // Auto-play music when menu loads
-  useEffect(() => {
-    showPlayer();
-    return () => {}; // Don't stop on unmount - let lab page handle it
-  }, [showPlayer]);
-  
-  // Auth modal state
+
+  useEffect(() => { showPlayer(); }, [showPlayer]);
+
+  // ─── Auth & User State ─────────────────────────────────────
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showGuestSignup, setShowGuestSignup] = useState(false);
   const [guestUsername, setGuestUsername] = useState('');
   const [guestSignupError, setGuestSignupError] = useState('');
   const [guestSignupLoading, setGuestSignupLoading] = useState(false);
-  
-  // Username state
   const [username, setUsername] = useState('');
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [usernameInput, setUsernameInput] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [savingUsername, setSavingUsername] = useState(false);
-  
-  // Profile image state
   const [profileImage, setProfileImage] = useState(null);
-  
-  // Guest/Firebase user state
+  const [gameStats, setGameStats] = useState(null);
+  const [happyHour, setHappyHour] = useState(null);
+
   const [guestUser, setGuestUser] = useState(() => {
-    // Initialize from localStorage immediately
-    const storedPlayer = localStorage.getItem('dogefood_player');
-    if (storedPlayer) {
-      try {
-        return JSON.parse(storedPlayer);
-      } catch (e) {
-        console.error('Error parsing stored player:', e);
-        return null;
-      }
-    }
-    return null;
+    try { return JSON.parse(localStorage.getItem('dogefood_player')); } catch { return null; }
   });
   const [playerLevel, setPlayerLevel] = useState(1);
   const [playerPoints, setPlayerPoints] = useState(0);
 
-  // Check for guest/firebase user on mount and when localStorage changes
-  useEffect(() => {
-    const loadStoredPlayer = () => {
-      const storedPlayer = localStorage.getItem('dogefood_player');
-      if (storedPlayer) {
-        try {
-          const player = JSON.parse(storedPlayer);
-          setGuestUser(player);
-          setUsername(player.username || '');
-          
-          // Load full profile from backend
-          const playerId = player.guest_id || player.id || player.address;
-          if (playerId) {
-            loadGuestProfile(playerId);
-          }
-        } catch (e) {
-          console.error('Error parsing stored player:', e);
-        }
-      }
-    };
-    
-    loadStoredPlayer();
-    
-    // Listen for storage changes (in case user registers in another flow)
-    const handleStorageChange = (e) => {
-      if (e.key === 'dogefood_player') {
-        loadStoredPlayer();
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also listen for custom event dispatched after registration
-    const handlePlayerRegistered = () => {
-      loadStoredPlayer();
-    };
-    window.addEventListener('dogefood_player_registered', handlePlayerRegistered);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('dogefood_player_registered', handlePlayerRegistered);
-    };
-  }, []);
-
-  // Load guest/firebase user profile
-  const loadGuestProfile = async (playerId) => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/player/${playerId}/profile`);
-      if (response.ok) {
-        const profile = await response.json();
-        setUsername(profile.nickname || '');
-        setProfileImage(profile.profile_image || null);
-        setPlayerLevel(profile.level || 1);
-        setPlayerPoints(profile.points || 0);
-      }
-    } catch (error) {
-      console.error('Error loading guest profile:', error);
-    }
-  };
-
-  // Load player profile including username and profile image (for wallet users)
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (isConnected && address) {
-        try {
-          const response = await fetch(`${BACKEND_URL}/api/player/${address}/profile`);
-          if (response.ok) {
-            const profile = await response.json();
-            setUsername(profile.nickname || '');
-            setProfileImage(profile.profile_image || null);
-          }
-        } catch (error) {
-          console.error('Error loading profile:', error);
-        }
-      }
-    };
-    loadProfile();
-  }, [isConnected, address]);
-
-  // Determine if user is logged in (wallet or guest/firebase)
   const isLoggedIn = isConnected || guestUser;
   const effectiveAddress = address || guestUser?.guest_id || guestUser?.id;
   const effectiveLevel = isConnected ? currentLevel : playerLevel;
   const effectivePoints = isConnected ? points : playerPoints;
+  const isAuthenticated = isConnected || isTelegram || guestUser;
 
-  // Handle profile image upload
+  // ─── Data Loading ──────────────────────────────────────────
+  const loadGuestProfile = async (playerId) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/player/${playerId}/profile`);
+      if (res.ok) {
+        const p = await res.json();
+        setUsername(p.nickname || '');
+        setProfileImage(p.profile_image || null);
+        setPlayerLevel(p.level || 1);
+        setPlayerPoints(p.points || 0);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => {
+    const load = () => {
+      try {
+        const p = JSON.parse(localStorage.getItem('dogefood_player'));
+        if (p) {
+          setGuestUser(p);
+          setUsername(p.username || '');
+          const id = p.guest_id || p.id || p.address;
+          if (id) loadGuestProfile(id);
+        }
+      } catch {}
+    };
+    load();
+    const onStorage = (e) => { if (e.key === 'dogefood_player') load(); };
+    const onReg = () => load();
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('dogefood_player_registered', onReg);
+    return () => { window.removeEventListener('storage', onStorage); window.removeEventListener('dogefood_player_registered', onReg); };
+  }, []);
+
+  useEffect(() => {
+    if (isConnected && address) {
+      fetch(`${BACKEND_URL}/api/player/${address}/profile`)
+        .then(r => r.ok ? r.json() : null)
+        .then(p => { if (p) { setUsername(p.nickname || ''); setProfileImage(p.profile_image || null); } })
+        .catch(() => {});
+    }
+  }, [isConnected, address]);
+
+  useEffect(() => {
+    if (isConnected && address && !nftLoading) {
+      dispatch({ type: 'SET_USER', payload: { address, isNFTHolder, nftBalance } });
+      loadPlayerData(address);
+    } else if (!isConnected) {
+      dispatch({ type: 'SET_USER', payload: null });
+    }
+  }, [isConnected, address, isNFTHolder, nftBalance, nftLoading, dispatch, loadPlayerData]);
+
+  // Fetch game stats & happy hour
+  useEffect(() => {
+    Promise.all([
+      fetch(`${BACKEND_URL}/api/stats`).then(r => r.ok ? r.json() : null),
+      fetch(`${BACKEND_URL}/api/happy-hour/status`).then(r => r.ok ? r.json() : null)
+    ]).then(([stats, hh]) => {
+      if (stats) setGameStats(stats);
+      if (hh) setHappyHour(hh);
+    }).catch(() => {});
+  }, []);
+
+  // ─── Handlers ──────────────────────────────────────────────
+  const handleLabAccess = (e) => { if (!isAuthenticated) { e.preventDefault(); setShowAuthModal(true); } };
+
   const handleProfileImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-    
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Image must be less than 2MB');
-      return;
-    }
-    
-    // Convert to base64 for preview and upload
+    if (!file || file.size > 2 * 1024 * 1024) { if (file) alert('Image must be less than 2MB'); return; }
     const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64Image = event.target.result;
-      setProfileImage(base64Image);
-      
-      // Save to backend
-      try {
-        const response = await fetch(`${BACKEND_URL}/api/player/${effectiveAddress}/profile-image`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64Image })
-        });
-        
-        if (!response.ok) {
-          console.error('Failed to upload profile image');
-        }
-      } catch (error) {
-        console.error('Error uploading profile image:', error);
-      }
+    reader.onload = async (ev) => {
+      setProfileImage(ev.target.result);
+      try { await fetch(`${BACKEND_URL}/api/player/${effectiveAddress}/profile-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: ev.target.result }) }); } catch {}
     };
     reader.readAsDataURL(file);
   };
 
   const handleSaveUsername = async () => {
-    if (!usernameInput.trim()) {
-      setUsernameError('Username cannot be empty');
-      return;
-    }
-    
-    if (!/^[a-zA-Z0-9_]{3,20}$/.test(usernameInput)) {
-      setUsernameError('3-20 characters, alphanumeric and underscores only');
-      return;
-    }
-    
-    setSavingUsername(true);
-    setUsernameError('');
-    
+    if (!usernameInput.trim()) { setUsernameError('Username cannot be empty'); return; }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(usernameInput)) { setUsernameError('3-20 chars, alphanumeric + underscores'); return; }
+    setSavingUsername(true); setUsernameError('');
     try {
-      const response = await fetch(
-        `${BACKEND_URL}/api/player/${effectiveAddress}/update-username?username=${encodeURIComponent(usernameInput)}`,
-        { method: 'POST' }
-      );
-      
-      if (response.ok) {
-        setUsername(usernameInput);
-        setIsEditingUsername(false);
-      } else {
-        const error = await response.json();
-        setUsernameError(error.detail || 'Failed to save username');
-      }
-    } catch (error) {
-      setUsernameError('Failed to save username');
-    } finally {
-      setSavingUsername(false);
-    }
+      const r = await fetch(`${BACKEND_URL}/api/player/${effectiveAddress}/update-username?username=${encodeURIComponent(usernameInput)}`, { method: 'POST' });
+      if (r.ok) { setUsername(usernameInput); setIsEditingUsername(false); }
+      else { const d = await r.json(); setUsernameError(d.detail || 'Failed'); }
+    } catch { setUsernameError('Failed to save'); }
+    finally { setSavingUsername(false); }
   };
 
-  // Check if user is authenticated
-  const isAuthenticated = isConnected || isTelegram || guestUser;
-  
-  // Handle lab access - check authentication first
-  const handleLabAccess = (e) => {
-    if (!isAuthenticated) {
-      e.preventDefault();
-      setShowAuthModal(true);
-    }
-  };
-  
-  // Handle guest signup
   const handleGuestSignup = async () => {
-    if (!guestUsername || guestUsername.length < 3) {
-      setGuestSignupError('Username must be at least 3 characters');
-      return;
-    }
-    
-    if (guestUsername.length > 20) {
-      setGuestSignupError('Username must be 20 characters or less');
-      return;
-    }
-    
-    if (!/^[a-zA-Z0-9_]+$/.test(guestUsername)) {
-      setGuestSignupError('Username can only contain letters, numbers, and underscores');
-      return;
-    }
-    
-    setGuestSignupLoading(true);
-    setGuestSignupError('');
-    
+    if (!guestUsername || guestUsername.length < 3) { setGuestSignupError('Min 3 characters'); return; }
+    if (guestUsername.length > 20) { setGuestSignupError('Max 20 characters'); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(guestUsername)) { setGuestSignupError('Letters, numbers, underscores only'); return; }
+    setGuestSignupLoading(true); setGuestSignupError('');
     try {
-      const response = await fetch(`${BACKEND_URL}/api/players/guest-register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: guestUsername })
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        setGuestSignupError(data.detail || 'Registration failed');
-        setGuestSignupLoading(false);
-        return;
-      }
-      
-      // Save to localStorage
-      localStorage.setItem('dogefood_player', JSON.stringify({
-        id: data.player_id,
-        guest_id: data.guest_id,
-        username: data.username,
-        auth_type: 'guest'
-      }));
-      
-      // Update state
-      setGuestUser({
-        id: data.player_id,
-        guest_id: data.guest_id,
-        username: data.username,
-        auth_type: 'guest'
-      });
-      
-      // Dispatch event
+      const r = await fetch(`${BACKEND_URL}/api/players/guest-register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: guestUsername }) });
+      const d = await r.json();
+      if (!r.ok) { setGuestSignupError(d.detail || 'Failed'); setGuestSignupLoading(false); return; }
+      localStorage.setItem('dogefood_player', JSON.stringify({ id: d.player_id, guest_id: d.guest_id, username: d.username, auth_type: 'guest' }));
+      setGuestUser({ id: d.player_id, guest_id: d.guest_id, username: d.username, auth_type: 'guest' });
       window.dispatchEvent(new Event('dogefood_player_registered'));
-      
-      // Close modals and navigate to lab
-      setShowAuthModal(false);
-      setShowGuestSignup(false);
-      setGuestSignupLoading(false);
+      setShowAuthModal(false); setShowGuestSignup(false); setGuestSignupLoading(false);
       navigate('/lab');
-      
-    } catch (error) {
-      console.error('Guest signup error:', error);
-      setGuestSignupError('Network error. Please try again.');
-      setGuestSignupLoading(false);
-    }
+    } catch { setGuestSignupError('Network error'); setGuestSignupLoading(false); }
   };
 
-  // Update game state when wallet connects and NFT status is determined
-  useEffect(() => {
-    if (isConnected && address && !nftLoading) {
-      dispatch({ 
-        type: 'SET_USER', 
-        payload: { 
-          address, 
-          isNFTHolder,
-          nftBalance
-        } 
-      });
-      
-      // Load player data from backend
-      loadPlayerData(address);
-    } else if (!isConnected) {
-      dispatch({ type: 'SET_USER', payload: null });
-    }
-  }, [isConnected, address, isNFTHolder, nftBalance, nftLoading, dispatch]);
-
+  // ═══════════════════════════════════════════════════════════
+  // RENDER
+  // ═══════════════════════════════════════════════════════════
   return (
-    <div className="lab-container min-h-screen p-4 sm:p-8">
-      {/* Background Lab Scene */}
-      <div className="absolute inset-0 opacity-10">
-        <img
-          src="https://images.unsplash.com/photo-1578272018819-412aef6cb45d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwZXF1aXBtZW50JTIwY29sb3JmdWx8ZW58MHx8fHwxNzU0OTQ2OTAwfDA&ixlib=rb-4.1.0&q=85"
-          alt="Lab Background"
-          className="w-full h-full object-cover"
-        />
-      </div>
+    <div className="min-h-screen bg-[#0c1220] pb-20 lg:pb-0" data-testid="main-menu">
 
-      <div className="relative z-10 max-w-6xl mx-auto">
-        
-        {/* Header - Mobile Optimized */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-12">
-          {/* Logo and Tagline */}
-          <div className="w-full sm:w-auto">
-            <DogeFoodLogo 
-              size="hero" 
-              showText={false} 
-              showBeta={true}
-              className="animate-fade-in mb-2 sm:mb-4 scale-75 sm:scale-100 origin-left"
-            />
-            <p className="text-sm sm:text-2xl text-yellow-500 font-bold drop-shadow-lg">
-              Mix, Test & Upgrade Your Way to the Top!
-            </p>
-          </div>
+      {/* ─── Top Header ──────────────────────────────────── */}
+      <header className="sticky top-0 z-40 bg-[#0c1220]/90 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-3">
+          <DogeFoodLogo size="sm" showText={false} showBeta={true} className="shrink-0" />
 
-          {/* Right Side Controls */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto">
-            {/* Theme Toggle Button */}
-            <ThemeToggle />
-            
-            {isConnected && (
-              <div className="flex items-center gap-2 flex-wrap">
-                {isNFTHolder && (
-                  <Badge className="vip-badge text-xs sm:text-sm whitespace-nowrap">
-                    VIP
-                  </Badge>
-                )}
-                <div className="glass-panel p-2 sm:p-3">
-                  <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">Lv {currentLevel}</div>
-                  <div className="font-bold text-sm sm:text-lg">{points} Pts</div>
-                </div>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {isLoggedIn && (
+              <div className="flex items-center gap-2 bg-white/[0.04] rounded-lg px-2.5 py-1.5 border border-white/5">
+                <span className="text-[10px] text-slate-400">Lv</span>
+                <span className="text-xs font-bold text-yellow-400">{effectiveLevel || 1}</span>
+                <div className="w-px h-3 bg-white/10" />
+                <span className="text-xs font-bold text-sky-400 tabular-nums">{(effectivePoints || 0).toLocaleString()}</span>
+                <span className="text-[10px] text-slate-400">pts</span>
+                {isNFTHolder && <Crown className="w-3.5 h-3.5 text-yellow-400" />}
               </div>
             )}
-            
-            {/* Wallet Connection - Mobile Optimized */}
-            <div className="wallet-connection-wrapper">
-              <ConnectButton.Custom>
-                {({
-                  account,
-                  chain,
-                  openAccountModal,
-                  openChainModal,
-                  openConnectModal,
-                  authenticationStatus,
-                  mounted,
-                }) => {
-                  const ready = mounted && authenticationStatus !== 'loading';
-                  const connected =
-                    ready &&
-                    account &&
-                    chain &&
-                    (!authenticationStatus ||
-                      authenticationStatus === 'authenticated');
 
-                  return (
-                    <div
-                      {...(!ready && {
-                        'aria-hidden': true,
-                        'style': {
-                          opacity: 0,
-                          pointerEvents: 'none',
-                          userSelect: 'none',
-                        },
-                      })}
-                    >
-                      {(() => {
-                        if (!connected) {
-                          return (
-                            <Button
-                              onClick={openConnectModal}
-                              className="doge-button text-xs sm:text-sm px-3 sm:px-4 py-2"
-                            >
-                              Connect Wallet
-                            </Button>
-                          );
-                        }
-
-                        if (chain.unsupported) {
-                          return (
-                            <Button
-                              onClick={openChainModal}
-                              className="bg-red-500 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm"
-                            >
-                              Wrong network
-                            </Button>
-                          );
-                        }
-
-                        return (
-                          <Button
-                            onClick={openAccountModal}
-                            className="doge-button text-xs sm:text-sm px-3 sm:px-4 py-2 font-mono"
-                          >
-                            {`${account.address.slice(0,4)}...${account.address.slice(-3)}`}
-                          </Button>
-                        );
-                      })()}
-                    </div>
-                  );
-                }}
-              </ConnectButton.Custom>
-            </div>
+            <ConnectButton.Custom>
+              {({ account, chain, openAccountModal, openConnectModal, mounted, authenticationStatus }) => {
+                const ready = mounted && authenticationStatus !== 'loading';
+                const connected = ready && account && chain && (!authenticationStatus || authenticationStatus === 'authenticated');
+                if (!ready) return <div style={{ opacity: 0, pointerEvents: 'none' }} />;
+                if (!connected) return (
+                  <Button onClick={openConnectModal} size="sm" className="bg-sky-600 hover:bg-sky-500 text-white text-xs h-8 px-3">
+                    <Wallet className="w-3.5 h-3.5 mr-1.5" /> Connect
+                  </Button>
+                );
+                if (chain.unsupported) return <Button onClick={openAccountModal} size="sm" className="bg-red-500 text-white text-xs h-8 px-3">Wrong Network</Button>;
+                return (
+                  <Button onClick={openAccountModal} size="sm" variant="outline" className="border-sky-500/30 text-sky-400 text-xs h-8 px-3 font-mono hover:bg-sky-500/10">
+                    {account.address.slice(0, 4)}...{account.address.slice(-3)}
+                  </Button>
+                );
+              }}
+            </ConnectButton.Custom>
           </div>
         </div>
-        
-        {/* Scientist Profile Card - Professional Game Card */}
-        {isLoggedIn && (
-          <div className="mb-4 sm:mb-6">
-            <Card className="overflow-hidden border-0 shadow-xl">
-              <div className="relative">
-                {/* Top accent bar */}
-                <div className="h-1 bg-gradient-to-r from-yellow-400 via-sky-400 to-yellow-400" />
-                
-                <CardContent className="relative bg-slate-900/95 p-4 sm:p-5">
-                  {/* Subtle grid pattern overlay */}
-                  <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-                  
-                  {/* Guest/Firebase badge */}
-                  {guestUser && !isConnected && (
-                    <div className="absolute top-3 right-3">
-                      <span className="text-[10px] sm:text-xs font-medium text-sky-300 bg-sky-500/10 border border-sky-500/20 rounded-md px-2 py-0.5">
-                        {guestUser.auth_type === 'firebase' ? 'Firebase' : 'Guest'}
-                      </span>
-                    </div>
-                  )}
-                  
-                  <div className="flex flex-col gap-4 relative z-10">
-                    {/* Profile header */}
-                    <div className="flex items-center gap-4">
-                      {/* Avatar */}
-                      <div className="relative flex-shrink-0 group">
-                        <label htmlFor="profile-upload" className="cursor-pointer block">
-                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 border-sky-400/30 shadow-lg shadow-sky-500/10">
-                            {profileImage ? (
-                              <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-700 flex items-center justify-center">
-                                <User className="w-7 h-7 text-sky-300/70" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="absolute inset-0 bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Camera className="w-4 h-4 text-white" />
-                          </div>
-                        </label>
-                        <input id="profile-upload" type="file" accept="image/*" className="hidden" onChange={handleProfileImageUpload} />
-                        {isNFTHolder && (
-                          <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
-                            <Crown className="w-3 h-3 text-yellow-900" />
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Name + edit */}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[10px] sm:text-xs font-semibold text-sky-400/80 uppercase tracking-widest mb-0.5">Scientist</div>
-                        {!isEditingUsername ? (
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-base sm:text-lg text-white truncate">
-                              {username || 'Set username'}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => { setUsernameInput(username); setIsEditingUsername(true); setUsernameError(''); }}
-                              className="p-1 h-auto hover:bg-white/10 flex-shrink-0"
-                            >
-                              <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 text-sky-400/60 hover:text-sky-300" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1 sm:gap-2">
-                              <Input
-                                value={usernameInput}
-                                onChange={(e) => setUsernameInput(e.target.value)}
-                                placeholder="Username"
-                                className="w-24 sm:w-36 h-7 sm:h-8 text-xs sm:text-sm bg-slate-800 border-sky-400/30 text-white placeholder:text-white/40 focus:border-sky-400"
-                                maxLength={20}
-                              />
-                              <Button size="sm" onClick={handleSaveUsername} disabled={savingUsername} className="bg-sky-500 hover:bg-sky-400 h-7 sm:h-8 px-2 sm:px-3">
-                                {savingUsername ? '...' : <Check className="w-3 h-3 sm:w-4 sm:h-4" />}
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={() => setIsEditingUsername(false)} className="h-7 sm:h-8 px-1 sm:px-2 text-white/50 hover:text-white hover:bg-white/10">
-                                <X className="w-3 h-3" />
-                              </Button>
-                            </div>
-                            {usernameError && <span className="text-[10px] sm:text-xs text-red-400">{usernameError}</span>}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Stats bar */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 flex items-center gap-3 bg-slate-800/60 rounded-lg px-3 py-2 border border-white/[0.04]">
-                        <div className="text-center flex-1">
-                          <div className="text-[9px] sm:text-[10px] font-medium text-white/40 uppercase tracking-wider">Level</div>
-                          <div className="font-bold text-sm sm:text-lg text-yellow-400 tabular-nums">{effectiveLevel || 1}</div>
-                        </div>
-                        <div className="w-px h-8 bg-white/10" />
-                        <div className="text-center flex-1">
-                          <div className="text-[9px] sm:text-[10px] font-medium text-white/40 uppercase tracking-wider">Points</div>
-                          <div className="font-bold text-sm sm:text-lg text-sky-400 tabular-nums">{effectivePoints || 0}</div>
-                        </div>
-                      </div>
-                      
-                      {isNFTHolder ? (
-                        <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-lg px-3 py-2 text-center">
-                          <Crown className="w-4 h-4 text-yellow-400 mx-auto mb-0.5" />
-                          <div className="text-[9px] font-bold text-yellow-400 uppercase">VIP</div>
-                        </div>
-                      ) : guestUser && !isConnected && (
-                        <div className="bg-sky-400/10 border border-sky-400/30 rounded-lg px-3 py-2 text-center">
-                          <User className="w-4 h-4 text-sky-400 mx-auto mb-0.5" />
-                          <div className="text-[9px] font-bold text-sky-400 uppercase">Player</div>
+      </header>
+
+      {/* ─── Main Layout ─────────────────────────────────── */}
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-6 pt-4 flex gap-5">
+
+        {/* LEFT SIDEBAR (Desktop only) */}
+        <Sidebar onAuthRequired={handleLabAccess} />
+
+        {/* CENTER CONTENT */}
+        <main className="flex-1 min-w-0 space-y-4">
+
+          {/* ── Player Profile (if logged in) ── */}
+          {isLoggedIn && (
+            <Card className="border-0 bg-slate-800/50 overflow-hidden" data-testid="player-profile-card">
+              <div className="h-0.5 bg-gradient-to-r from-yellow-400 via-sky-400 to-yellow-400" />
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-3">
+                  {/* Avatar */}
+                  <label htmlFor="profile-upload" className="cursor-pointer block relative group shrink-0">
+                    <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 border-sky-400/20">
+                      {profileImage ? (
+                        <img src={profileImage} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-slate-700 flex items-center justify-center">
+                          <User className="w-5 h-5 text-sky-300/60" />
                         </div>
                       )}
                     </div>
-                  </div>
-                </CardContent>
-              </div>
-            </Card>
-          </div>
-        )}
+                    <div className="absolute inset-0 bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Camera className="w-3.5 h-3.5 text-white" />
+                    </div>
+                    {isNFTHolder && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
+                        <Crown className="w-2.5 h-2.5 text-yellow-900" />
+                      </div>
+                    )}
+                  </label>
+                  <input id="profile-upload" type="file" accept="image/*" className="hidden" onChange={handleProfileImageUpload} />
 
-        {/* Season 1 Card - Professional Game Card */}
-        <div className="mb-4 sm:mb-8">
-          <Card className="overflow-hidden border-0 shadow-xl">
-            <div className="relative">
-              {/* Top accent bar */}
-              <div className="h-1 bg-gradient-to-r from-sky-400 via-yellow-400 to-sky-400" />
-              
-              <CardContent className="relative bg-slate-900/95 p-4 sm:p-6">
-                {/* Subtle grid pattern */}
-                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-                
-                <div className="flex flex-col gap-4 sm:gap-5 relative z-10">
-                  {/* Season header */}
-                  <div className="flex items-center gap-4">
-                    <div className="relative flex-shrink-0">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-slate-800 border-2 border-yellow-400/30 flex items-center justify-center shadow-lg shadow-yellow-500/10">
-                        <Beaker className="w-7 h-7 sm:w-8 sm:h-8 text-yellow-400" />
+                  {/* Name & edit */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[9px] text-sky-400/70 uppercase tracking-widest font-semibold">Scientist</div>
+                    {!isEditingUsername ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-sm sm:text-base text-white truncate">{username || 'Set username'}</span>
+                        <button onClick={() => { setUsernameInput(username); setIsEditingUsername(true); setUsernameError(''); }} className="p-0.5 hover:bg-white/10 rounded">
+                          <Edit2 className="w-3 h-3 text-sky-400/50" />
+                        </button>
                       </div>
-                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-sky-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md border border-sky-400">
-                        1
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <Input value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} placeholder="Username" className="w-28 h-7 text-xs bg-slate-700 border-sky-400/30 text-white" maxLength={20} />
+                        <Button size="sm" onClick={handleSaveUsername} disabled={savingUsername} className="bg-sky-500 h-7 px-2"><Check className="w-3 h-3" /></Button>
+                        <Button size="sm" variant="ghost" onClick={() => setIsEditingUsername(false)} className="h-7 px-1 text-white/50"><X className="w-3 h-3" /></Button>
+                        {usernameError && <span className="text-[9px] text-red-400">{usernameError}</span>}
                       </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg sm:text-2xl font-bold text-white mb-0.5">
-                        Season 1: Beta
-                      </h3>
-                      <p className="text-white/50 text-xs sm:text-sm">
-                        Create treats, earn points, climb the leaderboard
-                      </p>
-                      <p className="text-sky-400 font-medium text-[10px] sm:text-xs mt-1">
-                        NFT minting coming in Season 2
-                      </p>
-                    </div>
+                    )}
                   </div>
-                  
-                  {/* Status indicators */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="bg-sky-500/10 border border-sky-400/20 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold text-sky-400 uppercase tracking-wide">
-                      Season 1 Active
-                    </div>
-                    <div className="flex gap-1.5 text-[10px] sm:text-xs">
-                      <div className="flex items-center gap-1.5 bg-slate-800/60 border border-white/[0.04] text-white/60 px-2 py-1 rounded-md">
-                        <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full" />
-                        Treats
-                      </div>
-                      <div className="flex items-center gap-1.5 bg-slate-800/60 border border-white/[0.04] text-white/60 px-2 py-1 rounded-md">
-                        <span className="w-1.5 h-1.5 bg-sky-400 rounded-full" />
-                        Boards
-                      </div>
-                    </div>
+
+                  {/* Quick Stats */}
+                  <div className="hidden sm:flex items-center gap-3 bg-slate-800/80 rounded-lg px-3 py-2 border border-white/5">
+                    <div className="text-center"><div className="text-[9px] text-white/30 uppercase">Level</div><div className="text-sm font-bold text-yellow-400">{effectiveLevel || 1}</div></div>
+                    <div className="w-px h-6 bg-white/10" />
+                    <div className="text-center"><div className="text-[9px] text-white/30 uppercase">Points</div><div className="text-sm font-bold text-sky-400 tabular-nums">{(effectivePoints || 0).toLocaleString()}</div></div>
+                    {isNFTHolder && (<><div className="w-px h-6 bg-white/10" /><div className="text-center"><Crown className="w-4 h-4 text-yellow-400 mx-auto" /><div className="text-[9px] text-yellow-400 font-bold">VIP</div></div></>)}
                   </div>
-                  
-                  {/* Season countdown */}
-                  <SeasonCountdown />
                 </div>
               </CardContent>
-            </div>
-          </Card>
-        </div>
+            </Card>
+          )}
 
-        {/* Auto-Mixer Agent Live Banner */}
-        <Link to="/settings" state={{ tab: 'auto-mixer' }} className="block mb-4 sm:mb-6">
-          <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 p-3 sm:p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01] cursor-pointer border border-sky-400/30">
-            {/* Animated background effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-shimmer" />
-            
-            {/* Pulsing dot indicator */}
-            <div className="absolute top-3 right-3 flex items-center gap-1.5">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-              </span>
-              <span className="text-emerald-300 text-xs font-bold hidden sm:inline">LIVE</span>
-            </div>
-            
-            <div className="flex items-center gap-3 sm:gap-4">
-              {/* Robot Icon */}
-              <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-white/10 backdrop-blur-sm rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/20">
-                <Settings className="w-6 h-6 sm:w-8 sm:h-8 text-sky-300" />
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
-                  <h3 className="text-base sm:text-xl font-bold text-white">Auto-Mixer Agent</h3>
-                  <Badge className="bg-emerald-500/80 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">ACTIVE</Badge>
+          {/* ── Promotional Banners Row ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {/* Season 1 */}
+            <div className="bg-gradient-to-br from-sky-600/20 to-sky-900/30 rounded-xl p-3 border border-sky-500/20 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-sky-500/20 flex items-center justify-center"><Beaker className="w-4 h-4 text-sky-400" /></div>
+                  <div>
+                    <div className="text-xs font-bold text-white">Season 1: Beta</div>
+                    <div className="text-[10px] text-sky-300/70">Earn points for $LAB airdrop</div>
+                  </div>
                 </div>
-                <p className="text-sky-100 text-xs sm:text-sm line-clamp-1">
-                  Let AI mix treats for you automatically • 30 DOGE/month
-                </p>
               </div>
-              
-              {/* Arrow icon */}
-              <div className="flex-shrink-0 hidden sm:flex w-10 h-10 bg-white/10 rounded-full items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <SeasonCountdown />
+            </div>
+
+            {/* Happy Hour */}
+            <div className={`rounded-xl p-3 border flex flex-col justify-between ${happyHour?.active ? 'bg-gradient-to-br from-yellow-600/20 to-amber-900/30 border-yellow-500/30' : 'bg-gradient-to-br from-slate-700/30 to-slate-800/30 border-white/5'}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${happyHour?.active ? 'bg-yellow-500/20' : 'bg-slate-600/30'}`}>
+                  <Zap className={`w-4 h-4 ${happyHour?.active ? 'text-yellow-400' : 'text-slate-400'}`} />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    Happy Hour
+                    {happyHour?.active && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />}
+                  </div>
+                  <div className="text-[10px] text-slate-400">+25% bonus at 15:00 UTC daily</div>
+                </div>
               </div>
+              <div className="text-[10px] text-slate-500">{happyHour?.active ? 'LIVE NOW' : `Next: ${happyHour?.start_hour_utc || 15}:00 UTC`}</div>
+            </div>
+
+            {/* NFT Rewards */}
+            <div className="bg-gradient-to-br from-amber-600/20 to-orange-900/30 rounded-xl p-3 border border-amber-500/20 flex flex-col justify-between">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center"><Crown className="w-4 h-4 text-amber-400" /></div>
+                <div>
+                  <div className="text-xs font-bold text-white">NFT Holder Rewards</div>
+                  <div className="text-[10px] text-amber-300/70">500 bonus + VIP status</div>
+                </div>
+              </div>
+              <div className="text-[10px] text-slate-500">{gameStats?.nft_holders || 0} VIP holders</div>
             </div>
           </div>
-        </Link>
 
-        {/* Main Menu Cards - Compact Square Design for Telegram */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-6 mb-4 sm:mb-12">
-          {/* Enter Lab */}
-          <Link to="/lab" className="block" onClick={handleLabAccess}>
-            <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full">
-              <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto">
-                <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
-                  <Beaker className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
+          {/* ── Quick Action Cards (Enter Lab + Auto-Mixer) ── */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <Link to="/lab" onClick={handleLabAccess} className="block">
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-yellow-500/10 to-orange-600/10 border border-yellow-500/20 p-4 sm:p-5 hover:border-yellow-400/40 transition-all group h-full" data-testid="enter-lab-btn">
+                <div className="flex flex-col items-center text-center gap-2">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                    <Beaker className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                  </div>
+                  <h3 className="text-sm sm:text-lg font-bold text-white">Enter Lab</h3>
+                  <p className="text-[10px] sm:text-xs text-slate-400 hidden sm:block">Mix ingredients & create treats</p>
                 </div>
-                <h3 className="text-sm sm:text-2xl font-bold text-white mb-1 sm:mb-2">Lab</h3>
-                <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
-                  Mix magical Dogetreats!
-                </p>
-                <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto">
-                  Mix
-                </Button>
-              </CardContent>
-            </Card>
-          </Link>
-
-          {/* My Treats */}
-          <Link to="/nfts" className="block">
-            <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full">
-              <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto">
-                <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
-                  <Palette className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
-                </div>
-                <h3 className="text-sm sm:text-2xl font-bold text-white mb-1 sm:mb-2">
-                  Treats
-                </h3>
-                <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
-                  View your collections!
-                </p>
-                <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto">
-                  <Palette className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> View
-                </Button>
-              </CardContent>
-            </Card>
-          </Link>
-
-          {/* Tournament */}
-          <Link to="/tournament" className="block">
-            <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full relative overflow-hidden">
-              {/* Special tournament glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10 animate-pulse" />
-              <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto relative">
-                <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-amber-400 to-orange-600 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
-                  <Crown className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
-                </div>
-                <h3 className="text-sm sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400 mb-1 sm:mb-2">
-                  Tournament
-                </h3>
-                <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
-                  Champions League
-                </p>
-                <Button className="w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
-                  <Trophy className="w-3 h-3 mr-1" /> Enter
-                </Button>
-              </CardContent>
-            </Card>
-          </Link>
-
-          {/* Leaderboard */}
-          <Link to="/leaderboard" className="block">
-            <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full">
-              <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto">
-                <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
-                  <Trophy className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
-                </div>
-                <h3 className="text-sm sm:text-2xl font-bold text-white mb-1 sm:mb-2">Ranks</h3>
-                <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
-                  Compete for $LAB rewards!
-                </p>
-                <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto">
-                  <Trophy className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Compete
-                </Button>
-              </CardContent>
-            </Card>
-          </Link>
-
-          {/* Marketplace */}
-          <Link to="/marketplace" className="block">
-            <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full relative overflow-hidden">
-              <div className="absolute top-2 right-2 px-2 py-0.5 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-[10px] text-yellow-400 font-medium">
-                NEW
               </div>
-              <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto">
-                <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-yellow-400 to-sky-500 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
-                  <Store className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
-                </div>
-                <h3 className="text-sm sm:text-2xl font-bold text-white mb-1 sm:mb-2">Market</h3>
-                <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
-                  Buy & sell treats
-                </p>
-                <Button className="w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto bg-gradient-to-r from-yellow-500 to-sky-500 text-white">
-                  <Store className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Browse
-                </Button>
-              </CardContent>
-            </Card>
-          </Link>
+            </Link>
 
-          {/* Settings */}
-          <Link to="/settings" className="block">
-            <Card className="game-card hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer h-full">
-              <CardContent className="p-2.5 sm:p-6 flex flex-col items-center justify-center text-center aspect-square sm:aspect-auto">
-                <div className="w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-br from-slate-400 to-slate-600 rounded-xl sm:rounded-2xl flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg">
-                  <Settings className="w-5 h-5 sm:w-10 sm:h-10 text-white" />
+            <Link to="/settings" state={{ tab: 'auto-mixer' }} className="block">
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-sky-500/10 to-indigo-600/10 border border-sky-500/20 p-4 sm:p-5 hover:border-sky-400/40 transition-all group h-full" data-testid="auto-mixer-btn">
+                <div className="absolute top-2 right-2 flex items-center gap-1">
+                  <span className="relative flex h-2 w-2"><span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" /><span className="relative rounded-full h-2 w-2 bg-emerald-500" /></span>
+                  <span className="text-emerald-300 text-[9px] font-bold hidden sm:inline">LIVE</span>
                 </div>
-                <h3 className="text-sm sm:text-2xl font-bold text-white mb-1 sm:mb-2">Settings</h3>
-                <p className="text-white/70 text-[10px] sm:text-sm mb-2 sm:mb-4 hidden sm:block line-clamp-2">
-                  Manage your account
-                </p>
-                <Button className="doge-button w-full text-xs sm:text-base py-1.5 sm:py-2.5 font-bold h-auto">
-                  <Settings className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Manage
-                </Button>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
-
-        {/* Doge Scientist Avatar */}
-        <div className="text-center mb-8">
-          <div className="inline-block">
-            <img
-              src="https://i.ibb.co/hJQcdpfM/1000025492-removebg-preview.png"
-              alt="Doge Scientist"
-              className="w-40 h-40 rounded-full border-6 border-yellow-400 shadow-2xl hover:scale-110 transition-transform duration-300 bg-white/20 backdrop-blur-sm"
-            />
+                <div className="flex flex-col items-center text-center gap-2">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-sky-400 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                    <Settings className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                  </div>
+                  <h3 className="text-sm sm:text-lg font-bold text-white">Auto-Mixer</h3>
+                  <p className="text-[10px] sm:text-xs text-slate-400 hidden sm:block">AI mixes treats for you</p>
+                </div>
+              </div>
+            </Link>
           </div>
-          <h3 className="text-2xl font-bold text-yellow-500 mt-4 playful-text bubble-text">
-            Welcome to DogeFood Lab!
-          </h3>
-        </div>
 
-        {/* Powered By Banner Section */}
-        <div className="text-center mb-12">
-          <h4 className="text-lg font-semibold mb-6" style={{color: '#FFD700'}}>
-            Powered by
-          </h4>
-          <div className="max-w-3xl mx-auto px-4">
+          {/* ── Quick Nav Grid (Mobile-friendly) ── */}
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { path: '/nfts', icon: Palette, label: 'Treats', gradient: 'from-purple-500/10 to-pink-500/10', border: 'border-purple-500/20', iconColor: 'text-purple-400' },
+              { path: '/leaderboard', icon: Trophy, label: 'Ranks', gradient: 'from-emerald-500/10 to-green-500/10', border: 'border-emerald-500/20', iconColor: 'text-emerald-400' },
+              { path: '/marketplace', icon: Store, label: 'Market', gradient: 'from-sky-500/10 to-cyan-500/10', border: 'border-sky-500/20', iconColor: 'text-sky-400' },
+              { path: '/tournament', icon: Crown, label: 'Tourney', gradient: 'from-amber-500/10 to-orange-500/10', border: 'border-amber-500/20', iconColor: 'text-amber-400' },
+            ].map((item) => (
+              <Link key={item.path} to={item.path} className="block">
+                <div className={`bg-gradient-to-br ${item.gradient} rounded-xl border ${item.border} p-2.5 sm:p-3 text-center hover:scale-[1.03] transition-transform`}>
+                  <item.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${item.iconColor} mx-auto mb-1`} />
+                  <div className="text-[10px] sm:text-xs text-white font-medium">{item.label}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* ── Game Stats Bar ── */}
+          {gameStats && (
+            <div className="flex items-center justify-around bg-white/[0.02] rounded-xl border border-white/5 py-2.5 px-4" data-testid="game-stats-bar">
+              <div className="text-center">
+                <div className="text-sm sm:text-lg font-bold text-white">{gameStats.total_players}</div>
+                <div className="text-[9px] text-slate-500 uppercase">Players</div>
+              </div>
+              <div className="w-px h-6 bg-white/10" />
+              <div className="text-center">
+                <div className="text-sm sm:text-lg font-bold text-yellow-400">{gameStats.nft_holders}</div>
+                <div className="text-[9px] text-slate-500 uppercase">VIP</div>
+              </div>
+              <div className="w-px h-6 bg-white/10" />
+              <div className="text-center">
+                <div className="text-sm sm:text-lg font-bold text-sky-400">{(gameStats.total_treats || 0).toLocaleString()}</div>
+                <div className="text-[9px] text-slate-500 uppercase">Treats</div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Live Activity Feed ── */}
+          <div className="lg:hidden">
+            <div className="flex items-center gap-2 mb-2">
+              <Activity className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-semibold text-white">Live Activity</span>
+              <span className="relative flex h-2 w-2 ml-1"><span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" /><span className="relative rounded-full h-2 w-2 bg-emerald-500" /></span>
+            </div>
+            <div className="bg-slate-800/40 rounded-xl border border-white/5 p-2 max-h-[300px] overflow-y-auto">
+              <LiveActivityFeed />
+            </div>
+          </div>
+
+          {/* ── Powered By + Footer ── */}
+          <div className="text-center py-6">
+            <div className="text-[10px] text-slate-600 uppercase tracking-widest mb-3">Powered by</div>
             <img
               src="https://customer-assets.emergentagent.com/job_dogefoodlab/artifacts/ckey490s_20250812_154617.jpg"
-              alt="Powered by DOGEOS"
-              className="w-full h-auto rounded-xl shadow-lg border-2 border-yellow-400 hover:scale-105 transition-transform duration-300 bg-white/10 backdrop-blur-sm"
-              style={{
-                maxWidth: '600px',
-                margin: '0 auto',
-                aspectRatio: 'auto'
-              }}
-            />
+              alt="DOGEOS" className="max-w-[280px] sm:max-w-[400px] mx-auto rounded-lg border border-white/5 opacity-80 hover:opacity-100 transition-opacity" />
+            <p className="text-slate-600 text-[10px] mt-4">Built for the Dogecoin community</p>
           </div>
-        </div>
+        </main>
 
-        {/* Benefits Section */}
-        {!isConnected && (
-          <Card className="game-card">
-            <CardHeader>
-              <CardTitle className="text-center playful-title bubble-text text-white text-3xl">
-                Connect Your Wallet to Get Started!
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="text-center p-6 bg-gradient-to-br from-green-400/30 to-emerald-500/20 rounded-3xl border-2 border-green-300/50">
-                  <h4 className="font-bold text-2xl mb-3 playful-title text-white bubble-text">For Everyone</h4>
-                  <ul className="text-white/90 space-y-2 playful-text text-lg">
-                    <li>• Play for fun & advance levels</li>
-                    <li>• Mix unlimited Dogetreats</li>
-                    <li>• Unlock new ingredients</li>
-                    <li>• Enjoy the full experience!</li>
-                  </ul>
-                </div>
-                <div className="text-center p-6 bg-gradient-to-br from-yellow-400/30 to-orange-500/20 rounded-3xl border-2 border-yellow-300/50">
-                  <h4 className="font-bold text-2xl mb-3 playful-title text-white bubble-text">For NFT Holders</h4>
-                  <ul className="text-white/90 space-y-2 playful-text text-lg">
-                    <li>• Head start with bonus resources</li>
-                    <li>• Earn points for leaderboard</li>
-                    <li>• Eligible for $LAB airdrops</li>
-                    <li>• VIP Scientist status!</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* How it Works Link */}
-        <div className="text-center mt-12 mb-8">
-          <Card className="glass-panel max-w-md mx-auto bg-gradient-to-br from-indigo-600/90 to-purple-600/90 border-indigo-400/50 shadow-2xl">
-            <CardContent className="p-6">
-              <h3 className="text-2xl font-bold text-white mb-4">
-                Need Help Understanding the Game?
-              </h3>
-              <p className="text-white/90 mb-6 text-lg">
-                Learn all the game mechanics, strategies, and tips!
-              </p>
-              <Button
-                onClick={() => window.open('/game-mechanisms.html', '_blank')}
-                className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-bold py-4 px-8 text-xl rounded-xl shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl"
-              >
-                How it Works
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-16">
-          <p className="text-yellow-500 text-sm playful-text bubble-text">
-            Built with love for the Dogecoin community | Much wow, such science!
-          </p>
-        </div>
+        {/* RIGHT SIDEBAR (Desktop only) — Live Activity */}
+        <aside className="hidden lg:block w-72 shrink-0 sticky top-16 self-start" data-testid="activity-sidebar">
+          <div className="bg-slate-800/40 rounded-xl border border-white/5 overflow-hidden">
+            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/5">
+              <Activity className="w-4 h-4 text-emerald-400" />
+              <span className="text-xs font-semibold text-white">Live Treats Activity</span>
+              <span className="relative flex h-1.5 w-1.5 ml-auto"><span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" /><span className="relative rounded-full h-1.5 w-1.5 bg-emerald-500" /></span>
+            </div>
+            <div className="max-h-[calc(100vh-100px)] overflow-y-auto p-1.5">
+              <LiveActivityFeed />
+            </div>
+          </div>
+        </aside>
       </div>
-      
-      {/* Music Player */}
+
+      {/* Mobile Nav */}
+      <MobileNav onAuthRequired={handleLabAccess} />
       <MusicPlayer />
-      
-      {/* Scientist Chat */}
       <ScientistChat />
-      
-      {/* Auth Modal */}
+
+      {/* ─── Auth Modal ───────────────────────────────────── */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-700 relative">
-            {/* Close button */}
-            <button 
-              onClick={() => { setShowAuthModal(false); setShowGuestSignup(false); }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
-            >
+          <div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-700 relative">
+            <button onClick={() => { setShowAuthModal(false); setShowGuestSignup(false); }} className="absolute top-4 right-4 text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
             </button>
-
             {!showGuestSignup ? (
               <>
-                {/* Icon */}
-                <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <Beaker className="w-8 h-8 text-white" />
-                </div>
-
-                {/* Title */}
-                <h3 className="text-xl font-bold text-white text-center mb-2">
-                  Join the Lab!
-                </h3>
-
-                {/* Description */}
-                <p className="text-slate-300 text-sm text-center mb-6">
-                  Connect your wallet or sign up to start mixing treats and earning points!
-                </p>
-
-                {/* Options */}
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"><Beaker className="w-7 h-7 text-white" /></div>
+                <h3 className="text-lg font-bold text-white text-center mb-1">Join the Lab!</h3>
+                <p className="text-slate-400 text-xs text-center mb-5">Connect wallet or sign up to start mixing</p>
                 <div className="space-y-3">
-                  {/* Connect Wallet */}
-                  <div className="connect-wallet-wrapper">
-                    <ConnectButton.Custom>
-                      {({ openConnectModal }) => (
-                        <button
-                          onClick={() => {
-                            setShowAuthModal(false);
-                            openConnectModal();
-                          }}
-                          className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold hover:from-blue-600 hover:to-indigo-600 transition-colors flex items-center justify-center gap-2"
-                        >
-                          <Wallet className="w-5 h-5" />
-                          Connect Wallet
-                        </button>
-                      )}
-                    </ConnectButton.Custom>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-px bg-slate-600" />
-                    <span className="text-slate-400 text-sm">or</span>
-                    <div className="flex-1 h-px bg-slate-600" />
-                  </div>
-                  
-                  {/* Guest Sign Up */}
-                  <button
-                    onClick={() => setShowGuestSignup(true)}
-                    className="w-full py-3 px-4 rounded-xl bg-slate-700 text-white font-semibold hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <UserPlus className="w-5 h-5" />
-                    Sign Up as Guest
+                  <ConnectButton.Custom>
+                    {({ openConnectModal }) => (
+                      <button onClick={() => { setShowAuthModal(false); openConnectModal(); }} className="w-full py-2.5 px-4 rounded-xl bg-sky-600 text-white font-semibold hover:bg-sky-500 transition-colors flex items-center justify-center gap-2 text-sm">
+                        <Wallet className="w-4 h-4" /> Connect Wallet
+                      </button>
+                    )}
+                  </ConnectButton.Custom>
+                  <div className="flex items-center gap-3"><div className="flex-1 h-px bg-slate-600" /><span className="text-slate-500 text-xs">or</span><div className="flex-1 h-px bg-slate-600" /></div>
+                  <button onClick={() => setShowGuestSignup(true)} className="w-full py-2.5 px-4 rounded-xl bg-slate-700 text-white font-semibold hover:bg-slate-600 transition-colors flex items-center justify-center gap-2 text-sm">
+                    <UserPlus className="w-4 h-4" /> Sign Up as Guest
                   </button>
                 </div>
-
-                <p className="text-slate-400 text-xs text-center mt-4">
-                  NFT holders get bonus points and VIP status!
-                </p>
               </>
             ) : (
               <>
-                {/* Guest Signup Form */}
-                <button 
-                  onClick={() => setShowGuestSignup(false)}
-                  className="text-slate-400 hover:text-white transition-colors mb-4 flex items-center gap-1 text-sm"
-                >
-                  ← Back
-                </button>
-
-                <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-green-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <UserPlus className="w-7 h-7 text-white" />
-                </div>
-
-                <h3 className="text-lg font-bold text-white text-center mb-2">
-                  Create Guest Account
-                </h3>
-
-                <p className="text-slate-300 text-xs text-center mb-4">
-                  Choose a username to get started
-                </p>
-
-                <div className="space-y-4">
+                <button onClick={() => setShowGuestSignup(false)} className="text-slate-400 hover:text-white text-sm mb-3 flex items-center gap-1">← Back</button>
+                <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-green-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg"><UserPlus className="w-6 h-6 text-white" /></div>
+                <h3 className="text-base font-bold text-white text-center mb-1">Guest Account</h3>
+                <p className="text-slate-400 text-[11px] text-center mb-4">Choose a username to get started</p>
+                <div className="space-y-3">
                   <div>
-                    <Input
-                      type="text"
-                      placeholder="Enter username"
-                      value={guestUsername}
-                      onChange={(e) => setGuestUsername(e.target.value)}
-                      className="w-full bg-slate-700 border-slate-600 text-white placeholder-slate-400"
-                      maxLength={20}
-                    />
-                    {guestSignupError && (
-                      <p className="text-red-400 text-xs mt-1">{guestSignupError}</p>
-                    )}
+                    <Input type="text" placeholder="Username" value={guestUsername} onChange={(e) => setGuestUsername(e.target.value)} className="w-full bg-slate-700 border-slate-600 text-white" maxLength={20} />
+                    {guestSignupError && <p className="text-red-400 text-xs mt-1">{guestSignupError}</p>}
                   </div>
-
-                  <button
-                    onClick={handleGuestSignup}
-                    disabled={guestSignupLoading || !guestUsername}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 text-white font-semibold hover:from-emerald-600 hover:to-green-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {guestSignupLoading ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <Check className="w-5 h-5" />
-                        Create Account
-                      </>
-                    )}
+                  <button onClick={handleGuestSignup} disabled={guestSignupLoading || !guestUsername} className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm">
+                    {guestSignupLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Check className="w-4 h-4" /> Create Account</>}
                   </button>
                 </div>
-
-                <p className="text-slate-400 text-xs text-center mt-4">
-                  You can connect a wallet later to verify NFT ownership
-                </p>
               </>
             )}
           </div>
