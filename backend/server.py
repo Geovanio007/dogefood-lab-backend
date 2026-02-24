@@ -1108,10 +1108,14 @@ async def get_player_weekly_stats(address: str):
         leaderboard_cursor = db.players.find(
             {
                 "points": {"$gt": 0},
-                "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+                "nickname": {"$ne": None, "$exists": True, "$ne": ""},
+                "$or": [
+                    {"total_treats_created": {"$gt": 0}},
+                    {"created_treats.0": {"$exists": True}}
+                ]
             },
             {"address": 1, "points": 1}
-        ).sort("points", -1)
+        ).sort("points", -1).limit(50)
         leaderboard_list = await leaderboard_cursor.to_list(length=1000)
         
         player_rank = None
