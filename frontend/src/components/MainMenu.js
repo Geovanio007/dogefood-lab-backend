@@ -873,15 +873,15 @@ const MainMenu = () => {
               testId="promo-leaderboard"
             />
             <PromoBanner
-              icon={Rocket}
-              iconBg="bg-gradient-to-br from-yellow-500 to-yellow-600"
-              title="Season 1 Rewards"
-              subtitle="Earn points for $LAB airdrop!"
-              borderColor="border-yellow-500/20"
-              gradientFrom="from-yellow-900/30"
-              gradientTo="to-yellow-900/20"
+              icon={UserPlus}
+              iconBg="bg-gradient-to-br from-emerald-600 to-green-700"
+              title="Refer & Earn"
+              subtitle="Invite friends & earn bonus rewards together!"
+              borderColor="border-emerald-600/20"
+              gradientFrom="from-emerald-950/40"
+              gradientTo="to-green-950/30"
               onClick={() => navigate('/tournament')}
-              testId="promo-rewards"
+              testId="promo-refer-earn"
             />
           </div>
 
