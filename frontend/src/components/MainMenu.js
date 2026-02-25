@@ -112,11 +112,11 @@ const LiveChat = ({ isLoggedIn, effectiveAddress, username }) => {
   }, [fetchMessages]);
 
   useEffect(() => {
-    if (chatEndRef.current && chatContainerRef.current) {
+    if (chatContainerRef.current) {
       const container = chatContainerRef.current;
       const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
       if (isNearBottom) {
-        chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        container.scrollTop = container.scrollHeight;
       }
     }
   }, [messages]);
