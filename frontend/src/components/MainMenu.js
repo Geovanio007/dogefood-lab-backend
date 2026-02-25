@@ -818,9 +818,11 @@ const MainMenu = () => {
                   {!isEditingUsername ? (
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold text-sm sm:text-base text-white truncate">{username || 'Set username'}</span>
-                      <button onClick={() => { setUsernameInput(username); setIsEditingUsername(true); setUsernameError(''); }} className="p-0.5 hover:bg-white/10 rounded">
-                        <Edit2 className="w-3 h-3 text-sky-400/50" />
-                      </button>
+                      {!username && (
+                        <button onClick={() => { setUsernameInput(username); setIsEditingUsername(true); setUsernameError(''); }} className="p-0.5 hover:bg-white/10 rounded">
+                          <Edit2 className="w-3 h-3 text-sky-400/50" />
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center gap-1">
