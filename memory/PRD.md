@@ -64,4 +64,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-February 25, 2026 - Bug fixes: auto-scroll, static header, activity feed field name, username edit, points display, logo centering, chat cleared, Telegram chat. Deployed all platforms.
+February 25, 2026 - Telegram profile fix, 3D gamish cards, dark lab theme, username edit fix, points display fix. Deployed all platforms.
