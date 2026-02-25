@@ -725,19 +725,21 @@ const GameLabRedesign = ({ playerAddress }) => {
 
           {/* Stats Cards */}
           <div className="flex gap-4">
-            <Card className="bg-gradient-to-br from-yellow-400/90 to-yellow-500/90 backdrop-blur-xl border-yellow-300 min-w-[120px] shadow-lg shadow-yellow-500/30">
+            <Card className="bg-[#151b28]/90 backdrop-blur-xl border-yellow-500/20 min-w-[120px]"
+              style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
               <CardContent className="p-4 text-center">
-                <div className="text-3xl mb-1">🏆</div>
-                <div className="text-2xl font-bold text-white drop-shadow-md">{playerPoints}</div>
-                <div className="text-xs text-yellow-100">Points</div>
+                <div className="w-10 h-10 mx-auto mb-1.5 rounded-xl bg-yellow-500/15 flex items-center justify-center"><Trophy className="w-5 h-5 text-yellow-400" /></div>
+                <div className="text-2xl font-bold text-yellow-400 drop-shadow-md tabular-nums">{playerPoints}</div>
+                <div className="text-xs text-slate-400">Points</div>
               </CardContent>
             </Card>
             
-            <Card className="bg-gradient-to-br from-sky-400/90 to-sky-500/90 backdrop-blur-xl border-sky-300 min-w-[120px] shadow-lg shadow-sky-500/30">
+            <Card className="bg-[#151b28]/90 backdrop-blur-xl border-sky-500/20 min-w-[120px]"
+              style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
               <CardContent className="p-4 text-center">
-                <div className="text-3xl mb-1">🧪</div>
-                <div className="text-2xl font-bold text-white drop-shadow-md">{activeTreats.length}</div>
-                <div className="text-xs text-sky-100">Brewing</div>
+                <div className="w-10 h-10 mx-auto mb-1.5 rounded-xl bg-sky-500/15 flex items-center justify-center"><Beaker className="w-5 h-5 text-sky-400" /></div>
+                <div className="text-2xl font-bold text-sky-400 drop-shadow-md tabular-nums">{activeTreats.length}</div>
+                <div className="text-xs text-slate-400">Brewing</div>
               </CardContent>
             </Card>
           </div>
