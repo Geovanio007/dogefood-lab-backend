@@ -937,7 +937,10 @@ const MainMenu = () => {
           {/* ── Featured Banner (Lab CTA + Happy Hour) ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Link to="/lab" onClick={handleLabAccess}>
-              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#1a2744] to-[#151b28] border border-sky-500/10 p-5 sm:p-6 hover:border-sky-400/30 transition-all group" data-testid="enter-lab-btn">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a2744] to-[#151b28] border border-sky-500/15 p-5 sm:p-6 hover:border-sky-400/30 hover:-translate-y-0.5 transition-all duration-200 group"
+                style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)' }}
+                data-testid="enter-lab-btn">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent rounded-2xl pointer-events-none" />
                 <div className="absolute top-0 right-0 w-40 h-40 bg-sky-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                 <div className="relative flex items-center gap-4">
                   <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-2xl flex items-center justify-center shadow-xl shadow-yellow-500/20 group-hover:scale-110 transition-transform">
