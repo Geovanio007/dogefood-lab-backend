@@ -514,19 +514,23 @@ const PromoBanner = ({ icon: Icon, iconBg, title, subtitle, borderColor, gradien
   </button>
 );
 
-// ─── Feature Card ────────────────────────────────────────────
+// ─── Feature Card (3D Game-style) ────────────────────────────
 const FeatureCard = ({ icon: Icon, label, gradient, iconColor, borderColor, to, onClick, badge, testId }) => (
   <Link to={to} onClick={onClick} className="block group" data-testid={testId}>
-    <div className={`relative overflow-hidden rounded-xl border ${borderColor} bg-gradient-to-b ${gradient} p-4 sm:p-5 text-center hover:scale-[1.03] transition-all`}>
+    <div className={`relative overflow-hidden rounded-2xl border ${borderColor} bg-gradient-to-b ${gradient} p-4 sm:p-5 text-center hover:scale-[1.05] hover:-translate-y-1 transition-all duration-200`}
+      style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+      {/* Top shine */}
+      <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.05] to-transparent rounded-t-2xl pointer-events-none" />
       {badge && (
-        <div className="absolute top-2 right-2">
-          <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-bold uppercase">{badge}</span>
+        <div className="absolute top-2 right-2 z-10">
+          <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-bold uppercase backdrop-blur-sm border border-emerald-500/20">{badge}</span>
         </div>
       )}
-      <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2.5 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform border border-white/10`}>
-        <Icon className={`w-7 h-7 sm:w-8 sm:h-8 ${iconColor}`} />
+      <div className={`relative w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2.5 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-200 border border-white/10`}
+        style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.1)' }}>
+        <Icon className={`w-7 h-7 sm:w-8 sm:h-8 ${iconColor} drop-shadow-lg`} />
       </div>
-      <h4 className="text-sm font-bold text-white">{label}</h4>
+      <h4 className="text-sm font-bold text-white drop-shadow-sm">{label}</h4>
     </div>
   </Link>
 );
