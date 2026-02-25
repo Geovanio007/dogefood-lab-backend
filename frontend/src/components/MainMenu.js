@@ -960,18 +960,21 @@ const MainMenu = () => {
               </div>
             </Link>
 
-            <div className={`relative overflow-hidden rounded-xl p-5 sm:p-6 border transition-all ${
+            <div className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 border transition-all duration-200 hover:-translate-y-0.5 ${
               happyHour?.active
                 ? 'bg-gradient-to-br from-[#2a2a0d] to-[#1a1a08] border-yellow-500/20'
                 : 'bg-gradient-to-br from-[#151b28] to-[#0d1117] border-white/[0.06]'
-            }`}>
-              <div className="flex items-center gap-4">
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-xl ${
+            }`}
+              style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent rounded-2xl pointer-events-none" />
+              <div className="relative flex items-center gap-4">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
                   happyHour?.active
-                    ? 'bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-yellow-500/20'
-                    : 'bg-gradient-to-br from-slate-600 to-slate-700 shadow-slate-500/10'
-                }`}>
-                  <Clock className={`w-8 h-8 ${happyHour?.active ? 'text-white' : 'text-slate-300'}`} />
+                    ? 'bg-gradient-to-br from-yellow-400 to-yellow-500'
+                    : 'bg-gradient-to-br from-slate-600 to-slate-700'
+                }`}
+                  style={{ boxShadow: happyHour?.active ? '0 8px 24px rgba(234,179,8,0.3)' : '0 4px 12px rgba(0,0,0,0.3)' }}>
+                  <Clock className={`w-8 h-8 ${happyHour?.active ? 'text-white' : 'text-slate-300'} drop-shadow-md`} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-0.5">
