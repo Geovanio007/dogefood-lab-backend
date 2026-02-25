@@ -998,7 +998,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                       <Button
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
-                        className={`${selectedCategory === cat ? CATEGORY_STYLES[cat].bg + ' border-2' : 'bg-white/20'} hover:bg-white/30 border ${CATEGORY_STYLES[cat].border}`}
+                        className={`${selectedCategory === cat ? CATEGORY_STYLES[cat].bg + ' border-2' : 'bg-white/10'} hover:bg-white/20 border ${CATEGORY_STYLES[cat].border}`}
                         size="sm"
                       >
                         <span className={selectedCategory === cat ? 'text-white' : CATEGORY_STYLES[cat].text}>{cat} ({count})</span>
