@@ -979,13 +979,14 @@ const GameLabRedesign = ({ playerAddress }) => {
 
           {/* Middle: Ingredient Grid */}
           <div className="lg:col-span-2">
-            <Card className="bg-gradient-to-br from-sky-600/95 to-blue-700/95 backdrop-blur-xl border-sky-400/50 shadow-xl shadow-sky-500/20">
+            <Card className="bg-[#151b28]/90 backdrop-blur-xl border-white/[0.06]"
+              style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
               <CardContent className="p-6">
                 {/* Category Tabs */}
                 <div className="flex flex-wrap gap-2 mb-6">
                   <Button
                     onClick={() => setSelectedCategory('all')}
-                    className={`${selectedCategory === 'all' ? 'bg-yellow-400 text-white' : 'bg-white/20 text-white'} hover:bg-yellow-400/80 border-0`}
+                    className={`${selectedCategory === 'all' ? 'bg-yellow-400 text-white' : 'bg-white/10 text-white'} hover:bg-yellow-400/80 border-0`}
                     size="sm"
                   >
                     All ({ingredients.length})
