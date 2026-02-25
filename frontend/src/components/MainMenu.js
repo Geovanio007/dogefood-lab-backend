@@ -562,8 +562,8 @@ const MainMenu = () => {
 
   const isLoggedIn = isConnected || guestUser || (isTelegram && telegramUser);
   const effectiveAddress = address || guestUser?.guest_id || guestUser?.id || (telegramUser ? `tg_${telegramUser.id}` : null);
-  const effectiveLevel = isConnected ? currentLevel : playerLevel;
-  const effectivePoints = isConnected ? points : playerPoints;
+  const effectiveLevel = (isConnected && currentLevel) ? currentLevel : playerLevel;
+  const effectivePoints = (isConnected && points) ? points : playerPoints;
   const isAuthenticated = isConnected || isTelegram || guestUser;
 
   // ─── Data Loading ──────────────────────────────────────────
