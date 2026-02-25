@@ -604,7 +604,14 @@ const MainMenu = () => {
     if (isConnected && address) {
       fetch(`${BACKEND_URL}/api/player/${address}/profile`)
         .then(r => r.ok ? r.json() : null)
-        .then(p => { if (p) { setUsername(p.nickname || ''); setProfileImage(p.profile_image || null); } })
+        .then(p => {
+          if (p) {
+            setUsername(p.nickname || '');
+            setProfileImage(p.profile_image || null);
+            setPlayerLevel(p.level || 1);
+            setPlayerPoints(p.points || 0);
+          }
+        })
         .catch(() => {});
     }
   }, [isConnected, address]);
