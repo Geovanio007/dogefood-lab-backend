@@ -526,7 +526,7 @@ const GameLabRedesign = ({ playerAddress }) => {
   // Character Selection Gate
   if (showCharacterSelection) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-sky-400 via-sky-500 to-blue-600 p-4 flex items-center justify-center overflow-auto">
+      <div className="min-h-screen bg-gradient-to-b from-[#0a0f1e] via-[#0d1425] to-[#0f1830] p-4 flex items-center justify-center overflow-auto">
         {/* Animated Background */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-32 h-32 bg-yellow-400/30 rounded-full blur-3xl animate-pulse"></div>
