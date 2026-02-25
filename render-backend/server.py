@@ -746,19 +746,19 @@ async def get_recent_activity(limit: int = 20):
             {"$limit": limit},
             {"$lookup": {
                 "from": "players",
-                "localField": "player_address",
+                "localField": "creator_address",
                 "foreignField": "address",
                 "as": "player_info"
             }},
-            {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArray": True}},
+            {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArrays": True}},
             {"$project": {
                 "_id": 0,
                 "treat_name": "$name",
                 "rarity": 1,
-                "points_reward": 1,
-                "xp_reward": 1,
+                "points_reward": {"$ifNull": ["$points_reward", 0]},
+                "xp_reward": {"$ifNull": ["$xp_reward", 0]},
                 "player_nickname": {"$ifNull": ["$player_info.nickname", "Anonymous"]},
-                "player_address": 1,
+                "player_address": "$creator_address",
                 "created_at": 1,
                 "emoji": 1
             }}
@@ -791,7 +791,7 @@ async def get_chat_messages(limit: int = 50):
                 "foreignField": "address",
                 "as": "player_info"
             }},
-            {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArray": True}},
+            {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArrays": True}},
             {"$project": {
                 "_id": 0,
                 "message_id": {"$toString": "$_id"},
