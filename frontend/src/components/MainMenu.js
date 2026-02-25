@@ -616,6 +616,28 @@ const MainMenu = () => {
     }
   }, [isConnected, address]);
 
+  // Load Telegram user profile
+  useEffect(() => {
+    if (isTelegram && telegramUser) {
+      const tgAddress = `tg_${telegramUser.id}`;
+      fetch(`${BACKEND_URL}/api/player/${tgAddress}/profile`)
+        .then(r => r.ok ? r.json() : null)
+        .then(p => {
+          if (p) {
+            setUsername(p.nickname || p.telegram_first_name || telegramUser.first_name || '');
+            setProfileImage(p.profile_image || null);
+            setPlayerLevel(p.level || 1);
+            setPlayerPoints(p.points || 0);
+          } else {
+            setUsername(telegramUser.first_name || telegramUser.username || '');
+          }
+        })
+        .catch(() => {
+          setUsername(telegramUser.first_name || telegramUser.username || '');
+        });
+    }
+  }, [isTelegram, telegramUser]);
+
   useEffect(() => {
     if (isConnected && address && !nftLoading) {
       dispatch({ type: 'SET_USER', payload: { address, isNFTHolder, nftBalance } });
