@@ -446,9 +446,9 @@ const Sidebar = ({ onAuthRequired }) => (
     </div>
 
     {/* Logo at bottom of sidebar */}
-    <div className="px-3 mt-4 mb-2 text-center">
-      <DogeFoodLogo size="medium" showText={false} showBeta={false} className="mx-auto" />
-      <div className="text-[9px] text-white text-center mt-2">Built with love for the Dogecoin community</div>
+    <div className="px-3 mt-4 mb-2 flex flex-col items-center">
+      <DogeFoodLogo size="medium" showText={false} showBeta={false} />
+      <div className="text-[10px] text-white mt-2 text-center">Built with love for the Dogecoin community</div>
     </div>
   </nav>
 );
