@@ -1163,7 +1163,8 @@ const GameLabRedesign = ({ playerAddress }) => {
       {/* Result Modal with Video Celebration */}
       {showResult && brewResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm overflow-y-auto">
-          <Card className="max-w-lg w-full bg-gradient-to-b from-sky-500 via-sky-600 to-blue-700 border-sky-400 overflow-hidden animate-in zoom-in-95 duration-300 shadow-2xl shadow-sky-500/30 my-4">
+          <Card className="max-w-lg w-full bg-gradient-to-b from-[#151b28] via-[#1a2035] to-[#0d1117] border-sky-500/20 overflow-hidden animate-in zoom-in-95 duration-300 my-4"
+            style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
             <CardContent className="p-6 text-center">
               {/* Video Celebration */}
               <div className="relative w-full aspect-video mb-4 rounded-xl overflow-hidden bg-black/30 shadow-lg">
