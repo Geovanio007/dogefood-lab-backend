@@ -653,19 +653,20 @@ const GameLabRedesign = ({ playerAddress }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-400 via-sky-500 to-blue-600 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-[#0a0f1e] via-[#0d1425] to-[#0f1830] overflow-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-yellow-400/30 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-40 h-40 bg-sky-300/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-white/20 rounded-full blur-3xl animate-pulse delay-500"></div>
+        <div className="absolute top-20 left-10 w-32 h-32 bg-sky-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-purple-500/8 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
       <div className="relative z-10 p-4 max-w-7xl mx-auto">
         {/* Header with Player Stats */}
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
           {/* Player Card */}
-          <Card className="flex-1 bg-gradient-to-br from-sky-600/95 to-blue-700/95 backdrop-blur-xl border-sky-400/50 overflow-hidden shadow-xl shadow-sky-500/20">
+          <Card className="flex-1 bg-[#151b28]/90 backdrop-blur-xl border-sky-500/20 overflow-hidden"
+            style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
                 <div className="relative">
