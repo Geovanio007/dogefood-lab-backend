@@ -486,23 +486,29 @@ const MobileNavStrip = ({ onAuthRequired }) => (
   </div>
 );
 
-// ─── Promotional Banner Card ─────────────────────────────────
+// ─── Promotional Banner Card (3D Gamish) ─────────────────────
 const PromoBanner = ({ icon: Icon, iconBg, title, subtitle, borderColor, gradientFrom, gradientTo, onClick, testId }) => (
   <button
     onClick={onClick}
-    className={`relative overflow-hidden rounded-xl p-4 border ${borderColor} bg-gradient-to-br ${gradientFrom} ${gradientTo} text-left w-full group hover:scale-[1.01] transition-all`}
+    className={`relative overflow-hidden rounded-2xl p-4 border ${borderColor} bg-gradient-to-br ${gradientFrom} ${gradientTo} text-left w-full group hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-200 shadow-lg hover:shadow-xl`}
+    style={{ boxShadow: '0 4px 15px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)' }}
     data-testid={testId}
   >
-    <div className="flex items-start gap-3">
-      <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
-        <Icon className="w-5 h-5 text-white" />
+    {/* Shine effect */}
+    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.07] to-transparent rounded-2xl pointer-events-none" />
+    <div className="absolute -top-8 -right-8 w-24 h-24 bg-white/[0.04] rounded-full blur-2xl group-hover:bg-white/[0.08] transition-colors" />
+    <div className="relative flex items-start gap-3">
+      <div className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform shadow-lg`}
+        style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+        <Icon className="w-5 h-5 text-white drop-shadow-md" />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-bold text-white mb-0.5 tracking-wide uppercase">{title}</h3>
-        <p className="text-[11px] text-slate-400 leading-relaxed">{subtitle}</p>
+        <h3 className="text-sm font-bold text-white mb-0.5 tracking-wide uppercase drop-shadow-sm">{title}</h3>
+        <p className="text-[11px] text-white/60 leading-relaxed">{subtitle}</p>
       </div>
-      <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0 group-hover:bg-white/10 transition-colors mt-0.5">
-        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+      <div className="w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center shrink-0 group-hover:bg-white/15 transition-colors mt-0.5 backdrop-blur-sm"
+        style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)' }}>
+        <ArrowRight className="w-4 h-4 text-white/70 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
       </div>
     </div>
   </button>
