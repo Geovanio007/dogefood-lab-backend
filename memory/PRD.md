@@ -64,4 +64,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-February 24, 2026 - Mobile UI consistency: all sections visible on mobile (nav strip, stats, chat inline), deployed to Vercel + Render
+February 25, 2026 - Bug fixes: Activity feed (field name + $unwind typo), static header, Telegram chat, UI text colors. Deployed to all platforms.
