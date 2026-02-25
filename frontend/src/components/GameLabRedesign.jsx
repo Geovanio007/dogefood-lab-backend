@@ -514,7 +514,7 @@ const GameLabRedesign = ({ playerAddress }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-sky-400 via-sky-500 to-blue-600 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-[#0a0f1e] via-[#0d1425] to-[#0f1830] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-bounce text-6xl mb-4">🧪</div>
           <div className="text-white text-xl font-bold animate-pulse drop-shadow-lg">Loading Laboratory...</div>
