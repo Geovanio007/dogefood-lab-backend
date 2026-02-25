@@ -223,7 +223,6 @@ const LiveChat = ({ isLoggedIn, effectiveAddress, username }) => {
             </div>
           </div>
         ))}
-        <div ref={chatEndRef} />
       </div>
 
       {/* Input Area */}
