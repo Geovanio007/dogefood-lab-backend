@@ -91,7 +91,6 @@ const LiveChat = ({ isLoggedIn, effectiveAddress, username }) => {
   const [sending, setSending] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
-  const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
 
   const fetchMessages = useCallback(async () => {
