@@ -1117,9 +1117,9 @@ const MainMenu = () => {
           </div>
 
           {/* ── Mobile Logo ── */}
-          <div className="lg:hidden text-center py-4">
-            <DogeFoodLogo size="medium" showText={false} showBeta={false} className="mx-auto" />
-            <div className="text-[10px] text-white mt-2">Built with love for the Dogecoin community</div>
+          <div className="lg:hidden py-4 flex flex-col items-center">
+            <DogeFoodLogo size="medium" showText={false} showBeta={false} />
+            <div className="text-[10px] text-white mt-2 text-center">Built with love for the Dogecoin community</div>
           </div>
 
           {/* ── Powered By Footer ── */}
