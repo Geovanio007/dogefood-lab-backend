@@ -869,7 +869,8 @@ const GameLabRedesign = ({ playerAddress }) => {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left: Mixing Cauldron */}
           <div className="lg:col-span-1">
-            <Card className="bg-gradient-to-br from-sky-600/95 to-blue-700/95 backdrop-blur-xl border-sky-400/50 sticky top-4 shadow-xl shadow-sky-500/20">
+            <Card className="bg-[#151b28]/90 backdrop-blur-xl border-white/[0.06] sticky top-4"
+              style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
               <CardContent className="p-6">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2 drop-shadow-md">
                   <span className="text-3xl">🔮</span> Mixing Cauldron
