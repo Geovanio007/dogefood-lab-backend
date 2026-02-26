@@ -2799,8 +2799,7 @@ async def get_leaderboard(limit: int = 50):
         "vip_bonus_claimed": 1,
     }
     
-    # Fetch more than needed so we can filter VIP-only players in Python
-    top_players = await db.players.find(query, projection).sort([("points", -1), ("level", -1)]).limit(limit + 20).to_list(limit + 20)
+    top_players = await db.players.find(query, projection).sort([("points", -1), ("level", -1)]).limit(limit).to_list(limit)
     
     # Character data mapping
     character_data = {
