@@ -1027,7 +1027,7 @@ const MainMenu = () => {
                 gradient="from-sky-500/20 to-indigo-600/10"
                 iconColor="text-sky-300"
                 borderColor="border-sky-500/15"
-                to="/settings"
+                to="/auto-mixer"
                 badge="AI"
                 testId="feature-auto-mixer"
               />
