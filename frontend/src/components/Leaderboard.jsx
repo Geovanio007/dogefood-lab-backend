@@ -323,11 +323,12 @@ const Leaderboard = () => {
 
                     {/* Name + Badges */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-1 flex-wrap">
                         <button
                           onClick={() => setSelectedPlayerAddress(entry.address)}
-                          className="font-bold text-sm text-white hover:text-sky-400 transition-colors truncate max-w-[120px] sm:max-w-none"
+                          className="font-bold text-sm text-white hover:text-sky-400 transition-colors truncate"
                           data-testid={`player-name-${rank}`}
+                          style={{ maxWidth: 'calc(100% - 60px)' }}
                         >
                           {entry.nickname || `Scientist #${rank}`}
                         </button>
@@ -346,7 +347,7 @@ const Leaderboard = () => {
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         {entry.character_name && (
-                          <span className="text-[10px] text-sky-400/60">{entry.character_name}</span>
+                          <span className="text-[10px] text-sky-400/60 truncate max-w-[80px] sm:max-w-none">{entry.character_name}</span>
                         )}
                         <span className="font-mono text-[10px] text-slate-500 hidden sm:inline">{formatAddr(entry.address)}</span>
                         <Badge variant="outline" className="text-[9px] text-slate-300 border-white/10 px-1 py-0 sm:hidden">
