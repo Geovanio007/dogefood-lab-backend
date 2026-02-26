@@ -5,7 +5,7 @@ import json
 import time
 
 class UserRegistrationTester:
-    def __init__(self, base_url="https://leaderboard-polish.preview.emergentagent.com"):
+    def __init__(self, base_url="https://treat-collection-hub.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
