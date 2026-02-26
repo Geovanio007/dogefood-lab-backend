@@ -301,16 +301,16 @@ const Leaderboard = () => {
                     } ${isTopThree ? 'bg-gradient-to-r from-sky-500/5 to-transparent' : ''}`}
                   >
                     {/* Rank */}
-                    <div className="w-10 text-center flex-shrink-0">
+                    <div className="w-7 sm:w-10 text-center flex-shrink-0">
                       {rankEmoji ? (
-                        <span className="text-2xl">{rankEmoji}</span>
+                        <span className="text-xl sm:text-2xl">{rankEmoji}</span>
                       ) : (
-                        <span className="text-sm font-bold text-slate-400">#{rank}</span>
+                        <span className="text-xs sm:text-sm font-bold text-slate-400">#{rank}</span>
                       )}
                     </div>
 
                     {/* Avatar */}
-                    <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-sky-500/20"
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden flex-shrink-0 border border-sky-500/20"
                       style={{ boxShadow: isTopThree ? '0 0 12px rgba(56,189,248,0.2)' : '0 2px 8px rgba(0,0,0,0.3)' }}>
                       {entry.character_image ? (
                         <img src={entry.character_image} alt="" className="w-full h-full object-cover" />
