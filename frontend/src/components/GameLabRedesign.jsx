@@ -1403,8 +1403,13 @@ const GameLabRedesign = ({ playerAddress }) => {
               {collectedTreat.rarity} Treat
             </div>
             <p className="text-sky-300 text-lg">
-              +{collectedTreat.points_reward || 0} Points • +{collectedTreat.xp_reward || 0} XP
+              +{collectRewards?.total_points || collectRewards?.points || collectedTreat.points_reward || 0} Points • +{collectRewards?.total_xp || collectRewards?.xp || collectedTreat.xp_reward || 0} XP
             </p>
+            {collectRewards?.happy_hour_bonus > 0 && (
+              <p className="text-yellow-300 text-base mt-1 font-semibold animate-pulse" data-testid="happy-hour-bonus-text">
+                Happy Hour +{collectRewards.happy_hour_bonus} Bonus Points!
+              </p>
+            )}
             
             {/* Confetti effect - Fixed positions */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
