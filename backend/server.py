@@ -2856,36 +2856,33 @@ async def get_leaderboard(limit: int = 50):
 @api_router.get("/stats")
 async def get_game_stats():
     try:
-        # Run all count queries in parallel for speed
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         
-        total_task = db.players.count_documents({})
-        eligible_task = db.players.count_documents({
-            "points": {"$gt": 0},
-            "nickname": {"$exists": True, "$nin": [None, ""]}
+        # Only count players who have ACTUALLY created treats (real gameplay)
+        active_players_task = db.players.count_documents({
+            "total_treats_created": {"$gt": 0}
         })
         nft_task = db.players.count_documents({"is_nft_holder": True})
         treats_task = db.treats.count_documents({})
-        active_task = db.players.count_documents({"last_active": {"$gte": today}})
+        today_task = db.players.count_documents({"last_active": {"$gte": today}})
         
-        total_players, eligible_players, nft_holders, total_treats, active_players = await asyncio.gather(
-            total_task, eligible_task, nft_task, treats_task, active_task
+        active_players, nft_holders, total_treats, active_today = await asyncio.gather(
+            active_players_task, nft_task, treats_task, today_task
         )
         
         return {
-            "total_players": eligible_players,
-            "total_registered": total_players,
+            "total_players": active_players,
             "nft_holders": nft_holders,
             "total_treats": total_treats,
-            "active_today": active_players
+            "active_today": active_today
         }
     except Exception as e:
         logger.error(f"Error getting game stats: {e}")
         return {
-            "total_players": 1247,
-            "nft_holders": 89,
-            "total_treats": 3420,
-            "active_today": 156
+            "total_players": 0,
+            "nft_holders": 0,
+            "total_treats": 0,
+            "active_today": 0
         }
 
 # Phase 2: Enhanced Points System Routes
