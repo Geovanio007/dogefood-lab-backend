@@ -2,76 +2,60 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useGame } from '../contexts/GameContext';
 import { useTelegram } from '../contexts/TelegramContext';
-import { ArrowLeft, Trophy, Crown,  Users, TrendingUp, Clock, CircleDot, Loader2, Beaker } from 'lucide-react';
+import { ArrowLeft, Trophy, Crown, Users, TrendingUp, Clock, CircleDot, Beaker } from 'lucide-react';
 import PlayerStatsModal from './PlayerStatsModal';
 import MusicPlayer from './MusicPlayer';
 import ScientistChat from './ScientistChat';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-// Season 1 End Date - 90 days from Dec 1, 2025 (Season started Dec 1, 2025)
 const SEASON_1_END = new Date('2026-03-31T00:00:00Z').getTime();
 
-// Season Countdown Component - Mobile Optimized
 const SeasonCountdown = () => {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  
+
   useEffect(() => {
-    const calculateTimeLeft = () => {
-      const now = Date.now();
-      const diff = SEASON_1_END - now;
-      
-      if (diff <= 0) {
-        return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-      }
-      
+    const calc = () => {
+      const diff = SEASON_1_END - Date.now();
+      if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
       return {
-        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((diff % (1000 * 60)) / 1000)
+        days: Math.floor(diff / 86400000),
+        hours: Math.floor((diff % 86400000) / 3600000),
+        minutes: Math.floor((diff % 3600000) / 60000),
+        seconds: Math.floor((diff % 60000) / 1000),
       };
     };
-    
-    setTimeLeft(calculateTimeLeft());
-    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
-    return () => clearInterval(timer);
+    setTimeLeft(calc());
+    const t = setInterval(() => setTimeLeft(calc()), 1000);
+    return () => clearInterval(t);
   }, []);
-  
+
+  const boxes = [
+    { val: timeLeft.days, label: 'DAYS' },
+    { val: String(timeLeft.hours).padStart(2, '0'), label: 'HRS' },
+    { val: String(timeLeft.minutes).padStart(2, '0'), label: 'MIN' },
+    { val: String(timeLeft.seconds).padStart(2, '0'), label: 'SEC' },
+  ];
+
   return (
-    <div className="bg-gradient-to-r from-sky-500/20 to-yellow-500/20 rounded-xl p-3 sm:p-4 border border-sky-400/30">
-      <div className="text-xs sm:text-sm text-sky-400 mb-2 text-center font-semibold flex items-center justify-center gap-1 sm:gap-2">
-        <Clock className="w-3 h-3 sm:w-4 sm:h-4" /> SEASON 1 ENDS IN
+    <div className="rounded-2xl p-4 border border-sky-500/20 bg-gradient-to-r from-sky-900/30 via-[#0c1222] to-sky-900/30"
+      style={{ boxShadow: '0 0 30px rgba(56,189,248,0.08), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+      <div className="text-xs text-sky-400 mb-3 text-center font-bold tracking-widest flex items-center justify-center gap-2">
+        <Clock className="w-3.5 h-3.5" /> SEASON 1 ENDS IN
       </div>
-      <div className="flex gap-1.5 sm:gap-3 justify-center">
-        <div className="text-center">
-          <div className="bg-sky-500/30 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 min-w-[40px] sm:min-w-[50px]">
-            <span className="text-lg sm:text-2xl font-bold text-white">{timeLeft.days}</span>
+      <div className="flex gap-2 sm:gap-3 justify-center">
+        {boxes.map((b, i) => (
+          <div key={i} className="text-center">
+            <div className="rounded-xl px-3 sm:px-4 py-2 min-w-[48px] sm:min-w-[56px] border border-sky-500/20 bg-sky-500/10"
+              style={{ boxShadow: '0 4px 12px rgba(56,189,248,0.1), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+              <span className={`text-xl sm:text-2xl font-black ${i === 3 ? 'text-yellow-400' : 'text-white'}`}>{b.val}</span>
+            </div>
+            <span className="text-[10px] text-sky-400/70 mt-1 block font-semibold">{b.label}</span>
           </div>
-          <span className="text-[10px] sm:text-xs text-sky-300 mt-1 block">DAYS</span>
-        </div>
-        <div className="text-center">
-          <div className="bg-sky-500/30 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 min-w-[40px] sm:min-w-[50px]">
-            <span className="text-lg sm:text-2xl font-bold text-white">{String(timeLeft.hours).padStart(2, '0')}</span>
-          </div>
-          <span className="text-[10px] sm:text-xs text-sky-300 mt-1 block">HRS</span>
-        </div>
-        <div className="text-center">
-          <div className="bg-sky-500/30 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 min-w-[40px] sm:min-w-[50px]">
-            <span className="text-lg sm:text-2xl font-bold text-white">{String(timeLeft.minutes).padStart(2, '0')}</span>
-          </div>
-          <span className="text-[10px] sm:text-xs text-sky-300 mt-1 block">MIN</span>
-        </div>
-        <div className="text-center">
-          <div className="bg-yellow-500/30 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 min-w-[40px] sm:min-w-[50px]">
-            <span className="text-lg sm:text-2xl font-bold text-yellow-400">{String(timeLeft.seconds).padStart(2, '0')}</span>
-          </div>
-          <span className="text-[10px] sm:text-xs text-yellow-300 mt-1 block">SEC</span>
-        </div>
+        ))}
       </div>
     </div>
   );
@@ -79,38 +63,24 @@ const SeasonCountdown = () => {
 
 const Leaderboard = () => {
   const { address } = useAccount();
-  const { 
-    points, 
-    isNFTHolder, 
-    currentLevel, 
-    player
-  } = useGame();
+  const { points, currentLevel } = useGame();
   const { telegramUser } = useTelegram();
-  
-  // Get player address (wallet or telegram)
   const playerAddress = address || (telegramUser ? `tg_${telegramUser.id}` : null);
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [currentUserRank, setCurrentUserRank] = useState(null);
   const [currentUserPoints, setCurrentUserPoints] = useState(0);
   const [selectedPlayerAddress, setSelectedPlayerAddress] = useState(null);
-  const [seasonInfo, setSeasonInfo] = useState({
-    current: 1,
-    timeRemaining: '85 days',
-    totalRewards: '20,000,000 $LAB',
-    participants: 0
-  });
 
-  // Season 1 Distribution: 20,000,000 $LAB
   const SEASON_1_POOL = 20000000;
   const DISTRIBUTION = {
-    top10: { percent: 30, multiplier: 1.5, tokens: SEASON_1_POOL * 0.30 },      // 6,000,000 $LAB
-    top20: { percent: 20, multiplier: 0.7, tokens: SEASON_1_POOL * 0.20 },      // 4,000,000 $LAB
-    top50: { percent: 20, multiplier: 0.2, tokens: SEASON_1_POOL * 0.20 },      // 4,000,000 $LAB
-    nftHolders: { percent: 20, tokens: SEASON_1_POOL * 0.20 },                  // 4,000,000 $LAB
-    specialEvents: { percent: 10, tokens: SEASON_1_POOL * 0.10 }                // 2,000,000 $LAB
+    top10: { percent: 30, multiplier: 1.5, tokens: SEASON_1_POOL * 0.30 },
+    top20: { percent: 20, multiplier: 0.7, tokens: SEASON_1_POOL * 0.20 },
+    top50: { percent: 20, multiplier: 0.2, tokens: SEASON_1_POOL * 0.20 },
+    nftHolders: { percent: 20, tokens: SEASON_1_POOL * 0.20 },
+    specialEvents: { percent: 10, tokens: SEASON_1_POOL * 0.10 },
   };
 
   const loadLeaderboard = async () => {
@@ -120,572 +90,310 @@ const Leaderboard = () => {
         const data = await response.json();
         setLeaderboard(Array.isArray(data) ? data : []);
         setError(null);
-      } else {
-        throw new Error('Failed to load leaderboard');
-      }
+      } else { throw new Error('Failed to load'); }
     } catch (err) {
-      console.error('Error loading leaderboard:', err);
       setError(err.message);
       setLeaderboard([]);
     }
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      await loadLeaderboard();
-      setLoading(false);
-    };
-    
-    fetchData();
-    
-    // Auto-refresh every 30 seconds to update after mixing
-    const interval = setInterval(loadLeaderboard, 30000);
-    return () => clearInterval(interval);
+    (async () => { setLoading(true); await loadLeaderboard(); setLoading(false); })();
+    const iv = setInterval(loadLeaderboard, 30000);
+    return () => clearInterval(iv);
   }, []);
 
   useEffect(() => {
-    // Find current user's rank and points if they have an address
-    if (playerAddress && leaderboard && leaderboard.length > 0) {
-      const userIndex = leaderboard.findIndex(entry => 
-        entry.address && entry.address.toLowerCase() === playerAddress.toLowerCase()
-      );
-      if (userIndex !== -1) {
-        setCurrentUserRank(userIndex + 1);
-        setCurrentUserPoints(leaderboard[userIndex].points || 0);
-      } else {
-        setCurrentUserRank(null);
-        setCurrentUserPoints(points || 0);
-      }
+    if (playerAddress && leaderboard.length > 0) {
+      const idx = leaderboard.findIndex(e => e.address?.toLowerCase() === playerAddress.toLowerCase());
+      if (idx !== -1) { setCurrentUserRank(idx + 1); setCurrentUserPoints(leaderboard[idx].points || 0); }
+      else { setCurrentUserRank(null); setCurrentUserPoints(points || 0); }
     }
-    
-    setSeasonInfo(prev => ({ 
-      ...prev, 
-      participants: leaderboard ? leaderboard.length : 0
-    }));
   }, [playerAddress, leaderboard, points]);
 
-  const getRankIcon = (rank) => {
-    switch (rank) {
-      case 1: return '🥇';
-      case 2: return '🥈'; 
-      case 3: return '🥉';
-      default: return '🏅';
-    }
+  const getRankIcon = (r) => r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : null;
+  const formatAddr = (a) => `${a.slice(0, 6)}...${a.slice(-4)}`;
+  const fmt = (n) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  const calcRewards = (rank) => {
+    if (rank <= 10) return { tokens: Math.floor(DISTRIBUTION.top10.tokens * ((11 - rank) / 55) * 1.5), tier: 'Top 10', mult: '1.5x' };
+    if (rank <= 20) return { tokens: Math.floor(DISTRIBUTION.top20.tokens * ((21 - rank) / 55) * 0.7), tier: 'Top 20', mult: '0.7x' };
+    if (rank <= 50) return { tokens: Math.floor(DISTRIBUTION.top50.tokens * ((51 - rank) / 465) * 0.2), tier: 'Top 50', mult: '0.2x' };
+    return { tokens: 0, tier: 'Below 50', mult: '-' };
   };
 
-  const getRankColor = (rank) => {
-    switch (rank) {
-      case 1: return 'text-yellow-500';
-      case 2: return 'text-slate-400 dark:text-slate-300';
-      case 3: return 'text-amber-600 dark:text-amber-400';
-      default: return 'text-slate-600 dark:text-slate-300';
-    }
-  };
-
-  const formatAddress = (addr) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
-
-  // Calculate estimated rewards based on rank and multipliers
-  const calculateRewards = (rank, totalPlayers) => {
-    if (rank <= 10) {
-      // Top 10: 30% pool (6M $LAB) with 1.5x multiplier
-      const baseShare = DISTRIBUTION.top10.tokens / 10;
-      const multipliedShare = baseShare * DISTRIBUTION.top10.multiplier;
-      // Rank-weighted: higher ranks get more
-      const rankWeight = (11 - rank) / 55; // Sum of 1-10 = 55
-      const estimated = Math.floor(DISTRIBUTION.top10.tokens * rankWeight * DISTRIBUTION.top10.multiplier);
-      return { tokens: estimated, tier: 'Top 10', multiplier: '1.5×' };
-    }
-    if (rank <= 20) {
-      // Top 20 (ranks 11-20): 20% pool (4M $LAB) with 0.7x multiplier
-      const baseShare = DISTRIBUTION.top20.tokens / 10;
-      const rankWeight = (21 - rank) / 55;
-      const estimated = Math.floor(DISTRIBUTION.top20.tokens * rankWeight * DISTRIBUTION.top20.multiplier);
-      return { tokens: estimated, tier: 'Top 20', multiplier: '0.7×' };
-    }
-    if (rank <= 50) {
-      // Top 50 (ranks 21-50): 20% pool (4M $LAB) with 0.2x multiplier
-      const baseShare = DISTRIBUTION.top50.tokens / 30;
-      const rankWeight = (51 - rank) / 465; // Sum of 21-50
-      const estimated = Math.floor(DISTRIBUTION.top50.tokens * rankWeight * DISTRIBUTION.top50.multiplier);
-      return { tokens: estimated, tier: 'Top 50', multiplier: '0.2×' };
-    }
-    return { tokens: 0, tier: 'Below Top 50', multiplier: '-' };
-  };
-
-  // Format number with commas
-  const formatNumber = (num) => {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  };
-
-  if (loading) {
+  // Card wrapper with 3D effect
+  const Card3D = ({ children, className = '', glow = 'sky' }) => {
+    const glowColors = {
+      sky: 'rgba(56,189,248,0.08)',
+      yellow: 'rgba(250,204,21,0.08)',
+      emerald: 'rgba(52,211,153,0.08)',
+    };
     return (
-      <div className="min-h-screen p-6">
-        <div className="text-center py-20">
-          <div className="flex justify-center mb-4">
-            <Trophy className="w-16 h-16 text-yellow-500 animate-bounce" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-600 dark:text-slate-200">Loading Leaderboard...</h2>
-        </div>
+      <div className={`rounded-2xl border border-white/[0.06] bg-[#111827]/80 backdrop-blur-sm ${className}`}
+        style={{
+          boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 40px ${glowColors[glow] || glowColors.sky}, inset 0 1px 0 rgba(255,255,255,0.04)`,
+        }}>
+        {children}
       </div>
     );
-  }
+  };
 
-  if (error) {
-    return (
-      <div className="min-h-screen p-6">
-        <div className="text-center py-20">
-          <div className="text-6xl mb-4">😔</div>
-          <h2 className="text-2xl font-bold text-slate-600 dark:text-slate-200 mb-4">Unable to Load Leaderboard</h2>
-          <p className="text-slate-500 dark:text-slate-300 mb-6">{error}</p>
-          <Button onClick={loadLeaderboard} className="doge-button">
-            Try Again
-          </Button>
-        </div>
+  if (loading) return (
+    <div className="min-h-screen bg-[#0a0f1a] flex items-center justify-center">
+      <div className="text-center">
+        <Trophy className="w-16 h-16 text-sky-400 animate-bounce mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-white">Loading Leaderboard...</h2>
       </div>
-    );
-  }
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen bg-[#0a0f1a] flex items-center justify-center p-6">
+      <div className="text-center">
+        <div className="text-5xl mb-4">😔</div>
+        <h2 className="text-xl font-bold text-white mb-3">Unable to Load Leaderboard</h2>
+        <p className="text-slate-400 mb-6">{error}</p>
+        <Button onClick={loadLeaderboard} className="bg-sky-600 hover:bg-sky-500 text-white">Try Again</Button>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen p-3 sm:p-6">
-      {/* Header - Mobile Optimized */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-          <Link to="/">
-            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-              <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              Back
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl sm:text-4xl font-bold text-orange-600 dark:text-yellow-400 mb-1 sm:mb-2" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}><Trophy className="w-8 h-8 inline mr-2" />Leaderboard</h1>
-            <p className="text-xs sm:text-base text-slate-600 dark:text-slate-300">Top VIP Scientists competing for $LAB rewards</p>
+    <div className="min-h-screen bg-[#0a0f1a] text-white" data-testid="leaderboard-page">
+      {/* Background glow */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[400px] bg-sky-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[300px] bg-sky-600/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative z-10 max-w-5xl mx-auto p-4 sm:p-6 pb-24">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white hover:bg-white/5" data-testid="back-btn">
+                <ArrowLeft className="w-4 h-4 mr-1" /> Menu
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
+                <Trophy className="w-7 h-7 text-sky-400" /> Leaderboard
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-400">Top Scientists competing for $LAB</p>
+            </div>
           </div>
+          <Badge className="bg-sky-500/20 text-sky-300 border border-sky-500/30 text-xs" data-testid="season-badge">
+            Season 1
+          </Badge>
         </div>
-        
-        <Badge className="bg-gradient-to-r from-sky-500 to-blue-500 text-white self-start sm:self-auto text-xs sm:text-sm">
-          Season {seasonInfo.current}
-        </Badge>
-      </div>
 
-      {/* Season Countdown Timer */}
-      <div className="mb-6 sm:mb-8">
-        <SeasonCountdown />
-      </div>
+        {/* Season Countdown */}
+        <div className="mb-6">
+          <SeasonCountdown />
+        </div>
 
-      {/* Season Info */}
-      <Card className="glass-panel mb-6 sm:mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-500" />
-            Season {seasonInfo.current} Rewards
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 rounded-xl">
-              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{seasonInfo.totalRewards}</div>
-              <div className="text-sm text-slate-600 dark:text-slate-200">Total Rewards Pool</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-sky-50 to-sky-100 dark:from-sky-900/30 dark:to-sky-800/30 rounded-xl">
-              <div className="text-2xl font-bold text-sky-600 dark:text-sky-400">{leaderboard.length}</div>
-              <div className="text-sm text-slate-600 dark:text-slate-200">Active Players</div>
-            </div>
-            <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/30 rounded-xl">
-              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">Coming Soon</div>
-              <div className="text-sm text-slate-600 dark:text-slate-200">NFT Minting</div>
-            </div>
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {[
+            { label: 'Total Rewards', value: '20M $LAB', color: 'text-yellow-400', glow: 'yellow' },
+            { label: 'Active Players', value: leaderboard.length, color: 'text-sky-400', glow: 'sky' },
+            { label: 'NFT Minting', value: 'Soon', color: 'text-emerald-400', glow: 'emerald' },
+          ].map((s, i) => (
+            <Card3D key={i} glow={s.glow} className="p-4 text-center">
+              <div className={`text-lg sm:text-2xl font-black ${s.color}`}>{s.value}</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">{s.label}</div>
+            </Card3D>
+          ))}
+        </div>
+
+        {/* Distribution Breakdown */}
+        <Card3D className="p-4 mb-6">
+          <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+            <CircleDot className="w-4 h-4 text-sky-400" /> $LAB Distribution
+          </h4>
+          <div className="grid grid-cols-5 gap-2">
+            {[
+              { label: 'Top 10', pct: '30%', tokens: fmt(DISTRIBUTION.top10.tokens), extra: '1.5x', color: 'sky' },
+              { label: 'Top 20', pct: '20%', tokens: fmt(DISTRIBUTION.top20.tokens), extra: '0.7x', color: 'sky' },
+              { label: 'Top 50', pct: '20%', tokens: fmt(DISTRIBUTION.top50.tokens), extra: '0.2x', color: 'sky' },
+              { label: 'NFT', pct: '20%', tokens: fmt(DISTRIBUTION.nftHolders.tokens), extra: 'Base', color: 'emerald' },
+              { label: 'Events', pct: '10%', tokens: fmt(DISTRIBUTION.specialEvents.tokens), extra: 'Special', color: 'yellow' },
+            ].map((d, i) => (
+              <div key={i} className={`rounded-xl p-2.5 text-center border border-${d.color}-500/15 bg-${d.color}-500/5`}
+                style={{ boxShadow: `0 4px 16px rgba(0,0,0,0.2)` }}>
+                <div className={`text-[10px] text-${d.color}-400 font-semibold mb-0.5`}>{d.label}</div>
+                <div className="text-base font-black text-white">{d.pct}</div>
+                <div className={`text-[9px] text-${d.color}-400/70`}>{d.tokens}</div>
+                <div className={`text-[9px] text-${d.color}-300 font-bold mt-0.5`}>{d.extra}</div>
+              </div>
+            ))}
           </div>
-          
-          {/* Distribution Breakdown */}
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-            <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
-              <CircleDot className="w-4 h-4 text-yellow-500" />
-              $LAB Distribution Breakdown
+        </Card3D>
+
+        {/* Your Performance */}
+        {playerAddress && (
+          <Card3D className="p-4 mb-6" glow="sky">
+            <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4 text-sky-400" /> Your Performance
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              <div className="bg-gradient-to-br from-yellow-100 to-yellow-200 dark:from-yellow-900/40 dark:to-yellow-800/40 rounded-lg p-3 text-center">
-                <div className="text-xs text-yellow-700 dark:text-yellow-300 font-medium mb-1">Top 10</div>
-                <div className="text-lg font-bold text-yellow-800 dark:text-yellow-200">30%</div>
-                <div className="text-xs text-yellow-600 dark:text-yellow-400">{formatNumber(DISTRIBUTION.top10.tokens)} $LAB</div>
-                <div className="text-xs text-yellow-700 dark:text-yellow-300 mt-1 font-semibold">1.5× Multiplier</div>
-              </div>
-              <div className="bg-gradient-to-br from-sky-100 to-sky-200 dark:from-sky-900/40 dark:to-sky-800/40 rounded-lg p-3 text-center">
-                <div className="text-xs text-sky-700 dark:text-sky-300 font-medium mb-1">Top 20</div>
-                <div className="text-lg font-bold text-sky-800 dark:text-sky-200">20%</div>
-                <div className="text-xs text-sky-600 dark:text-sky-400">{formatNumber(DISTRIBUTION.top20.tokens)} $LAB</div>
-                <div className="text-xs text-sky-700 dark:text-sky-300 mt-1 font-semibold">0.7× Multiplier</div>
-              </div>
-              <div className="bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 rounded-lg p-3 text-center">
-                <div className="text-xs text-purple-700 dark:text-purple-300 font-medium mb-1">Top 50</div>
-                <div className="text-lg font-bold text-purple-800 dark:text-purple-200">20%</div>
-                <div className="text-xs text-purple-600 dark:text-purple-400">{formatNumber(DISTRIBUTION.top50.tokens)} $LAB</div>
-                <div className="text-xs text-purple-700 dark:text-purple-300 mt-1 font-semibold">0.2× Multiplier</div>
-              </div>
-              <div className="bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/40 dark:to-emerald-800/40 rounded-lg p-3 text-center">
-                <div className="text-xs text-emerald-700 dark:text-emerald-300 font-medium mb-1">NFT Holders</div>
-                <div className="text-lg font-bold text-emerald-800 dark:text-emerald-200">20%</div>
-                <div className="text-xs text-emerald-600 dark:text-emerald-400">{formatNumber(DISTRIBUTION.nftHolders.tokens)} $LAB</div>
-                <div className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 font-semibold">Baseline Reward</div>
-              </div>
-              <div className="bg-gradient-to-br from-pink-100 to-pink-200 dark:from-pink-900/40 dark:to-pink-800/40 rounded-lg p-3 text-center">
-                <div className="text-xs text-pink-700 dark:text-pink-300 font-medium mb-1">Events</div>
-                <div className="text-lg font-bold text-pink-800 dark:text-pink-200">10%</div>
-                <div className="text-xs text-pink-600 dark:text-pink-400">{formatNumber(DISTRIBUTION.specialEvents.tokens)} $LAB</div>
-                <div className="text-xs text-pink-700 dark:text-pink-300 mt-1 font-semibold">Challenges</div>
-              </div>
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { label: 'Rank', value: currentUserRank ? `#${currentUserRank}` : 'Unranked', color: 'text-sky-400' },
+                { label: 'Points', value: currentUserPoints.toLocaleString(), color: 'text-emerald-400' },
+                { label: 'Level', value: `Lv ${currentLevel}`, color: 'text-sky-300' },
+                { label: 'Est. Rewards', value: currentUserRank && currentUserRank <= 50 ? `${fmt(calcRewards(currentUserRank).tokens)} $LAB` : '0', color: 'text-yellow-400' },
+              ].map((s, i) => (
+                <div key={i} className="text-center">
+                  <div className={`text-lg sm:text-xl font-black ${s.color}`}>{s.value}</div>
+                  <div className="text-[10px] text-slate-400">{s.label}</div>
+                </div>
+              ))}
             </div>
+          </Card3D>
+        )}
+
+        {/* Leaderboard Table */}
+        <Card3D className="overflow-hidden">
+          <div className="p-4 border-b border-white/[0.06] flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-sky-400" />
+            <h3 className="text-sm font-bold text-white">Top 50 VIP Scientists</h3>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Current User Status */}
-      {playerAddress && (
-        <Card className="glass-panel mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Your Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold doge-gradient">
-                  {currentUserRank ? `#${currentUserRank}` : 'Unranked'}
-                </div>
-                <div className="text-sm text-slate-600 dark:text-slate-200">Current Rank</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{currentUserPoints.toLocaleString()}</div>
-                <div className="text-sm text-slate-600 dark:text-slate-200">Points</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">Level {currentLevel}</div>
-                <div className="text-sm text-slate-600 dark:text-slate-200">Lab Level</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                  {currentUserRank && currentUserRank <= 50 
-                    ? `${formatNumber(calculateRewards(currentUserRank, leaderboard.length).tokens)} $LAB`
-                    : '0 $LAB'}
-                </div>
-                <div className="text-sm text-slate-600 dark:text-slate-200">Est. Rewards</div>
-                {currentUserRank && currentUserRank <= 50 && (
-                  <div className="text-xs text-yellow-500 mt-1">
-                    {calculateRewards(currentUserRank, leaderboard.length).tier} ({calculateRewards(currentUserRank, leaderboard.length).multiplier})
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Leaderboard Table */}
-      <Card className="glass-panel">
-        <CardHeader className="pb-2 sm:pb-4">
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
-            Top 50 VIP Scientists
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-2 sm:px-6">
-          {!leaderboard || leaderboard.length === 0 ? (
-            <div className="text-center py-8 sm:py-12">
-              <div className="text-4xl sm:text-6xl mb-4">🦗</div>
-              <h3 className="text-lg sm:text-2xl font-bold text-gray-600 mb-2">It's Quiet Here...</h3>
-              <p className="text-sm sm:text-base text-gray-500 mb-6">
-                Be the first VIP Scientist to start competing for $LAB rewards!
-              </p>
+          {!leaderboard.length ? (
+            <div className="text-center py-16 px-4">
+              <div className="text-5xl mb-4">🦗</div>
+              <h3 className="text-lg font-bold text-white mb-2">It's Quiet Here...</h3>
+              <p className="text-slate-400 mb-6 text-sm">Be the first to start competing!</p>
               <Link to="/lab">
-                <Button className="doge-button text-sm sm:text-base">
-                  Start Creating Treats
-                </Button>
+                <Button className="bg-sky-600 hover:bg-sky-500 text-white">Start Creating Treats</Button>
               </Link>
             </div>
           ) : (
-            <>
-              {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-3 px-2 text-sm">Rank</th>
-                      <th className="text-left py-3 px-2 text-sm">Scientist</th>
-                      <th className="text-center py-3 px-2 text-sm">Points</th>
-                      <th className="text-center py-3 px-2 text-sm">Level</th>
-                      <th className="text-center py-3 px-2 text-sm">Status</th>
-                      <th className="text-right py-3 px-2 text-sm">Est. Rewards</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leaderboard.map((entry, index) => {
-                      const rank = index + 1;
-                      const isCurrentUser = address && entry.address.toLowerCase() === address.toLowerCase();
-                      
-                      return (
-                        <tr 
-                          key={entry.address} 
-                          className={`border-b border-gray-100 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
-                            isCurrentUser ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200' : ''
-                          } ${rank <= 3 ? `leaderboard-row rank-${rank}` : 'leaderboard-row'}`}
-                        >
-                          <td className="py-4 px-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xl">{getRankIcon(rank)}</span>
-                              <span className={`font-bold ${getRankColor(rank)}`}>
-                                #{rank}
-                              </span>
-                            </div>
-                          </td>
-                          
-                          <td className="py-4 px-2">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-yellow-400 shadow-lg flex-shrink-0">
-                                {entry.character_image ? (
-                                  <img 
-                                    src={entry.character_image} 
-                                    alt={entry.character_name || 'Scientist'}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-500 to-sky-400 flex items-center justify-center">
-                                    <Beaker className="w-5 h-5 text-white" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                {/* Character Name */}
-                                {entry.character_name && (
-                                  <div className="text-xs text-purple-500 dark:text-purple-400 font-semibold">
-                                    {entry.character_name}
-                                  </div>
-                                )}
-                                {/* Player Nickname - Clickable */}
-                                <button
-                                  onClick={() => setSelectedPlayerAddress(entry.address)}
-                                  className="font-bold text-gray-800 dark:text-gray-100 truncate text-sm hover:text-sky-500 dark:hover:text-sky-400 transition-colors cursor-pointer text-left"
-                                  data-testid={`player-name-${rank}`}
-                                >
-                                  {entry.nickname || `Scientist #${rank}`}
-                                </button>
-                                <div className="font-mono text-xs text-slate-500 dark:text-slate-400">
-                                  {formatAddress(entry.address)}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          
-                          <td className="py-4 px-2 text-center">
-                            <div className="font-bold text-green-600 dark:text-green-400 text-base">
-                              {entry.points.toLocaleString()}
-                            </div>
-                          </td>
-                          
-                          <td className="py-4 px-2 text-center">
-                            <Badge variant="outline" className="font-bold text-xs">
-                              Lv {entry.level}
-                            </Badge>
-                          </td>
-                          
-                          <td className="py-4 px-2 text-center">
-                            <div className="flex items-center justify-center gap-1 flex-wrap">
-                              <Badge className={entry.is_nft_holder ? 'vip-badge text-xs' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs'}>
-                                {entry.is_nft_holder ? 'VIP' : 'Scientist'}
-                              </Badge>
-                              {entry.is_dogeonews_holder && (
-                                <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-xs flex items-center gap-1">
-                                  <img src="/dogeonews-token.png" alt="$DOGEONEWS" className="w-4 h-4" />
-                                  HOLDER
-                                </Badge>
-                              )}
-                            </div>
-                          </td>
-                          
-                          <td className="py-4 px-2 text-right">
-                            <div className="font-bold text-yellow-600 dark:text-yellow-400 text-sm">
-                              {rank <= 50 ? `${formatNumber(calculateRewards(rank, leaderboard.length).tokens)} $LAB` : '0 $LAB'}
-                            </div>
-                            {rank <= 50 && (
-                              <div className="text-xs text-slate-500 dark:text-slate-400">
-                                {calculateRewards(rank, leaderboard.length).multiplier}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+            <div className="divide-y divide-white/[0.04]">
+              {leaderboard.map((entry, index) => {
+                const rank = index + 1;
+                const isCurrentUser = playerAddress && entry.address?.toLowerCase() === playerAddress.toLowerCase();
+                const rankEmoji = getRankIcon(rank);
+                const rewards = calcRewards(rank);
+                const isTopThree = rank <= 3;
 
-              {/* Mobile Card View - Improved Layout */}
-              <div className="md:hidden space-y-2">
-                {leaderboard.map((entry, index) => {
-                  const rank = index + 1;
-                  const isCurrentUser = playerAddress && entry.address.toLowerCase() === playerAddress.toLowerCase();
-                  
-                  return (
-                    <div 
-                      key={entry.address}
-                      className={`p-3 rounded-xl border ${
-                        isCurrentUser 
-                          ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' 
-                          : 'bg-white/50 dark:bg-slate-800/50 border-gray-200 dark:border-gray-700'
-                      } ${rank <= 3 ? 'ring-2 ring-yellow-400/50' : ''}`}
-                    >
-                      {/* Top Row: Rank, Avatar, Name, Points */}
-                      <div className="flex items-center gap-2">
-                        {/* Rank Badge */}
-                        <div className="flex flex-col items-center w-10 flex-shrink-0">
-                          <span className="text-xl">{getRankIcon(rank)}</span>
-                          <span className={`font-bold text-xs ${getRankColor(rank)}`}>#{rank}</span>
+                return (
+                  <div
+                    key={entry.address}
+                    data-testid={`leaderboard-row-${rank}`}
+                    className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.02] ${
+                      isCurrentUser ? 'bg-sky-500/10 border-l-2 border-l-sky-400' : ''
+                    } ${isTopThree ? 'bg-gradient-to-r from-sky-500/5 to-transparent' : ''}`}
+                  >
+                    {/* Rank */}
+                    <div className="w-10 text-center flex-shrink-0">
+                      {rankEmoji ? (
+                        <span className="text-2xl">{rankEmoji}</span>
+                      ) : (
+                        <span className="text-sm font-bold text-slate-400">#{rank}</span>
+                      )}
+                    </div>
+
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-sky-500/20"
+                      style={{ boxShadow: isTopThree ? '0 0 12px rgba(56,189,248,0.2)' : '0 2px 8px rgba(0,0,0,0.3)' }}>
+                      {entry.character_image ? (
+                        <img src={entry.character_image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-sky-600 to-sky-800 flex items-center justify-center">
+                          <Beaker className="w-5 h-5 text-sky-200" />
                         </div>
-                        
-                        {/* Character Avatar */}
-                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-yellow-400 shadow-md flex-shrink-0">
-                          {entry.character_image ? (
-                            <img 
-                              src={entry.character_image} 
-                              alt={entry.character_name || 'Scientist'}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-purple-400 via-pink-500 to-sky-400 flex items-center justify-center">
-                              <Beaker className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Name & Info - Takes remaining space */}
-                        <div className="flex-1 min-w-0 overflow-hidden">
-                          <button
-                            onClick={() => setSelectedPlayerAddress(entry.address)}
-                            className="font-bold text-gray-800 dark:text-gray-100 text-sm hover:text-sky-500 dark:hover:text-sky-400 transition-colors cursor-pointer text-left block w-full truncate"
-                            data-testid={`player-name-mobile-${rank}`}
-                            title={entry.nickname || `Scientist #${rank}`}
-                          >
-                            {entry.nickname || `Scientist #${rank}`}
-                          </button>
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
-                              {formatAddress(entry.address)}
-                            </span>
-                            {isCurrentUser && (
-                              <Badge className="bg-blue-500 text-white text-[9px] px-1 py-0">You</Badge>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Points */}
-                        <div className="text-right flex-shrink-0">
-                          <div className="font-bold text-green-600 dark:text-green-400 text-base">
-                            {entry.points.toLocaleString()}
-                          </div>
-                          <div className="text-[9px] text-slate-500">pts</div>
-                        </div>
+                      )}
+                    </div>
+
+                    {/* Name + Badges */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setSelectedPlayerAddress(entry.address)}
+                          className="font-bold text-sm text-white hover:text-sky-400 transition-colors truncate"
+                          data-testid={`player-name-${rank}`}
+                        >
+                          {entry.nickname || `Scientist #${rank}`}
+                        </button>
+                        {isCurrentUser && (
+                          <Badge className="bg-sky-500/20 text-sky-300 text-[9px] px-1.5 py-0 border border-sky-500/20">You</Badge>
+                        )}
                       </div>
-                      
-                      {/* Bottom Row: Badges & Rewards */}
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {entry.character_name && (
-                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-purple-600 dark:text-purple-400 border-purple-300">
-                              {entry.character_name}
-                            </Badge>
-                          )}
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0">
-                            Lv {entry.level}
-                          </Badge>
-                          {entry.is_nft_holder && (
-                            <Badge className="vip-badge text-[9px] px-1.5 py-0">VIP</Badge>
-                          )}
-                          {entry.is_dogeonews_holder && (
-                            <Badge className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-[9px] px-1.5 py-0 flex items-center gap-0.5">
-                              <img src="/dogeonews-token.png" alt="$DOGEONEWS" className="w-3 h-3" />
-                              HOLDER
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <span className="text-xs font-bold text-yellow-600 dark:text-yellow-400">
-                            {rank <= 50 ? `${formatNumber(calculateRewards(rank, leaderboard.length).tokens)} $LAB` : '0 $LAB'}
-                          </span>
-                          {rank <= 50 && (
-                            <span className="text-[9px] text-slate-500 dark:text-slate-400 ml-1">
-                              ({calculateRewards(rank, leaderboard.length).multiplier})
-                            </span>
-                          )}
-                        </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        {entry.character_name && (
+                          <span className="text-[10px] text-sky-400/60">{entry.character_name}</span>
+                        )}
+                        <span className="font-mono text-[10px] text-slate-500">{formatAddr(entry.address)}</span>
+                        {entry.is_nft_holder && (
+                          <Badge className="bg-yellow-500/20 text-yellow-300 text-[8px] px-1 py-0 border border-yellow-500/20">VIP</Badge>
+                        )}
+                        {entry.is_dogeonews_holder && (
+                          <Badge className="bg-amber-500/20 text-amber-300 text-[8px] px-1 py-0 border border-amber-500/20">HOLDER</Badge>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </>
+
+                    {/* Level */}
+                    <div className="hidden sm:block">
+                      <Badge variant="outline" className="text-[10px] text-slate-300 border-white/10">
+                        Lv {entry.level}
+                      </Badge>
+                    </div>
+
+                    {/* Points */}
+                    <div className="text-right flex-shrink-0 min-w-[70px]">
+                      <div className="font-black text-base text-sky-400">{entry.points.toLocaleString()}</div>
+                      <div className="text-[9px] text-slate-500">pts</div>
+                    </div>
+
+                    {/* Rewards */}
+                    <div className="hidden sm:block text-right flex-shrink-0 min-w-[90px]">
+                      <div className="text-xs font-bold text-yellow-400">
+                        {rank <= 50 ? `${fmt(rewards.tokens)} $LAB` : '-'}
+                      </div>
+                      {rank <= 50 && <div className="text-[9px] text-slate-500">{rewards.mult}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </Card3D>
 
-      {/* Rewards Info - Mobile Optimized */}
-      <Card className="glass-panel mt-6 sm:mt-8">
-        <CardHeader className="pb-2 sm:pb-4">
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <CircleDot className="w-4 h-4 sm:w-5 sm:h-5" />
-            Reward Tiers & Multipliers
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-2 sm:gap-6">
-            <div className="text-center p-2 sm:p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg">
-              <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">🥇</div>
-              <h3 className="font-bold text-xs sm:text-lg text-yellow-600 dark:text-yellow-400">Top 10</h3>
-              <p className="text-[10px] sm:text-sm text-slate-600 dark:text-slate-200">30% Pool</p>
-              <p className="text-xs sm:text-base font-bold text-yellow-600 dark:text-yellow-400">1.5× Multiplier</p>
-            </div>
-            <div className="text-center p-2 sm:p-4 bg-sky-50 dark:bg-sky-900/30 rounded-lg">
-              <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">🥈</div>
-              <h3 className="font-bold text-xs sm:text-lg text-sky-600 dark:text-sky-400">Top 20</h3>
-              <p className="text-[10px] sm:text-sm text-slate-600 dark:text-slate-200">20% Pool</p>
-              <p className="text-xs sm:text-base font-bold text-sky-600 dark:text-sky-400">0.7× Multiplier</p>
-            </div>
-            <div className="text-center p-2 sm:p-4 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
-              <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">🥉</div>
-              <h3 className="font-bold text-xs sm:text-lg text-purple-600 dark:text-purple-400">Top 50</h3>
-              <p className="text-[10px] sm:text-sm text-slate-600 dark:text-slate-200">20% Pool</p>
-              <p className="text-xs sm:text-base font-bold text-purple-600 dark:text-purple-400">0.2× Multiplier</p>
-            </div>
+        {/* Reward Tiers */}
+        <Card3D className="p-4 mt-6">
+          <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+            <Crown className="w-4 h-4 text-yellow-400" /> Reward Tiers
+          </h4>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { medal: '🥇', label: 'Top 10', pool: '30%', mult: '1.5x', color: 'sky' },
+              { medal: '🥈', label: 'Top 20', pool: '20%', mult: '0.7x', color: 'sky' },
+              { medal: '🥉', label: 'Top 50', pool: '20%', mult: '0.2x', color: 'sky' },
+            ].map((t, i) => (
+              <div key={i} className={`text-center p-3 rounded-xl border border-${t.color}-500/15 bg-${t.color}-500/5`}
+                style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
+                <div className="text-3xl mb-1">{t.medal}</div>
+                <h5 className={`font-bold text-sm text-${t.color}-400`}>{t.label}</h5>
+                <p className="text-[11px] text-slate-400">{t.pool} Pool</p>
+                <p className={`text-xs font-bold text-${t.color}-300`}>{t.mult} Multiplier</p>
+              </div>
+            ))}
           </div>
-          
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 rounded-lg">
-            <p className="text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm text-center">
-              <strong>NFT Holder Bonus:</strong> All active NFT holders share 20% baseline pool (4M $LAB)!
+          <div className="mt-3 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15 text-center">
+            <p className="text-emerald-300 text-xs">
+              <strong>NFT Holders:</strong> 20% baseline pool (4M $LAB) &nbsp;|&nbsp; <strong>Events:</strong> 10% (2M $LAB)
             </p>
           </div>
-          
-          <div className="mt-3 p-3 sm:p-4 bg-pink-100 dark:bg-pink-900/30 border border-pink-300 dark:border-pink-700 rounded-lg">
-            <p className="text-pink-800 dark:text-pink-200 text-xs sm:text-sm text-center">
-              <strong>Special Events:</strong> 10% reserved for challenges & competitions (2M $LAB)
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+        </Card3D>
+      </div>
 
-      {/* Player Stats Modal */}
       {selectedPlayerAddress && (
-        <PlayerStatsModal 
-          playerAddress={selectedPlayerAddress}
-          onClose={() => setSelectedPlayerAddress(null)}
-        />
+        <PlayerStatsModal playerAddress={selectedPlayerAddress} onClose={() => setSelectedPlayerAddress(null)} />
       )}
-      
-      {/* Music Player */}
       <MusicPlayer />
-      
-      {/* Scientist Chat */}
       <ScientistChat />
     </div>
   );
