@@ -211,22 +211,37 @@ const Leaderboard = () => {
           <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
             <CircleDot className="w-4 h-4 text-sky-400" /> $LAB Distribution
           </h4>
-          <div className="grid grid-cols-5 gap-2">
-            {[
-              { label: 'Top 10', pct: '30%', tokens: fmt(DISTRIBUTION.top10.tokens), extra: '1.5x', color: 'sky' },
-              { label: 'Top 20', pct: '20%', tokens: fmt(DISTRIBUTION.top20.tokens), extra: '0.7x', color: 'sky' },
-              { label: 'Top 50', pct: '20%', tokens: fmt(DISTRIBUTION.top50.tokens), extra: '0.2x', color: 'sky' },
-              { label: 'NFT', pct: '20%', tokens: fmt(DISTRIBUTION.nftHolders.tokens), extra: 'Base', color: 'emerald' },
-              { label: 'Events', pct: '10%', tokens: fmt(DISTRIBUTION.specialEvents.tokens), extra: 'Special', color: 'yellow' },
-            ].map((d, i) => (
-              <div key={i} className={`rounded-xl p-2.5 text-center border border-${d.color}-500/15 bg-${d.color}-500/5`}
-                style={{ boxShadow: `0 4px 16px rgba(0,0,0,0.2)` }}>
-                <div className={`text-[10px] text-${d.color}-400 font-semibold mb-0.5`}>{d.label}</div>
-                <div className="text-base font-black text-white">{d.pct}</div>
-                <div className={`text-[9px] text-${d.color}-400/70`}>{d.tokens}</div>
-                <div className={`text-[9px] text-${d.color}-300 font-bold mt-0.5`}>{d.extra}</div>
-              </div>
-            ))}
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+            <div className="rounded-xl p-2.5 text-center border border-sky-500/15 bg-sky-500/5" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
+              <div className="text-[10px] text-sky-400 font-semibold mb-0.5">Top 10</div>
+              <div className="text-base font-black text-white">30%</div>
+              <div className="text-[9px] text-sky-400/70">{fmt(DISTRIBUTION.top10.tokens)}</div>
+              <div className="text-[9px] text-sky-300 font-bold mt-0.5">1.5x</div>
+            </div>
+            <div className="rounded-xl p-2.5 text-center border border-sky-500/15 bg-sky-500/5" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
+              <div className="text-[10px] text-sky-400 font-semibold mb-0.5">Top 20</div>
+              <div className="text-base font-black text-white">20%</div>
+              <div className="text-[9px] text-sky-400/70">{fmt(DISTRIBUTION.top20.tokens)}</div>
+              <div className="text-[9px] text-sky-300 font-bold mt-0.5">0.7x</div>
+            </div>
+            <div className="rounded-xl p-2.5 text-center border border-sky-500/15 bg-sky-500/5" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
+              <div className="text-[10px] text-sky-400 font-semibold mb-0.5">Top 50</div>
+              <div className="text-base font-black text-white">20%</div>
+              <div className="text-[9px] text-sky-400/70">{fmt(DISTRIBUTION.top50.tokens)}</div>
+              <div className="text-[9px] text-sky-300 font-bold mt-0.5">0.2x</div>
+            </div>
+            <div className="rounded-xl p-2.5 text-center border border-emerald-500/15 bg-emerald-500/5" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
+              <div className="text-[10px] text-emerald-400 font-semibold mb-0.5">NFT</div>
+              <div className="text-base font-black text-white">20%</div>
+              <div className="text-[9px] text-emerald-400/70">{fmt(DISTRIBUTION.nftHolders.tokens)}</div>
+              <div className="text-[9px] text-emerald-300 font-bold mt-0.5">Base</div>
+            </div>
+            <div className="rounded-xl p-2.5 text-center border border-yellow-500/15 bg-yellow-500/5" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
+              <div className="text-[10px] text-yellow-400 font-semibold mb-0.5">Events</div>
+              <div className="text-base font-black text-white">10%</div>
+              <div className="text-[9px] text-yellow-400/70">{fmt(DISTRIBUTION.specialEvents.tokens)}</div>
+              <div className="text-[9px] text-yellow-300 font-bold mt-0.5">Special</div>
+            </div>
           </div>
         </Card3D>
 
