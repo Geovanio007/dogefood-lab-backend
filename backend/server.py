@@ -2698,8 +2698,8 @@ async def collect_treat(treat_id: str, data: dict):
         final_points_reward = base_points_reward + points_bonus + happy_hour_bonus
         final_xp_reward = base_xp_reward + xp_bonus
         
-        # Update treat status
-        await db.treats.update_one(
+        # Run treat update and player stats update in parallel
+        treat_update_task = db.treats.update_one(
             {"id": treat_id},
             {"$set": {
                 "brewing_status": "collected",
@@ -2711,19 +2711,22 @@ async def collect_treat(treat_id: str, data: dict):
         )
         
         # Update player stats
+        leveled_up = False
+        new_level = None
         if player:
             new_xp = player.get("experience", 0) + final_xp_reward
-            new_level = player.get("level", 1)
+            current_level = player.get("level", 1)
             
             # Check for level up (100 XP per level)
-            xp_for_level = new_level * 100
-            leveled_up = False
+            xp_for_level = current_level * 100
             if new_xp >= xp_for_level:
-                new_level += 1
+                new_level = current_level + 1
                 new_xp = new_xp - xp_for_level
                 leveled_up = True
+            else:
+                new_level = current_level
             
-            await db.players.update_one(
+            player_update_task = db.players.update_one(
                 {"address": player_address},
                 {"$set": {
                     "experience": new_xp,
@@ -2732,6 +2735,9 @@ async def collect_treat(treat_id: str, data: dict):
                 },
                 "$inc": {"points": final_points_reward}}
             )
+            
+            # Run both updates in parallel
+            await asyncio.gather(treat_update_task, player_update_task)
             
             return {
                 "success": True,
