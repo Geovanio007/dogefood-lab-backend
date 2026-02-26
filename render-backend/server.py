@@ -809,31 +809,12 @@ async def get_recent_activity(limit: int = 20):
 async def get_chat_messages(limit: int = 50):
     """Get recent chat messages for the live feed"""
     try:
-        pipeline = [
-            {"$sort": {"created_at": -1}},
-            {"$limit": limit},
-            {"$lookup": {
-                "from": "players",
-                "localField": "player_id",
-                "foreignField": "address",
-                "as": "player_info"
-            }},
-            {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArrays": True}},
-            {"$project": {
-                "_id": 0,
-                "message_id": {"$toString": "$_id"},
-                "player_id": 1,
-                "player_nickname": {"$ifNull": ["$player_info.nickname", "$nickname"]},
-                "player_image": {"$ifNull": ["$player_info.profile_image", None]},
-                "message": 1,
-                "reply_to": 1,
-                "reply_nickname": 1,
-                "reply_text": 1,
-                "emoji_only": 1,
-                "created_at": 1
-            }}
-        ]
-        messages = await db.chat_messages.aggregate(pipeline).to_list(limit)
+        # Simple find with sort — NO $lookup needed, nicknames are stored in messages
+        messages = await db.chat_messages.find(
+            {},
+            {"_id": 0}
+        ).sort("created_at", -1).limit(limit).to_list(limit)
+        
         for m in messages:
             if m.get("created_at"):
                 dt = m["created_at"]
@@ -844,6 +825,10 @@ async def get_chat_messages(limit: int = 50):
                     m["created_at"] = iso
                 else:
                     m["created_at"] = str(dt)
+            # Normalize nickname field for frontend
+            if not m.get("player_nickname"):
+                m["player_nickname"] = m.get("sender_nickname") or m.get("nickname") or "Player"
+        
         messages.reverse()
         return {"messages": messages}
     except Exception as e:
@@ -4690,27 +4675,6 @@ async def get_nft_contract_info():
 # ================================
 # CHAT SYSTEM ENDPOINTS
 # ================================
-
-@api_router.get("/chat/messages")
-async def get_chat_messages(limit: int = 50, before: Optional[str] = None):
-    """Get recent chat messages"""
-    try:
-        query = {}
-        if before:
-            # Get messages before a certain message ID for pagination
-            ref_message = await db.chat_messages.find_one({"id": before})
-            if ref_message:
-                query["created_at"] = {"$lt": ref_message["created_at"]}
-        
-        cursor = db.chat_messages.find(query, {"_id": 0}).sort("created_at", -1).limit(limit)
-        messages = await cursor.to_list(length=limit)
-        
-        # Return in chronological order
-        messages.reverse()
-        return messages
-    except Exception as e:
-        logger.error(f"Error fetching chat messages: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/chat/messages")
 async def create_chat_message(message_data: ChatMessageCreate):
