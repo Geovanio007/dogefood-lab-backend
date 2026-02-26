@@ -1243,7 +1243,7 @@ async def get_player_weekly_stats(address: str):
         leaderboard_cursor = db.players.find(
             {
                 "points": {"$gt": 0},
-                "nickname": {"$ne": None, "$exists": True, "$ne": ""},
+                "nickname": {"$exists": True, "$nin": [None, ""]},
                 "$or": [
                     {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
                     {"vip_bonus_claimed": True, "points": {"$gt": 500}}
@@ -2812,7 +2812,7 @@ async def get_game_stats():
         # VIP holders need > 500 (beyond the bonus), non-VIP just > 0
         eligible_players = await db.players.count_documents({
             "points": {"$gt": 0},
-            "nickname": {"$ne": None, "$exists": True, "$ne": ""},
+            "nickname": {"$exists": True, "$nin": [None, ""]},
             "$or": [
                 {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
                 {"vip_bonus_claimed": True, "points": {"$gt": 500}}
