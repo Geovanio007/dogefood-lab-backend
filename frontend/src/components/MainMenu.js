@@ -106,7 +106,7 @@ const LiveChat = ({ isLoggedIn, effectiveAddress, username }) => {
 
   useEffect(() => {
     fetchMessages();
-    const interval = setInterval(fetchMessages, 5000);
+    const interval = setInterval(fetchMessages, 10000);
     return () => clearInterval(interval);
   }, [fetchMessages]);
 
