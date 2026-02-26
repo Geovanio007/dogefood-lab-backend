@@ -19,6 +19,24 @@ import asyncio
 from telegram import Bot
 import httpx  # For Firebase verification
 
+
+def parse_utc_datetime(dt_val) -> datetime:
+    """Parse a datetime value (str or datetime) and ensure it's UTC-aware.
+    Handles naive datetimes from the DB by assuming they are UTC."""
+    if dt_val is None:
+        return datetime.now(timezone.utc)
+    if isinstance(dt_val, str):
+        # Normalize the Z suffix to +00:00 for fromisoformat
+        cleaned = dt_val.replace("Z", "+00:00")
+        parsed = datetime.fromisoformat(cleaned)
+    else:
+        parsed = dt_val
+    # If naive (no timezone), assume UTC
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
 # Security: Input sanitization functions
 def sanitize_string(value: str, max_length: int = 100) -> str:
     """Sanitize user input strings to prevent injection attacks"""
@@ -2455,9 +2473,8 @@ async def get_brewing_treats(address: str):
         for treat in brewing_treats:
             ready_at = treat.get("ready_at")
             if ready_at:
-                # Parse ready_at if it's a string
-                if isinstance(ready_at, str):
-                    ready_at = datetime.fromisoformat(ready_at.replace("Z", "+00:00").replace("+00:00", ""))
+                # Parse ready_at ensuring it's timezone-aware
+                ready_at = parse_utc_datetime(ready_at)
                 
                 if now >= ready_at:
                     # Auto-update to ready
@@ -2532,18 +2549,16 @@ async def get_active_treats_with_timer(address: str):
             created_at = treat.get("created_at")
             timer_duration = treat.get("timer_duration", 3600)
             
-            # Parse dates if strings
-            if isinstance(ready_at, str):
-                try:
-                    ready_at = datetime.fromisoformat(ready_at.replace("Z", ""))
-                except:
-                    ready_at = now
+            # Parse dates ensuring timezone-awareness
+            try:
+                ready_at = parse_utc_datetime(ready_at) if ready_at else now
+            except:
+                ready_at = now
             
-            if isinstance(created_at, str):
-                try:
-                    created_at = datetime.fromisoformat(created_at.replace("Z", ""))
-                except:
-                    created_at = now
+            try:
+                created_at = parse_utc_datetime(created_at) if created_at else now
+            except:
+                created_at = now
             
             # Calculate timer status
             if ready_at:
@@ -2622,8 +2637,8 @@ async def collect_treat(treat_id: str, data: dict):
         # Check if ready
         now = datetime.now(timezone.utc)
         ready_at = treat.get("ready_at")
-        if isinstance(ready_at, str):
-            ready_at = datetime.fromisoformat(ready_at.replace("Z", ""))
+        if ready_at:
+            ready_at = parse_utc_datetime(ready_at)
         
         if ready_at and now < ready_at:
             raise HTTPException(status_code=400, detail="Treat is not ready yet")
@@ -5011,16 +5026,24 @@ async def send_scheduled_notification(notification_id: str):
         if notification["type"] == "treat_ready" and notification.get("ready_time"):
             ready_time_str = notification["ready_time"]
             if isinstance(ready_time_str, str):
-                ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "").replace("+00:00", ""))
+                ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "+00:00"))
+                if ready_time.tzinfo is None:
+                    ready_time = ready_time.replace(tzinfo=timezone.utc)
             else:
                 ready_time = ready_time_str
+                if hasattr(ready_time, 'tzinfo') and ready_time.tzinfo is None:
+                    ready_time = ready_time.replace(tzinfo=timezone.utc)
             should_send = now >= ready_time
         elif notification["type"] == "limit_reset" and notification.get("reset_time"):
             reset_time_str = notification["reset_time"]
             if isinstance(reset_time_str, str):
-                reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "").replace("+00:00", ""))
+                reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "+00:00"))
+                if reset_time.tzinfo is None:
+                    reset_time = reset_time.replace(tzinfo=timezone.utc)
             else:
                 reset_time = reset_time_str
+                if hasattr(reset_time, 'tzinfo') and reset_time.tzinfo is None:
+                    reset_time = reset_time.replace(tzinfo=timezone.utc)
             should_send = now >= reset_time
         
         if not should_send:
@@ -5105,9 +5128,13 @@ async def notification_processor_loop():
                     ready_time_str = notif["ready_time"]
                     try:
                         if isinstance(ready_time_str, str):
-                            ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "").replace("+00:00", ""))
+                            ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "+00:00"))
+                            if ready_time.tzinfo is None:
+                                ready_time = ready_time.replace(tzinfo=timezone.utc)
                         else:
                             ready_time = ready_time_str
+                            if hasattr(ready_time, 'tzinfo') and ready_time.tzinfo is None:
+                                ready_time = ready_time.replace(tzinfo=timezone.utc)
                         should_send = now >= ready_time
                     except Exception as e:
                         logger.warning(f"Error parsing ready_time {ready_time_str}: {e}")
@@ -5117,9 +5144,13 @@ async def notification_processor_loop():
                     reset_time_str = notif["reset_time"]
                     try:
                         if isinstance(reset_time_str, str):
-                            reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "").replace("+00:00", ""))
+                            reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "+00:00"))
+                            if reset_time.tzinfo is None:
+                                reset_time = reset_time.replace(tzinfo=timezone.utc)
                         else:
                             reset_time = reset_time_str
+                            if hasattr(reset_time, 'tzinfo') and reset_time.tzinfo is None:
+                                reset_time = reset_time.replace(tzinfo=timezone.utc)
                         should_send = now >= reset_time
                     except Exception as e:
                         logger.warning(f"Error parsing reset_time {reset_time_str}: {e}")
@@ -7321,7 +7352,7 @@ async def debug_subscriptions(admin_secret: str = Query(..., description="Admin 
                 elif isinstance(sub_end, str):
                     sub_end_parsed = sub_end
                     try:
-                        parsed = datetime.fromisoformat(sub_end.replace("Z", "").replace("+00:00", ""))
+                        parsed = parse_utc_datetime(sub_end)
                         is_active_now = parsed > now
                     except:
                         pass
@@ -7370,7 +7401,7 @@ async def get_auto_mixer_agent_status():
                 # Convert to datetime if it's a string
                 if isinstance(sub_end, str):
                     try:
-                        sub_end = datetime.fromisoformat(sub_end.replace("Z", "").replace("+00:00", ""))
+                        sub_end = parse_utc_datetime(sub_end)
                     except:
                         continue
                 if sub_end > now:
