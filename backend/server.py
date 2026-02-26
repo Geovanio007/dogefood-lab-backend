@@ -5011,16 +5011,24 @@ async def send_scheduled_notification(notification_id: str):
         if notification["type"] == "treat_ready" and notification.get("ready_time"):
             ready_time_str = notification["ready_time"]
             if isinstance(ready_time_str, str):
-                ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "").replace("+00:00", ""))
+                ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "+00:00"))
+                if ready_time.tzinfo is None:
+                    ready_time = ready_time.replace(tzinfo=timezone.utc)
             else:
                 ready_time = ready_time_str
+                if hasattr(ready_time, 'tzinfo') and ready_time.tzinfo is None:
+                    ready_time = ready_time.replace(tzinfo=timezone.utc)
             should_send = now >= ready_time
         elif notification["type"] == "limit_reset" and notification.get("reset_time"):
             reset_time_str = notification["reset_time"]
             if isinstance(reset_time_str, str):
-                reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "").replace("+00:00", ""))
+                reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "+00:00"))
+                if reset_time.tzinfo is None:
+                    reset_time = reset_time.replace(tzinfo=timezone.utc)
             else:
                 reset_time = reset_time_str
+                if hasattr(reset_time, 'tzinfo') and reset_time.tzinfo is None:
+                    reset_time = reset_time.replace(tzinfo=timezone.utc)
             should_send = now >= reset_time
         
         if not should_send:
