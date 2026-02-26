@@ -13,7 +13,7 @@ import requests
 import os
 
 # Use preview backend URL from frontend/.env
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://nft-leaderboard-fix.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://chat-gamelab-fix.preview.emergentagent.com').rstrip('/')
 
 # Production backend for verification
 PROD_URL = "https://dogefood-lab-api.onrender.com"
