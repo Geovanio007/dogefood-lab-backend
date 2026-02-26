@@ -2747,7 +2747,7 @@ async def get_leaderboard(limit: int = 50):
     pipeline = [
         {"$match": {
             "points": {"$gt": 0},
-            "nickname": {"$ne": None, "$exists": True, "$ne": ""},
+            "nickname": {"$exists": True, "$nin": [None, ""]},
             "$or": [
                 # Non-VIP players: any points mean gameplay
                 {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
