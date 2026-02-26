@@ -4676,27 +4676,6 @@ async def get_nft_contract_info():
 # CHAT SYSTEM ENDPOINTS
 # ================================
 
-@api_router.get("/chat/messages")
-async def get_chat_messages(limit: int = 50, before: Optional[str] = None):
-    """Get recent chat messages"""
-    try:
-        query = {}
-        if before:
-            # Get messages before a certain message ID for pagination
-            ref_message = await db.chat_messages.find_one({"id": before})
-            if ref_message:
-                query["created_at"] = {"$lt": ref_message["created_at"]}
-        
-        cursor = db.chat_messages.find(query, {"_id": 0}).sort("created_at", -1).limit(limit)
-        messages = await cursor.to_list(length=limit)
-        
-        # Return in chronological order
-        messages.reverse()
-        return messages
-    except Exception as e:
-        logger.error(f"Error fetching chat messages: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @api_router.post("/chat/messages")
 async def create_chat_message(message_data: ChatMessageCreate):
     """Create a new chat message"""
