@@ -250,6 +250,7 @@ const InnerApp = () => {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/tournament" element={<Tournament />} />
               <Route path="/marketplace" element={<Marketplace />} />
+              <Route path="/auto-mixer" element={<AutoMixerSubscription playerAddress={effectiveAddress || 'GUEST_USER'} />} />
             </Routes>
             {/* Global Treat Notifications */}
             <TreatNotifications />
