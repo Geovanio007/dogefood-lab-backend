@@ -784,10 +784,18 @@ async def get_recent_activity(limit: int = 20):
         ]
         treats = await db.treats.aggregate(pipeline).to_list(limit)
         
-        # Convert datetime to ISO string
+        # Convert datetime to ISO string with UTC marker
         for t in treats:
             if t.get("created_at"):
-                t["created_at"] = t["created_at"].isoformat() if hasattr(t["created_at"], 'isoformat') else str(t["created_at"])
+                dt = t["created_at"]
+                if hasattr(dt, 'isoformat'):
+                    # Ensure UTC marker: append Z for naive datetimes (assumed UTC)
+                    iso = dt.isoformat()
+                    if '+' not in iso and not iso.endswith('Z'):
+                        iso += 'Z'
+                    t["created_at"] = iso
+                else:
+                    t["created_at"] = str(dt)
         
         return {"activity": treats}
     except Exception as e:
@@ -828,7 +836,14 @@ async def get_chat_messages(limit: int = 50):
         messages = await db.chat_messages.aggregate(pipeline).to_list(limit)
         for m in messages:
             if m.get("created_at"):
-                m["created_at"] = m["created_at"].isoformat() if hasattr(m["created_at"], 'isoformat') else str(m["created_at"])
+                dt = m["created_at"]
+                if hasattr(dt, 'isoformat'):
+                    iso = dt.isoformat()
+                    if '+' not in iso and not iso.endswith('Z'):
+                        iso += 'Z'
+                    m["created_at"] = iso
+                else:
+                    m["created_at"] = str(dt)
         messages.reverse()
         return {"messages": messages}
     except Exception as e:
