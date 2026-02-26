@@ -295,9 +295,8 @@ const GameLabRedesign = ({ playerAddress }) => {
     const init = async () => {
       setLoading(true);
       try {
-        await loadPlayerData();
-        await loadIngredients();
-        await loadActiveTreats();
+        // Load all data in PARALLEL instead of sequential
+        await Promise.all([loadPlayerData(), loadIngredients(), loadActiveTreats()]);
       } catch (err) {
         console.error('Error during initial load:', err);
         setError('Failed to load game data. Please refresh the page.');
@@ -306,7 +305,8 @@ const GameLabRedesign = ({ playerAddress }) => {
       }
     };
     init();
-  }, [loadPlayerData, loadIngredients, loadActiveTreats]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerAddress]);
 
   // Timer update
   useEffect(() => {
