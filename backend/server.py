@@ -8077,17 +8077,20 @@ async def startup_event():
     # Create indexes for performance
     try:
         await db.chat_messages.create_index([("created_at", -1)])
-        await db.players.create_index("address", unique=True, sparse=True)
+        # Partial unique index on address - only for non-null addresses (Telegram users have null)
+        await db.players.create_index(
+            "address",
+            unique=True,
+            partialFilterExpression={"address": {"$type": "string"}}
+        )
         await db.players.create_index("telegram_id", sparse=True)
         await db.players.create_index([("points", -1)])
         await db.players.create_index("last_active")
-        await db.players.create_index("nickname")
-        await db.treats.create_index("id", unique=True)
+        await db.treats.create_index("id")
         await db.treats.create_index("creator_address")
         await db.treats.create_index([("created_at", -1)])
         await db.treats.create_index("brewing_status")
         await db.special_ingredient_holders.create_index([("player_address", 1), ("is_active", 1)])
-        await db.special_ingredient_holders.create_index("expires_at")
         logger.info("DB indexes created/verified")
     except Exception as e:
         logger.error(f"Failed to create indexes: {e}")
