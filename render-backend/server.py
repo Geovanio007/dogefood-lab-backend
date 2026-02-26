@@ -37,6 +37,36 @@ def parse_utc_datetime(dt_val) -> datetime:
     return parsed
 
 
+async def find_player_by_address(address: str):
+    """Find player by address, handling Telegram TG_/tg_ case mismatch."""
+    if not address:
+        return None
+
+    player = await db.players.find_one({"address": address}, {"_id": 0})
+    if player:
+        return player
+
+    if address.lower().startswith("tg_"):
+        tg_id = address[3:]
+
+        player = await db.players.find_one({"address": f"TG_{tg_id}"}, {"_id": 0})
+        if player:
+            return player
+
+        player = await db.players.find_one({"address": f"tg_{tg_id}"}, {"_id": 0})
+        if player:
+            return player
+
+        try:
+            player = await db.players.find_one({"telegram_id": int(tg_id)}, {"_id": 0})
+            if player:
+                return player
+        except (ValueError, TypeError):
+            pass
+
+    return None
+
+
 # Security: Input sanitization functions
 def sanitize_string(value: str, max_length: int = 100) -> str:
     """Sanitize user input strings to prevent injection attacks"""
@@ -2640,8 +2670,9 @@ async def collect_treat(treat_id: str, data: dict):
         if not treat:
             raise HTTPException(status_code=404, detail="Treat not found")
         
-        # Verify ownership
-        if treat.get("creator_address") != player_address:
+        # Verify ownership (support TG_/tg_ Telegram address case differences)
+        treat_owner = treat.get("creator_address")
+        if str(treat_owner).lower() != str(player_address).lower():
             raise HTTPException(status_code=403, detail="You don't own this treat")
         
         # Check if already collected
@@ -2662,7 +2693,7 @@ async def collect_treat(treat_id: str, data: dict):
         base_xp_reward = treat.get("xp_reward", 5)
         
         # Get player to check for character bonuses
-        player = await db.players.find_one({"address": player_address})
+        player = await find_player_by_address(player_address)
         
         # Apply character bonuses
         points_bonus = 0
@@ -2725,8 +2756,14 @@ async def collect_treat(treat_id: str, data: dict):
             else:
                 new_level = current_level
             
+            player_update_filter = {
+                "address": player.get("address")
+            } if player.get("address") else {
+                "telegram_id": player.get("telegram_id")
+            }
+
             player_update_task = db.players.update_one(
-                {"address": player_address},
+                player_update_filter,
                 {"$set": {
                     "experience": new_xp,
                     "level": new_level,
@@ -2776,12 +2813,22 @@ async def collect_treat(treat_id: str, data: dict):
 
 # Leaderboard Routes
 @api_router.get("/leaderboard")
-async def get_leaderboard(limit: int = 50):
-    # Only include players who have played AND collected points
+async def get_leaderboard(limit: int = 200):
+    # Only include active players who collected treats
+    active_creator_addresses = await db.treats.distinct(
+        "creator_address",
+        {
+            "brewing_status": "collected",
+            "creator_address": {"$nin": [None, "", "GUEST_USER"]}
+        }
+    )
+
+    if not active_creator_addresses:
+        return []
+
     query = {
-        "total_treats_created": {"$gt": 0},
-        "points": {"$gt": 0},
-        "nickname": {"$exists": True, "$nin": [None, ""]},
+        "address": {"$in": active_creator_addresses},
+        "points": {"$gt": 0}
     }
     
     projection = {
@@ -2851,9 +2898,13 @@ async def get_game_stats():
     try:
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # Only count players who have COLLECTED treats (earned gameplay points)
-        # This is the most accurate measure of active players
-        collected_creators_task = db.treats.distinct("creator_address", {"brewing_status": "collected"})
+        collected_creators_task = db.treats.distinct(
+            "creator_address",
+            {
+                "brewing_status": "collected",
+                "creator_address": {"$nin": [None, "", "GUEST_USER"]}
+            }
+        )
         nft_task = db.players.count_documents({"is_nft_holder": True})
         treats_task = db.treats.count_documents({"brewing_status": "collected"})
         today_task = db.treats.count_documents({"collected_at": {"$gte": today.isoformat()}})
@@ -2862,8 +2913,9 @@ async def get_game_stats():
             collected_creators_task, nft_task, treats_task, today_task
         )
         
-        # Filter out None/empty addresses
-        active_players = len([c for c in collected_creators if c])
+        active_players = 0
+        if collected_creators:
+            active_players = await db.players.count_documents({"address": {"$in": collected_creators}})
         
         return {
             "total_players": active_players,
@@ -3338,7 +3390,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         # Run independent DB operations in parallel for performance
         extra_treat_task = anti_cheat_system.consume_extra_treat_if_needed(treat_data.creator_address)
         streak_task = anti_cheat_system.update_player_streak(treat_data.creator_address)
-        player_task = db.players.find_one({"address": treat_data.creator_address})
+        player_task = find_player_by_address(treat_data.creator_address)
         
         extra_treat_consumed, streak_result, player = await asyncio.gather(
             extra_treat_task, streak_task, player_task
