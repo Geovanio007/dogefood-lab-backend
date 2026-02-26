@@ -1273,6 +1273,15 @@ const GameLabRedesign = ({ playerAddress }) => {
                 </div>
               </div>
               
+              {/* Happy Hour bonus notice */}
+              {isHappyHourActive && (
+                <div className="mb-4 p-2 rounded-lg bg-yellow-500/20 border border-yellow-400/30" data-testid="happy-hour-brew-notice">
+                  <p className="text-yellow-300 text-xs font-semibold text-center">
+                    Happy Hour Active! You'll earn +{happyHourBonus}% bonus when you collect this treat
+                  </p>
+                </div>
+              )}
+              
               {/* Brewing Time + Streak Bonus */}
               <div className="bg-white/20 rounded-xl p-3 mb-4">
                 <div className="flex items-center justify-center gap-4">
