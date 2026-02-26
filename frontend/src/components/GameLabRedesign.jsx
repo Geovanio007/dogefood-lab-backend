@@ -308,11 +308,11 @@ const GameLabRedesign = ({ playerAddress }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerAddress]);
 
-  // Timer update
+  // Timer update - 10s interval is sufficient for brew countdowns
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(Date.now());
-    }, 1000);
+    }, 10000);
     return () => clearInterval(timer);
   }, []);
 
