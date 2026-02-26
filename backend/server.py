@@ -1766,41 +1766,46 @@ async def remove_placeholder_accounts():
     Only removes accounts with 500 or fewer points (just the signup bonus).
     """
     try:
-        # Find placeholder accounts - no character selected and only have signup bonus
-        placeholder_accounts = await db.players.find({
-            "selected_character": {"$exists": False},
+        # Use count + targeted queries instead of loading all documents into memory
+        placeholder_count = await db.players.count_documents({
+            "$or": [
+                {"selected_character": {"$exists": False}},
+                {"selected_character": None}
+            ],
             "points": {"$lte": 500}
-        }).to_list(10000)
+        })
         
-        # Also find accounts where selected_character is None
-        placeholder_accounts_null = await db.players.find({
-            "selected_character": None,
-            "points": {"$lte": 500}
-        }).to_list(10000)
-        
-        # Combine and dedupe
-        all_placeholders = {p.get("address"): p for p in placeholder_accounts + placeholder_accounts_null}
-        
+        # Delete in batches to avoid memory issues
         removed = []
-        for address, player in all_placeholders.items():
-            if not address:
-                continue
-                
-            # Remove the placeholder account
-            await db.players.delete_one({"address": address})
+        batch_size = 100
+        
+        for _ in range(0, placeholder_count, batch_size):
+            batch = await db.players.find({
+                "$or": [
+                    {"selected_character": {"$exists": False}},
+                    {"selected_character": None}
+                ],
+                "points": {"$lte": 500}
+            }, {"_id": 1, "address": 1, "nickname": 1, "points": 1}).limit(batch_size).to_list(batch_size)
             
-            removed.append({
-                "address": address,
-                "nickname": player.get("nickname"),
-                "points": player.get("points", 0)
-            })
-            logger.info(f"🗑️ Removed placeholder account: {address}")
+            if not batch:
+                break
+            
+            ids_to_delete = [p["_id"] for p in batch]
+            for p in batch:
+                removed.append({
+                    "address": p.get("address"),
+                    "nickname": p.get("nickname"),
+                    "points": p.get("points", 0)
+                })
+            
+            await db.players.delete_many({"_id": {"$in": ids_to_delete}})
         
         return {
             "success": True,
             "message": f"Removed {len(removed)} placeholder accounts",
             "removed_count": len(removed),
-            "removed_accounts": removed[:50]  # Show first 50
+            "removed_accounts": removed[:50]
         }
         
     except Exception as e:
