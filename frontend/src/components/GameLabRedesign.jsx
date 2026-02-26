@@ -148,6 +148,23 @@ const GameLabRedesign = ({ playerAddress }) => {
   const [hasKernelOfWow, setHasKernelOfWow] = useState(false);
   const [kernelBonusResult, setKernelBonusResult] = useState(null);
 
+  // Fetch happy hour status periodically
+  useEffect(() => {
+    const fetchHappyHour = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/happy-hour/status`);
+        if (res.ok) {
+          const data = await res.json();
+          setIsHappyHourActive(data.active);
+          setHappyHourBonus(data.bonus_percent || 25);
+        }
+      } catch (e) { /* silent */ }
+    };
+    fetchHappyHour();
+    const iv = setInterval(fetchHappyHour, 30000);
+    return () => clearInterval(iv);
+  }, []);
+
   // Character data
   const characters = [
     {
