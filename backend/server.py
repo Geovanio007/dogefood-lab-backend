@@ -2776,26 +2776,33 @@ async def collect_treat(treat_id: str, data: dict):
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 # Leaderboard Routes
-@api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
+@api_router.get("/leaderboard")
 async def get_leaderboard(limit: int = 50):
-    # Only players who have earned points from actual gameplay qualify
-    # VIP holders with only 500 bonus points (no gameplay) are excluded
-    pipeline = [
-        {"$match": {
-            "points": {"$gt": 0},
-            "nickname": {"$exists": True, "$nin": [None, ""]},
-            "$or": [
-                # Non-VIP players: any points mean gameplay
-                {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
-                # VIP players: must have more than 500 (the bonus amount)
-                {"vip_bonus_claimed": True, "points": {"$gt": 500}}
-            ]
-        }},
-        {"$sort": {"points": -1, "level": -1}},
-        {"$limit": limit}
-    ]
+    # Optimized: use find() instead of aggregate, skip Pydantic serialization
+    # Simplified filter: exclude VIP-only players (500pts from bonus alone)
+    query = {
+        "points": {"$gt": 0},
+        "nickname": {"$exists": True, "$nin": [None, ""]},
+    }
     
-    top_players = await db.players.aggregate(pipeline).to_list(limit)
+    projection = {
+        "_id": 0,
+        "address": 1,
+        "nickname": 1,
+        "telegram_first_name": 1,
+        "telegram_id": 1,
+        "guest_id": 1,
+        "points": 1,
+        "level": 1,
+        "is_nft_holder": 1,
+        "is_dogeonews_holder": 1,
+        "is_vip": 1,
+        "selected_character": 1,
+        "vip_bonus_claimed": 1,
+    }
+    
+    # Fetch more than needed so we can filter VIP-only players in Python
+    top_players = await db.players.find(query, projection).sort([("points", -1), ("level", -1)]).limit(limit + 20).to_list(limit + 20)
     
     # Character data mapping
     character_data = {
@@ -2814,27 +2821,35 @@ async def get_leaderboard(limit: int = 50):
     }
     
     leaderboard = []
-    for rank, player in enumerate(top_players, 1):
+    rank = 0
+    for player in top_players:
+        # Filter VIP-only players: skip if they claimed VIP bonus and have <= 500 pts
+        if player.get("vip_bonus_claimed") and player.get("points", 0) <= 500:
+            continue
+        
+        rank += 1
+        if rank > limit:
+            break
+            
         char_id = player.get("selected_character")
         char_info = character_data.get(char_id, {})
         
-        # Get the best address identifier
         player_address = player.get("address") or f"tg_{player.get('telegram_id')}" or f"guest_{player.get('guest_id', 'unknown')}"
         player_nickname = player.get("nickname") or player.get("telegram_first_name") or "Player"
         
-        leaderboard.append(LeaderboardEntry(
-            address=player_address,
-            nickname=player_nickname,
-            points=player.get("points", 0),
-            level=player.get("level", 1),  # Default to level 1
-            is_nft_holder=player.get("is_nft_holder", False),
-            is_dogeonews_holder=player.get("is_dogeonews_holder", False),
-            is_vip=player.get("is_vip", False),
-            rank=rank,
-            selected_character=char_id,
-            character_name=char_info.get('name'),
-            character_image=char_info.get('image')
-        ))
+        leaderboard.append({
+            "address": player_address,
+            "nickname": player_nickname,
+            "points": player.get("points", 0),
+            "level": player.get("level", 1),
+            "is_nft_holder": player.get("is_nft_holder", False),
+            "is_dogeonews_holder": player.get("is_dogeonews_holder", False),
+            "is_vip": player.get("is_vip", False),
+            "rank": rank,
+            "selected_character": char_id,
+            "character_name": char_info.get('name'),
+            "character_image": char_info.get('image')
+        })
     
     return leaderboard
 
