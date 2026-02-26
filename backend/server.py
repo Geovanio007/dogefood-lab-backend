@@ -2637,7 +2637,7 @@ async def collect_treat(treat_id: str, data: dict):
         # Check if ready
         now = datetime.now(timezone.utc)
         ready_at = treat.get("ready_at")
-        if isinstance(ready_at, str):
+        if ready_at:
             ready_at = parse_utc_datetime(ready_at)
         
         if ready_at and now < ready_at:
