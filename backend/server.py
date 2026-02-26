@@ -784,10 +784,18 @@ async def get_recent_activity(limit: int = 20):
         ]
         treats = await db.treats.aggregate(pipeline).to_list(limit)
         
-        # Convert datetime to ISO string
+        # Convert datetime to ISO string with UTC marker
         for t in treats:
             if t.get("created_at"):
-                t["created_at"] = t["created_at"].isoformat() if hasattr(t["created_at"], 'isoformat') else str(t["created_at"])
+                dt = t["created_at"]
+                if hasattr(dt, 'isoformat'):
+                    # Ensure UTC marker: append Z for naive datetimes (assumed UTC)
+                    iso = dt.isoformat()
+                    if '+' not in iso and not iso.endswith('Z'):
+                        iso += 'Z'
+                    t["created_at"] = iso
+                else:
+                    t["created_at"] = str(dt)
         
         return {"activity": treats}
     except Exception as e:
