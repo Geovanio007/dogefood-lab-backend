@@ -21,6 +21,39 @@ import httpx  # For Firebase verification
 
 
 def parse_utc_datetime(dt_val) -> datetime:
+
+async def find_player_by_address(address: str):
+    """Find a player by address, handling TG_ vs tg_ case mismatch for Telegram users"""
+    if not address:
+        return None
+    
+    # Direct lookup first (fastest path)
+    player = await db.players.find_one({"address": address}, {"_id": 0})
+    if player:
+        return player
+    
+    # Handle Telegram address case mismatch
+    if address.lower().startswith("tg_"):
+        tg_id = address[3:]
+        # Try uppercase
+        player = await db.players.find_one({"address": f"TG_{tg_id}"}, {"_id": 0})
+        if player:
+            return player
+        # Try lowercase
+        player = await db.players.find_one({"address": f"tg_{tg_id}"}, {"_id": 0})
+        if player:
+            return player
+        # Try by telegram_id
+        try:
+            player = await db.players.find_one({"telegram_id": int(tg_id)}, {"_id": 0})
+            if player:
+                return player
+        except (ValueError, TypeError):
+            pass
+    
+    return None
+
+
     """Parse a datetime value (str or datetime) and ensure it's UTC-aware.
     Handles naive datetimes from the DB by assuming they are UTC."""
     if dt_val is None:
