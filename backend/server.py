@@ -836,7 +836,14 @@ async def get_chat_messages(limit: int = 50):
         messages = await db.chat_messages.aggregate(pipeline).to_list(limit)
         for m in messages:
             if m.get("created_at"):
-                m["created_at"] = m["created_at"].isoformat() if hasattr(m["created_at"], 'isoformat') else str(m["created_at"])
+                dt = m["created_at"]
+                if hasattr(dt, 'isoformat'):
+                    iso = dt.isoformat()
+                    if '+' not in iso and not iso.endswith('Z'):
+                        iso += 'Z'
+                    m["created_at"] = iso
+                else:
+                    m["created_at"] = str(dt)
         messages.reverse()
         return {"messages": messages}
     except Exception as e:
