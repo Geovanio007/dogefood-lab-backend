@@ -296,7 +296,7 @@ const Leaderboard = () => {
                   <div
                     key={entry.address}
                     data-testid={`leaderboard-row-${rank}`}
-                    className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.02] ${
+                    className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 transition-colors hover:bg-white/[0.02] ${
                       isCurrentUser ? 'bg-sky-500/10 border-l-2 border-l-sky-400' : ''
                     } ${isTopThree ? 'bg-gradient-to-r from-sky-500/5 to-transparent' : ''}`}
                   >
