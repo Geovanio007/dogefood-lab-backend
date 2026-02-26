@@ -8,7 +8,6 @@ import { useTelegram } from '../contexts/TelegramContext';
 import { ArrowLeft, Trophy, Crown, Users, TrendingUp, Clock, CircleDot, Beaker } from 'lucide-react';
 import PlayerStatsModal from './PlayerStatsModal';
 import MusicPlayer from './MusicPlayer';
-import ScientistChat from './ScientistChat';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
