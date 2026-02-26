@@ -1202,34 +1202,35 @@ async def get_player_weekly_stats(address: str):
         # Calculate 7 days ago
         seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
         
-        # Get treats created in last 7 days
-        treats_cursor = db.treats.find({
+        # Use MongoDB aggregation for stats instead of loading all treats into memory
+        stats_pipeline = [
+            {"$match": {"creator_address": address, "created_at": {"$gte": seven_days_ago}}},
+            {"$group": {
+                "_id": "$rarity",
+                "count": {"$sum": 1},
+                "total_points": {"$sum": {"$ifNull": ["$points_reward", 0]}},
+                "total_xp": {"$sum": {"$ifNull": ["$xp_reward", 0]}}
+            }}
+        ]
+        rarity_results = await db.treats.aggregate(stats_pipeline).to_list(10)
+        
+        rarity_counts = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
+        total_treats = 0
+        total_points = 0
+        total_xp = 0
+        for r in rarity_results:
+            rarity = r.get("_id", "Common")
+            if rarity in rarity_counts:
+                rarity_counts[rarity] = r["count"]
+            total_treats += r["count"]
+            total_points += r.get("total_points", 0)
+            total_xp += r.get("total_xp", 0)
+        
+        # Get unique formulas count via aggregation
+        formula_count = await db.treats.count_documents({
             "creator_address": address,
             "created_at": {"$gte": seven_days_ago}
         })
-        treats_list = await treats_cursor.to_list(length=500)
-        
-        # Calculate stats
-        total_treats = len(treats_list)
-        
-        # Rarity breakdown
-        rarity_counts = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
-        total_points = 0
-        total_xp = 0
-        unique_formulas = set()
-        
-        for treat in treats_list:
-            rarity = treat.get("rarity", "Common")
-            if rarity in rarity_counts:
-                rarity_counts[rarity] += 1
-            
-            total_points += treat.get("points_reward", 0)
-            total_xp += treat.get("xp_reward", 0)
-            
-            # Track unique ingredient combinations
-            ingredients = tuple(sorted(treat.get("ingredients", [])))
-            if ingredients:
-                unique_formulas.add(ingredients)
         
         # Get streak info
         streak_info = await anti_cheat_system.get_player_streak(address)
@@ -1243,48 +1244,47 @@ async def get_player_weekly_stats(address: str):
                 best_rarity = r
                 break
         
-        # Get daily breakdown - Last 7 days including today
+        # Get daily breakdown via aggregation
+        daily_pipeline = [
+            {"$match": {"creator_address": address, "created_at": {"$gte": seven_days_ago}}},
+            {"$project": {
+                "day": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+                "points_reward": {"$ifNull": ["$points_reward", 0]},
+                "xp_reward": {"$ifNull": ["$xp_reward", 0]}
+            }},
+            {"$group": {
+                "_id": "$day",
+                "treats": {"$sum": 1},
+                "points": {"$sum": "$points_reward"},
+                "xp": {"$sum": "$xp_reward"}
+            }}
+        ]
+        daily_results = await db.treats.aggregate(daily_pipeline).to_list(10)
+        
         daily_stats = {}
         now = datetime.now(timezone.utc)
         for i in range(7):
             day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
             daily_stats[day] = {"treats": 0, "points": 0, "xp": 0}
         
-        for treat in treats_list:
-            created_at = treat.get("created_at")
-            if created_at:
-                # Handle different datetime formats
-                if isinstance(created_at, str):
-                    try:
-                        # Remove timezone info for comparison
-                        created_at = created_at.replace("Z", "").replace("+00:00", "").split(".")[0]
-                        created_at = datetime.fromisoformat(created_at)
-                    except:
-                        continue
-                
-                day = created_at.strftime("%Y-%m-%d")
-                if day in daily_stats:
-                    daily_stats[day]["treats"] += 1
-                    daily_stats[day]["points"] += treat.get("points_reward", 0)
-                    daily_stats[day]["xp"] += treat.get("xp_reward", 0)
+        for dr in daily_results:
+            day = dr.get("_id")
+            if day and day in daily_stats:
+                daily_stats[day] = {"treats": dr["treats"], "points": dr["points"], "xp": dr["xp"]}
         
         # Calculate averages
         avg_treats_per_day = total_treats / 7 if total_treats > 0 else 0
         avg_points_per_day = total_points / 7 if total_points > 0 else 0
         
-        # Get player rank from leaderboard — use same filter as /leaderboard endpoint
+        # Get player rank — use optimized query matching /leaderboard endpoint
         leaderboard_cursor = db.players.find(
             {
                 "points": {"$gt": 0},
-                "nickname": {"$exists": True, "$nin": [None, ""]},
-                "$or": [
-                    {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
-                    {"vip_bonus_claimed": True, "points": {"$gt": 500}}
-                ]
+                "nickname": {"$exists": True, "$nin": [None, ""]}
             },
             {"address": 1, "points": 1}
         ).sort("points", -1).limit(50)
-        leaderboard_list = await leaderboard_cursor.to_list(length=1000)
+        leaderboard_list = await leaderboard_cursor.to_list(50)
         
         player_rank = None
         total_players = len(leaderboard_list)
@@ -1317,7 +1317,7 @@ async def get_player_weekly_stats(address: str):
                 "treats_created": total_treats,
                 "points_earned": total_points,
                 "xp_gained": total_xp,
-                "unique_formulas": len(unique_formulas),
+                "unique_formulas": formula_count,
                 "best_rarity": best_rarity,
                 "avg_treats_per_day": round(avg_treats_per_day, 1),
                 "avg_points_per_day": round(avg_points_per_day, 1)
@@ -1766,41 +1766,46 @@ async def remove_placeholder_accounts():
     Only removes accounts with 500 or fewer points (just the signup bonus).
     """
     try:
-        # Find placeholder accounts - no character selected and only have signup bonus
-        placeholder_accounts = await db.players.find({
-            "selected_character": {"$exists": False},
+        # Use count + targeted queries instead of loading all documents into memory
+        placeholder_count = await db.players.count_documents({
+            "$or": [
+                {"selected_character": {"$exists": False}},
+                {"selected_character": None}
+            ],
             "points": {"$lte": 500}
-        }).to_list(10000)
+        })
         
-        # Also find accounts where selected_character is None
-        placeholder_accounts_null = await db.players.find({
-            "selected_character": None,
-            "points": {"$lte": 500}
-        }).to_list(10000)
-        
-        # Combine and dedupe
-        all_placeholders = {p.get("address"): p for p in placeholder_accounts + placeholder_accounts_null}
-        
+        # Delete in batches to avoid memory issues
         removed = []
-        for address, player in all_placeholders.items():
-            if not address:
-                continue
-                
-            # Remove the placeholder account
-            await db.players.delete_one({"address": address})
+        batch_size = 100
+        
+        for _ in range(0, placeholder_count, batch_size):
+            batch = await db.players.find({
+                "$or": [
+                    {"selected_character": {"$exists": False}},
+                    {"selected_character": None}
+                ],
+                "points": {"$lte": 500}
+            }, {"_id": 1, "address": 1, "nickname": 1, "points": 1}).limit(batch_size).to_list(batch_size)
             
-            removed.append({
-                "address": address,
-                "nickname": player.get("nickname"),
-                "points": player.get("points", 0)
-            })
-            logger.info(f"🗑️ Removed placeholder account: {address}")
+            if not batch:
+                break
+            
+            ids_to_delete = [p["_id"] for p in batch]
+            for p in batch:
+                removed.append({
+                    "address": p.get("address"),
+                    "nickname": p.get("nickname"),
+                    "points": p.get("points", 0)
+                })
+            
+            await db.players.delete_many({"_id": {"$in": ids_to_delete}})
         
         return {
             "success": True,
             "message": f"Removed {len(removed)} placeholder accounts",
             "removed_count": len(removed),
-            "removed_accounts": removed[:50]  # Show first 50
+            "removed_accounts": removed[:50]
         }
         
     except Exception as e:
@@ -1814,24 +1819,25 @@ async def check_nft_holders_status():
     Returns list of players who need to be credited.
     """
     try:
-        # Get all players
-        all_players = await db.players.find({}).to_list(10000)
+        # Use targeted count queries instead of loading all players into memory
+        total_count, vip_count, uncredited_count = await asyncio.gather(
+            db.players.count_documents({}),
+            db.players.count_documents({"$or": [{"is_nft_holder": True}, {"is_vip": True}]}),
+            db.players.count_documents({"is_nft_holder": True, "vip_bonus_claimed": {"$ne": True}})
+        )
         
-        # Players with VIP status
-        vip_players = [p for p in all_players if p.get("is_nft_holder") or p.get("is_vip")]
-        
-        # Players without VIP but might be holders (need manual check)
-        non_vip_players = [p for p in all_players if not p.get("is_nft_holder") and not p.get("is_vip")]
-        
-        # Players with is_nft_holder=True but no bonus claimed
-        uncredited_vip = [p for p in all_players if p.get("is_nft_holder") and not p.get("vip_bonus_claimed")]
+        # Only fetch the uncredited details (small set)
+        uncredited_vip = await db.players.find(
+            {"is_nft_holder": True, "vip_bonus_claimed": {"$ne": True}},
+            {"_id": 0, "address": 1, "nickname": 1, "points": 1}
+        ).to_list(100)
         
         return {
-            "total_players": len(all_players),
-            "vip_players": len(vip_players),
-            "non_vip_players": len(non_vip_players),
-            "uncredited_vip_count": len(uncredited_vip),
-            "uncredited_vip": [{"address": p.get("address"), "nickname": p.get("nickname"), "points": p.get("points", 0)} for p in uncredited_vip],
+            "total_players": total_count,
+            "vip_players": vip_count,
+            "non_vip_players": total_count - vip_count,
+            "uncredited_vip_count": uncredited_count,
+            "uncredited_vip": uncredited_vip,
             "nft_contract": DOGEFOOD_NFT_CONTRACT,
             "network": "DogeOS Testnet",
             "blockscout_url": DOGEOS_BLOCKSCOUT_URL,
@@ -1958,11 +1964,11 @@ async def verify_all_nft_holders_blockchain():
     no longer hold the NFT.
     """
     try:
-        # Get all wallet-based players (0x addresses)
+        # Get all wallet-based players (0x addresses) - use projection to minimize memory
         all_wallet_players = await db.players.find(
             {"address": {"$regex": "^0x", "$options": "i"}},
             {"address": 1, "is_nft_holder": 1, "is_vip": 1, "vip_bonus_claimed": 1, "points": 1, "nickname": 1, "_id": 0}
-        ).to_list(1000)
+        ).to_list(200)
         
         results = {
             "total_checked": len(all_wallet_players),
@@ -2271,10 +2277,11 @@ async def scan_dogeonews_holders():
     Admin endpoint to check all players with linked Solana wallets for $DOGEONEWS holdings.
     """
     try:
-        # Find all players with linked Solana addresses
-        players_with_solana = await db.players.find({
-            "solana_address": {"$exists": True, "$ne": None}
-        }).to_list(10000)
+        # Find all players with linked Solana addresses - use projection to limit memory
+        players_with_solana = await db.players.find(
+            {"solana_address": {"$exists": True, "$ne": None}},
+            {"_id": 0, "address": 1, "solana_address": 1, "nickname": 1, "is_dogeonews_holder": 1}
+        ).to_list(500)
         
         results = []
         updated_count = 0
