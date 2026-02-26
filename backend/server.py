@@ -1317,7 +1317,7 @@ async def get_player_weekly_stats(address: str):
                 "treats_created": total_treats,
                 "points_earned": total_points,
                 "xp_gained": total_xp,
-                "unique_formulas": len(unique_formulas),
+                "unique_formulas": formula_count,
                 "best_rarity": best_rarity,
                 "avg_treats_per_day": round(avg_treats_per_day, 1),
                 "avg_points_per_day": round(avg_points_per_day, 1)
