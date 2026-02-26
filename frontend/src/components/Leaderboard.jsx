@@ -364,8 +364,8 @@ const Leaderboard = () => {
                     </div>
 
                     {/* Points */}
-                    <div className="text-right flex-shrink-0 min-w-[70px]">
-                      <div className="font-black text-base text-sky-400">{entry.points.toLocaleString()}</div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="font-black text-sm sm:text-base text-sky-400">{entry.points.toLocaleString()}</div>
                       <div className="text-[9px] text-slate-500">pts</div>
                     </div>
 
