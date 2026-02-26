@@ -1492,14 +1492,21 @@ async def get_characters():
 @api_router.get("/player/{address}/profile")
 async def get_player_profile(address: str):
     """Get player profile including character and username"""
-    # Support telegram players (tg_<id>) and guest players (guest_<id>)
     player = None
-    if address.startswith("tg_"):
+    
+    # Support telegram players - handle both tg_ and TG_ prefixes
+    if address.lower().startswith("tg_"):
         tg_id = address[3:]
         try:
-            player = await db.players.find_one({"telegram_id": int(tg_id)}, {"_id": 0})
+            tg_id_int = int(tg_id)
+            player = await db.players.find_one({"telegram_id": tg_id_int}, {"_id": 0})
         except (ValueError, TypeError):
             pass
+        # Fallback: try address field with both cases
+        if not player:
+            player = await db.players.find_one({"address": f"TG_{tg_id}"}, {"_id": 0})
+        if not player:
+            player = await db.players.find_one({"address": f"tg_{tg_id}"}, {"_id": 0})
     elif address.startswith("guest_"):
         player = await db.players.find_one({"guest_id": address}, {"_id": 0})
     
