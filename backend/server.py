@@ -2277,10 +2277,11 @@ async def scan_dogeonews_holders():
     Admin endpoint to check all players with linked Solana wallets for $DOGEONEWS holdings.
     """
     try:
-        # Find all players with linked Solana addresses
-        players_with_solana = await db.players.find({
-            "solana_address": {"$exists": True, "$ne": None}
-        }).to_list(10000)
+        # Find all players with linked Solana addresses - use projection to limit memory
+        players_with_solana = await db.players.find(
+            {"solana_address": {"$exists": True, "$ne": None}},
+            {"_id": 0, "address": 1, "solana_address": 1, "nickname": 1, "is_dogeonews_holder": 1}
+        ).to_list(500)
         
         results = []
         updated_count = 0
