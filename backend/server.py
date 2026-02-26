@@ -1819,24 +1819,25 @@ async def check_nft_holders_status():
     Returns list of players who need to be credited.
     """
     try:
-        # Get all players
-        all_players = await db.players.find({}).to_list(10000)
+        # Use targeted count queries instead of loading all players into memory
+        total_count, vip_count, uncredited_count = await asyncio.gather(
+            db.players.count_documents({}),
+            db.players.count_documents({"$or": [{"is_nft_holder": True}, {"is_vip": True}]}),
+            db.players.count_documents({"is_nft_holder": True, "vip_bonus_claimed": {"$ne": True}})
+        )
         
-        # Players with VIP status
-        vip_players = [p for p in all_players if p.get("is_nft_holder") or p.get("is_vip")]
-        
-        # Players without VIP but might be holders (need manual check)
-        non_vip_players = [p for p in all_players if not p.get("is_nft_holder") and not p.get("is_vip")]
-        
-        # Players with is_nft_holder=True but no bonus claimed
-        uncredited_vip = [p for p in all_players if p.get("is_nft_holder") and not p.get("vip_bonus_claimed")]
+        # Only fetch the uncredited details (small set)
+        uncredited_vip = await db.players.find(
+            {"is_nft_holder": True, "vip_bonus_claimed": {"$ne": True}},
+            {"_id": 0, "address": 1, "nickname": 1, "points": 1}
+        ).to_list(100)
         
         return {
-            "total_players": len(all_players),
-            "vip_players": len(vip_players),
-            "non_vip_players": len(non_vip_players),
-            "uncredited_vip_count": len(uncredited_vip),
-            "uncredited_vip": [{"address": p.get("address"), "nickname": p.get("nickname"), "points": p.get("points", 0)} for p in uncredited_vip],
+            "total_players": total_count,
+            "vip_players": vip_count,
+            "non_vip_players": total_count - vip_count,
+            "uncredited_vip_count": uncredited_count,
+            "uncredited_vip": uncredited_vip,
             "nft_contract": DOGEFOOD_NFT_CONTRACT,
             "network": "DogeOS Testnet",
             "blockscout_url": DOGEOS_BLOCKSCOUT_URL,
