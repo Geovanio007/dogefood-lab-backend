@@ -53,6 +53,17 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - VIP badge changed from yellow to white
 - Removed old ScientistChat icon from leaderboard page
 
+### Performance Optimization (Feb 26, 2026) - COMPLETE
+- **Leaderboard**: 32s → 0.5s (64x faster) — removed `$or` aggregation, switched to `find()`, added compound index `{points: -1, level: -1}`, removed Pydantic response_model serialization
+- **Chat Messages**: 52s → 0.2s (260x faster) — removed `$lookup` aggregation join, use stored nicknames, removed duplicate endpoint
+- **Treat Creation**: Parallelized 3 sequential DB queries with `asyncio.gather()`
+- **Treat Collection**: Parallelized treat update + player update writes
+- **Stats**: Parallelized 5 count queries with `asyncio.gather()`
+- **Player Stats**: Replaced 500-doc Python iteration with MongoDB aggregation pipelines
+- **Memory fixes**: Admin endpoints reduced from loading 10K-20K docs to targeted queries; `to_list()` buffers matched to actual limits
+- **DB Indexes**: Added compound index on players (points, level), indexes on treats (id, creator_address, created_at, status), special_ingredient_holders, chat_messages
+- **Frontend**: Collect modal has 6s safety timeout + dismiss button; chat polling reduced from 5s to 10s
+
 ## Deployment Info
 - **Frontend**: https://dogefoodlab.vercel.app (LIVE)
 - **Backend**: https://dogefood-lab-api.onrender.com (LIVE)
