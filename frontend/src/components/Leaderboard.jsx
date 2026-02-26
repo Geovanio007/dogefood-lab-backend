@@ -414,7 +414,6 @@ const Leaderboard = () => {
         <PlayerStatsModal playerAddress={selectedPlayerAddress} onClose={() => setSelectedPlayerAddress(null)} />
       )}
       <MusicPlayer />
-      <ScientistChat />
     </div>
   );
 };
