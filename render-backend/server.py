@@ -5685,10 +5685,8 @@ async def get_current_special_ingredient_holder():
         }, {"_id": 0})
         
         if holder:
-            # Calculate time remaining
-            expires_at = holder.get("expires_at")
-            if isinstance(expires_at, str):
-                expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+            # Calculate time remaining - use parse_utc_datetime helper
+            expires_at = parse_utc_datetime(holder.get("expires_at"))
             time_remaining = (expires_at - now).total_seconds()
             
             return {
@@ -5723,9 +5721,8 @@ async def check_player_has_special_ingredient(address: str):
         }, {"_id": 0})
         
         if holder:
-            expires_at = holder.get("expires_at")
-            if isinstance(expires_at, str):
-                expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+            # Use parse_utc_datetime helper for proper timezone handling
+            expires_at = parse_utc_datetime(holder.get("expires_at"))
             time_remaining = (expires_at - now).total_seconds()
             
             return {
