@@ -464,6 +464,11 @@ const GameLabRedesign = ({ playerAddress }) => {
       if (response.ok) {
         const data = await response.json();
         
+        // Save rewards data for the animation
+        if (data.rewards) {
+          setCollectRewards(data.rewards);
+        }
+        
         // Check if player leveled up
         if (data.new_level && data.new_level > playerLevel) {
           playLevelUp();
@@ -474,6 +479,7 @@ const GameLabRedesign = ({ playerAddress }) => {
           setShowCollectAnimation(false);
           setCollectingTreat(null);
           setCollectedTreat(null);
+          setCollectRewards(null);
           
           // Reload player data to update XP and points
           await loadPlayerData();
@@ -484,6 +490,7 @@ const GameLabRedesign = ({ playerAddress }) => {
           setShowCollectAnimation(false);
           setCollectingTreat(null);
           setCollectedTreat(null);
+          setCollectRewards(null);
           await loadPlayerData();
         }, 2500);
       }
@@ -495,6 +502,7 @@ const GameLabRedesign = ({ playerAddress }) => {
         setShowCollectAnimation(false);
         setCollectingTreat(null);
         setCollectedTreat(null);
+        setCollectRewards(null);
       }, 2500);
     }
   };
