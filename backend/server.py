@@ -3473,10 +3473,8 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         # Save to database with enhanced metadata
         result = await db.treats.insert_one(treat_dict)
         
-        # Update player's created treats and sack progress
-        player = await db.players.find_one({"address": treat_data.creator_address})
+        # Use player data already fetched earlier (avoid redundant DB call)
         if not player:
-            # Create player if doesn't exist
             player = {
                 "address": treat_data.creator_address,
                 "level": 1,
@@ -3507,7 +3505,8 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         sack_just_completed = sack_completed_count > previous_completions
         sack_bonus_xp = 50 if sack_just_completed else 0  # 50 XP bonus per sack completion
         
-        await db.players.update_one(
+        # Run player update and daily status fetch in parallel
+        player_update_task = db.players.update_one(
             {"address": treat_data.creator_address},
             {
                 "$push": {"created_treats": str(result.inserted_id)},
@@ -3518,10 +3517,13 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                     "last_activity": datetime.now(timezone.utc)
                 },
                 "$inc": {
-                    "experience": sack_bonus_xp  # Only award sack completion bonus XP (not treat creation XP)
+                    "experience": sack_bonus_xp
                 }
             }
         )
+        daily_status_task = anti_cheat_system.get_daily_treat_status(treat_data.creator_address)
+        
+        _, daily_status = await asyncio.gather(player_update_task, daily_status_task)
         
         # NOTE: Points and XP rewards are awarded ONLY when the treat is COLLECTED (not created)
         # This prevents double-awarding. The points_reward and xp_reward are stored in the treat
