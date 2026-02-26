@@ -2698,8 +2698,8 @@ async def collect_treat(treat_id: str, data: dict):
         final_points_reward = base_points_reward + points_bonus + happy_hour_bonus
         final_xp_reward = base_xp_reward + xp_bonus
         
-        # Update treat status
-        await db.treats.update_one(
+        # Run treat update and player stats update in parallel
+        treat_update_task = db.treats.update_one(
             {"id": treat_id},
             {"$set": {
                 "brewing_status": "collected",
@@ -2711,19 +2711,22 @@ async def collect_treat(treat_id: str, data: dict):
         )
         
         # Update player stats
+        leveled_up = False
+        new_level = None
         if player:
             new_xp = player.get("experience", 0) + final_xp_reward
-            new_level = player.get("level", 1)
+            current_level = player.get("level", 1)
             
             # Check for level up (100 XP per level)
-            xp_for_level = new_level * 100
-            leveled_up = False
+            xp_for_level = current_level * 100
             if new_xp >= xp_for_level:
-                new_level += 1
+                new_level = current_level + 1
                 new_xp = new_xp - xp_for_level
                 leveled_up = True
+            else:
+                new_level = current_level
             
-            await db.players.update_one(
+            player_update_task = db.players.update_one(
                 {"address": player_address},
                 {"$set": {
                     "experience": new_xp,
@@ -2732,6 +2735,9 @@ async def collect_treat(treat_id: str, data: dict):
                 },
                 "$inc": {"points": final_points_reward}}
             )
+            
+            # Run both updates in parallel
+            await asyncio.gather(treat_update_task, player_update_task)
             
             return {
                 "success": True,
@@ -3330,17 +3336,21 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             raise HTTPException(status_code=429, detail=error_detail)
         
         # Consume extra treat if over base limit (player used purchased extra treats)
-        extra_treat_consumed = await anti_cheat_system.consume_extra_treat_if_needed(treat_data.creator_address)
+        # Run independent DB operations in parallel for performance
+        extra_treat_task = anti_cheat_system.consume_extra_treat_if_needed(treat_data.creator_address)
+        streak_task = anti_cheat_system.update_player_streak(treat_data.creator_address)
+        player_task = db.players.find_one({"address": treat_data.creator_address})
         
-        # Update player streak on treat creation
-        streak_result = await anti_cheat_system.update_player_streak(treat_data.creator_address)
+        extra_treat_consumed, streak_result, player = await asyncio.gather(
+            extra_treat_task, streak_task, player_task
+        )
+        
         streak_bonus = streak_result.get("streak_bonus", {})
         xp_multiplier = streak_bonus.get("xp_multiplier", 1.0)
         brewing_reduction = streak_bonus.get("brewing_reduction", 0)  # percentage reduction
         
         # Get player's character bonus (Rex gives +15% rare chance)
         rare_chance_bonus = 0.0
-        player = await db.players.find_one({"address": treat_data.creator_address})
         if player:
             selected_character = player.get("selected_character")
             character_bonuses = player.get("character_bonuses", {})
@@ -3469,10 +3479,8 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         # Save to database with enhanced metadata
         result = await db.treats.insert_one(treat_dict)
         
-        # Update player's created treats and sack progress
-        player = await db.players.find_one({"address": treat_data.creator_address})
+        # Use player data already fetched earlier (avoid redundant DB call)
         if not player:
-            # Create player if doesn't exist
             player = {
                 "address": treat_data.creator_address,
                 "level": 1,
@@ -3503,7 +3511,8 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         sack_just_completed = sack_completed_count > previous_completions
         sack_bonus_xp = 50 if sack_just_completed else 0  # 50 XP bonus per sack completion
         
-        await db.players.update_one(
+        # Run player update and daily status fetch in parallel
+        player_update_task = db.players.update_one(
             {"address": treat_data.creator_address},
             {
                 "$push": {"created_treats": str(result.inserted_id)},
@@ -3514,10 +3523,13 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                     "last_activity": datetime.now(timezone.utc)
                 },
                 "$inc": {
-                    "experience": sack_bonus_xp  # Only award sack completion bonus XP (not treat creation XP)
+                    "experience": sack_bonus_xp
                 }
             }
         )
+        daily_status_task = anti_cheat_system.get_daily_treat_status(treat_data.creator_address)
+        
+        _, daily_status = await asyncio.gather(player_update_task, daily_status_task)
         
         # NOTE: Points and XP rewards are awarded ONLY when the treat is COLLECTED (not created)
         # This prevents double-awarding. The points_reward and xp_reward are stored in the treat
@@ -3541,8 +3553,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         # Set the MongoDB inserted ID as the treat ID
         treat_response['id'] = str(result.inserted_id)
         
-        # Get updated daily status after treat creation
-        daily_status = await anti_cheat_system.get_daily_treat_status(treat_data.creator_address)
+        # daily_status already fetched in parallel above
         
         # Build streak message
         streak_message = ""
@@ -8063,11 +8074,23 @@ async def startup_event():
     """Start background schedulers on app startup"""
     logger.info("🚀 DogeFood Lab API starting...")
     
-    # Create indexes for chat
+    # Create indexes for performance
     try:
         await db.chat_messages.create_index([("created_at", -1)])
+        await db.players.create_index("address", unique=True, sparse=True)
+        await db.players.create_index("telegram_id", sparse=True)
+        await db.players.create_index([("points", -1)])
+        await db.players.create_index("last_active")
+        await db.players.create_index("nickname")
+        await db.treats.create_index("id", unique=True)
+        await db.treats.create_index("creator_address")
+        await db.treats.create_index([("created_at", -1)])
+        await db.treats.create_index("brewing_status")
+        await db.special_ingredient_holders.create_index([("player_address", 1), ("is_active", 1)])
+        await db.special_ingredient_holders.create_index("expires_at")
+        logger.info("DB indexes created/verified")
     except Exception as e:
-        logger.error(f"Failed to create chat index: {e}")
+        logger.error(f"Failed to create indexes: {e}")
     
     # Delay background task startup to allow health checks to pass first
     async def delayed_startup():
