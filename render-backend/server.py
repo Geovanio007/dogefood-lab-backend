@@ -2776,26 +2776,33 @@ async def collect_treat(treat_id: str, data: dict):
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 # Leaderboard Routes
-@api_router.get("/leaderboard", response_model=List[LeaderboardEntry])
+@api_router.get("/leaderboard")
 async def get_leaderboard(limit: int = 50):
-    # Only players who have earned points from actual gameplay qualify
-    # VIP holders with only 500 bonus points (no gameplay) are excluded
-    pipeline = [
-        {"$match": {
-            "points": {"$gt": 0},
-            "nickname": {"$exists": True, "$nin": [None, ""]},
-            "$or": [
-                # Non-VIP players: any points mean gameplay
-                {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
-                # VIP players: must have more than 500 (the bonus amount)
-                {"vip_bonus_claimed": True, "points": {"$gt": 500}}
-            ]
-        }},
-        {"$sort": {"points": -1, "level": -1}},
-        {"$limit": limit}
-    ]
+    # Optimized: use find() instead of aggregate, skip Pydantic serialization
+    # Simplified filter: exclude VIP-only players (500pts from bonus alone)
+    query = {
+        "points": {"$gt": 0},
+        "nickname": {"$exists": True, "$nin": [None, ""]},
+    }
     
-    top_players = await db.players.aggregate(pipeline).to_list(limit)
+    projection = {
+        "_id": 0,
+        "address": 1,
+        "nickname": 1,
+        "telegram_first_name": 1,
+        "telegram_id": 1,
+        "guest_id": 1,
+        "points": 1,
+        "level": 1,
+        "is_nft_holder": 1,
+        "is_dogeonews_holder": 1,
+        "is_vip": 1,
+        "selected_character": 1,
+        "vip_bonus_claimed": 1,
+    }
+    
+    # Fetch more than needed so we can filter VIP-only players in Python
+    top_players = await db.players.find(query, projection).sort([("points", -1), ("level", -1)]).limit(limit + 20).to_list(limit + 20)
     
     # Character data mapping
     character_data = {
@@ -2814,27 +2821,35 @@ async def get_leaderboard(limit: int = 50):
     }
     
     leaderboard = []
-    for rank, player in enumerate(top_players, 1):
+    rank = 0
+    for player in top_players:
+        # Filter VIP-only players: skip if they claimed VIP bonus and have <= 500 pts
+        if player.get("vip_bonus_claimed") and player.get("points", 0) <= 500:
+            continue
+        
+        rank += 1
+        if rank > limit:
+            break
+            
         char_id = player.get("selected_character")
         char_info = character_data.get(char_id, {})
         
-        # Get the best address identifier
         player_address = player.get("address") or f"tg_{player.get('telegram_id')}" or f"guest_{player.get('guest_id', 'unknown')}"
         player_nickname = player.get("nickname") or player.get("telegram_first_name") or "Player"
         
-        leaderboard.append(LeaderboardEntry(
-            address=player_address,
-            nickname=player_nickname,
-            points=player.get("points", 0),
-            level=player.get("level", 1),  # Default to level 1
-            is_nft_holder=player.get("is_nft_holder", False),
-            is_dogeonews_holder=player.get("is_dogeonews_holder", False),
-            is_vip=player.get("is_vip", False),
-            rank=rank,
-            selected_character=char_id,
-            character_name=char_info.get('name'),
-            character_image=char_info.get('image')
-        ))
+        leaderboard.append({
+            "address": player_address,
+            "nickname": player_nickname,
+            "points": player.get("points", 0),
+            "level": player.get("level", 1),
+            "is_nft_holder": player.get("is_nft_holder", False),
+            "is_dogeonews_holder": player.get("is_dogeonews_holder", False),
+            "is_vip": player.get("is_vip", False),
+            "rank": rank,
+            "selected_character": char_id,
+            "character_name": char_info.get('name'),
+            "character_image": char_info.get('image')
+        })
     
     return leaderboard
 
@@ -2842,26 +2857,20 @@ async def get_leaderboard(limit: int = 50):
 @api_router.get("/stats")
 async def get_game_stats():
     try:
-        # Total registered players
-        total_players = await db.players.count_documents({})
-        # Leaderboard-eligible players: must have earned gameplay points
-        # VIP holders need > 500 (beyond the bonus), non-VIP just > 0
-        eligible_players = await db.players.count_documents({
-            "points": {"$gt": 0},
-            "nickname": {"$exists": True, "$nin": [None, ""]},
-            "$or": [
-                {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
-                {"vip_bonus_claimed": True, "points": {"$gt": 500}}
-            ]
-        })
-        nft_holders = await db.players.count_documents({"is_nft_holder": True})
-        total_treats = await db.treats.count_documents({})
-        
-        # Get most active players from today
-        from datetime import datetime, timedelta
+        # Run all count queries in parallel for speed
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-        active_players = await db.players.count_documents(
-            {"last_active": {"$gte": today}}
+        
+        total_task = db.players.count_documents({})
+        eligible_task = db.players.count_documents({
+            "points": {"$gt": 0},
+            "nickname": {"$exists": True, "$nin": [None, ""]}
+        })
+        nft_task = db.players.count_documents({"is_nft_holder": True})
+        treats_task = db.treats.count_documents({})
+        active_task = db.players.count_documents({"last_active": {"$gte": today}})
+        
+        total_players, eligible_players, nft_holders, total_treats, active_players = await asyncio.gather(
+            total_task, eligible_task, nft_task, treats_task, active_task
         )
         
         return {
@@ -2873,7 +2882,6 @@ async def get_game_stats():
         }
     except Exception as e:
         logger.error(f"Error getting game stats: {e}")
-        # Return mock data if database query fails
         return {
             "total_players": 1247,
             "nft_holders": 89,
@@ -8077,14 +8085,14 @@ async def startup_event():
     # Create indexes for performance
     try:
         await db.chat_messages.create_index([("created_at", -1)])
-        # Partial unique index on address - only for non-null addresses (Telegram users have null)
         await db.players.create_index(
             "address",
             unique=True,
             partialFilterExpression={"address": {"$type": "string"}}
         )
         await db.players.create_index("telegram_id", sparse=True)
-        await db.players.create_index([("points", -1)])
+        # Critical: compound index for leaderboard sort
+        await db.players.create_index([("points", -1), ("level", -1)])
         await db.players.create_index("last_active")
         await db.treats.create_index("id")
         await db.treats.create_index("creator_address")
