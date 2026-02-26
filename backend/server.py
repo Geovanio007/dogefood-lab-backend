@@ -1244,30 +1244,33 @@ async def get_player_weekly_stats(address: str):
                 best_rarity = r
                 break
         
-        # Get daily breakdown - Last 7 days including today
+        # Get daily breakdown via aggregation
+        daily_pipeline = [
+            {"$match": {"creator_address": address, "created_at": {"$gte": seven_days_ago}}},
+            {"$project": {
+                "day": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+                "points_reward": {"$ifNull": ["$points_reward", 0]},
+                "xp_reward": {"$ifNull": ["$xp_reward", 0]}
+            }},
+            {"$group": {
+                "_id": "$day",
+                "treats": {"$sum": 1},
+                "points": {"$sum": "$points_reward"},
+                "xp": {"$sum": "$xp_reward"}
+            }}
+        ]
+        daily_results = await db.treats.aggregate(daily_pipeline).to_list(10)
+        
         daily_stats = {}
         now = datetime.now(timezone.utc)
         for i in range(7):
             day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
             daily_stats[day] = {"treats": 0, "points": 0, "xp": 0}
         
-        for treat in treats_list:
-            created_at = treat.get("created_at")
-            if created_at:
-                # Handle different datetime formats
-                if isinstance(created_at, str):
-                    try:
-                        # Remove timezone info for comparison
-                        created_at = created_at.replace("Z", "").replace("+00:00", "").split(".")[0]
-                        created_at = datetime.fromisoformat(created_at)
-                    except:
-                        continue
-                
-                day = created_at.strftime("%Y-%m-%d")
-                if day in daily_stats:
-                    daily_stats[day]["treats"] += 1
-                    daily_stats[day]["points"] += treat.get("points_reward", 0)
-                    daily_stats[day]["xp"] += treat.get("xp_reward", 0)
+        for dr in daily_results:
+            day = dr.get("_id")
+            if day and day in daily_stats:
+                daily_stats[day] = {"treats": dr["treats"], "points": dr["points"], "xp": dr["xp"]}
         
         # Calculate averages
         avg_treats_per_day = total_treats / 7 if total_treats > 0 else 0
