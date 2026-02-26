@@ -323,10 +323,10 @@ const Leaderboard = () => {
 
                     {/* Name + Badges */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <button
                           onClick={() => setSelectedPlayerAddress(entry.address)}
-                          className="font-bold text-sm text-white hover:text-sky-400 transition-colors truncate"
+                          className="font-bold text-sm text-white hover:text-sky-400 transition-colors truncate max-w-[120px] sm:max-w-none"
                           data-testid={`player-name-${rank}`}
                         >
                           {entry.nickname || `Scientist #${rank}`}
@@ -334,22 +334,28 @@ const Leaderboard = () => {
                         {isCurrentUser && (
                           <Badge className="bg-sky-500/20 text-sky-300 text-[9px] px-1.5 py-0 border border-sky-500/20">You</Badge>
                         )}
+                        {entry.is_nft_holder && (
+                          <Badge className="bg-white/15 text-white text-[8px] px-1 py-0 border border-white/20" data-testid={`vip-badge-${rank}`}>VIP</Badge>
+                        )}
+                        {entry.is_dogeonews_holder && (
+                          <Badge className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-amber-300 text-[8px] px-1 py-0 border border-amber-500/20 flex items-center gap-0.5" data-testid={`holder-badge-${rank}`}>
+                            <img src="/dogeonews-token.png" alt="$DOGEONEWS" className="w-3 h-3" />
+                            HOLDER
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         {entry.character_name && (
                           <span className="text-[10px] text-sky-400/60">{entry.character_name}</span>
                         )}
-                        <span className="font-mono text-[10px] text-slate-500">{formatAddr(entry.address)}</span>
-                        {entry.is_nft_holder && (
-                          <Badge className="bg-yellow-500/20 text-yellow-300 text-[8px] px-1 py-0 border border-yellow-500/20">VIP</Badge>
-                        )}
-                        {entry.is_dogeonews_holder && (
-                          <Badge className="bg-amber-500/20 text-amber-300 text-[8px] px-1 py-0 border border-amber-500/20">HOLDER</Badge>
-                        )}
+                        <span className="font-mono text-[10px] text-slate-500 hidden sm:inline">{formatAddr(entry.address)}</span>
+                        <Badge variant="outline" className="text-[9px] text-slate-300 border-white/10 px-1 py-0 sm:hidden">
+                          Lv {entry.level}
+                        </Badge>
                       </div>
                     </div>
 
-                    {/* Level */}
+                    {/* Level - desktop only */}
                     <div className="hidden sm:block">
                       <Badge variant="outline" className="text-[10px] text-slate-300 border-white/10">
                         Lv {entry.level}
