@@ -2800,7 +2800,7 @@ async def get_leaderboard(limit: int = 50):
         "vip_bonus_claimed": 1,
     }
     
-    top_players = await db.players.find(query, projection).sort([("points", -1), ("level", -1)]).limit(limit).to_list(limit)
+    top_players = await db.players.find(query, projection).sort([("points", -1), ("level", -1)]).limit(limit + 20).to_list(limit + 20)
     
     # Character data mapping
     character_data = {
@@ -2819,13 +2819,15 @@ async def get_leaderboard(limit: int = 50):
     }
     
     leaderboard = []
-    for rank, player in enumerate(top_players, 1):
-        if rank > limit:
-            break
-        
+    display_rank = 0
+    for player in top_players:
         # Skip VIP-only players: they have 500 bonus but no gameplay earnings
         if player.get("vip_bonus_claimed") and player.get("points", 0) <= 500:
             continue
+        
+        display_rank += 1
+        if display_rank > limit:
+            break
             
         char_id = player.get("selected_character")
         char_info = character_data.get(char_id, {})
