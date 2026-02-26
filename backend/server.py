@@ -214,13 +214,14 @@ async def auto_select_kernel_holder():
         seven_days_ago = now - timedelta(days=7)
         
         # Query for players with valid identifiers who have been active
+        # Use $nin to properly exclude both None and empty string (Python dict deduplicates $ne keys)
         active_players = await db.players.find({
             "last_active": {"$gte": seven_days_ago},
             "$or": [
-                {"address": {"$ne": None, "$exists": True, "$ne": ""}},
-                {"telegram_id": {"$ne": None, "$exists": True}}
+                {"address": {"$exists": True, "$nin": [None, ""]}},
+                {"telegram_id": {"$exists": True, "$ne": None}}
             ],
-            "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+            "nickname": {"$exists": True, "$nin": [None, ""]}
         }).to_list(1000)
         
         # Fallback: get players with treats who have valid identifiers
@@ -232,7 +233,7 @@ async def auto_select_kernel_holder():
             treat_creators = [addr for addr in treat_creators if addr]
             active_players = await db.players.find({
                 "address": {"$in": treat_creators},
-                "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+                "nickname": {"$exists": True, "$nin": [None, ""]}
             }).to_list(1000)
         
         # Final fallback: get any players with points and valid nickname
@@ -240,10 +241,10 @@ async def auto_select_kernel_holder():
             active_players = await db.players.find({
                 "points": {"$gt": 0},
                 "$or": [
-                    {"address": {"$ne": None, "$exists": True, "$ne": ""}},
-                    {"telegram_id": {"$ne": None, "$exists": True}}
+                    {"address": {"$exists": True, "$nin": [None, ""]}},
+                    {"telegram_id": {"$exists": True, "$ne": None}}
                 ],
-                "nickname": {"$ne": None, "$exists": True, "$ne": ""}
+                "nickname": {"$exists": True, "$nin": [None, ""]}
             }).to_list(100)
         
         if not active_players:
