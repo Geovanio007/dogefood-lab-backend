@@ -131,6 +131,7 @@ const GameLabRedesign = ({ playerAddress }) => {
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [collectingTreat, setCollectingTreat] = useState(null);
   const [showCollectAnimation, setShowCollectAnimation] = useState(false);
+  const [collectRewards, setCollectRewards] = useState(null);
   const [collectedTreat, setCollectedTreat] = useState(null);
   
   // Daily limit tracking
