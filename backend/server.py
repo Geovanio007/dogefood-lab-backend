@@ -5727,10 +5727,16 @@ async def select_random_special_ingredient_holder():
         )
         
         # Get active players (players who have created treats in last 7 days)
+        # Must have a valid nickname to avoid "Anonymous" selections
         seven_days_ago = now - timedelta(days=7)
         
         active_players = await db.players.find({
-            "last_active": {"$gte": seven_days_ago}
+            "last_active": {"$gte": seven_days_ago},
+            "nickname": {"$exists": True, "$nin": [None, ""]},
+            "$or": [
+                {"address": {"$exists": True, "$nin": [None, ""]}},
+                {"telegram_id": {"$exists": True, "$ne": None}}
+            ]
         }).to_list(1000)
         
         # Fallback: get players with treats
@@ -5738,14 +5744,17 @@ async def select_random_special_ingredient_holder():
             treat_creators = await db.treats.distinct("creator_address", {
                 "created_at": {"$gte": seven_days_ago}
             })
+            treat_creators = [addr for addr in treat_creators if addr]
             active_players = await db.players.find({
-                "address": {"$in": treat_creators}
+                "address": {"$in": treat_creators},
+                "nickname": {"$exists": True, "$nin": [None, ""]}
             }).to_list(1000)
         
-        # Final fallback: get any players with points
+        # Final fallback: get any players with points and valid nickname
         if not active_players:
             active_players = await db.players.find({
-                "points": {"$gt": 0}
+                "points": {"$gt": 0},
+                "nickname": {"$exists": True, "$nin": [None, ""]}
             }).to_list(100)
         
         if not active_players:
