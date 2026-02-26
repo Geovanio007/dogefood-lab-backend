@@ -493,7 +493,7 @@ const GameLabRedesign = ({ playerAddress }) => {
           playLevelUp();
         }
         
-        // Show collection animation for 2.5 seconds
+        // Show collection animation for 4 seconds (longer to show bonus breakdown)
         setTimeout(async () => {
           setShowCollectAnimation(false);
           setCollectingTreat(null);
