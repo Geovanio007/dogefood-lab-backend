@@ -2549,18 +2549,16 @@ async def get_active_treats_with_timer(address: str):
             created_at = treat.get("created_at")
             timer_duration = treat.get("timer_duration", 3600)
             
-            # Parse dates if strings
-            if isinstance(ready_at, str):
-                try:
-                    ready_at = parse_utc_datetime(ready_at)
-                except:
-                    ready_at = now
+            # Parse dates ensuring timezone-awareness
+            try:
+                ready_at = parse_utc_datetime(ready_at) if ready_at else now
+            except:
+                ready_at = now
             
-            if isinstance(created_at, str):
-                try:
-                    created_at = parse_utc_datetime(created_at)
-                except:
-                    created_at = now
+            try:
+                created_at = parse_utc_datetime(created_at) if created_at else now
+            except:
+                created_at = now
             
             # Calculate timer status
             if ready_at:
