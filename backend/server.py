@@ -3345,7 +3345,6 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         
         # Get player's character bonus (Rex gives +15% rare chance)
         rare_chance_bonus = 0.0
-        player = await db.players.find_one({"address": treat_data.creator_address})
         if player:
             selected_character = player.get("selected_character")
             character_bonuses = player.get("character_bonuses", {})
