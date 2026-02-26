@@ -1202,34 +1202,35 @@ async def get_player_weekly_stats(address: str):
         # Calculate 7 days ago
         seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
         
-        # Get treats created in last 7 days
-        treats_cursor = db.treats.find({
+        # Use MongoDB aggregation for stats instead of loading all treats into memory
+        stats_pipeline = [
+            {"$match": {"creator_address": address, "created_at": {"$gte": seven_days_ago}}},
+            {"$group": {
+                "_id": "$rarity",
+                "count": {"$sum": 1},
+                "total_points": {"$sum": {"$ifNull": ["$points_reward", 0]}},
+                "total_xp": {"$sum": {"$ifNull": ["$xp_reward", 0]}}
+            }}
+        ]
+        rarity_results = await db.treats.aggregate(stats_pipeline).to_list(10)
+        
+        rarity_counts = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
+        total_treats = 0
+        total_points = 0
+        total_xp = 0
+        for r in rarity_results:
+            rarity = r.get("_id", "Common")
+            if rarity in rarity_counts:
+                rarity_counts[rarity] = r["count"]
+            total_treats += r["count"]
+            total_points += r.get("total_points", 0)
+            total_xp += r.get("total_xp", 0)
+        
+        # Get unique formulas count via aggregation
+        formula_count = await db.treats.count_documents({
             "creator_address": address,
             "created_at": {"$gte": seven_days_ago}
         })
-        treats_list = await treats_cursor.to_list(length=500)
-        
-        # Calculate stats
-        total_treats = len(treats_list)
-        
-        # Rarity breakdown
-        rarity_counts = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
-        total_points = 0
-        total_xp = 0
-        unique_formulas = set()
-        
-        for treat in treats_list:
-            rarity = treat.get("rarity", "Common")
-            if rarity in rarity_counts:
-                rarity_counts[rarity] += 1
-            
-            total_points += treat.get("points_reward", 0)
-            total_xp += treat.get("xp_reward", 0)
-            
-            # Track unique ingredient combinations
-            ingredients = tuple(sorted(treat.get("ingredients", [])))
-            if ingredients:
-                unique_formulas.add(ingredients)
         
         # Get streak info
         streak_info = await anti_cheat_system.get_player_streak(address)
