@@ -3547,8 +3547,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         # Set the MongoDB inserted ID as the treat ID
         treat_response['id'] = str(result.inserted_id)
         
-        # Get updated daily status after treat creation
-        daily_status = await anti_cheat_system.get_daily_treat_status(treat_data.creator_address)
+        # daily_status already fetched in parallel above
         
         # Build streak message
         streak_message = ""
