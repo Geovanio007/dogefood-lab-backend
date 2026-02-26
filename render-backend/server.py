@@ -2777,9 +2777,10 @@ async def collect_treat(treat_id: str, data: dict):
 # Leaderboard Routes
 @api_router.get("/leaderboard")
 async def get_leaderboard(limit: int = 50):
-    # Only include players who have ACTUALLY played (created treats)
+    # Only include players who have played AND collected points
     query = {
         "total_treats_created": {"$gt": 0},
+        "points": {"$gt": 0},
         "nickname": {"$exists": True, "$nin": [None, ""]},
     }
     
@@ -2850,17 +2851,19 @@ async def get_game_stats():
     try:
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         
-        # Only count players who have ACTUALLY created treats (real gameplay)
-        active_players_task = db.players.count_documents({
-            "total_treats_created": {"$gt": 0}
-        })
+        # Only count players who have COLLECTED treats (earned gameplay points)
+        # This is the most accurate measure of active players
+        collected_creators_task = db.treats.distinct("creator_address", {"brewing_status": "collected"})
         nft_task = db.players.count_documents({"is_nft_holder": True})
-        treats_task = db.treats.count_documents({})
-        today_task = db.players.count_documents({"last_active": {"$gte": today}})
+        treats_task = db.treats.count_documents({"brewing_status": "collected"})
+        today_task = db.treats.count_documents({"collected_at": {"$gte": today.isoformat()}})
         
-        active_players, nft_holders, total_treats, active_today = await asyncio.gather(
-            active_players_task, nft_task, treats_task, today_task
+        collected_creators, nft_holders, total_treats, active_today = await asyncio.gather(
+            collected_creators_task, nft_task, treats_task, today_task
         )
+        
+        # Filter out None/empty addresses
+        active_players = len([c for c in collected_creators if c])
         
         return {
             "total_players": active_players,
