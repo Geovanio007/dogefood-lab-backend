@@ -46,6 +46,13 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Added `/auto-mixer` route in App.js for AutoMixerSubscription component
 - Tournament page verified working at `/tournament`
 
+### Leaderboard Mobile & UI Polish (Feb 26, 2026) - COMPLETE
+- Mobile layout: Player name on first line, badges (VIP/HOLDER/Level) on second line for full visibility
+- Distribution grid: Responsive 3-col on mobile, 5-col on desktop
+- $DOGEONEWS token logo restored on HOLDER badge
+- VIP badge changed from yellow to white
+- Removed old ScientistChat icon from leaderboard page
+
 ## Deployment Info
 - **Frontend**: https://dogefoodlab.vercel.app (LIVE)
 - **Backend**: https://dogefood-lab-api.onrender.com (LIVE)
