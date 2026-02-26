@@ -19,6 +19,24 @@ import asyncio
 from telegram import Bot
 import httpx  # For Firebase verification
 
+
+def parse_utc_datetime(dt_val) -> datetime:
+    """Parse a datetime value (str or datetime) and ensure it's UTC-aware.
+    Handles naive datetimes from the DB by assuming they are UTC."""
+    if dt_val is None:
+        return datetime.now(timezone.utc)
+    if isinstance(dt_val, str):
+        # Normalize the Z suffix to +00:00 for fromisoformat
+        cleaned = dt_val.replace("Z", "+00:00")
+        parsed = datetime.fromisoformat(cleaned)
+    else:
+        parsed = dt_val
+    # If naive (no timezone), assume UTC
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
 # Security: Input sanitization functions
 def sanitize_string(value: str, max_length: int = 100) -> str:
     """Sanitize user input strings to prevent injection attacks"""
