@@ -2777,10 +2777,9 @@ async def collect_treat(treat_id: str, data: dict):
 # Leaderboard Routes
 @api_router.get("/leaderboard")
 async def get_leaderboard(limit: int = 50):
-    # Optimized: use find() instead of aggregate, skip Pydantic serialization
-    # Simplified filter: exclude VIP-only players (500pts from bonus alone)
+    # Only include players who have ACTUALLY played (created treats)
     query = {
-        "points": {"$gt": 0},
+        "total_treats_created": {"$gt": 0},
         "nickname": {"$exists": True, "$nin": [None, ""]},
     }
     
