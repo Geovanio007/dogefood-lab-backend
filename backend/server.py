@@ -2843,7 +2843,7 @@ async def get_leaderboard(limit: int = 50):
             "is_nft_holder": player.get("is_nft_holder", False),
             "is_dogeonews_holder": player.get("is_dogeonews_holder", False),
             "is_vip": player.get("is_vip", False),
-            "rank": rank,
+            "rank": display_rank,
             "selected_character": char_id,
             "character_name": char_info.get('name'),
             "character_image": char_info.get('image')
