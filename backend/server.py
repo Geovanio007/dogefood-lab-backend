@@ -1964,11 +1964,11 @@ async def verify_all_nft_holders_blockchain():
     no longer hold the NFT.
     """
     try:
-        # Get all wallet-based players (0x addresses)
+        # Get all wallet-based players (0x addresses) - use projection to minimize memory
         all_wallet_players = await db.players.find(
             {"address": {"$regex": "^0x", "$options": "i"}},
             {"address": 1, "is_nft_holder": 1, "is_vip": 1, "vip_bonus_claimed": 1, "points": 1, "nickname": 1, "_id": 0}
-        ).to_list(1000)
+        ).to_list(200)
         
         results = {
             "total_checked": len(all_wallet_players),
