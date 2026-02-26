@@ -2857,26 +2857,20 @@ async def get_leaderboard(limit: int = 50):
 @api_router.get("/stats")
 async def get_game_stats():
     try:
-        # Total registered players
-        total_players = await db.players.count_documents({})
-        # Leaderboard-eligible players: must have earned gameplay points
-        # VIP holders need > 500 (beyond the bonus), non-VIP just > 0
-        eligible_players = await db.players.count_documents({
-            "points": {"$gt": 0},
-            "nickname": {"$exists": True, "$nin": [None, ""]},
-            "$or": [
-                {"vip_bonus_claimed": {"$ne": True}, "points": {"$gt": 0}},
-                {"vip_bonus_claimed": True, "points": {"$gt": 500}}
-            ]
-        })
-        nft_holders = await db.players.count_documents({"is_nft_holder": True})
-        total_treats = await db.treats.count_documents({})
-        
-        # Get most active players from today
-        from datetime import datetime, timedelta
+        # Run all count queries in parallel for speed
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-        active_players = await db.players.count_documents(
-            {"last_active": {"$gte": today}}
+        
+        total_task = db.players.count_documents({})
+        eligible_task = db.players.count_documents({
+            "points": {"$gt": 0},
+            "nickname": {"$exists": True, "$nin": [None, ""]}
+        })
+        nft_task = db.players.count_documents({"is_nft_holder": True})
+        treats_task = db.treats.count_documents({})
+        active_task = db.players.count_documents({"last_active": {"$gte": today}})
+        
+        total_players, eligible_players, nft_holders, total_treats, active_players = await asyncio.gather(
+            total_task, eligible_task, nft_task, treats_task, active_task
         )
         
         return {
@@ -2888,7 +2882,6 @@ async def get_game_stats():
         }
     except Exception as e:
         logger.error(f"Error getting game stats: {e}")
-        # Return mock data if database query fails
         return {
             "total_players": 1247,
             "nft_holders": 89,
