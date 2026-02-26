@@ -1261,10 +1261,10 @@ async def get_player_weekly_stats(address: str):
         avg_treats_per_day = total_treats / 7 if total_treats > 0 else 0
         avg_points_per_day = total_points / 7 if total_points > 0 else 0
         
-        # Get player rank — use optimized query matching /leaderboard endpoint
+        # Get player rank — only count players who have created treats
         leaderboard_cursor = db.players.find(
             {
-                "points": {"$gt": 0},
+                "total_treats_created": {"$gt": 0},
                 "nickname": {"$exists": True, "$nin": [None, ""]}
             },
             {"address": 1, "points": 1}
@@ -1492,14 +1492,21 @@ async def get_characters():
 @api_router.get("/player/{address}/profile")
 async def get_player_profile(address: str):
     """Get player profile including character and username"""
-    # Support telegram players (tg_<id>) and guest players (guest_<id>)
     player = None
-    if address.startswith("tg_"):
+    
+    # Support telegram players - handle both tg_ and TG_ prefixes
+    if address.lower().startswith("tg_"):
         tg_id = address[3:]
         try:
-            player = await db.players.find_one({"telegram_id": int(tg_id)}, {"_id": 0})
+            tg_id_int = int(tg_id)
+            player = await db.players.find_one({"telegram_id": tg_id_int}, {"_id": 0})
         except (ValueError, TypeError):
             pass
+        # Fallback: try address field with both cases
+        if not player:
+            player = await db.players.find_one({"address": f"TG_{tg_id}"}, {"_id": 0})
+        if not player:
+            player = await db.players.find_one({"address": f"tg_{tg_id}"}, {"_id": 0})
     elif address.startswith("guest_"):
         player = await db.players.find_one({"guest_id": address}, {"_id": 0})
     
@@ -2770,10 +2777,9 @@ async def collect_treat(treat_id: str, data: dict):
 # Leaderboard Routes
 @api_router.get("/leaderboard")
 async def get_leaderboard(limit: int = 50):
-    # Optimized: use find() instead of aggregate, skip Pydantic serialization
-    # Simplified filter: exclude VIP-only players (500pts from bonus alone)
+    # Only include players who have ACTUALLY played (created treats)
     query = {
-        "points": {"$gt": 0},
+        "total_treats_created": {"$gt": 0},
         "nickname": {"$exists": True, "$nin": [None, ""]},
     }
     
@@ -2793,8 +2799,7 @@ async def get_leaderboard(limit: int = 50):
         "vip_bonus_claimed": 1,
     }
     
-    # Fetch more than needed so we can filter VIP-only players in Python
-    top_players = await db.players.find(query, projection).sort([("points", -1), ("level", -1)]).limit(limit + 20).to_list(limit + 20)
+    top_players = await db.players.find(query, projection).sort([("points", -1), ("level", -1)]).limit(limit).to_list(limit)
     
     # Character data mapping
     character_data = {
@@ -2813,13 +2818,7 @@ async def get_leaderboard(limit: int = 50):
     }
     
     leaderboard = []
-    rank = 0
-    for player in top_players:
-        # Filter VIP-only players: skip if they claimed VIP bonus and have <= 500 pts
-        if player.get("vip_bonus_claimed") and player.get("points", 0) <= 500:
-            continue
-        
-        rank += 1
+    for rank, player in enumerate(top_players, 1):
         if rank > limit:
             break
             
@@ -2849,36 +2848,33 @@ async def get_leaderboard(limit: int = 50):
 @api_router.get("/stats")
 async def get_game_stats():
     try:
-        # Run all count queries in parallel for speed
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         
-        total_task = db.players.count_documents({})
-        eligible_task = db.players.count_documents({
-            "points": {"$gt": 0},
-            "nickname": {"$exists": True, "$nin": [None, ""]}
+        # Only count players who have ACTUALLY created treats (real gameplay)
+        active_players_task = db.players.count_documents({
+            "total_treats_created": {"$gt": 0}
         })
         nft_task = db.players.count_documents({"is_nft_holder": True})
         treats_task = db.treats.count_documents({})
-        active_task = db.players.count_documents({"last_active": {"$gte": today}})
+        today_task = db.players.count_documents({"last_active": {"$gte": today}})
         
-        total_players, eligible_players, nft_holders, total_treats, active_players = await asyncio.gather(
-            total_task, eligible_task, nft_task, treats_task, active_task
+        active_players, nft_holders, total_treats, active_today = await asyncio.gather(
+            active_players_task, nft_task, treats_task, today_task
         )
         
         return {
-            "total_players": eligible_players,
-            "total_registered": total_players,
+            "total_players": active_players,
             "nft_holders": nft_holders,
             "total_treats": total_treats,
-            "active_today": active_players
+            "active_today": active_today
         }
     except Exception as e:
         logger.error(f"Error getting game stats: {e}")
         return {
-            "total_players": 1247,
-            "nft_holders": 89,
-            "total_treats": 3420,
-            "active_today": 156
+            "total_players": 0,
+            "nft_holders": 0,
+            "total_treats": 0,
+            "active_today": 0
         }
 
 # Phase 2: Enhanced Points System Routes
