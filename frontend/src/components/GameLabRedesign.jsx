@@ -1436,9 +1436,34 @@ const GameLabRedesign = ({ playerAddress }) => {
             <p className="text-sky-300 text-lg">
               +{collectRewards?.total_points || collectRewards?.points || collectedTreat.points_reward || 0} Points • +{collectRewards?.total_xp || collectRewards?.xp || collectedTreat.xp_reward || 0} XP
             </p>
+            {/* Points Breakdown */}
+            {collectRewards && (collectRewards.happy_hour_bonus > 0 || collectRewards.points_bonus > 0) && (
+              <div className="mt-2 p-3 rounded-xl bg-black/40 border border-white/10 text-left max-w-[280px] mx-auto" data-testid="rewards-breakdown">
+                <div className="flex justify-between text-sm text-slate-300">
+                  <span>Base Points</span>
+                  <span className="font-bold text-white">+{collectRewards.base_points || collectedTreat.points_reward}</span>
+                </div>
+                {collectRewards.points_bonus > 0 && (
+                  <div className="flex justify-between text-sm text-purple-300 mt-1">
+                    <span>Character Bonus</span>
+                    <span className="font-bold">+{collectRewards.points_bonus}</span>
+                  </div>
+                )}
+                {collectRewards.happy_hour_bonus > 0 && (
+                  <div className="flex justify-between text-sm text-yellow-300 mt-1 font-bold">
+                    <span>Happy Hour +25%</span>
+                    <span>+{collectRewards.happy_hour_bonus}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm mt-2 pt-2 border-t border-white/20 text-sky-300 font-black">
+                  <span>Total</span>
+                  <span>{collectRewards.total_points}</span>
+                </div>
+              </div>
+            )}
             {collectRewards?.happy_hour_bonus > 0 && (
-              <p className="text-yellow-300 text-base mt-1 font-semibold animate-pulse" data-testid="happy-hour-bonus-text">
-                Happy Hour +{collectRewards.happy_hour_bonus} Bonus Points!
+              <p className="text-yellow-300 text-base mt-2 font-semibold animate-pulse" data-testid="happy-hour-bonus-text">
+                Happy Hour Bonus Applied!
               </p>
             )}
             
