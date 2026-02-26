@@ -1465,6 +1465,21 @@ const GameLabRedesign = ({ playerAddress }) => {
               </p>
             )}
             
+            {/* Tap to dismiss */}
+            <button 
+              onClick={() => {
+                setShowCollectAnimation(false);
+                setCollectingTreat(null);
+                setCollectedTreat(null);
+                setCollectRewards(null);
+                loadPlayerData();
+              }}
+              className="mt-3 text-xs text-white/50 hover:text-white/80 transition-colors"
+              data-testid="dismiss-collect-animation"
+            >
+              Tap to dismiss
+            </button>
+            
             {/* Confetti effect - Fixed positions */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
               <div className="absolute w-3 h-3 rounded-sm" style={{ left: '5%', top: '-20px', backgroundColor: '#fbbf24', animation: 'confetti-fall 2s linear 0s infinite', transform: 'rotate(45deg)' }} />
