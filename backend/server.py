@@ -191,7 +191,7 @@ background_task_started = False
 async def auto_select_kernel_holder():
     """Automatically select a new Kernel of Wow holder"""
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Check if there's already an active holder
         existing_holder = await db.special_ingredient_holders.find_one({
@@ -698,7 +698,7 @@ async def update_player_progress(progress: PlayerProgress):
             },
             "$set": {
                 "level": progress.level,
-                "last_active": datetime.utcnow()
+                "last_active": datetime.now(timezone.utc)
             }
         }
     )
@@ -844,7 +844,7 @@ async def send_chat_message(data: dict):
             "nickname": player.get("nickname", "Anonymous"),
             "message": message,
             "emoji_only": is_emoji_only,
-            "created_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc)
         }
         if reply_to:
             doc["reply_to"] = reply_to
@@ -927,8 +927,8 @@ async def create_extra_life_purchase(request: ExtraLifeCreateRequest):
             "payment_tx_hash": None,
             "payment_confirmed": False,
             "payment_confirmations": 0,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
         }
         
         await db.extra_life_purchases.insert_one(purchase)
@@ -951,7 +951,7 @@ async def create_extra_life_purchase(request: ExtraLifeCreateRequest):
                                 "matched_order_type": activated.get("type"),
                                 "matched_order_id": activated.get("order_id"),
                                 "player_address": activated.get("player_address"),
-                                "rematched_at": datetime.utcnow()
+                                "rematched_at": datetime.now(timezone.utc)
                             }}
                         )
                         logger.info(f"Auto-matched existing payment to new order for {request.player_address}")
@@ -1009,7 +1009,7 @@ async def verify_extra_life_payment(request: ExtraLifeVerifyRequest):
             }
         
         # Update purchase with payment info
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         update_data = {
             "payment_tx_hash": request.tx_hash,
             "payment_confirmations": confirmations,
@@ -1166,7 +1166,7 @@ async def get_player_weekly_stats(address: str):
             raise HTTPException(status_code=404, detail="Player not found")
         
         # Calculate 7 days ago
-        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
         
         # Get treats created in last 7 days
         treats_cursor = db.treats.find({
@@ -1211,7 +1211,7 @@ async def get_player_weekly_stats(address: str):
         
         # Get daily breakdown - Last 7 days including today
         daily_stats = {}
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         for i in range(7):
             day = (now - timedelta(days=i)).strftime("%Y-%m-%d")
             daily_stats[day] = {"treats": 0, "points": 0, "xp": 0}
@@ -1278,7 +1278,7 @@ async def get_player_weekly_stats(address: str):
             "total_players": total_players,
             "period": "Last 7 Days",
             "period_start": seven_days_ago.isoformat(),
-            "period_end": datetime.utcnow().isoformat(),
+            "period_end": datetime.now(timezone.utc).isoformat(),
             "stats": {
                 "treats_created": total_treats,
                 "points_earned": total_points,
@@ -1335,7 +1335,7 @@ async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTask
     ready_at = None
     if treat_data.timer_duration and treat_data.brewing_status == "brewing":
         from datetime import timedelta
-        ready_at = datetime.utcnow() + timedelta(seconds=treat_data.timer_duration)
+        ready_at = datetime.now(timezone.utc) + timedelta(seconds=treat_data.timer_duration)
     
     treat = DogeTreat(
         **treat_data.dict(),
@@ -1516,7 +1516,7 @@ async def update_profile_image(address: str, data: dict):
         # Update player's profile image
         result = await db.players.update_one(
             {"address": address},
-            {"$set": {"profile_image": image_data, "last_active": datetime.utcnow().isoformat()}}
+            {"$set": {"profile_image": image_data, "last_active": datetime.now(timezone.utc).isoformat()}}
         )
         
         if result.modified_count == 0:
@@ -1524,8 +1524,8 @@ async def update_profile_image(address: str, data: dict):
             await db.players.insert_one({
                 "address": address,
                 "profile_image": image_data,
-                "created_at": datetime.utcnow().isoformat(),
-                "last_active": datetime.utcnow().isoformat()
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "last_active": datetime.now(timezone.utc).isoformat()
             })
         
         return {"success": True, "message": "Profile image updated"}
@@ -1612,7 +1612,7 @@ async def credit_single_nft_holder(address: str):
                 "level": 1,
                 "experience": 0,
                 "created_treats": [],
-                "last_active": datetime.utcnow(),
+                "last_active": datetime.now(timezone.utc),
                 "leaderboard_eligible": True,
                 "can_convert_points": True
             }
@@ -1887,7 +1887,7 @@ async def verify_nft_on_blockchain(address: str):
                     "level": 1,
                     "experience": 0,
                     "created_treats": [],
-                    "last_active": datetime.utcnow(),
+                    "last_active": datetime.now(timezone.utc),
                     "leaderboard_eligible": True
                 }
                 await db.players.insert_one(new_player)
@@ -2134,7 +2134,7 @@ async def verify_dogeonews_token_holder(player_address: str, solana_address: str
                         "is_dogeonews_holder": True,
                         "solana_address": solana_address,
                         "dogeonews_balance": token_balance,
-                        "dogeonews_verified_at": datetime.utcnow().isoformat(),
+                        "dogeonews_verified_at": datetime.now(timezone.utc).isoformat(),
                         "can_convert_points": True  # Token holders can convert to $LAB
                     }}
                 )
@@ -2421,7 +2421,7 @@ async def check_treat_timer(treat_id: str):
     # Check if treat is brewing and timer has completed
     if treat.get("brewing_status") == "brewing" and treat.get("ready_at"):
         ready_at = treat["ready_at"]
-        if datetime.utcnow() >= ready_at:
+        if datetime.now(timezone.utc) >= ready_at:
             # Update treat status to ready
             await db.treats.update_one(
                 {"id": treat_id},
@@ -2430,7 +2430,7 @@ async def check_treat_timer(treat_id: str):
             return {"status": "ready", "message": "Treat is ready!"}
         else:
             # Calculate remaining time
-            remaining_seconds = int((ready_at - datetime.utcnow()).total_seconds())
+            remaining_seconds = int((ready_at - datetime.now(timezone.utc)).total_seconds())
             return {
                 "status": "brewing",
                 "remaining_seconds": remaining_seconds,
@@ -2448,7 +2448,7 @@ async def get_brewing_treats(address: str):
             "brewing_status": "brewing"
         }).to_list(100)
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         result = []
         
         for treat in brewing_treats:
@@ -2506,7 +2506,7 @@ async def get_active_treats_with_timer(address: str):
     This endpoint is optimized for frontend polling.
     """
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Get all recent treats for this player (last 24 hours or still brewing)
         # Exclude collected treats
@@ -2619,7 +2619,7 @@ async def collect_treat(treat_id: str, data: dict):
             raise HTTPException(status_code=400, detail="Treat already collected")
         
         # Check if ready
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         ready_at = treat.get("ready_at")
         if isinstance(ready_at, str):
             ready_at = datetime.fromisoformat(ready_at.replace("Z", ""))
@@ -2822,7 +2822,7 @@ async def get_game_stats():
         
         # Get most active players from today
         from datetime import datetime, timedelta
-        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         active_players = await db.players.count_documents(
             {"last_active": {"$gte": today}}
         )
@@ -2849,7 +2849,7 @@ async def get_game_stats():
 async def get_points_leaderboard(limit: int = 50, nft_holders_only: bool = False):
     """Get enhanced points-based leaderboard - now includes all players by default"""
     leaderboard = await points_system.get_points_leaderboard(limit=limit, nft_holders_only=nft_holders_only)
-    return {"leaderboard": leaderboard, "generated_at": datetime.utcnow()}
+    return {"leaderboard": leaderboard, "generated_at": datetime.now(timezone.utc)}
 
 @api_router.get("/points/{address}/stats")
 async def get_player_points_stats(address: str):
@@ -3091,7 +3091,7 @@ async def verify_nft_ownership(address: str, is_holder: str = "false"):
                     "level": 1,
                     "experience": 0,
                     "created_treats": [],
-                    "last_active": datetime.utcnow(),
+                    "last_active": datetime.now(timezone.utc),
                     "leaderboard_eligible": True,
                     "can_convert_points": True
                 }
@@ -3132,7 +3132,7 @@ async def verify_nft_ownership(address: str, is_holder: str = "false"):
                     "level": 1,
                     "experience": 0,
                     "created_treats": [],
-                    "last_active": datetime.utcnow()
+                    "last_active": datetime.now(timezone.utc)
                 }
                 await db.players.insert_one(new_player)
             
@@ -3201,7 +3201,7 @@ async def generate_season_rewards(season_id: int, reward_pool_tokens: int = 1000
         "total_recipients": len(rewards),
         "contract_data": contract_data,
         "summary": summary,
-        "generated_at": datetime.utcnow(),
+        "generated_at": datetime.now(timezone.utc),
         "status": "generated"
     }
     
@@ -3364,7 +3364,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         
         # Check if player has Kernel of Wow and apply bonus
         kernel_bonus = None
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         kernel_holder = await db.special_ingredient_holders.find_one({
             "player_address": treat_data.creator_address,
             "is_active": True,
@@ -3410,7 +3410,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         
         treat_dict.update({
             "season_id": season_id,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
             "is_offchain": season_id == 1,  # Season 1 is offchain only
             "points_reward": final_points_reward,
             "xp_reward": final_xp_reward,
@@ -3454,7 +3454,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 "nickname": "Player",
                 "is_nft_holder": False,
                 "leaderboard_eligible": True,
-                "last_activity": datetime.utcnow()
+                "last_activity": datetime.now(timezone.utc)
             }
             await db.players.insert_one(player)
         
@@ -3480,7 +3480,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                     "sack_progress": sack_progress,
                     "sack_completed_count": sack_completed_count, 
                     "total_treats_created": new_treats_count,
-                    "last_activity": datetime.utcnow()
+                    "last_activity": datetime.now(timezone.utc)
                 },
                 "$inc": {
                     "experience": sack_bonus_xp  # Only award sack completion bonus XP (not treat creation XP)
@@ -3718,8 +3718,8 @@ async def register_player(registration_data: dict):
             "leaderboard_eligible": True,
             "registration_signature": signature,
             "registration_message": message,
-            "registered_at": datetime.utcnow(),
-            "last_activity": datetime.utcnow()
+            "registered_at": datetime.now(timezone.utc),
+            "last_activity": datetime.now(timezone.utc)
         }
         
         result = await db.players.insert_one(player_data)
@@ -3729,7 +3729,7 @@ async def register_player(registration_data: dict):
             "player_id": str(result.inserted_id),
             "address": address,
             "username": username,
-            "registered_at": datetime.utcnow().isoformat()
+            "registered_at": datetime.now(timezone.utc).isoformat()
         }
         
     except HTTPException:
@@ -3750,7 +3750,7 @@ def validate_telegram_data(init_data: str) -> dict:
         
         # Check if auth_date is not too old (optional, but recommended)
         # auth_timestamp = int(auth_date)
-        # current_timestamp = int(datetime.utcnow().timestamp())
+        # current_timestamp = int(datetime.now(timezone.utc).timestamp())
         # if current_timestamp - auth_timestamp > 86400:  # 24 hours
         #     raise ValueError("Data is too old")
         
@@ -3815,7 +3815,7 @@ async def register_telegram_player(request: Request):
                 "username": telegram_username,
                 "first_name": telegram_first_name,
                 "auth_type": "telegram",
-                "registered_at": existing_player.get("registered_at", datetime.utcnow()).isoformat()
+                "registered_at": existing_player.get("registered_at", datetime.now(timezone.utc)).isoformat()
             }
         
         # Create new Telegram player
@@ -3837,8 +3837,8 @@ async def register_telegram_player(request: Request):
             "total_treats_created": 0,
             "is_nft_holder": False,
             "leaderboard_eligible": True,
-            "registered_at": datetime.utcnow(),
-            "last_activity": datetime.utcnow()
+            "registered_at": datetime.now(timezone.utc),
+            "last_activity": datetime.now(timezone.utc)
         }
         
         result = await db.players.insert_one(player_data)
@@ -3850,7 +3850,7 @@ async def register_telegram_player(request: Request):
             "username": telegram_username,
             "first_name": telegram_first_name,
             "auth_type": "telegram",
-            "registered_at": datetime.utcnow().isoformat()
+            "registered_at": datetime.now(timezone.utc).isoformat()
         }
         
     except HTTPException:
@@ -3902,8 +3902,8 @@ async def register_guest_player(request: Request):
             "is_vip": False,
             "leaderboard_eligible": True,
             "can_convert_points": False,  # Can't convert without NFT
-            "registered_at": datetime.utcnow(),
-            "last_activity": datetime.utcnow()
+            "registered_at": datetime.now(timezone.utc),
+            "last_activity": datetime.now(timezone.utc)
         }
         
         await db.players.insert_one(player_data)
@@ -3919,7 +3919,7 @@ async def register_guest_player(request: Request):
             "leaderboard_eligible": True,
             "can_convert_points": False,
             "note": "Connect your wallet with a DogeFood NFT to convert points to $LAB tokens!",
-            "registered_at": datetime.utcnow().isoformat()
+            "registered_at": datetime.now(timezone.utc).isoformat()
         }
         
     except HTTPException:
@@ -4019,8 +4019,8 @@ async def register_firebase_player(request: Request):
             "is_vip": False,
             "leaderboard_eligible": True,
             "can_convert_points": False,
-            "registered_at": datetime.utcnow(),
-            "last_activity": datetime.utcnow()
+            "registered_at": datetime.now(timezone.utc),
+            "last_activity": datetime.now(timezone.utc)
         }
         
         await db.players.insert_one(player_data)
@@ -4038,7 +4038,7 @@ async def register_firebase_player(request: Request):
             "leaderboard_eligible": True,
             "can_convert_points": False,
             "note": "Connect your wallet with a DogeFood NFT to convert points to $LAB tokens!",
-            "registered_at": datetime.utcnow().isoformat()
+            "registered_at": datetime.now(timezone.utc).isoformat()
         }
         
     except HTTPException:
@@ -4077,8 +4077,8 @@ async def link_nft_wallet(request: Request):
             "is_nft_holder": is_nft_holder,
             "can_convert_points": is_nft_holder,  # Can convert if NFT holder
             "auth_type": "linked",
-            "last_activity": datetime.utcnow(),
-            "wallet_linked_at": datetime.utcnow()
+            "last_activity": datetime.now(timezone.utc),
+            "wallet_linked_at": datetime.now(timezone.utc)
         }
         
         # Award VIP bonus if NFT holder and not claimed
@@ -4145,10 +4145,10 @@ async def link_wallet_to_telegram(request: Request):
         update_data = {
             "address": wallet_address,
             "auth_type": "linked",
-            "last_activity": datetime.utcnow(),
+            "last_activity": datetime.now(timezone.utc),
             "wallet_signature": signature,
             "wallet_message": message,
-            "wallet_linked_at": datetime.utcnow()
+            "wallet_linked_at": datetime.now(timezone.utc)
         }
         
         await db.players.update_one(
@@ -4161,7 +4161,7 @@ async def link_wallet_to_telegram(request: Request):
             "telegram_id": telegram_id,
             "address": wallet_address,
             "auth_type": "linked",
-            "linked_at": datetime.utcnow().isoformat()
+            "linked_at": datetime.now(timezone.utc).isoformat()
         }
         
     except HTTPException:
@@ -4450,7 +4450,7 @@ async def health_check():
         
         return {
             "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "database": "connected",
             "current_season": current_season,
             "environment": "production" if "vercel" in os.getenv("VERCEL_URL", "") else "development"
@@ -4533,10 +4533,10 @@ async def reset_leaderboard(admin_key: str = None):
         season_doc = {
             "season_id": 1,
             "name": "Season 1 - Official Launch",
-            "started_at": datetime.utcnow(),
+            "started_at": datetime.now(timezone.utc),
             "end_date": datetime(2026, 3, 31, 23, 59, 59),  # Season 1 ends March 31, 2026
             "status": "active",
-            "reset_at": datetime.utcnow()
+            "reset_at": datetime.now(timezone.utc)
         }
         
         await db.seasons.update_one(
@@ -4553,7 +4553,7 @@ async def reset_leaderboard(admin_key: str = None):
             "players_reset": result.modified_count,
             "vip_bonuses_awarded": vip_result.modified_count,
             "treats_cleared": treats_deleted.deleted_count,
-            "season_started_at": datetime.utcnow().isoformat()
+            "season_started_at": datetime.now(timezone.utc).isoformat()
         }
         
     except Exception as e:
@@ -4578,7 +4578,7 @@ async def get_season_timer():
             # Default Season 1 end date: March 31, 2026
             end_date = datetime(2026, 3, 31, 23, 59, 59)
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         if now >= end_date:
             return {
@@ -4807,7 +4807,7 @@ async def subscribe_telegram_notifications(data: NotificationSubscription):
                     "type": "telegram",
                     "treat_ready": data.treat_ready,
                     "limit_reset": data.limit_reset,
-                    "subscribed_at": datetime.utcnow(),
+                    "subscribed_at": datetime.now(timezone.utc),
                     "active": True
                 }
             },
@@ -4886,7 +4886,7 @@ async def subscribe_web_notifications(data: NotificationSubscription):
                     "subscription": data.subscription,
                     "treat_ready": data.treat_ready,
                     "limit_reset": data.limit_reset,
-                    "subscribed_at": datetime.utcnow(),
+                    "subscribed_at": datetime.now(timezone.utc),
                     "active": True
                 }
             },
@@ -4946,7 +4946,7 @@ async def schedule_treat_ready_notification(data: ScheduleNotification, backgrou
             "type": "treat_ready",
             "treat_name": data.treat_name,
             "ready_time": data.ready_time,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
             "sent": False
         }
         
@@ -4975,7 +4975,7 @@ async def schedule_limit_reset_notification(data: ScheduleNotification, backgrou
             "id": str(uuid.uuid4()),
             "type": "limit_reset",
             "reset_time": data.reset_time,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
             "sent": False
         }
         
@@ -5004,7 +5004,7 @@ async def send_scheduled_notification(notification_id: str):
             return
         
         # Calculate if notification should be sent now
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         should_send = False
         
         if notification["type"] == "treat_ready" and notification.get("ready_time"):
@@ -5074,7 +5074,7 @@ async def send_scheduled_notification(notification_id: str):
         # Mark as sent
         await db.scheduled_notifications.update_one(
             {"id": notification_id},
-            {"$set": {"sent": True, "sent_at": datetime.utcnow()}}
+            {"$set": {"sent": True, "sent_at": datetime.now(timezone.utc)}}
         )
         
     except Exception as e:
@@ -5086,7 +5086,7 @@ async def notification_processor_loop():
     
     while True:
         try:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             now_iso = now.isoformat()
             
             # Find all unsent notifications that are ready to be sent
@@ -5183,10 +5183,10 @@ async def register_guest_player(request: GuestRegisterRequest):
             "experience": 0,
             "treats_created": 0,
             "streak_days": 0,
-            "last_activity": datetime.utcnow(),
-            "created_at": datetime.utcnow(),
+            "last_activity": datetime.now(timezone.utc),
+            "created_at": datetime.now(timezone.utc),
             "daily_treats_count": 0,
-            "daily_treats_last_reset": datetime.utcnow(),
+            "daily_treats_last_reset": datetime.now(timezone.utc),
             "is_nft_holder": False
         }
         
@@ -5348,7 +5348,7 @@ async def create_tournament(data: TournamentCreate):
             "start_date": data.start_date,
             "match_duration_hours": data.match_duration_hours,
             "qualified_players": [p["id"] for p in top_players],
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
             "champion": None
         }
         
@@ -5379,7 +5379,7 @@ async def create_tournament(data: TournamentCreate):
                 "start_time": start_time.isoformat(),
                 "end_time": end_time.isoformat(),
                 "winner_id": None,
-                "created_at": datetime.utcnow()
+                "created_at": datetime.now(timezone.utc)
             }
             await db.tournament_matches.insert_one(match)
         
@@ -5408,11 +5408,11 @@ async def start_tournament(tournament_id: str):
         # Update tournament status
         await db.tournaments.update_one(
             {"id": tournament_id},
-            {"$set": {"status": "active", "started_at": datetime.utcnow()}}
+            {"$set": {"status": "active", "started_at": datetime.now(timezone.utc)}}
         )
         
         # Activate quarterfinal matches
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         end_time = now + timedelta(hours=tournament.get("match_duration_hours", 48))
         
         await db.tournament_matches.update_many(
@@ -5486,7 +5486,7 @@ async def complete_match(match_id: str):
             {"$set": {
                 "status": "completed",
                 "winner_id": winner_id,
-                "completed_at": datetime.utcnow()
+                "completed_at": datetime.now(timezone.utc)
             }}
         )
         
@@ -5516,7 +5516,7 @@ async def complete_match(match_id: str):
                 {"$set": {
                     "status": "completed",
                     "champion": winner_id,
-                    "completed_at": datetime.utcnow()
+                    "completed_at": datetime.now(timezone.utc)
                 }}
             )
         
@@ -5546,7 +5546,7 @@ async def create_next_stage_matches(tournament_id: str, stage: str, tournament: 
                    for m in previous_matches]
         
         duration = tournament.get("match_duration_hours", 48)
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         end_time = start_time + timedelta(hours=duration)
         
         if stage == "semifinal":
@@ -5574,7 +5574,7 @@ async def create_next_stage_matches(tournament_id: str, stage: str, tournament: 
                 "start_time": start_time.isoformat(),
                 "end_time": end_time.isoformat(),
                 "winner_id": None,
-                "created_at": datetime.utcnow()
+                "created_at": datetime.now(timezone.utc)
             }
             await db.tournament_matches.insert_one(match)
         
@@ -5629,7 +5629,7 @@ def calculate_kernel_bonus(ingredients: List[str]) -> dict:
 async def get_current_special_ingredient_holder():
     """Get the current holder of the Kernel of Wow"""
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Find active holder
         holder = await db.special_ingredient_holders.find_one({
@@ -5667,7 +5667,7 @@ async def get_current_special_ingredient_holder():
 async def check_player_has_special_ingredient(address: str):
     """Check if a specific player currently has the Kernel of Wow"""
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         holder = await db.special_ingredient_holders.find_one({
             "player_address": address,
@@ -5704,7 +5704,7 @@ async def check_player_has_special_ingredient(address: str):
 async def select_random_special_ingredient_holder():
     """Select a random active player to receive the Kernel of Wow (admin/cron endpoint)"""
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Check if there's already an active holder
         existing_holder = await db.special_ingredient_holders.find_one({
@@ -5815,7 +5815,7 @@ async def get_special_ingredient_history(limit: int = 20):
 async def use_special_ingredient_in_treat(treat_id: str, player_address: str, ingredients: List[str]):
     """Record usage of Kernel of Wow in a treat and calculate bonus"""
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Check if player has active special ingredient
         holder = await db.special_ingredient_holders.find_one({
@@ -5906,7 +5906,7 @@ async def force_expire_kernel(address: str = None):
             
         result = await db.special_ingredient_holders.update_many(
             query,
-            {"$set": {"is_active": False, "expires_at": datetime.utcnow()}}
+            {"$set": {"is_active": False, "expires_at": datetime.now(timezone.utc)}}
         )
         
         return {
@@ -6286,8 +6286,8 @@ async def create_auto_mixer_subscription(request: AutoMixerCreateRequest):
             "payment_confirmations": 0,
             "total_auto_mixes": 0,
             "last_auto_mix": None,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
         }
         
         await db.auto_mixer_subscriptions.insert_one(subscription)
@@ -6423,7 +6423,7 @@ async def check_and_activate_pending_payments():
                 await db.processed_payments.insert_one({
                     "tx_hash": tx_hash,
                     "amount": 0,
-                    "processed_at": datetime.utcnow(),
+                    "processed_at": datetime.now(timezone.utc),
                     "matched_order_type": "not_incoming",
                     "matched_order_id": None
                 })
@@ -6453,7 +6453,7 @@ async def check_and_activate_pending_payments():
                     "tx_hash": tx_hash,
                     "amount": payment_amount,
                     "confirmations": confirmations,
-                    "processed_at": datetime.utcnow(),
+                    "processed_at": datetime.now(timezone.utc),
                     "matched_order_type": activated.get("type"),
                     "matched_order_id": activated.get("order_id"),
                     "player_address": activated.get("player_address")
@@ -6465,7 +6465,7 @@ async def check_and_activate_pending_payments():
                     "tx_hash": tx_hash,
                     "amount": payment_amount,
                     "confirmations": confirmations,
-                    "processed_at": datetime.utcnow(),
+                    "processed_at": datetime.now(timezone.utc),
                     "matched_order_type": "unmatched",
                     "matched_order_id": None
                 })
@@ -6483,7 +6483,7 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
     Uses unique_amount field for precise matching (each order has a distinct amount).
     Falls back to base amount matching for legacy orders without unique_amount.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     tolerance = 0.001  # Very tight tolerance for unique amounts
     
     # Filter to exclude test addresses
@@ -6695,7 +6695,7 @@ async def recheck_unmatched_payments():
                         "matched_order_type": activated.get("type"),
                         "matched_order_id": activated.get("order_id"),
                         "player_address": activated.get("player_address"),
-                        "rematched_at": datetime.utcnow()
+                        "rematched_at": datetime.now(timezone.utc)
                     }}
                 )
                 logger.info(f"Re-matched unmatched payment {tx_hash[:20]}... to {activated.get('type')} order")
@@ -6741,7 +6741,7 @@ async def admin_verify_transaction(
         if amount <= 0:
             return {"success": False, "error": "No payment found to our address in this transaction"}
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         if payment_type == "extra_life":
             if package_id not in EXTRA_LIFE_PACKAGES:
@@ -7061,7 +7061,7 @@ async def verify_auto_mixer_payment(request: AutoMixerPaymentVerifyRequest):
                     "confirmations": confirmations,
                     "payment_amount": payment_amount,
                     "payment_address": AUTO_MIXER_CONFIG["payment_address"],
-                    "verified_at": datetime.utcnow()
+                    "verified_at": datetime.now(timezone.utc)
                 }},
                 upsert=True
             )
@@ -7073,7 +7073,7 @@ async def verify_auto_mixer_payment(request: AutoMixerPaymentVerifyRequest):
             )
         
         # Update subscription
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         update_data = {
             "payment_tx_hash": request.tx_hash,
             "payment_confirmations": confirmations,
@@ -7134,10 +7134,10 @@ async def get_auto_mixer_subscription(player_address: str):
         if subscription:
             # Check if subscription has expired
             if subscription.get("status") == "active" and subscription.get("subscription_end"):
-                if datetime.utcnow() > subscription["subscription_end"]:
+                if datetime.now(timezone.utc) > subscription["subscription_end"]:
                     await db.auto_mixer_subscriptions.update_one(
                         {"id": subscription["id"]},
-                        {"$set": {"status": "expired", "updated_at": datetime.utcnow()}}
+                        {"$set": {"status": "expired", "updated_at": datetime.now(timezone.utc)}}
                     )
                     subscription["status"] = "expired"
         
@@ -7180,7 +7180,7 @@ async def update_auto_mixer_window(request: AutoMixerWindowUpdateRequest):
             {"$set": {
                 "window_start_hour": request.window_start_hour,
                 "window_end_hour": request.window_end_hour,
-                "updated_at": datetime.utcnow()
+                "updated_at": datetime.now(timezone.utc)
             }}
         )
         
@@ -7208,7 +7208,7 @@ async def cancel_auto_mixer_subscription(subscription_id: str, player_address: s
         
         await db.auto_mixer_subscriptions.update_one(
             {"id": subscription_id},
-            {"$set": {"status": "cancelled", "updated_at": datetime.utcnow()}}
+            {"$set": {"status": "cancelled", "updated_at": datetime.now(timezone.utc)}}
         )
         
         return {"message": "Subscription cancelled successfully"}
@@ -7293,7 +7293,7 @@ async def debug_subscriptions(admin_secret: str = Query(..., description="Admin 
         raise HTTPException(status_code=403, detail="Unauthorized - Invalid admin secret")
     
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Get all subscriptions
         all_subs = await db.auto_mixer_subscriptions.find({}).sort("created_at", -1).limit(50).to_list(50)
@@ -7344,7 +7344,7 @@ async def debug_subscriptions(admin_secret: str = Query(..., description="Admin 
 async def get_auto_mixer_agent_status():
     """Get detailed status of the auto-mixer agent"""
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Get all active subscriptions - handle both datetime objects and ISO strings
         # First try to get all active status subscriptions
@@ -7473,7 +7473,7 @@ async def get_auto_mixer_agent_status():
 async def get_auto_mixer_detailed_stats(player_address: str):
     """Get detailed auto-mixer stats for a specific player"""
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Get player's subscription
         subscription = await db.auto_mixer_subscriptions.find_one({
@@ -7627,7 +7627,7 @@ async def trigger_auto_mixer_now():
     RESPECTS GAME TREAT LIMITS (4 per 6h window + streak bonuses)
     """
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         current_hour = now.hour
         results = []
         
@@ -7822,7 +7822,7 @@ async def auto_mixer_processor_loop():
     
     while True:
         try:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             current_hour = now.hour
             
             logger.info(f"🤖 Auto-mixer checking at {now.strftime('%H:%M:%S')} UTC (hour: {current_hour})")
