@@ -2473,9 +2473,8 @@ async def get_brewing_treats(address: str):
         for treat in brewing_treats:
             ready_at = treat.get("ready_at")
             if ready_at:
-                # Parse ready_at if it's a string
-                if isinstance(ready_at, str):
-                    ready_at = parse_utc_datetime(ready_at)
+                # Parse ready_at ensuring it's timezone-aware
+                ready_at = parse_utc_datetime(ready_at)
                 
                 if now >= ready_at:
                     # Auto-update to ready
