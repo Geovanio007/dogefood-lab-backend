@@ -1,0 +1,54 @@
+{
+  "summary": "Backend bug fix verification COMPLETE - All 3 bugs fixed successfully. Fixed additional datetime offset issue in special-ingredient/current endpoint.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_bug_fixes_v2.py",
+    "/app/test_reports/pytest/bug_fixes_v2_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/server.py - Lines 5687-5690: Fixed special-ingredient/current endpoint to use parse_utc_datetime helper for timezone handling",
+    "/app/backend/server.py - Lines 5721-5723: Fixed special-ingredient/check/{address} endpoint to use parse_utc_datetime helper"
+  ],
+  "success_rate": {
+    "backend": "100% - All 16 tests passed"
+  },
+  "test_credentials": "None required - public API",
+  "seed_data_creation": "None - using production data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 3 bugs from the review request are verified fixed: (1) Timestamps now have UTC markers (Z suffix), (2) Happy Hour returns bonus_percent:25, (3) Kernel of Wow holder is a real player (Ramzes, not Anonymous). Fixed an additional datetime offset bug in special-ingredient/current endpoint that was causing 500 errors.",
+  "bugs_verified": {
+    "bug_1_timestamps_utc": {
+      "status": "FIXED",
+      "test": "TestTimestampUTCMarkers",
+      "details": "Activity feed and chat messages now include Z suffix on timestamps (e.g., 2026-02-26T01:25:16.718000Z)"
+    },
+    "bug_2_happy_hour_bonus": {
+      "status": "FIXED",
+      "test": "TestHappyHourBonus",
+      "details": "/api/happy-hour/status returns bonus_percent: 25, start_hour_utc: 15, duration_minutes: 60"
+    },
+    "bug_3_kernel_real_player": {
+      "status": "FIXED",
+      "test": "TestKernelOfWowHolder",
+      "details": "/api/special-ingredient/current returns real player 'Ramzes' with valid address 0x664186B0b57CAcb5359039db35F632b91a33ffFa (not Anonymous or 0x0000...0001)"
+    }
+  },
+  "additional_fixes_applied": {
+    "special_ingredient_datetime_fix": {
+      "description": "Fixed 'can't subtract offset-naive and offset-aware datetimes' error in /api/special-ingredient/current endpoint",
+      "root_cause": "MongoDB stores datetime as naive, but Python datetime.now(timezone.utc) is timezone-aware, causing subtraction error when calculating time_remaining",
+      "fix": "Used parse_utc_datetime helper function to ensure expires_at is timezone-aware before subtraction"
+    }
+  }
+}
