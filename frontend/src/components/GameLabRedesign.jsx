@@ -133,6 +133,8 @@ const GameLabRedesign = ({ playerAddress }) => {
   const [showCollectAnimation, setShowCollectAnimation] = useState(false);
   const [collectRewards, setCollectRewards] = useState(null);
   const [collectedTreat, setCollectedTreat] = useState(null);
+  const [isHappyHourActive, setIsHappyHourActive] = useState(false);
+  const [happyHourBonus, setHappyHourBonus] = useState(25);
   
   // Daily limit tracking
   const [dailyStatus, setDailyStatus] = useState(null);
