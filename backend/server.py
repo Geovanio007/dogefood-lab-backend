@@ -2777,9 +2777,10 @@ async def collect_treat(treat_id: str, data: dict):
 # Leaderboard Routes
 @api_router.get("/leaderboard")
 async def get_leaderboard(limit: int = 50):
-    # Only include players who have ACTUALLY played (created treats)
+    # Only include players who have played AND collected points
     query = {
         "total_treats_created": {"$gt": 0},
+        "points": {"$gt": 0},
         "nickname": {"$exists": True, "$nin": [None, ""]},
     }
     
