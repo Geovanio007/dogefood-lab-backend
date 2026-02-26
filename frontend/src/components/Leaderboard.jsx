@@ -388,19 +388,27 @@ const Leaderboard = () => {
             <Crown className="w-4 h-4 text-yellow-400" /> Reward Tiers
           </h4>
           <div className="grid grid-cols-3 gap-3">
-            {[
-              { medal: '🥇', label: 'Top 10', pool: '30%', mult: '1.5x', color: 'sky' },
-              { medal: '🥈', label: 'Top 20', pool: '20%', mult: '0.7x', color: 'sky' },
-              { medal: '🥉', label: 'Top 50', pool: '20%', mult: '0.2x', color: 'sky' },
-            ].map((t, i) => (
-              <div key={i} className={`text-center p-3 rounded-xl border border-${t.color}-500/15 bg-${t.color}-500/5`}
-                style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-                <div className="text-3xl mb-1">{t.medal}</div>
-                <h5 className={`font-bold text-sm text-${t.color}-400`}>{t.label}</h5>
-                <p className="text-[11px] text-slate-400">{t.pool} Pool</p>
-                <p className={`text-xs font-bold text-${t.color}-300`}>{t.mult} Multiplier</p>
-              </div>
-            ))}
+            <div className="text-center p-3 rounded-xl border border-sky-500/15 bg-sky-500/5"
+              style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
+              <div className="text-3xl mb-1">🥇</div>
+              <h5 className="font-bold text-sm text-sky-400">Top 10</h5>
+              <p className="text-[11px] text-slate-400">30% Pool</p>
+              <p className="text-xs font-bold text-sky-300">1.5x Multiplier</p>
+            </div>
+            <div className="text-center p-3 rounded-xl border border-sky-500/15 bg-sky-500/5"
+              style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
+              <div className="text-3xl mb-1">🥈</div>
+              <h5 className="font-bold text-sm text-sky-400">Top 20</h5>
+              <p className="text-[11px] text-slate-400">20% Pool</p>
+              <p className="text-xs font-bold text-sky-300">0.7x Multiplier</p>
+            </div>
+            <div className="text-center p-3 rounded-xl border border-sky-500/15 bg-sky-500/5"
+              style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
+              <div className="text-3xl mb-1">🥉</div>
+              <h5 className="font-bold text-sm text-sky-400">Top 50</h5>
+              <p className="text-[11px] text-slate-400">20% Pool</p>
+              <p className="text-xs font-bold text-sky-300">0.2x Multiplier</p>
+            </div>
           </div>
           <div className="mt-3 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15 text-center">
             <p className="text-emerald-300 text-xs">
