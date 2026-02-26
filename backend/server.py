@@ -8092,14 +8092,14 @@ async def startup_event():
     # Create indexes for performance
     try:
         await db.chat_messages.create_index([("created_at", -1)])
-        # Partial unique index on address - only for non-null addresses (Telegram users have null)
         await db.players.create_index(
             "address",
             unique=True,
             partialFilterExpression={"address": {"$type": "string"}}
         )
         await db.players.create_index("telegram_id", sparse=True)
-        await db.players.create_index([("points", -1)])
+        # Critical: compound index for leaderboard sort
+        await db.players.create_index([("points", -1), ("level", -1)])
         await db.players.create_index("last_active")
         await db.treats.create_index("id")
         await db.treats.create_index("creator_address")
