@@ -64,6 +64,12 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - **DB Indexes**: Added compound index on players (points, level), indexes on treats (id, creator_address, created_at, status), special_ingredient_holders, chat_messages
 - **Frontend**: Collect modal has 6s safety timeout + dismiss button; chat polling reduced from 5s to 10s
 
+### P0 Verification & Stability Patch (Feb 26, 2026) - COMPLETE
+- Fixed backend startup regression (IndentationError in `backend/server.py`) and restored healthy API service.
+- Unified active-player logic so `/api/stats.total_players` matches `/api/leaderboard` by using collected-treat activity criteria and excluding placeholder `GUEST_USER`.
+- Added TG_/tg_ case-tolerant handling in treat collect/create flows (`find_player_by_address`, ownership check, player update filter) to prevent Telegram identity mismatch edge-cases.
+- Verified via testing agent report `/app/test_reports/iteration_13.json`: backend 13/13 passed, frontend smoke passed, API response times all <2s.
+
 ## Deployment Info
 - **Frontend**: https://dogefoodlab.vercel.app (LIVE)
 - **Backend**: https://dogefood-lab-api.onrender.com (LIVE)
@@ -85,4 +91,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-February 26, 2026 - Leaderboard redesign (3D, sky blue, dark theme), Auto-Mix routing fix, Tournament routing verified. All deployed.
+February 26, 2026 - P0 verification complete, backend startup regression fixed, stats/leaderboard active-player consistency restored, TG_/tg_ tolerant player handling validated.
