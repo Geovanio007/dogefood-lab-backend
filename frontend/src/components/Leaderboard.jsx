@@ -323,17 +323,22 @@ const Leaderboard = () => {
 
                     {/* Name + Badges */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1 flex-wrap">
-                        <button
-                          onClick={() => setSelectedPlayerAddress(entry.address)}
-                          className="font-bold text-sm text-white hover:text-sky-400 transition-colors truncate"
-                          data-testid={`player-name-${rank}`}
-                          style={{ maxWidth: 'calc(100% - 60px)' }}
-                        >
-                          {entry.nickname || `Scientist #${rank}`}
-                        </button>
+                      <button
+                        onClick={() => setSelectedPlayerAddress(entry.address)}
+                        className="font-bold text-sm text-white hover:text-sky-400 transition-colors truncate block w-full text-left"
+                        data-testid={`player-name-${rank}`}
+                      >
+                        {entry.nickname || `Scientist #${rank}`}
+                      </button>
+                      <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                        {entry.character_name && (
+                          <span className="text-[10px] text-sky-400/60 truncate max-w-[70px] sm:max-w-none">{entry.character_name}</span>
+                        )}
+                        <Badge variant="outline" className="text-[9px] text-slate-300 border-white/10 px-1 py-0 sm:hidden">
+                          Lv {entry.level}
+                        </Badge>
                         {isCurrentUser && (
-                          <Badge className="bg-sky-500/20 text-sky-300 text-[9px] px-1.5 py-0 border border-sky-500/20">You</Badge>
+                          <Badge className="bg-sky-500/20 text-sky-300 text-[9px] px-1 py-0 border border-sky-500/20">You</Badge>
                         )}
                         {entry.is_nft_holder && (
                           <Badge className="bg-white/15 text-white text-[8px] px-1 py-0 border border-white/20" data-testid={`vip-badge-${rank}`}>VIP</Badge>
@@ -344,15 +349,7 @@ const Leaderboard = () => {
                             HOLDER
                           </Badge>
                         )}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        {entry.character_name && (
-                          <span className="text-[10px] text-sky-400/60 truncate max-w-[80px] sm:max-w-none">{entry.character_name}</span>
-                        )}
                         <span className="font-mono text-[10px] text-slate-500 hidden sm:inline">{formatAddr(entry.address)}</span>
-                        <Badge variant="outline" className="text-[9px] text-slate-300 border-white/10 px-1 py-0 sm:hidden">
-                          Lv {entry.level}
-                        </Badge>
                       </div>
                     </div>
 
