@@ -5113,9 +5113,13 @@ async def notification_processor_loop():
                     ready_time_str = notif["ready_time"]
                     try:
                         if isinstance(ready_time_str, str):
-                            ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "").replace("+00:00", ""))
+                            ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "+00:00"))
+                            if ready_time.tzinfo is None:
+                                ready_time = ready_time.replace(tzinfo=timezone.utc)
                         else:
                             ready_time = ready_time_str
+                            if hasattr(ready_time, 'tzinfo') and ready_time.tzinfo is None:
+                                ready_time = ready_time.replace(tzinfo=timezone.utc)
                         should_send = now >= ready_time
                     except Exception as e:
                         logger.warning(f"Error parsing ready_time {ready_time_str}: {e}")
@@ -5125,9 +5129,13 @@ async def notification_processor_loop():
                     reset_time_str = notif["reset_time"]
                     try:
                         if isinstance(reset_time_str, str):
-                            reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "").replace("+00:00", ""))
+                            reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "+00:00"))
+                            if reset_time.tzinfo is None:
+                                reset_time = reset_time.replace(tzinfo=timezone.utc)
                         else:
                             reset_time = reset_time_str
+                            if hasattr(reset_time, 'tzinfo') and reset_time.tzinfo is None:
+                                reset_time = reset_time.replace(tzinfo=timezone.utc)
                         should_send = now >= reset_time
                     except Exception as e:
                         logger.warning(f"Error parsing reset_time {reset_time_str}: {e}")
