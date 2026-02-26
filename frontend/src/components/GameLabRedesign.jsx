@@ -502,7 +502,7 @@ const GameLabRedesign = ({ playerAddress }) => {
           
           // Reload player data to update XP and points
           await loadPlayerData();
-        }, 2500);
+        }, 4000);
       } else {
         // If API fails, still hide animation
         setTimeout(async () => {
@@ -511,7 +511,7 @@ const GameLabRedesign = ({ playerAddress }) => {
           setCollectedTreat(null);
           setCollectRewards(null);
           await loadPlayerData();
-        }, 2500);
+        }, 4000);
       }
     } catch (err) {
       console.error('Error collecting treat:', err);
