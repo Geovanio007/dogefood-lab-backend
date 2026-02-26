@@ -1163,6 +1163,18 @@ const GameLabRedesign = ({ playerAddress }) => {
                         )}
                       </div>
                       
+                      {/* Points display with Happy Hour bonus */}
+                      <div className="flex items-center justify-between mb-2 px-1">
+                        <span className="text-sky-200 text-xs font-medium">
+                          {treat.points_reward || 0} pts base
+                        </span>
+                        {isHappyHourActive && (
+                          <span className="text-yellow-300 text-xs font-bold animate-pulse">
+                            +{happyHourBonus}% Happy Hour!
+                          </span>
+                        )}
+                      </div>
+                      
                       <Progress value={progress} className="h-3 mb-2" />
                       
                       <div className="text-center">
