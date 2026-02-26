@@ -469,60 +469,49 @@ const GameLabRedesign = ({ playerAddress }) => {
     setShowCollectAnimation(true);
     setCollectedTreat(treat);
     
+    // Immediately remove the treat from local state for snappy UX
+    setActiveTreats(prev => prev.filter(t => t.id !== treat.id));
+    
+    // Safety timeout: ALWAYS close modal after 6s even if API hangs
+    const safetyTimeout = setTimeout(() => {
+      setShowCollectAnimation(false);
+      setCollectingTreat(null);
+      setCollectedTreat(null);
+      setCollectRewards(null);
+      loadPlayerData();
+    }, 6000);
+    
     try {
-      // Call backend to collect the treat
       const response = await fetch(`${API_URL}/api/treats/${treat.id}/collect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ player_address: playerAddress })
       });
       
-      // Immediately remove the treat from local state
-      setActiveTreats(prev => prev.filter(t => t.id !== treat.id));
-      
       if (response.ok) {
         const data = await response.json();
-        
-        // Save rewards data for the animation
-        if (data.rewards) {
-          setCollectRewards(data.rewards);
-        }
-        
-        // Check if player leveled up
-        if (data.new_level && data.new_level > playerLevel) {
-          playLevelUp();
-        }
-        
-        // Show collection animation for 4 seconds (longer to show bonus breakdown)
-        setTimeout(async () => {
-          setShowCollectAnimation(false);
-          setCollectingTreat(null);
-          setCollectedTreat(null);
-          setCollectRewards(null);
-          
-          // Reload player data to update XP and points
-          await loadPlayerData();
-        }, 4000);
-      } else {
-        // If API fails, still hide animation
-        setTimeout(async () => {
-          setShowCollectAnimation(false);
-          setCollectingTreat(null);
-          setCollectedTreat(null);
-          setCollectRewards(null);
-          await loadPlayerData();
-        }, 4000);
+        if (data.rewards) setCollectRewards(data.rewards);
+        if (data.new_level && data.new_level > playerLevel) playLevelUp();
       }
-    } catch (err) {
-      console.error('Error collecting treat:', err);
-      // Still remove from UI even if API fails
-      setActiveTreats(prev => prev.filter(t => t.id !== treat.id));
+      
+      // Close 3s after API responds so user sees breakdown
+      clearTimeout(safetyTimeout);
       setTimeout(() => {
         setShowCollectAnimation(false);
         setCollectingTreat(null);
         setCollectedTreat(null);
         setCollectRewards(null);
-      }, 2500);
+        loadPlayerData();
+      }, 3000);
+    } catch (err) {
+      console.error('Error collecting treat:', err);
+      clearTimeout(safetyTimeout);
+      setTimeout(() => {
+        setShowCollectAnimation(false);
+        setCollectingTreat(null);
+        setCollectedTreat(null);
+        setCollectRewards(null);
+      }, 1500);
     }
   };
 
