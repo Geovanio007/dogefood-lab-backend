@@ -340,7 +340,7 @@ class Player(BaseModel):
     experience: int = 0
     points: int = 0
     created_treats: List[str] = []
-    last_active: datetime = Field(default_factory=datetime.utcnow)
+    last_active: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class PlayerCreate(BaseModel):
     address: str
@@ -361,7 +361,7 @@ class DogeTreat(BaseModel):
     main_ingredient: Optional[str] = None  # Enhanced: Main ingredient
     rarity: str
     flavor: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     image: str
     timer_duration: Optional[int] = None  # Enhanced: Timer in seconds
     brewing_status: str = "ready"  # Enhanced: "brewing" or "ready"
@@ -427,7 +427,7 @@ class ChatMessage(BaseModel):
     reply_preview: Optional[str] = None  # Preview of replied message
     upvotes: List[str] = []  # List of addresses who upvoted
     upvote_count: int = 0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ChatMessageCreate(BaseModel):
     sender_address: str
@@ -457,7 +457,7 @@ class MarketplaceListing(BaseModel):
     price_lab: Optional[float] = None   # Price in LAB (if seller accepts LAB)
     payment_options: str = "both"  # "doge", "lab", or "both"
     status: str = "active"  # "active", "sold", "cancelled"
-    listed_at: datetime = Field(default_factory=datetime.utcnow)
+    listed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     sold_at: Optional[datetime] = None
     buyer_address: Optional[str] = None
 
@@ -538,8 +538,8 @@ class AutoMixerSubscription(BaseModel):
     # Stats
     total_auto_mixes: int = 0
     last_auto_mix: Optional[datetime] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class AutoMixerCreateRequest(BaseModel):
     player_address: str
@@ -634,7 +634,7 @@ class SpecialIngredientHolder(BaseModel):
     player_address: str
     player_nickname: Optional[str] = None
     ingredient_id: str = "KERNEL_WOW"
-    granted_at: datetime = Field(default_factory=datetime.utcnow)
+    granted_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     expires_at: datetime
     used_in_treats: List[str] = []  # Treat IDs where this was used
     total_bonus_earned: int = 0
