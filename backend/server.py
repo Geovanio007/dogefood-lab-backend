@@ -2475,7 +2475,7 @@ async def get_brewing_treats(address: str):
             if ready_at:
                 # Parse ready_at if it's a string
                 if isinstance(ready_at, str):
-                    ready_at = datetime.fromisoformat(ready_at.replace("Z", "+00:00").replace("+00:00", ""))
+                    ready_at = parse_utc_datetime(ready_at)
                 
                 if now >= ready_at:
                     # Auto-update to ready
@@ -2553,13 +2553,13 @@ async def get_active_treats_with_timer(address: str):
             # Parse dates if strings
             if isinstance(ready_at, str):
                 try:
-                    ready_at = datetime.fromisoformat(ready_at.replace("Z", ""))
+                    ready_at = parse_utc_datetime(ready_at)
                 except:
                     ready_at = now
             
             if isinstance(created_at, str):
                 try:
-                    created_at = datetime.fromisoformat(created_at.replace("Z", ""))
+                    created_at = parse_utc_datetime(created_at)
                 except:
                     created_at = now
             
@@ -2641,7 +2641,7 @@ async def collect_treat(treat_id: str, data: dict):
         now = datetime.now(timezone.utc)
         ready_at = treat.get("ready_at")
         if isinstance(ready_at, str):
-            ready_at = datetime.fromisoformat(ready_at.replace("Z", ""))
+            ready_at = parse_utc_datetime(ready_at)
         
         if ready_at and now < ready_at:
             raise HTTPException(status_code=400, detail="Treat is not ready yet")
@@ -7355,7 +7355,7 @@ async def debug_subscriptions(admin_secret: str = Query(..., description="Admin 
                 elif isinstance(sub_end, str):
                     sub_end_parsed = sub_end
                     try:
-                        parsed = datetime.fromisoformat(sub_end.replace("Z", "").replace("+00:00", ""))
+                        parsed = parse_utc_datetime(sub_end)
                         is_active_now = parsed > now
                     except:
                         pass
@@ -7404,7 +7404,7 @@ async def get_auto_mixer_agent_status():
                 # Convert to datetime if it's a string
                 if isinstance(sub_end, str):
                     try:
-                        sub_end = datetime.fromisoformat(sub_end.replace("Z", "").replace("+00:00", ""))
+                        sub_end = parse_utc_datetime(sub_end)
                     except:
                         continue
                 if sub_end > now:
