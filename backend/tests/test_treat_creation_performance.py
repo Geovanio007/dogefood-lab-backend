@@ -310,8 +310,9 @@ class TestAntiCheatValidation:
     def test_rate_limiting_works(self):
         """Anti-cheat rate limiting should work correctly"""
         # Create multiple treats quickly to trigger rate limit
+        test_addr = get_unique_test_address()
         payload = {
-            "creator_address": f"test_rate_limit_{uuid.uuid4().hex[:8]}",
+            "creator_address": test_addr,
             "ingredients": TEST_INGREDIENTS,
             "player_level": 1
         }
@@ -332,7 +333,8 @@ class TestAntiCheatValidation:
     
     def test_daily_limit_enforced(self):
         """Daily limit should be enforced by anti-cheat system"""
-        response = requests.get(f"{BASE_URL}/api/daily-status/{TEST_ADDRESS}")
+        test_addr = get_unique_test_address()
+        response = requests.get(f"{BASE_URL}/api/daily-status/{test_addr}")
         assert response.status_code == 200
         data = response.json()
         
