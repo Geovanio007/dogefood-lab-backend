@@ -313,29 +313,36 @@ class AntiCheatSystem:
             "current_status": status
         }
     
-    async def consume_extra_treat_if_needed(self, player_address: str) -> Dict:
+    async def consume_extra_treat_if_needed(self, player_address: str, prefetched_player=None, prefetched_treats_24h=None) -> Dict:
         """
         Check if player needs to use an extra treat for this creation.
         If base window limit is exceeded but player has extra treats, consume one.
         Returns: {"consumed": bool, "remaining_balance": int}
+        Accepts prefetched data to avoid duplicate DB calls.
         """
-        # Get current status
-        treats_last_6h = await self._get_recent_treats(player_address, hours=WINDOW_HOURS)
+        now = datetime.utcnow()
+        
+        # Use prefetched treats or fetch from DB
+        if prefetched_treats_24h is not None:
+            cutoff_6h = now - timedelta(hours=WINDOW_HOURS)
+            treats_last_6h = [t for t in prefetched_treats_24h if t.get("created_at", now) >= cutoff_6h]
+        else:
+            treats_last_6h = await self._get_recent_treats(player_address, hours=WINDOW_HOURS)
         treats_in_window = len(treats_last_6h)
         
-        # Get streak bonus
-        streak_info = await self.get_player_streak(player_address)
+        # Get streak from player data directly
+        player = prefetched_player
+        if player is None:
+            player = await self.db.players.find_one({"address": player_address})
+        streak_info = self._compute_streak_from_player(player)
         streak_bonus = get_streak_bonus(streak_info["current_streak"])
         base_window_limit = WINDOW_TREAT_LIMIT + streak_bonus["bonus_treats"]
         
         # Check if over base limit
         if treats_in_window >= base_window_limit:
-            # Need to consume from extra treats balance
-            player = await self.db.players.find_one({"address": player_address})
             extra_balance = player.get("extra_treats_balance", 0) if player else 0
             
             if extra_balance > 0:
-                # Consume one extra treat
                 await self.db.players.update_one(
                     {"address": player_address},
                     {"$inc": {"extra_treats_balance": -1}}
