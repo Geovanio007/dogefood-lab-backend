@@ -35,8 +35,9 @@ class TestEnhancedTreatCreationPerformance:
     
     def test_enhanced_treat_creation_responds_under_3_seconds(self):
         """P0: Treat creation should respond in under 3 seconds after optimization"""
+        test_addr = get_unique_test_address()
         payload = {
-            "creator_address": TEST_ADDRESS,
+            "creator_address": test_addr,
             "ingredients": TEST_INGREDIENTS,
             "player_level": 1
         }
@@ -52,8 +53,9 @@ class TestEnhancedTreatCreationPerformance:
     
     def test_enhanced_treat_response_contains_treat_field(self):
         """Response should contain 'treat' field with treat data"""
+        test_addr = get_unique_test_address()
         payload = {
-            "creator_address": TEST_ADDRESS,
+            "creator_address": test_addr,
             "ingredients": TEST_INGREDIENTS,
             "player_level": 1
         }
@@ -74,8 +76,9 @@ class TestEnhancedTreatCreationPerformance:
     
     def test_enhanced_treat_response_contains_outcome_field(self):
         """Response should contain 'outcome' field with rarity and rewards"""
+        test_addr = get_unique_test_address()
         payload = {
-            "creator_address": TEST_ADDRESS,
+            "creator_address": test_addr,
             "ingredients": TEST_INGREDIENTS,
             "player_level": 1
         }
@@ -97,8 +100,9 @@ class TestEnhancedTreatCreationPerformance:
     
     def test_enhanced_treat_response_contains_daily_status(self):
         """Response should contain 'daily_status' field"""
+        test_addr = get_unique_test_address()
         payload = {
-            "creator_address": TEST_ADDRESS,
+            "creator_address": test_addr,
             "ingredients": TEST_INGREDIENTS,
             "player_level": 1
         }
@@ -119,8 +123,9 @@ class TestEnhancedTreatCreationPerformance:
     
     def test_enhanced_treat_response_contains_streak(self):
         """Response should contain 'streak' field with streak info"""
+        test_addr = get_unique_test_address()
         payload = {
-            "creator_address": TEST_ADDRESS,
+            "creator_address": test_addr,
             "ingredients": TEST_INGREDIENTS,
             "player_level": 1
         }
@@ -140,8 +145,9 @@ class TestEnhancedTreatCreationPerformance:
     
     def test_enhanced_treat_response_contains_message(self):
         """Response should contain 'message' field"""
+        test_addr = get_unique_test_address()
         payload = {
-            "creator_address": TEST_ADDRESS,
+            "creator_address": test_addr,
             "ingredients": TEST_INGREDIENTS,
             "player_level": 1
         }
