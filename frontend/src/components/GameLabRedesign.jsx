@@ -418,9 +418,8 @@ const GameLabRedesign = ({ playerAddress }) => {
           }
         }, 3000);
         
-        // Reload data
-        await loadPlayerData();
-        await loadActiveTreats();
+        // Reload data in parallel for faster response
+        await Promise.all([loadPlayerData(), loadActiveTreats()]);
       } else {
         setShowBrewingAnimation(false);
         
