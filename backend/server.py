@@ -3577,6 +3577,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         sack_bonus_xp = 50 if sack_just_completed else 0  # 50 XP bonus per sack completion
         
         # Run player update and daily status fetch in parallel
+        # Pass prefetched player data to daily_status to avoid re-querying
         player_update_task = db.players.update_one(
             {"address": treat_data.creator_address},
             {
@@ -3592,7 +3593,10 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 }
             }
         )
-        daily_status_task = anti_cheat_system.get_daily_treat_status(treat_data.creator_address)
+        # Recompute daily status using prefetched data + newly created treat
+        daily_status_task = anti_cheat_system.get_daily_treat_status(
+            treat_data.creator_address, prefetched_player=player
+        )
         
         _, daily_status = await asyncio.gather(player_update_task, daily_status_task)
         
