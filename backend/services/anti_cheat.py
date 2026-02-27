@@ -203,12 +203,15 @@ class AntiCheatSystem:
             "streak_active": streak_active
         }
     
-    async def update_player_streak(self, player_address: str) -> Dict:
+    async def update_player_streak(self, player_address: str, prefetched_player=None) -> Dict:
         """
         Update player's streak when they play (create a treat)
-        Returns the updated streak info with bonuses
+        Returns the updated streak info with bonuses.
+        Accepts prefetched player to avoid duplicate DB call.
         """
-        player = await self.db.players.find_one({"address": player_address})
+        player = prefetched_player
+        if player is None:
+            player = await self.db.players.find_one({"address": player_address})
         now = datetime.utcnow()
         today = now.date()
         
