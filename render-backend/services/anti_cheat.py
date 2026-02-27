@@ -67,36 +67,43 @@ class AntiCheatSystem:
         # Player activity cache
         self.player_cache = {}
     
-    async def get_daily_treat_status(self, player_address: str) -> Dict:
+    async def get_daily_treat_status(self, player_address: str, prefetched_player=None, prefetched_treats_24h=None) -> Dict:
         """
         Get player's treat creation status.
         NEW SYSTEM: 4 treats per 6-hour window, max 16 per 24 hours.
         Timer resets 6 hours after the FIRST treat in the current window.
         Extra treats can be purchased with DOGE.
+        Accepts prefetched data to avoid duplicate DB calls.
         """
         now = datetime.utcnow()
         
-        # Get treats created in different time windows
-        treats_last_6h = await self._get_recent_treats(player_address, hours=WINDOW_HOURS)
-        treats_last_24h = await self._get_recent_treats(player_address, hours=24)
+        # Use prefetched treats or fetch from DB
+        if prefetched_treats_24h is not None:
+            treats_last_24h = prefetched_treats_24h
+            cutoff_6h = now - timedelta(hours=WINDOW_HOURS)
+            treats_last_6h = [t for t in treats_last_24h if t.get("created_at", now) >= cutoff_6h]
+        else:
+            treats_last_24h, treats_last_6h = await asyncio.gather(
+                self._get_recent_treats(player_address, hours=24),
+                self._get_recent_treats(player_address, hours=WINDOW_HOURS)
+            )
         
         treats_in_window = len(treats_last_6h)
         treats_today = len(treats_last_24h)
         
-        # Get player's extra treats balance (purchased with DOGE)
-        player = await self.db.players.find_one({"address": player_address})
-        extra_treats_balance = 0
+        # Use prefetched player or fetch from DB
+        player = prefetched_player
+        if player is None:
+            player = await self.db.players.find_one({"address": player_address})
+        extra_treats_balance = player.get("extra_treats_balance", 0) if player else 0
         
-        if player:
-            extra_treats_balance = player.get("extra_treats_balance", 0)
-        
-        # Get streak bonus
-        streak_info = await self.get_player_streak(player_address)
+        # Get streak from player data directly (avoid extra DB call)
+        streak_info = self._compute_streak_from_player(player)
         streak_bonus = get_streak_bonus(streak_info["current_streak"])
         
         # Calculate limits
         window_limit = WINDOW_TREAT_LIMIT + streak_bonus["bonus_treats"]
-        daily_limit = MAX_DAILY_TREATS + (streak_bonus["bonus_treats"] * 4)  # Bonus applies to each window
+        daily_limit = MAX_DAILY_TREATS + (streak_bonus["bonus_treats"] * 4)
         
         # Calculate remaining in current window (including extra treats from purchases)
         base_remaining_in_window = max(0, window_limit - treats_in_window)
@@ -113,7 +120,6 @@ class AntiCheatSystem:
         # Calculate time until window reset (6h from first treat in window)
         time_until_reset = 0
         if treats_last_6h:
-            # Find the oldest treat in the 6h window
             oldest_treat = min(treats_last_6h, key=lambda x: x.get("created_at", now))
             oldest_time = oldest_treat.get("created_at", now)
             if isinstance(oldest_time, str):
@@ -139,6 +145,29 @@ class AntiCheatSystem:
             "treats_created_today": treats_today,
             "base_limit": WINDOW_TREAT_LIMIT,
             "total_limit": daily_limit
+        }
+    
+    def _compute_streak_from_player(self, player) -> Dict:
+        """Compute streak info from player data without a DB call."""
+        if not player:
+            return {"current_streak": 0, "longest_streak": 0, "last_play_date": None, "streak_active": False}
+        
+        current_streak = player.get("current_streak", 0)
+        longest_streak = player.get("longest_streak", 0)
+        last_play_date = player.get("last_play_date")
+        
+        streak_active = False
+        if last_play_date:
+            if isinstance(last_play_date, str):
+                last_play_date = datetime.fromisoformat(last_play_date.replace("Z", "+00:00").replace("+00:00", ""))
+            hours_since_play = (datetime.utcnow() - last_play_date).total_seconds() / 3600
+            streak_active = hours_since_play < 48
+        
+        return {
+            "current_streak": current_streak if streak_active else 0,
+            "longest_streak": longest_streak,
+            "last_play_date": last_play_date.isoformat() if last_play_date else None,
+            "streak_active": streak_active
         }
     
     async def get_player_streak(self, player_address: str) -> Dict:
@@ -174,12 +203,15 @@ class AntiCheatSystem:
             "streak_active": streak_active
         }
     
-    async def update_player_streak(self, player_address: str) -> Dict:
+    async def update_player_streak(self, player_address: str, prefetched_player=None) -> Dict:
         """
         Update player's streak when they play (create a treat)
-        Returns the updated streak info with bonuses
+        Returns the updated streak info with bonuses.
+        Accepts prefetched player to avoid duplicate DB call.
         """
-        player = await self.db.players.find_one({"address": player_address})
+        player = prefetched_player
+        if player is None:
+            player = await self.db.players.find_one({"address": player_address})
         now = datetime.utcnow()
         today = now.date()
         
@@ -284,29 +316,36 @@ class AntiCheatSystem:
             "current_status": status
         }
     
-    async def consume_extra_treat_if_needed(self, player_address: str) -> Dict:
+    async def consume_extra_treat_if_needed(self, player_address: str, prefetched_player=None, prefetched_treats_24h=None) -> Dict:
         """
         Check if player needs to use an extra treat for this creation.
         If base window limit is exceeded but player has extra treats, consume one.
         Returns: {"consumed": bool, "remaining_balance": int}
+        Accepts prefetched data to avoid duplicate DB calls.
         """
-        # Get current status
-        treats_last_6h = await self._get_recent_treats(player_address, hours=WINDOW_HOURS)
+        now = datetime.utcnow()
+        
+        # Use prefetched treats or fetch from DB
+        if prefetched_treats_24h is not None:
+            cutoff_6h = now - timedelta(hours=WINDOW_HOURS)
+            treats_last_6h = [t for t in prefetched_treats_24h if t.get("created_at", now) >= cutoff_6h]
+        else:
+            treats_last_6h = await self._get_recent_treats(player_address, hours=WINDOW_HOURS)
         treats_in_window = len(treats_last_6h)
         
-        # Get streak bonus
-        streak_info = await self.get_player_streak(player_address)
+        # Get streak from player data directly
+        player = prefetched_player
+        if player is None:
+            player = await self.db.players.find_one({"address": player_address})
+        streak_info = self._compute_streak_from_player(player)
         streak_bonus = get_streak_bonus(streak_info["current_streak"])
         base_window_limit = WINDOW_TREAT_LIMIT + streak_bonus["bonus_treats"]
         
         # Check if over base limit
         if treats_in_window >= base_window_limit:
-            # Need to consume from extra treats balance
-            player = await self.db.players.find_one({"address": player_address})
             extra_balance = player.get("extra_treats_balance", 0) if player else 0
             
             if extra_balance > 0:
-                # Consume one extra treat
                 await self.db.players.update_one(
                     {"address": player_address},
                     {"$inc": {"extra_treats_balance": -1}}
@@ -315,19 +354,25 @@ class AntiCheatSystem:
         
         return {"consumed": False, "remaining_balance": 0}
     
-    async def validate_treat_creation(self, player_address: str, treat_data: Dict) -> Dict:
+    async def validate_treat_creation(self, player_address: str, treat_data: Dict, prefetched_player=None, prefetched_treats_24h=None) -> Dict:
         """
         Validate treat creation for anti-cheat
         Returns: {"valid": bool, "reason": str, "severity": str}
+        Accepts prefetched data to avoid duplicate DB calls.
         """
+        now = datetime.utcnow()
         
-        # Get player's recent activity
-        recent_treats = await self._get_recent_treats(player_address, hours=1)
+        # Use prefetched treats or fetch from DB
+        if prefetched_treats_24h is not None:
+            cutoff_1h = now - timedelta(hours=1)
+            recent_treats = [t for t in prefetched_treats_24h if t.get("created_at", now) >= cutoff_1h]
+        else:
+            recent_treats = await self._get_recent_treats(player_address, hours=1)
         
         violations = []
         
         # Check limit first (4 per 6h, max 16 per 24h)
-        daily_status = await self.get_daily_treat_status(player_address)
+        daily_status = await self.get_daily_treat_status(player_address, prefetched_player=prefetched_player, prefetched_treats_24h=prefetched_treats_24h)
         if not daily_status["can_create_treat"]:
             # Determine which limit was hit
             if daily_status["remaining_in_window"] <= 0:
