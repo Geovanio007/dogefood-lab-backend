@@ -344,19 +344,25 @@ class AntiCheatSystem:
         
         return {"consumed": False, "remaining_balance": 0}
     
-    async def validate_treat_creation(self, player_address: str, treat_data: Dict) -> Dict:
+    async def validate_treat_creation(self, player_address: str, treat_data: Dict, prefetched_player=None, prefetched_treats_24h=None) -> Dict:
         """
         Validate treat creation for anti-cheat
         Returns: {"valid": bool, "reason": str, "severity": str}
+        Accepts prefetched data to avoid duplicate DB calls.
         """
+        now = datetime.utcnow()
         
-        # Get player's recent activity
-        recent_treats = await self._get_recent_treats(player_address, hours=1)
+        # Use prefetched treats or fetch from DB
+        if prefetched_treats_24h is not None:
+            cutoff_1h = now - timedelta(hours=1)
+            recent_treats = [t for t in prefetched_treats_24h if t.get("created_at", now) >= cutoff_1h]
+        else:
+            recent_treats = await self._get_recent_treats(player_address, hours=1)
         
         violations = []
         
         # Check limit first (4 per 6h, max 16 per 24h)
-        daily_status = await self.get_daily_treat_status(player_address)
+        daily_status = await self.get_daily_treat_status(player_address, prefetched_player=prefetched_player, prefetched_treats_24h=prefetched_treats_24h)
         if not daily_status["can_create_treat"]:
             # Determine which limit was hit
             if daily_status["remaining_in_window"] <= 0:
