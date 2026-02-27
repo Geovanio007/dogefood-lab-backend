@@ -171,13 +171,15 @@ class TestDailyStatusEndpoint:
     
     def test_daily_status_endpoint_responds(self):
         """Daily status endpoint should return 200"""
-        response = requests.get(f"{BASE_URL}/api/daily-status/{TEST_ADDRESS}")
+        test_addr = get_unique_test_address()
+        response = requests.get(f"{BASE_URL}/api/daily-status/{test_addr}")
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         print(f"✓ Daily status endpoint responded successfully")
     
     def test_daily_status_contains_required_fields(self):
         """Daily status should contain all required fields"""
-        response = requests.get(f"{BASE_URL}/api/daily-status/{TEST_ADDRESS}")
+        test_addr = get_unique_test_address()
+        response = requests.get(f"{BASE_URL}/api/daily-status/{test_addr}")
         assert response.status_code == 200
         data = response.json()
         
@@ -198,8 +200,9 @@ class TestDailyStatusEndpoint:
     
     def test_daily_status_performance(self):
         """Daily status should respond in under 2 seconds"""
+        test_addr = get_unique_test_address()
         start = time.time()
-        response = requests.get(f"{BASE_URL}/api/daily-status/{TEST_ADDRESS}")
+        response = requests.get(f"{BASE_URL}/api/daily-status/{test_addr}")
         elapsed = time.time() - start
         
         assert response.status_code == 200
