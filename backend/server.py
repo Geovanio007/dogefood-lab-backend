@@ -8138,6 +8138,8 @@ async def startup_event():
         await db.treats.create_index("creator_address")
         await db.treats.create_index([("created_at", -1)])
         await db.treats.create_index("brewing_status")
+        # Compound index for anti-cheat: treats by creator + time range
+        await db.treats.create_index([("creator_address", 1), ("created_at", -1)])
         await db.special_ingredient_holders.create_index([("player_address", 1), ("is_active", 1)])
         logger.info("DB indexes created/verified")
     except Exception as e:
