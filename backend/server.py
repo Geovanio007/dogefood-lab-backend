@@ -3376,13 +3376,23 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         if not validation["valid"]:
             raise HTTPException(status_code=400, detail=f"Invalid treat creation: {validation['errors']}")
         
-        # Anti-cheat validation (includes daily limit check)
+        # PERFORMANCE: Fetch player + recent treats ONCE upfront in parallel
+        player_task = find_player_by_address(treat_data.creator_address)
+        treats_task = db.treats.find({
+            "creator_address": treat_data.creator_address,
+            "created_at": {"$gte": datetime.now(timezone.utc) - timedelta(hours=24)}
+        }).sort("created_at", -1).to_list(100)
+        
+        player, recent_treats_24h = await asyncio.gather(player_task, treats_task)
+        
+        # Anti-cheat validation — pass prefetched data to avoid re-querying
         cheat_check = await anti_cheat_system.validate_treat_creation(
             treat_data.creator_address,
-            {"ingredients": treat_data.ingredients, "level": treat_data.player_level}
+            {"ingredients": treat_data.ingredients, "level": treat_data.player_level},
+            prefetched_player=player,
+            prefetched_treats_24h=recent_treats_24h
         )
         if not cheat_check["valid"]:
-            # Return more detailed error for daily limit
             daily_status = cheat_check.get("daily_status")
             error_detail = {
                 "message": cheat_check['reason'],
@@ -3390,15 +3400,15 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             }
             raise HTTPException(status_code=429, detail=error_detail)
         
-        # Consume extra treat if over base limit (player used purchased extra treats)
-        # Run independent DB operations in parallel for performance
-        extra_treat_task = anti_cheat_system.consume_extra_treat_if_needed(treat_data.creator_address)
-        streak_task = anti_cheat_system.update_player_streak(treat_data.creator_address)
-        player_task = find_player_by_address(treat_data.creator_address)
-        
-        extra_treat_consumed, streak_result, player = await asyncio.gather(
-            extra_treat_task, streak_task, player_task
+        # Run remaining DB operations in parallel, passing prefetched data
+        extra_treat_task = anti_cheat_system.consume_extra_treat_if_needed(
+            treat_data.creator_address, prefetched_player=player, prefetched_treats_24h=recent_treats_24h
         )
+        streak_task = anti_cheat_system.update_player_streak(
+            treat_data.creator_address, prefetched_player=player
+        )
+        
+        extra_treat_consumed, streak_result = await asyncio.gather(extra_treat_task, streak_task)
         
         streak_bonus = streak_result.get("streak_bonus", {})
         xp_multiplier = streak_bonus.get("xp_multiplier", 1.0)
