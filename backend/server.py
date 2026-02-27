@@ -3560,7 +3560,13 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 "leaderboard_eligible": True,
                 "last_activity": datetime.now(timezone.utc)
             }
-            await db.players.insert_one(player)
+            # Use upsert to avoid duplicate key error if player was created
+            # by update_player_streak (which runs in parallel with upsert=True)
+            await db.players.update_one(
+                {"address": treat_data.creator_address},
+                {"$setOnInsert": player},
+                upsert=True
+            )
         
         # Update treat count and sack progress
         current_treats_count = len(player.get('created_treats', []))
