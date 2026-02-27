@@ -20,8 +20,14 @@ import uuid
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test address - use unique address to avoid conflicts with other tests
-TEST_ADDRESS = "test_perf_agent_v2"
+# Generate unique address per test session to avoid rate limiting issues
+import time
+TEST_ADDRESS_BASE = f"test_perf_{int(time.time())}"
 TEST_INGREDIENTS = ["kibble", "bone_meal"]
+
+def get_unique_test_address():
+    """Generate unique address for each test to avoid rate limiting"""
+    return f"{TEST_ADDRESS_BASE}_{uuid.uuid4().hex[:8]}"
 
 
 class TestEnhancedTreatCreationPerformance:
