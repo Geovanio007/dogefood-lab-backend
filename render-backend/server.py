@@ -26,12 +26,10 @@ def parse_utc_datetime(dt_val) -> datetime:
     if dt_val is None:
         return datetime.now(timezone.utc)
     if isinstance(dt_val, str):
-        # Normalize the Z suffix to +00:00 for fromisoformat
         cleaned = dt_val.replace("Z", "+00:00")
         parsed = datetime.fromisoformat(cleaned)
     else:
         parsed = dt_val
-    # If naive (no timezone), assume UTC
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed
@@ -2847,7 +2845,7 @@ async def get_leaderboard(limit: int = 200):
         "vip_bonus_claimed": 1,
     }
     
-    top_players = await db.players.find(query, projection).sort([("points", -1), ("level", -1)]).limit(limit).to_list(limit)
+    top_players = await db.players.find(query, projection).sort([("points", -1), ("level", -1)]).limit(limit + 20).to_list(limit + 20)
     
     # Character data mapping
     character_data = {
@@ -2866,8 +2864,14 @@ async def get_leaderboard(limit: int = 200):
     }
     
     leaderboard = []
-    for rank, player in enumerate(top_players, 1):
-        if rank > limit:
+    display_rank = 0
+    for player in top_players:
+        # Skip VIP-only players: they have 500 bonus but no gameplay earnings
+        if player.get("vip_bonus_claimed") and player.get("points", 0) <= 500:
+            continue
+        
+        display_rank += 1
+        if display_rank > limit:
             break
             
         char_id = player.get("selected_character")
@@ -2884,7 +2888,7 @@ async def get_leaderboard(limit: int = 200):
             "is_nft_holder": player.get("is_nft_holder", False),
             "is_dogeonews_holder": player.get("is_dogeonews_holder", False),
             "is_vip": player.get("is_vip", False),
-            "rank": rank,
+            "rank": display_rank,
             "selected_character": char_id,
             "character_name": char_info.get('name'),
             "character_image": char_info.get('image')
