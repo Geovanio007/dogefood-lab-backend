@@ -236,13 +236,15 @@ class TestActiveTreatsEndpoint:
     
     def test_active_treats_endpoint_responds(self):
         """Active treats endpoint should return 200"""
-        response = requests.get(f"{BASE_URL}/api/treats/{TEST_ADDRESS}/active")
+        test_addr = get_unique_test_address()
+        response = requests.get(f"{BASE_URL}/api/treats/{test_addr}/active")
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         print(f"✓ Active treats endpoint responded successfully")
     
     def test_active_treats_contains_treats_array(self):
         """Active treats should return 'treats' array"""
-        response = requests.get(f"{BASE_URL}/api/treats/{TEST_ADDRESS}/active")
+        test_addr = get_unique_test_address()
+        response = requests.get(f"{BASE_URL}/api/treats/{test_addr}/active")
         assert response.status_code == 200
         data = response.json()
         
@@ -252,8 +254,9 @@ class TestActiveTreatsEndpoint:
     
     def test_active_treats_performance(self):
         """Active treats should respond in under 2 seconds"""
+        test_addr = get_unique_test_address()
         start = time.time()
-        response = requests.get(f"{BASE_URL}/api/treats/{TEST_ADDRESS}/active")
+        response = requests.get(f"{BASE_URL}/api/treats/{test_addr}/active")
         elapsed = time.time() - start
         
         assert response.status_code == 200
