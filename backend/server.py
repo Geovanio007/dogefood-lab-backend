@@ -3658,6 +3658,9 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']:.1f} hours.{streak_message}{kernel_message}{'(Offchain storage)' if season_id == 1 else ''}{' 🎉 Sack completed! +50 XP bonus!' if sack_just_completed else ''}"
         }
         
+    except HTTPException:
+        # Re-raise HTTPExceptions as-is (don't wrap in 500)
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating enhanced treat: {str(e)}")
 
