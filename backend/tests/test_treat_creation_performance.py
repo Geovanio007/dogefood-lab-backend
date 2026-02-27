@@ -215,14 +215,16 @@ class TestPlayerEndpoint:
     
     def test_player_endpoint_responds(self):
         """Player endpoint should return 200 or 404"""
-        response = requests.get(f"{BASE_URL}/api/player/{TEST_ADDRESS}")
+        test_addr = get_unique_test_address()
+        response = requests.get(f"{BASE_URL}/api/player/{test_addr}")
         assert response.status_code in [200, 404], f"Expected 200 or 404, got {response.status_code}"
         print(f"✓ Player endpoint responded with status {response.status_code}")
     
     def test_player_endpoint_performance(self):
         """Player endpoint should respond in under 2 seconds"""
+        test_addr = get_unique_test_address()
         start = time.time()
-        response = requests.get(f"{BASE_URL}/api/player/{TEST_ADDRESS}")
+        response = requests.get(f"{BASE_URL}/api/player/{test_addr}")
         elapsed = time.time() - start
         
         assert elapsed < 2.0, f"Player endpoint took {elapsed:.2f}s, expected < 2s"
