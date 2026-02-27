@@ -1,0 +1,94 @@
+{
+  "summary": "Performance optimization testing completed. 20/20 tests passed. POST /api/treats/enhanced now responds in <3 seconds (measured ~1.3s). Fixed 2 critical bugs during testing: (1) duplicate key error due to race condition between insert_one and upsert, (2) HTTPException being wrapped in 500 error.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_treat_creation_performance.py",
+    "/app/test_reports/pytest/treat_creation_performance_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fixed race condition bug: Changed db.players.insert_one() to db.players.update_one() with upsert=True and $setOnInsert to avoid duplicate key error when anti_cheat.update_player_streak() creates player with upsert=True during parallel execution",
+    "Fixed HTTPException wrapping: Added explicit `except HTTPException: raise` before generic exception handler to prevent 429 rate limit responses from being wrapped in 500 errors"
+  ],
+  "updated_files": [
+    "/app/backend/server.py - Line 3563: Changed insert_one to update_one with upsert=True",
+    "/app/backend/server.py - Line 3661-3662: Added HTTPException re-raise before generic handler",
+    "/app/backend/tests/test_treat_creation_performance.py (NEW - 20 test cases)"
+  ],
+  "success_rate": {
+    "backend": "100% - 20/20 tests passed",
+    "frontend": "N/A - backend only testing requested"
+  },
+  "test_credentials": "None required - public API, unique test addresses generated per test",
+  "seed_data_creation": "Dynamic test addresses created per test run (test_perf_{timestamp}_{uuid})",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Performance optimization verified: POST /api/treats/enhanced responds in ~1.3 seconds (was >60s before optimization). Key optimizations: (1) Prefetch player + treats in parallel at line 3379-3386, (2) Anti-cheat validation uses prefetched data, (3) Daily status and player update run in parallel. Two bugs fixed during testing: duplicate key race condition and HTTPException wrapping.",
+  "verified_optimizations": {
+    "treat_creation_performance": {
+      "status": "VERIFIED",
+      "before": ">60 seconds (reported by user)",
+      "after": "~1.3 seconds (measured)",
+      "requirement": "<3 seconds",
+      "details": "Consolidated 15+ sequential DB queries into ~5 parallelized ones using asyncio.gather"
+    },
+    "response_structure": {
+      "status": "VERIFIED",
+      "details": "Response contains all required fields: treat, outcome, daily_status, streak, message"
+    },
+    "daily_status_endpoint": {
+      "status": "VERIFIED",
+      "details": "GET /api/daily-status/{address} responds correctly with all required fields"
+    },
+    "player_endpoint": {
+      "status": "VERIFIED",
+      "details": "GET /api/player/{address} responds in <2s"
+    },
+    "active_treats_endpoint": {
+      "status": "VERIFIED",
+      "details": "GET /api/treats/{address}/active responds in <2s"
+    },
+    "stats_endpoint": {
+      "status": "VERIFIED",
+      "details": "GET /api/stats responds in <2s"
+    },
+    "leaderboard_endpoint": {
+      "status": "VERIFIED",
+      "details": "GET /api/leaderboard responds in <2s"
+    },
+    "anti_cheat_validation": {
+      "status": "VERIFIED",
+      "details": "Rate limiting works correctly with prefetched data, returns 429 when daily limit reached"
+    }
+  },
+  "bugs_fixed_during_testing": [
+    {
+      "bug": "E11000 duplicate key error on new player treat creation",
+      "root_cause": "Race condition: find_player_by_address returns None, then anti_cheat.update_player_streak creates player with upsert=True (line 220-230 in anti_cheat.py), then server.py line 3563 tries insert_one on same address",
+      "fix": "Changed insert_one to update_one with upsert=True and $setOnInsert to only set fields if player doesn't exist",
+      "file": "/app/backend/server.py line 3563"
+    },
+    {
+      "bug": "429 rate limit responses returned as 500 errors",
+      "root_cause": "Generic exception handler at line 3661-3662 was catching HTTPException and wrapping it in a 500 error",
+      "fix": "Added explicit 'except HTTPException: raise' before generic exception handler",
+      "file": "/app/backend/server.py lines 3661-3662"
+    }
+  ],
+  "api_response_times": {
+    "POST /api/treats/enhanced": "~1.3s (newly created player)",
+    "GET /api/daily-status/{address}": "<0.5s",
+    "GET /api/player/{address}": "<0.5s",
+    "GET /api/treats/{address}/active": "<0.5s",
+    "GET /api/stats": "<0.5s",
+    "GET /api/leaderboard": "<0.5s"
+  }
+}
