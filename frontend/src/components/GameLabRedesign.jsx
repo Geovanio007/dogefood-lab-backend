@@ -298,8 +298,21 @@ const GameLabRedesign = ({ playerAddress }) => {
     const init = async () => {
       setLoading(true);
       try {
-        // Load all data in PARALLEL instead of sequential
-        await Promise.all([loadPlayerData(), loadIngredients(), loadActiveTreats()]);
+        // Load all data in PARALLEL including subscription check
+        const subFetch = fetch(`${API_URL}/api/auto-mixer/subscription/${playerAddress}`)
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null);
+        
+        await Promise.all([
+          loadPlayerData(), 
+          loadIngredients(), 
+          loadActiveTreats(),
+          subFetch.then(data => {
+            if (data?.subscription?.expiring_soon) {
+              setSubscriptionExpiry(data.subscription);
+            }
+          })
+        ]);
       } catch (err) {
         console.error('Error during initial load:', err);
         setError('Failed to load game data. Please refresh the page.');
