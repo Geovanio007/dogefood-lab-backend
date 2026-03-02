@@ -7437,16 +7437,12 @@ async def debug_subscriptions(admin_secret: str = Query(..., description="Admin 
             is_active_now = False
             
             if sub_end:
-                if isinstance(sub_end, datetime):
-                    sub_end_parsed = sub_end.isoformat()
-                    is_active_now = sub_end > now
-                elif isinstance(sub_end, str):
-                    sub_end_parsed = sub_end
-                    try:
-                        parsed = parse_utc_datetime(sub_end)
-                        is_active_now = parsed > now
-                    except:
-                        pass
+                try:
+                    sub_end_aware = parse_utc_datetime(sub_end)
+                    sub_end_parsed = sub_end_aware.isoformat()
+                    is_active_now = sub_end_aware > now
+                except Exception:
+                    sub_end_parsed = str(sub_end)
             
             debug_info.append({
                 "id": sub.get("id"),
