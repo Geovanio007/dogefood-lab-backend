@@ -7664,10 +7664,28 @@ async def get_auto_mixer_detailed_stats(player_address: str):
             in_window = current_hour >= start_hour or current_hour < end_hour
             window_hours = (24 - start_hour) + end_hour
         
-        # Calculate subscription progress
+        # Calculate subscription progress — handle string dates
         sub_start = subscription.get("subscription_start")
         sub_end = subscription.get("subscription_end")
+        if sub_start and isinstance(sub_start, str):
+            try:
+                sub_start = parse_utc_datetime(sub_start)
+            except Exception:
+                sub_start = None
+        if sub_end and isinstance(sub_end, str):
+            try:
+                sub_end = parse_utc_datetime(sub_end)
+            except Exception:
+                sub_end = None
+        
         if sub_start and sub_end:
+            if sub_end <= now:
+                # Subscription expired — update status
+                await db.auto_mixer_subscriptions.update_one(
+                    {"id": subscription.get("id")},
+                    {"$set": {"status": "expired", "updated_at": now}}
+                )
+                return {"has_subscription": False, "expired": True, "message": "Subscription has expired"}
             total_duration = (sub_end - sub_start).total_seconds()
             elapsed = (now - sub_start).total_seconds()
             days_remaining = max(0, (sub_end - now).days)
