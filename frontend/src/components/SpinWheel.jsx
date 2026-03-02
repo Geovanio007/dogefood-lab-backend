@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Gift, Star, Sparkles, Gem, Trophy, Flame, Heart, Crown, Zap } from 'lucide-react';
+import { X, Gift, Circle, CircleDot, Gem, Trophy, Flame, Heart, Crown, Zap } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 const PRIZE_ICONS = {
-  star: Star,
-  sparkles: Sparkles,
+  star: Circle,
+  sparkles: CircleDot,
   gem: Gem,
   trophy: Trophy,
   fire: Flame,
@@ -152,7 +152,7 @@ const SpinWheel = ({ playerAddress, onPrizeWon }) => {
     }
   };
 
-  const PrizeIcon = wonPrize ? (PRIZE_ICONS[wonPrize.prize?.emoji] || Star) : Star;
+  const PrizeIcon = wonPrize ? (PRIZE_ICONS[wonPrize.prize?.emoji] || Circle) : Circle;
 
   return (
     <>
@@ -280,7 +280,7 @@ const SpinWheel = ({ playerAddress, onPrizeWon }) => {
             <div className="px-5 pb-5">
               <div className="grid grid-cols-3 gap-1.5">
                 {prizes.map((p) => {
-                  const Icon = PRIZE_ICONS[p.emoji] || Star;
+                  const Icon = PRIZE_ICONS[p.emoji] || Circle;
                   return (
                     <div key={p.id} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 text-[11px] text-slate-300">
                       <Icon className="w-3 h-3 flex-shrink-0" style={{ color: p.color }} />
