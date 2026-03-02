@@ -917,6 +917,39 @@ const AutoMixerSubscription = ({ playerAddress, playerNickname, isDarkMode = fal
         </div>
       )}
 
+      {/* Subscription Expiring Soon Notification */}
+      {hasActiveSubscription && subscription?.expiring_soon && (
+        <div 
+          className={`p-4 rounded-xl border-2 flex items-center gap-3 animate-pulse ${
+            isDark 
+              ? 'bg-amber-900/40 border-amber-600 text-amber-200' 
+              : 'bg-amber-50 border-amber-300 text-amber-800'
+          }`}
+          data-testid="subscription-expiry-warning"
+        >
+          <Bell className={`w-6 h-6 flex-shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+          <div className="flex-1">
+            <div className="font-semibold">Subscription Expiring Soon</div>
+            <div className={`text-sm ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+              Your auto-mixer subscription expires in {subscription.days_remaining} day{subscription.days_remaining !== 1 ? 's' : ''}. 
+              Renew now to keep your treats flowing!
+            </div>
+          </div>
+          <Button 
+            size="sm"
+            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shrink-0"
+            onClick={() => {
+              setSubscription(null);
+              setSuccess('');
+              setError('');
+            }}
+            data-testid="renew-subscription-btn"
+          >
+            Renew Now
+          </Button>
+        </div>
+      )}
+
       {/* Active Subscription View */}
       {hasActiveSubscription && (
         <Card className={`border-2 ${isDark ? 'bg-emerald-900/30 border-emerald-700' : 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200'}`}>
