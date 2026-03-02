@@ -1522,20 +1522,11 @@ async def get_player_profile(address: str):
     """Get player profile including character and username"""
     player = None
     
-    # Support telegram players - handle both tg_ and TG_ prefixes
-    if address.lower().startswith("tg_"):
-        tg_id = address[3:]
-        try:
-            tg_id_int = int(tg_id)
-            player = await db.players.find_one({"telegram_id": tg_id_int}, {"_id": 0})
-        except (ValueError, TypeError):
-            pass
-        # Fallback: try address field with both cases
-        if not player:
-            player = await db.players.find_one({"address": f"TG_{tg_id}"}, {"_id": 0})
-        if not player:
-            player = await db.players.find_one({"address": f"tg_{tg_id}"}, {"_id": 0})
-    elif address.startswith("guest_"):
+    # Use centralized lookup (handles TG_/tg_ case, telegram_id, guest)
+    if address.lower().startswith("tg_") or not address.startswith("guest_"):
+        player = await find_player_by_address(address)
+    
+    if not player and address.startswith("guest_"):
         player = await db.players.find_one({"guest_id": address}, {"_id": 0})
     
     if not player:
@@ -2663,8 +2654,11 @@ async def collect_treat(treat_id: str, data: dict):
         if not player_address:
             raise HTTPException(status_code=400, detail="Player address required")
         
-        # Find the treat
-        treat = await db.treats.find_one({"id": treat_id})
+        # Find the treat and player in parallel for faster response
+        treat_task = db.treats.find_one({"id": treat_id})
+        player_task = find_player_by_address(player_address)
+        treat, player = await asyncio.gather(treat_task, player_task)
+        
         if not treat:
             raise HTTPException(status_code=404, detail="Treat not found")
         
@@ -2690,8 +2684,7 @@ async def collect_treat(treat_id: str, data: dict):
         base_points_reward = treat.get("points_reward", 10)
         base_xp_reward = treat.get("xp_reward", 5)
         
-        # Get player to check for character bonuses
-        player = await find_player_by_address(player_address)
+        # Player already fetched above
         
         # Apply character bonuses
         points_bonus = 0
@@ -3560,7 +3553,13 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 "leaderboard_eligible": True,
                 "last_activity": datetime.now(timezone.utc)
             }
-            await db.players.insert_one(player)
+            # Use upsert to avoid duplicate key error if player was created
+            # by update_player_streak (which runs in parallel with upsert=True)
+            await db.players.update_one(
+                {"address": treat_data.creator_address},
+                {"$setOnInsert": player},
+                upsert=True
+            )
         
         # Update treat count and sack progress
         current_treats_count = len(player.get('created_treats', []))
@@ -3652,6 +3651,9 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']:.1f} hours.{streak_message}{kernel_message}{'(Offchain storage)' if season_id == 1 else ''}{' 🎉 Sack completed! +50 XP bonus!' if sack_just_completed else ''}"
         }
         
+    except HTTPException:
+        # Re-raise HTTPExceptions as-is (don't wrap in 500)
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating enhanced treat: {str(e)}")
 
@@ -8140,6 +8142,10 @@ async def startup_event():
         await db.treats.create_index("brewing_status")
         # Compound index for anti-cheat: treats by creator + time range
         await db.treats.create_index([("creator_address", 1), ("created_at", -1)])
+        # Compound index for leaderboard/stats: distinct creators of collected treats
+        await db.treats.create_index([("brewing_status", 1), ("creator_address", 1)])
+        # Compound index for today's activity count
+        await db.treats.create_index([("brewing_status", 1), ("collected_at", -1)])
         await db.special_ingredient_holders.create_index([("player_address", 1), ("is_active", 1)])
         logger.info("DB indexes created/verified")
     except Exception as e:
