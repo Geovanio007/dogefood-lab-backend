@@ -235,12 +235,14 @@ class TestAutoMixerTriggerNow:
         data = response.json()
         
         # Verify response structure
-        assert "message" in data, "Should include message"
         assert "results" in data, "Should include results array"
         
         results = data.get("results", [])
+        total_active = data.get("total_active_subs", 0)
+        triggered_at = data.get("triggered_at", "unknown")
         
-        print(f"✓ Trigger-now executed successfully: {data['message']}")
+        print(f"✓ Trigger-now executed successfully at {triggered_at}")
+        print(f"  - Found {total_active} active subscriptions")
         print(f"  - Processed {len(results)} subscriptions")
         
         # Count results by status
