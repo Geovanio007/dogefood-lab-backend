@@ -147,6 +147,9 @@ const GameLabRedesign = ({ playerAddress }) => {
   // Kernel of Wow special ingredient
   const [hasKernelOfWow, setHasKernelOfWow] = useState(false);
   const [kernelBonusResult, setKernelBonusResult] = useState(null);
+  
+  // Subscription expiry notification
+  const [subscriptionExpiry, setSubscriptionExpiry] = useState(null);
 
   // Fetch happy hour status periodically
   useEffect(() => {
