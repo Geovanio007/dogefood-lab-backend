@@ -7790,11 +7790,10 @@ async def trigger_auto_mixer_now():
         for sub in all_active_subs:
             sub_end = sub.get("subscription_end")
             if sub_end:
-                if isinstance(sub_end, str):
-                    try:
-                        sub_end = parse_utc_datetime(sub_end)
-                    except Exception:
-                        continue
+                try:
+                    sub_end = parse_utc_datetime(sub_end)
+                except Exception:
+                    continue
                 if sub_end <= now:
                     expired_ids.append(sub["id"])
                     continue
