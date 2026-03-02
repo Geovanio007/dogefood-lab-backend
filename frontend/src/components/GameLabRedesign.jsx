@@ -11,6 +11,7 @@ import { useNotifications } from '../contexts/NotificationContext';
 import DailyLimitTracker from './DailyLimitTracker';
 import PlayerStatsModal from './PlayerStatsModal';
 import HappyHourBanner from './HappyHourBanner';
+import SpinWheel from './SpinWheel';
 import { KernelOfWowStatus, KernelBonusResult } from './KernelOfWow';
 import { HelpCircle, ChevronDown, ChevronUp, BarChart3, Volume2, VolumeX, Clock, Trophy, Beaker, Bell, X } from 'lucide-react';
 
@@ -1643,6 +1644,16 @@ const GameLabRedesign = ({ playerAddress }) => {
           onClose={() => setShowPlayerStats(false)}
         />
       )}
+
+      {/* Spin the Wheel */}
+      <SpinWheel
+        playerAddress={playerAddress}
+        onPrizeWon={(data) => {
+          // Refresh player data after winning
+          loadPlayerData();
+          loadActiveTreats();
+        }}
+      />
     </div>
   );
 };

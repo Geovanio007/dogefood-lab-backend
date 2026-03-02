@@ -7518,7 +7518,7 @@ async def get_auto_mixer_agent_status():
         
         # Calculate stats
         mixes_last_24h = len(recent_mixes)
-        mixes_last_hour = len([m for m in recent_mixes if (now - m.get("created_at", now)).total_seconds() < 3600])
+        mixes_last_hour = len([m for m in recent_mixes if (now - parse_utc_datetime(m.get("created_at", now))).total_seconds() < 3600])
         
         # Rarity breakdown of recent mixes
         rarity_breakdown = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
@@ -8175,6 +8175,189 @@ async def auto_mixer_processor_loop():
         # Check every 30 minutes (respects game limits, so no need to check frequently)
         logger.info("🤖 Auto-mixer sleeping for 30 minutes...")
         await asyncio.sleep(1800)
+
+# =====================================================
+# SPIN THE WHEEL SYSTEM
+# =====================================================
+
+SPIN_WHEEL_PRIZES = [
+    {"id": "points_100", "label": "100 Points", "type": "points", "value": 100, "weight": 25, "color": "#3b82f6", "emoji": "star"},
+    {"id": "points_150", "label": "150 Points", "type": "points", "value": 150, "weight": 20, "color": "#8b5cf6", "emoji": "sparkles"},
+    {"id": "points_200", "label": "200 Points", "type": "points", "value": 200, "weight": 15, "color": "#06b6d4", "emoji": "gem"},
+    {"id": "points_300", "label": "300 Points", "type": "points", "value": 300, "weight": 10, "color": "#f59e0b", "emoji": "trophy"},
+    {"id": "points_500", "label": "500 Points", "type": "points", "value": 500, "weight": 5, "color": "#ef4444", "emoji": "fire"},
+    {"id": "extra_lives_2", "label": "2 Extra Lives", "type": "extra_lives", "value": 2, "weight": 12, "color": "#10b981", "emoji": "heart"},
+    {"id": "extra_lives_4", "label": "4 Extra Lives", "type": "extra_lives", "value": 4, "weight": 5, "color": "#ec4899", "emoji": "hearts"},
+    {"id": "mythic_ingredient", "label": "Mythic Ingredient", "type": "mythic_ingredient", "value": 24, "weight": 3, "color": "#f97316", "emoji": "crown"},
+    {"id": "double_next", "label": "2x Next Treat", "type": "double_next", "value": 2, "weight": 5, "color": "#a855f7", "emoji": "zap"},
+]
+
+SPIN_COOLDOWN_HOURS = 24
+
+
+@api_router.get("/spin-wheel/status/{player_address}")
+async def get_spin_wheel_status(player_address: str):
+    """Check if player can spin and get wheel configuration"""
+    now = datetime.now(timezone.utc)
+
+    last_spin = await db.spin_wheel_history.find_one(
+        {"player_address": player_address},
+        sort=[("spun_at", -1)]
+    )
+
+    can_spin = True
+    next_spin_at = None
+    hours_remaining = 0
+
+    if last_spin:
+        spun_at = parse_utc_datetime(last_spin.get("spun_at", now))
+        next_available = spun_at + timedelta(hours=SPIN_COOLDOWN_HOURS)
+        if now < next_available:
+            can_spin = False
+            next_spin_at = next_available.isoformat()
+            hours_remaining = max(0, (next_available - now).total_seconds() / 3600)
+
+    total_spins = await db.spin_wheel_history.count_documents({"player_address": player_address})
+
+    prizes = [{"id": p["id"], "label": p["label"], "color": p["color"], "emoji": p["emoji"]} for p in SPIN_WHEEL_PRIZES]
+
+    return {
+        "can_spin": can_spin,
+        "next_spin_at": next_spin_at,
+        "hours_remaining": round(hours_remaining, 1),
+        "total_spins": total_spins,
+        "prizes": prizes,
+        "cooldown_hours": SPIN_COOLDOWN_HOURS
+    }
+
+
+@api_router.post("/spin-wheel/spin")
+async def spin_the_wheel(data: dict):
+    """Execute a spin — 1 free spin per 24 hours"""
+    player_address = data.get("player_address")
+    if not player_address:
+        raise HTTPException(status_code=400, detail="Player address required")
+
+    now = datetime.now(timezone.utc)
+
+    # Check cooldown
+    last_spin = await db.spin_wheel_history.find_one(
+        {"player_address": player_address},
+        sort=[("spun_at", -1)]
+    )
+
+    if last_spin:
+        spun_at = parse_utc_datetime(last_spin.get("spun_at", now))
+        next_available = spun_at + timedelta(hours=SPIN_COOLDOWN_HOURS)
+        if now < next_available:
+            hours_left = (next_available - now).total_seconds() / 3600
+            raise HTTPException(status_code=429, detail={
+                "message": f"Next free spin in {hours_left:.1f} hours",
+                "next_spin_at": next_available.isoformat(),
+                "hours_remaining": round(hours_left, 1)
+            })
+
+    # Weighted random selection
+    total_weight = sum(p["weight"] for p in SPIN_WHEEL_PRIZES)
+    roll = random.uniform(0, total_weight)
+    cumulative = 0
+    selected_prize = SPIN_WHEEL_PRIZES[0]
+    prize_index = 0
+
+    for i, prize in enumerate(SPIN_WHEEL_PRIZES):
+        cumulative += prize["weight"]
+        if roll <= cumulative:
+            selected_prize = prize
+            prize_index = i
+            break
+
+    # Apply the prize
+    reward_applied = False
+    reward_details = {}
+
+    player = await find_player_by_address(player_address)
+
+    if selected_prize["type"] == "points":
+        if player:
+            await db.players.update_one(
+                {"address": player.get("address", player_address)},
+                {"$inc": {"points": selected_prize["value"], "total_points_collected": selected_prize["value"]}}
+            )
+        reward_applied = True
+        reward_details = {"points_awarded": selected_prize["value"]}
+
+    elif selected_prize["type"] == "extra_lives":
+        if player:
+            await db.players.update_one(
+                {"address": player.get("address", player_address)},
+                {"$inc": {"extra_treats_balance": selected_prize["value"]}}
+            )
+        reward_applied = True
+        reward_details = {"extra_lives_awarded": selected_prize["value"]}
+
+    elif selected_prize["type"] == "mythic_ingredient":
+        expires_at = now + timedelta(hours=24)
+        await db.spin_wheel_buffs.update_one(
+            {"player_address": player_address, "buff_type": "mythic_ingredient"},
+            {"$set": {
+                "player_address": player_address,
+                "buff_type": "mythic_ingredient",
+                "expires_at": expires_at,
+                "granted_at": now,
+                "active": True
+            }},
+            upsert=True
+        )
+        reward_applied = True
+        reward_details = {"mythic_ingredient_hours": 24, "expires_at": expires_at.isoformat()}
+
+    elif selected_prize["type"] == "double_next":
+        await db.spin_wheel_buffs.update_one(
+            {"player_address": player_address, "buff_type": "double_next_treat"},
+            {"$set": {
+                "player_address": player_address,
+                "buff_type": "double_next_treat",
+                "multiplier": 2,
+                "uses_remaining": 1,
+                "granted_at": now,
+                "active": True
+            }},
+            upsert=True
+        )
+        reward_applied = True
+        reward_details = {"multiplier": 2, "uses": 1}
+
+    # Record in history
+    await db.spin_wheel_history.insert_one({
+        "id": str(uuid.uuid4()),
+        "player_address": player_address,
+        "prize_id": selected_prize["id"],
+        "prize_label": selected_prize["label"],
+        "prize_type": selected_prize["type"],
+        "prize_value": selected_prize["value"],
+        "spun_at": now,
+        "reward_applied": reward_applied
+    })
+
+    # Calculate next spin time
+    next_spin_at = now + timedelta(hours=SPIN_COOLDOWN_HOURS)
+
+    return {
+        "prize": {
+            "id": selected_prize["id"],
+            "label": selected_prize["label"],
+            "type": selected_prize["type"],
+            "value": selected_prize["value"],
+            "color": selected_prize["color"],
+            "emoji": selected_prize["emoji"]
+        },
+        "prize_index": prize_index,
+        "reward_applied": reward_applied,
+        "reward_details": reward_details,
+        "next_spin_at": next_spin_at.isoformat(),
+        "message": f"You won {selected_prize['label']}!"
+    }
+
 
 # Include the router in the main app
 app.include_router(api_router)
