@@ -7248,14 +7248,13 @@ async def get_auto_mixer_subscription(player_address: str):
         if subscription:
             now = datetime.now(timezone.utc)
             
-            # Handle subscription_end as string or datetime
+            # Handle subscription_end as string or datetime — always normalize
             sub_end = subscription.get("subscription_end")
             if sub_end:
-                if isinstance(sub_end, str):
-                    try:
-                        sub_end = parse_utc_datetime(sub_end)
-                    except Exception:
-                        sub_end = None
+                try:
+                    sub_end = parse_utc_datetime(sub_end)
+                except Exception:
+                    sub_end = None
                 
                 if sub_end and subscription.get("status") == "active":
                     if sub_end <= now:
