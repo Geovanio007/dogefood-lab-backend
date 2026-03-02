@@ -8010,12 +8010,11 @@ async def auto_mixer_processor_loop():
             for sub in all_active_subs:
                 sub_end = sub.get("subscription_end")
                 if sub_end:
-                    if isinstance(sub_end, str):
-                        try:
-                            sub_end = parse_utc_datetime(sub_end)
-                        except Exception:
-                            logger.warning(f"🤖 Could not parse subscription_end for {sub.get('player_address', '?')}: {sub_end}")
-                            continue
+                    try:
+                        sub_end = parse_utc_datetime(sub_end)
+                    except Exception:
+                        logger.warning(f"🤖 Could not parse subscription_end for {sub.get('player_address', '?')}: {sub_end}")
+                        continue
                     if sub_end <= now:
                         # Subscription has expired — mark for update
                         expired_ids.append(sub["id"])
