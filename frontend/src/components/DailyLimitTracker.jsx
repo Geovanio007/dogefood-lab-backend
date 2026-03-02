@@ -47,9 +47,14 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
     if (!playerAddress) return;
     
     try {
-      const response = await fetch(`${API_URL}/api/daily-status/${playerAddress}`);
-      if (response.ok) {
-        const data = await response.json();
+      // Fetch daily status and extra life status in PARALLEL
+      const [statusRes, extraLifeRes] = await Promise.all([
+        fetch(`${API_URL}/api/daily-status/${playerAddress}`),
+        fetch(`${API_URL}/api/extra-life/status/${playerAddress}`)
+      ]);
+      
+      if (statusRes.ok) {
+        const data = await statusRes.json();
         setDailyStatus(data);
         setTimeUntilReset(data.time_until_reset_seconds || 0);
         if (onStatusUpdate) {
@@ -57,8 +62,6 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
         }
       }
       
-      // Also fetch extra life status to check for pending purchases
-      const extraLifeRes = await fetch(`${API_URL}/api/extra-life/status/${playerAddress}`);
       if (extraLifeRes.ok) {
         const extraLifeData = await extraLifeRes.json();
         if (extraLifeData.pending_purchase) {
