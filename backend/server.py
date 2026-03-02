@@ -7246,14 +7246,32 @@ async def get_auto_mixer_subscription(player_address: str):
         }, {"_id": 0})
         
         if subscription:
-            # Check if subscription has expired
-            if subscription.get("status") == "active" and subscription.get("subscription_end"):
-                if datetime.now(timezone.utc) > subscription["subscription_end"]:
-                    await db.auto_mixer_subscriptions.update_one(
-                        {"id": subscription["id"]},
-                        {"$set": {"status": "expired", "updated_at": datetime.now(timezone.utc)}}
-                    )
-                    subscription["status"] = "expired"
+            now = datetime.now(timezone.utc)
+            
+            # Handle subscription_end as string or datetime
+            sub_end = subscription.get("subscription_end")
+            if sub_end:
+                if isinstance(sub_end, str):
+                    try:
+                        sub_end = parse_utc_datetime(sub_end)
+                    except Exception:
+                        sub_end = None
+                
+                if sub_end and subscription.get("status") == "active":
+                    if sub_end <= now:
+                        # Subscription has expired — update status
+                        await db.auto_mixer_subscriptions.update_one(
+                            {"id": subscription["id"]},
+                            {"$set": {"status": "expired", "updated_at": now}}
+                        )
+                        subscription["status"] = "expired"
+                    else:
+                        # Calculate days remaining and expiry warning
+                        remaining_delta = sub_end - now
+                        days_remaining = remaining_delta.days
+                        subscription["days_remaining"] = days_remaining
+                        subscription["expiring_soon"] = days_remaining <= 5
+                        subscription["expires_at"] = sub_end.isoformat()
         
         return {"subscription": subscription, "has_subscription": subscription is not None}
         
