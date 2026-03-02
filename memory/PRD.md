@@ -33,7 +33,7 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Added yellow "Happy Hour +X Bonus Points!" indicator
 
 ### Kernel of Wow Selection Fix (Feb 26, 2026) - FIXED
-- Fixed MongoDB query duplicate `$ne` key bug → now uses `$nin: [None, ""]`
+- Fixed MongoDB query duplicate `$ne` key bug -> now uses `$nin: [None, ""]`
 - Deactivated invalid "Anonymous" holder, new selection picks real active players
 
 ### Leaderboard Redesign (Feb 26, 2026) - COMPLETE
@@ -53,9 +53,9 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - VIP badge changed from yellow to white
 - Removed old ScientistChat icon from leaderboard page
 
-### Performance Optimization (Feb 26, 2026) - COMPLETE
-- **Leaderboard**: 32s → 0.5s (64x faster) — removed `$or` aggregation, switched to `find()`, added compound index `{points: -1, level: -1}`, removed Pydantic response_model serialization
-- **Chat Messages**: 52s → 0.2s (260x faster) — removed `$lookup` aggregation join, use stored nicknames, removed duplicate endpoint
+### Performance Optimization v1 (Feb 26, 2026) - COMPLETE
+- **Leaderboard**: 32s -> 0.5s (64x faster) -- removed `$or` aggregation, switched to `find()`, added compound index `{points: -1, level: -1}`, removed Pydantic response_model serialization
+- **Chat Messages**: 52s -> 0.2s (260x faster) -- removed `$lookup` aggregation join, use stored nicknames, removed duplicate endpoint
 - **Treat Creation**: Parallelized 3 sequential DB queries with `asyncio.gather()`
 - **Treat Collection**: Parallelized treat update + player update writes
 - **Stats**: Parallelized 5 count queries with `asyncio.gather()`
@@ -70,10 +70,24 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Added TG_/tg_ case-tolerant handling in treat collect/create flows (`find_player_by_address`, ownership check, player update filter) to prevent Telegram identity mismatch edge-cases.
 - Verified via testing agent report `/app/test_reports/iteration_13.json`: backend 13/13 passed, frontend smoke passed, API response times all <2s.
 
+### Performance Optimization v2 (Feb 27, 2026) - COMPLETE
+- **Treat Creation**: Consolidated 15+ sequential DB queries into ~5 parallelized ones by prefetching player + recent treats once and passing through anti-cheat validation, streak update, and daily status functions. Response time: ~0.6-1.3s (was reported >60s by user on Render).
+- **Treat Collection**: Parallelized treat + player fetch with `asyncio.gather()` at start of endpoint.
+- **Player Profile**: Replaced 3 sequential TG_ lookups with centralized `find_player_by_address()`.
+- **Anti-Cheat System**: Added `prefetched_player` and `prefetched_treats_24h` params to `get_daily_treat_status`, `validate_treat_creation`, `consume_extra_treat_if_needed`, `update_player_streak` to eliminate duplicate DB round-trips. Added `_compute_streak_from_player()` helper to avoid extra DB call for streak info.
+- **New DB Indexes**: Compound indexes `{creator_address: 1, created_at: -1}` for anti-cheat, `{brewing_status: 1, creator_address: 1}` for leaderboard/stats distinct, `{brewing_status: 1, collected_at: -1}` for daily activity count.
+- **Frontend Lazy Loading**: Route components (GameLabRedesign, MyTreats, Leaderboard, Settings, AdminDashboard, Tournament, Marketplace, AutoMixerSubscription) loaded with `React.lazy()` + Suspense for faster initial page load.
+- **Recipe Validation Debounce**: Added 300ms debounce to ingredient validation API calls (was firing on every click).
+- **DailyLimitTracker**: Parallelized daily-status + extra-life-status fetch with `Promise.all()`. Reduced countdown timer from 1s to 60s.
+- **Post-creation data reload**: `loadPlayerData()` + `loadActiveTreats()` now run with `Promise.all()` instead of sequentially.
+- **Bug fixes during testing**: Fixed duplicate key race condition on new player creation (insert_one -> update_one with upsert), fixed HTTPException wrapping (429s returned as 500s).
+- Verified via testing agent `/app/test_reports/iteration_15.json`: 42/42 tests passed, all API response times <2s, frontend lazy loading working.
+
 ## Deployment Info
 - **Frontend**: https://dogefoodlab.vercel.app (LIVE)
 - **Backend**: https://dogefood-lab-api.onrender.com (LIVE)
 - **GitHub**: Geovanio007/DogeFoodLab + Geovanio007/dogefood-lab-backend
+- **render-backend/**: Synced copy of backend for Render deployment
 
 ## Pending Issues
 1. Invisible grey text on Telegram (P2 - needs user details/screenshot)
@@ -83,7 +97,8 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 
 ## Future Tasks
 1. Refactor monolithic `backend/server.py` into smaller route-based modules
-2. Break down large `MainMenu.js` (1200+ lines) into sub-components
+2. Break down large `GameLabRedesign.jsx` (1600+ lines) into sub-components
+3. Break down `MainMenu.js` (1200+ lines) into sub-components
 
 ## Tech Stack
 - Frontend: React, Tailwind CSS, shadcn/ui, Lucide React, html2canvas, wagmi (Web3)
@@ -91,4 +106,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-February 26, 2026 - P0 verification complete, backend startup regression fixed, stats/leaderboard active-player consistency restored, TG_/tg_ tolerant player handling validated.
+February 27, 2026 - Performance Optimization v2 complete. All 42/42 tests passed. Treat creation optimized from 15+ sequential DB queries to ~5 parallel. Frontend lazy loading and debouncing implemented.
