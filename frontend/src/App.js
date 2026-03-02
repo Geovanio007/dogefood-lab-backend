@@ -241,6 +241,7 @@ const InnerApp = () => {
             )}
             
             {/* Always show main routes after loading - authentication is optional */}
+            <Suspense fallback={<LoadingScreen />}>
             <Routes>
               <Route path="/" element={<MainMenu />} />
               <Route path="/lab" element={<GameLabRedesign playerAddress={effectiveAddress || 'GUEST_USER'} />} />
@@ -253,6 +254,7 @@ const InnerApp = () => {
               <Route path="/marketplace" element={<Marketplace />} />
               <Route path="/auto-mixer" element={<AutoMixerSubscription playerAddress={effectiveAddress || 'GUEST_USER'} />} />
             </Routes>
+            </Suspense>
             {/* Global Treat Notifications */}
             <TreatNotifications />
           </Router>
