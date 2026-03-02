@@ -7489,12 +7489,11 @@ async def get_auto_mixer_agent_status():
         for sub in all_active:
             sub_end = sub.get("subscription_end")
             if sub_end:
-                # Convert to datetime if it's a string
-                if isinstance(sub_end, str):
-                    try:
-                        sub_end = parse_utc_datetime(sub_end)
-                    except:
-                        continue
+                # Always normalize to UTC-aware datetime
+                try:
+                    sub_end = parse_utc_datetime(sub_end)
+                except Exception:
+                    continue
                 if sub_end > now:
                     active_subs.append(sub)
             else:
