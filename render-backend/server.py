@@ -7246,14 +7246,32 @@ async def get_auto_mixer_subscription(player_address: str):
         }, {"_id": 0})
         
         if subscription:
-            # Check if subscription has expired
-            if subscription.get("status") == "active" and subscription.get("subscription_end"):
-                if datetime.now(timezone.utc) > subscription["subscription_end"]:
-                    await db.auto_mixer_subscriptions.update_one(
-                        {"id": subscription["id"]},
-                        {"$set": {"status": "expired", "updated_at": datetime.now(timezone.utc)}}
-                    )
-                    subscription["status"] = "expired"
+            now = datetime.now(timezone.utc)
+            
+            # Handle subscription_end as string or datetime
+            sub_end = subscription.get("subscription_end")
+            if sub_end:
+                if isinstance(sub_end, str):
+                    try:
+                        sub_end = parse_utc_datetime(sub_end)
+                    except Exception:
+                        sub_end = None
+                
+                if sub_end and subscription.get("status") == "active":
+                    if sub_end <= now:
+                        # Subscription has expired — update status
+                        await db.auto_mixer_subscriptions.update_one(
+                            {"id": subscription["id"]},
+                            {"$set": {"status": "expired", "updated_at": now}}
+                        )
+                        subscription["status"] = "expired"
+                    else:
+                        # Calculate days remaining and expiry warning
+                        remaining_delta = sub_end - now
+                        days_remaining = remaining_delta.days
+                        subscription["days_remaining"] = days_remaining
+                        subscription["expiring_soon"] = days_remaining <= 5
+                        subscription["expires_at"] = sub_end.isoformat()
         
         return {"subscription": subscription, "has_subscription": subscription is not None}
         
@@ -7646,10 +7664,28 @@ async def get_auto_mixer_detailed_stats(player_address: str):
             in_window = current_hour >= start_hour or current_hour < end_hour
             window_hours = (24 - start_hour) + end_hour
         
-        # Calculate subscription progress
+        # Calculate subscription progress — handle string dates
         sub_start = subscription.get("subscription_start")
         sub_end = subscription.get("subscription_end")
+        if sub_start and isinstance(sub_start, str):
+            try:
+                sub_start = parse_utc_datetime(sub_start)
+            except Exception:
+                sub_start = None
+        if sub_end and isinstance(sub_end, str):
+            try:
+                sub_end = parse_utc_datetime(sub_end)
+            except Exception:
+                sub_end = None
+        
         if sub_start and sub_end:
+            if sub_end <= now:
+                # Subscription expired — update status
+                await db.auto_mixer_subscriptions.update_one(
+                    {"id": subscription.get("id")},
+                    {"$set": {"status": "expired", "updated_at": now}}
+                )
+                return {"has_subscription": False, "expired": True, "message": "Subscription has expired"}
             total_duration = (sub_end - sub_start).total_seconds()
             elapsed = (now - sub_start).total_seconds()
             days_remaining = max(0, (sub_end - now).days)
@@ -7703,6 +7739,7 @@ async def get_auto_mixer_detailed_stats(player_address: str):
                 "window_hours": window_hours,
                 "currently_in_window": in_window,
                 "days_remaining": days_remaining,
+                "expiring_soon": days_remaining <= 5,
                 "progress_percent": round(progress_percent, 1),
                 "expires_at": sub_end.isoformat() if sub_end else None
             },
@@ -7747,13 +7784,37 @@ async def trigger_auto_mixer_now():
         
         logger.info(f"🤖 Manual trigger at {now.strftime('%H:%M:%S')} UTC (hour: {current_hour})")
         
-        # Find active subscriptions
-        active_subs = await db.auto_mixer_subscriptions.find({
-            "status": "active",
-            "subscription_end": {"$gt": now}
+        # Find active subscriptions — manual date filtering for string/datetime compatibility
+        all_active_subs = await db.auto_mixer_subscriptions.find({
+            "status": "active"
         }).to_list(1000)
         
-        logger.info(f"🤖 Found {len(active_subs)} active subscriptions")
+        active_subs = []
+        expired_ids = []
+        
+        for sub in all_active_subs:
+            sub_end = sub.get("subscription_end")
+            if sub_end:
+                if isinstance(sub_end, str):
+                    try:
+                        sub_end = parse_utc_datetime(sub_end)
+                    except Exception:
+                        continue
+                if sub_end <= now:
+                    expired_ids.append(sub["id"])
+                    continue
+                active_subs.append(sub)
+            else:
+                active_subs.append(sub)
+        
+        # Expire any detected expired subscriptions
+        if expired_ids:
+            await db.auto_mixer_subscriptions.update_many(
+                {"id": {"$in": expired_ids}},
+                {"$set": {"status": "expired", "updated_at": now}}
+            )
+        
+        logger.info(f"🤖 Found {len(active_subs)} active subscriptions ({len(expired_ids)} expired)")
         
         for sub in active_subs:
             try:
@@ -7931,6 +7992,7 @@ async def auto_mixer_processor_loop():
     - 4 treats per 6-hour window (base) + streak bonuses
     - Max 16 treats per 24 hours
     - Uses the same treat creation limits as manual play
+    - Automatically expires subscriptions past their end date
     """
     logger.info("🤖 Auto-mixer processor started (respects game treat limits)")
     
@@ -7941,13 +8003,42 @@ async def auto_mixer_processor_loop():
             
             logger.info(f"🤖 Auto-mixer checking at {now.strftime('%H:%M:%S')} UTC (hour: {current_hour})")
             
-            # Find active subscriptions
-            active_subs = await db.auto_mixer_subscriptions.find({
-                "status": "active",
-                "subscription_end": {"$gt": now}
+            # Step 1: Fetch ALL subscriptions with status "active" and filter manually
+            # (subscription_end may be stored as string or datetime, so MongoDB $gt is unreliable)
+            all_active_subs = await db.auto_mixer_subscriptions.find({
+                "status": "active"
             }).to_list(1000)
             
-            logger.info(f"🤖 Found {len(active_subs)} active subscriptions")
+            active_subs = []
+            expired_ids = []
+            
+            for sub in all_active_subs:
+                sub_end = sub.get("subscription_end")
+                if sub_end:
+                    if isinstance(sub_end, str):
+                        try:
+                            sub_end = parse_utc_datetime(sub_end)
+                        except Exception:
+                            logger.warning(f"🤖 Could not parse subscription_end for {sub.get('player_address', '?')}: {sub_end}")
+                            continue
+                    if sub_end <= now:
+                        # Subscription has expired — mark for update
+                        expired_ids.append(sub["id"])
+                        logger.info(f"🤖 Subscription expired for {sub.get('player_address', '?')[:15]}... (ended {sub_end.isoformat()})")
+                        continue
+                    active_subs.append(sub)
+                else:
+                    active_subs.append(sub)
+            
+            # Step 2: Bulk-expire all detected expired subscriptions
+            if expired_ids:
+                result = await db.auto_mixer_subscriptions.update_many(
+                    {"id": {"$in": expired_ids}},
+                    {"$set": {"status": "expired", "updated_at": now}}
+                )
+                logger.info(f"🤖 Expired {result.modified_count} subscription(s)")
+            
+            logger.info(f"🤖 Found {len(active_subs)} truly active subscriptions ({len(expired_ids)} just expired)")
             
             for sub in active_subs:
                 try:
