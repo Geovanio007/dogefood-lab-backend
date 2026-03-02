@@ -7248,14 +7248,13 @@ async def get_auto_mixer_subscription(player_address: str):
         if subscription:
             now = datetime.now(timezone.utc)
             
-            # Handle subscription_end as string or datetime
+            # Handle subscription_end as string or datetime — always normalize
             sub_end = subscription.get("subscription_end")
             if sub_end:
-                if isinstance(sub_end, str):
-                    try:
-                        sub_end = parse_utc_datetime(sub_end)
-                    except Exception:
-                        sub_end = None
+                try:
+                    sub_end = parse_utc_datetime(sub_end)
+                except Exception:
+                    sub_end = None
                 
                 if sub_end and subscription.get("status") == "active":
                     if sub_end <= now:
@@ -7437,16 +7436,12 @@ async def debug_subscriptions(admin_secret: str = Query(..., description="Admin 
             is_active_now = False
             
             if sub_end:
-                if isinstance(sub_end, datetime):
-                    sub_end_parsed = sub_end.isoformat()
-                    is_active_now = sub_end > now
-                elif isinstance(sub_end, str):
-                    sub_end_parsed = sub_end
-                    try:
-                        parsed = parse_utc_datetime(sub_end)
-                        is_active_now = parsed > now
-                    except:
-                        pass
+                try:
+                    sub_end_aware = parse_utc_datetime(sub_end)
+                    sub_end_parsed = sub_end_aware.isoformat()
+                    is_active_now = sub_end_aware > now
+                except Exception:
+                    sub_end_parsed = str(sub_end)
             
             debug_info.append({
                 "id": sub.get("id"),
@@ -7489,12 +7484,11 @@ async def get_auto_mixer_agent_status():
         for sub in all_active:
             sub_end = sub.get("subscription_end")
             if sub_end:
-                # Convert to datetime if it's a string
-                if isinstance(sub_end, str):
-                    try:
-                        sub_end = parse_utc_datetime(sub_end)
-                    except:
-                        continue
+                # Always normalize to UTC-aware datetime
+                try:
+                    sub_end = parse_utc_datetime(sub_end)
+                except Exception:
+                    continue
                 if sub_end > now:
                     active_subs.append(sub)
             else:
@@ -7795,11 +7789,10 @@ async def trigger_auto_mixer_now():
         for sub in all_active_subs:
             sub_end = sub.get("subscription_end")
             if sub_end:
-                if isinstance(sub_end, str):
-                    try:
-                        sub_end = parse_utc_datetime(sub_end)
-                    except Exception:
-                        continue
+                try:
+                    sub_end = parse_utc_datetime(sub_end)
+                except Exception:
+                    continue
                 if sub_end <= now:
                     expired_ids.append(sub["id"])
                     continue
@@ -8015,12 +8008,11 @@ async def auto_mixer_processor_loop():
             for sub in all_active_subs:
                 sub_end = sub.get("subscription_end")
                 if sub_end:
-                    if isinstance(sub_end, str):
-                        try:
-                            sub_end = parse_utc_datetime(sub_end)
-                        except Exception:
-                            logger.warning(f"🤖 Could not parse subscription_end for {sub.get('player_address', '?')}: {sub_end}")
-                            continue
+                    try:
+                        sub_end = parse_utc_datetime(sub_end)
+                    except Exception:
+                        logger.warning(f"🤖 Could not parse subscription_end for {sub.get('player_address', '?')}: {sub_end}")
+                        continue
                     if sub_end <= now:
                         # Subscription has expired — mark for update
                         expired_ids.append(sub["id"])
