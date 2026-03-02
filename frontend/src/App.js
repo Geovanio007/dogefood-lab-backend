@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import { GameProvider } from './contexts/GameContext';
@@ -14,23 +14,24 @@ import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 import WelcomeScreen from './components/WelcomeScreen';
 import LoadingScreen from './components/LoadingScreen';
 import MainMenu from './components/MainMenu';
-import GameLabRedesign from './components/GameLabRedesign';
-import MyTreats from './components/MyTreats';
-import Leaderboard from './components/Leaderboard';
-import Settings from './components/Settings';
-import AdminDashboard from './components/AdminDashboard';
 import ActiveTreatsStatus from './components/ActiveTreatsStatus';
 import TreatNotifications from './components/TreatNotifications';
 import UserRegistration from './components/UserRegistration';
 import TelegramAuth from './components/TelegramAuth';
 import UpdateNotification from './components/UpdateNotification';
 import NotificationPrompt from './components/NotificationPrompt';
-import Tournament from './components/Tournament';
-import Marketplace from './components/Marketplace';
-import AutoMixerSubscription from './components/AutoMixerSubscription';
 import { KernelOfWowBanner, useKernelOfWow } from './components/KernelOfWow';
-// import PointsToBlockchain from './components/PointsToBlockchain';
 import './App.css';
+
+// Lazy-load heavy route components for faster initial page load
+const GameLabRedesign = lazy(() => import('./components/GameLabRedesign'));
+const MyTreats = lazy(() => import('./components/MyTreats'));
+const Leaderboard = lazy(() => import('./components/Leaderboard'));
+const Settings = lazy(() => import('./components/Settings'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const Tournament = lazy(() => import('./components/Tournament'));
+const Marketplace = lazy(() => import('./components/Marketplace'));
+const AutoMixerSubscription = lazy(() => import('./components/AutoMixerSubscription'));
 
 // Inner App component that has access to wagmi and telegram hooks
 const InnerApp = () => {
