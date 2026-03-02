@@ -92,19 +92,19 @@ const DailyLimitTracker = ({ playerAddress, onStatusUpdate }) => {
     return () => clearInterval(interval);
   }, [pendingPurchase, fetchDailyStatus]);
 
-  // Countdown timer
+  // Countdown timer — update every 60s (minute precision is enough for 6h window)
   useEffect(() => {
     if (timeUntilReset <= 0) return;
     
     const timer = setInterval(() => {
       setTimeUntilReset(prev => {
-        if (prev <= 1) {
+        if (prev <= 60) {
           fetchDailyStatus();
           return 0;
         }
-        return prev - 1;
+        return prev - 60;
       });
-    }, 1000);
+    }, 60000);
 
     return () => clearInterval(timer);
   }, [timeUntilReset, fetchDailyStatus]);
