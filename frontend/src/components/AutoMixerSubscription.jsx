@@ -27,7 +27,8 @@ import {
   Loader2,
   Beaker,
   CalendarDays,
-  X
+  X,
+  Bell
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
