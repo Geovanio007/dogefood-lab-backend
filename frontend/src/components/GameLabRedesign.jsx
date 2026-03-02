@@ -316,14 +316,14 @@ const GameLabRedesign = ({ playerAddress }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Validate recipe when ingredients change
+  // Validate recipe when ingredients change (debounced to avoid rapid API calls)
   useEffect(() => {
-    const validateRecipe = async () => {
-      if (selectedIngredients.length === 0) {
-        setValidation(null);
-        return;
-      }
-      
+    if (selectedIngredients.length === 0) {
+      setValidation(null);
+      return;
+    }
+    
+    const timeoutId = setTimeout(async () => {
       try {
         const response = await fetch(`${API_URL}/api/ingredients/validate-recipe?player_level=${playerLevel}`, {
           method: 'POST',
@@ -338,9 +338,9 @@ const GameLabRedesign = ({ playerAddress }) => {
       } catch (err) {
         console.error('Error validating recipe:', err);
       }
-    };
+    }, 300);
     
-    validateRecipe();
+    return () => clearTimeout(timeoutId);
   }, [selectedIngredients, playerLevel]);
 
   // Toggle ingredient selection
