@@ -694,6 +694,34 @@ const GameLabRedesign = ({ playerAddress }) => {
       </div>
 
       <div className="relative z-10 p-4 max-w-7xl mx-auto">
+        {/* Subscription Expiry Warning Banner */}
+        {subscriptionExpiry && (
+          <div 
+            className="mb-4 p-3 rounded-xl border-2 bg-amber-900/40 border-amber-600 flex items-center gap-3 animate-pulse"
+            data-testid="gamelab-subscription-expiry-warning"
+          >
+            <Bell className="w-5 h-5 text-amber-400 flex-shrink-0" />
+            <div className="flex-1 text-sm text-amber-200">
+              <span className="font-semibold">Auto-Mixer expiring in {subscriptionExpiry.days_remaining} day{subscriptionExpiry.days_remaining !== 1 ? 's' : ''}!</span>
+              {' '}Renew to keep earning treats automatically.
+            </div>
+            <button 
+              onClick={() => navigate('/auto-mixer')}
+              className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm font-semibold rounded-lg shrink-0 transition-all"
+              data-testid="gamelab-renew-btn"
+            >
+              Renew
+            </button>
+            <button 
+              onClick={() => setSubscriptionExpiry(null)}
+              className="text-amber-400 hover:text-amber-200 transition-colors"
+              data-testid="dismiss-expiry-warning"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        
         {/* Header with Player Stats */}
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
           {/* Player Card */}
