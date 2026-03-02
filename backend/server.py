@@ -7721,6 +7721,7 @@ async def get_auto_mixer_detailed_stats(player_address: str):
                 "window_hours": window_hours,
                 "currently_in_window": in_window,
                 "days_remaining": days_remaining,
+                "expiring_soon": days_remaining <= 5,
                 "progress_percent": round(progress_percent, 1),
                 "expires_at": sub_end.isoformat() if sub_end else None
             },
