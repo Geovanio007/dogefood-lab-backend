@@ -7518,7 +7518,7 @@ async def get_auto_mixer_agent_status():
         
         # Calculate stats
         mixes_last_24h = len(recent_mixes)
-        mixes_last_hour = len([m for m in recent_mixes if (now - m.get("created_at", now)).total_seconds() < 3600])
+        mixes_last_hour = len([m for m in recent_mixes if (now - parse_utc_datetime(m.get("created_at", now))).total_seconds() < 3600])
         
         # Rarity breakdown of recent mixes
         rarity_breakdown = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
