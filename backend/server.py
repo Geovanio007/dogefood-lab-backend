@@ -2663,8 +2663,11 @@ async def collect_treat(treat_id: str, data: dict):
         if not player_address:
             raise HTTPException(status_code=400, detail="Player address required")
         
-        # Find the treat
-        treat = await db.treats.find_one({"id": treat_id})
+        # Find the treat and player in parallel for faster response
+        treat_task = db.treats.find_one({"id": treat_id})
+        player_task = find_player_by_address(player_address)
+        treat, player = await asyncio.gather(treat_task, player_task)
+        
         if not treat:
             raise HTTPException(status_code=404, detail="Treat not found")
         
@@ -2690,8 +2693,7 @@ async def collect_treat(treat_id: str, data: dict):
         base_points_reward = treat.get("points_reward", 10)
         base_xp_reward = treat.get("xp_reward", 5)
         
-        # Get player to check for character bonuses
-        player = await find_player_by_address(player_address)
+        # Player already fetched above
         
         # Apply character bonuses
         points_bonus = 0
