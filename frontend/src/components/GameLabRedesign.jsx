@@ -12,7 +12,7 @@ import DailyLimitTracker from './DailyLimitTracker';
 import PlayerStatsModal from './PlayerStatsModal';
 import HappyHourBanner from './HappyHourBanner';
 import { KernelOfWowStatus, KernelBonusResult } from './KernelOfWow';
-import { HelpCircle, ChevronDown, ChevronUp, BarChart3, Volume2, VolumeX, Clock, Trophy, Beaker } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronUp, BarChart3, Volume2, VolumeX, Clock, Trophy, Beaker, Bell, X } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || '';
 
