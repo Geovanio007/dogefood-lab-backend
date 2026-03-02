@@ -7747,13 +7747,37 @@ async def trigger_auto_mixer_now():
         
         logger.info(f"🤖 Manual trigger at {now.strftime('%H:%M:%S')} UTC (hour: {current_hour})")
         
-        # Find active subscriptions
-        active_subs = await db.auto_mixer_subscriptions.find({
-            "status": "active",
-            "subscription_end": {"$gt": now}
+        # Find active subscriptions — manual date filtering for string/datetime compatibility
+        all_active_subs = await db.auto_mixer_subscriptions.find({
+            "status": "active"
         }).to_list(1000)
         
-        logger.info(f"🤖 Found {len(active_subs)} active subscriptions")
+        active_subs = []
+        expired_ids = []
+        
+        for sub in all_active_subs:
+            sub_end = sub.get("subscription_end")
+            if sub_end:
+                if isinstance(sub_end, str):
+                    try:
+                        sub_end = parse_utc_datetime(sub_end)
+                    except Exception:
+                        continue
+                if sub_end <= now:
+                    expired_ids.append(sub["id"])
+                    continue
+                active_subs.append(sub)
+            else:
+                active_subs.append(sub)
+        
+        # Expire any detected expired subscriptions
+        if expired_ids:
+            await db.auto_mixer_subscriptions.update_many(
+                {"id": {"$in": expired_ids}},
+                {"$set": {"status": "expired", "updated_at": now}}
+            )
+        
+        logger.info(f"🤖 Found {len(active_subs)} active subscriptions ({len(expired_ids)} expired)")
         
         for sub in active_subs:
             try:
