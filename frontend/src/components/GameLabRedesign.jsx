@@ -322,7 +322,7 @@ const GameLabRedesign = ({ playerAddress }) => {
       }
     };
     init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line
   }, [playerAddress]);
 
   // Timer update - 10s interval is sufficient for brew countdowns
