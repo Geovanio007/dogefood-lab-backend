@@ -8366,6 +8366,8 @@ app.include_router(api_router)
 ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', '')
 # Known frontend domains that should always be allowed
 KNOWN_FRONTEND_ORIGINS = [
+    "https://www.dogefoodlab.xyz",
+    "https://dogefoodlab.xyz",
     "https://doge-food-lab.vercel.app",
     "https://dogefoodlab.vercel.app",
     "http://localhost:3000",
