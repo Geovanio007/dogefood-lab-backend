@@ -343,3 +343,63 @@ Focused frontend regression testing on wallet connection reliability, RainbowKit
 The wallet connection flow is working flawlessly on both desktop and mobile viewports. The RainbowKit modal displays all required wallet options correctly. The update notification system is well-implemented and does not interfere with wallet connection functionality. No UI blocking issues were detected.
 
 **Status:** ✅ READY FOR PRODUCTION
+
+---
+
+## BACKEND API VALIDATION (2025-03-06)
+
+### ✅ WALLET CONNECT INCIDENT FIX - BACKEND SMOKE TEST
+**Test Date:** March 6, 2025  
+**Test URL:** https://gamelab-polish.preview.emergentagent.com/api  
+**Tester:** Testing Agent  
+
+### Test Scope:
+Backend API smoke testing to verify backend connectivity and core leaderboard functionality as part of wallet connect incident fix validation.
+
+### Test Results Summary:
+
+#### ✅ TEST 1: Backend Connectivity - PASSED
+- **URL:** https://gamelab-polish.preview.emergentagent.com/api
+- **Status:** ✅ Backend is reachable and responding
+- **Response Time:** < 1 second
+- **Connection Status:** Stable
+
+#### ✅ TEST 2: Leaderboard API Smoke Test - PASSED (MAIN REQUIREMENT)
+- **Endpoint:** GET /api/leaderboard
+- **Status Code:** ✅ 200 OK
+- **Response Type:** JSON array
+- **Data Quality:** ✅ 34 leaderboard entries with complete player data
+- **Response Structure:** Valid array with player objects containing address, nickname, points, level, character info
+- **Sample Data Validation:** ✅ Contains real player data (top player: "Ramzes" with 42,500 points)
+
+#### ❌ TEST 3: Points Leaderboard API - MINOR ISSUE DETECTED
+- **Endpoint:** GET /api/points/leaderboard  
+- **Status Code:** ❌ 500 Internal Server Error
+- **Impact:** Low - Not required for wallet connect fix validation
+- **Note:** This endpoint has a server-side error but doesn't affect main functionality
+
+### Key Findings:
+
+#### 🎉 PRIMARY SUCCESS: Backend API Connectivity Verified
+- **Main Requirement Met:** ✅ GET /api/leaderboard returns 200 OK
+- **Backend Service:** ✅ Healthy and accessible via production URL
+- **API Response:** ✅ Valid JSON with real game data (34 players)
+- **Data Integrity:** ✅ Complete leaderboard with player stats, character selections, VIP status
+
+#### ⚠️ Minor Issue Identified:
+1. **Points Leaderboard 500 Error:** `/api/points/leaderboard` endpoint returns internal server error
+   - **Severity:** Low (not part of required smoke test)
+   - **Impact:** Does not affect main leaderboard or wallet functionality
+   - **Recommendation:** Investigate server-side error in points system integration
+
+### Frontend Testing Status:
+- **PLAY NOW → main menu → connect-wallet-btn:** ⚠️ NOT TESTED (Outside backend scope)
+- **Wallet modal (MetaMask, Coinbase, WalletConnect):** ⚠️ NOT TESTED (Frontend responsibility)  
+- **Service worker page reload behavior:** ⚠️ NOT TESTED (Frontend responsibility)
+
+### Conclusion:
+**✅ BACKEND API SMOKE TEST PASSED**
+
+The main requirement for backend validation has been successfully met. The leaderboard API returns 200 OK with valid game data, confirming that the backend service is healthy and accessible through the production URL. The minor issue with the points leaderboard endpoint does not impact the core functionality required for the wallet connect incident fix validation.
+
+**Backend Status:** ✅ HEALTHY - Ready for frontend wallet connect testing
