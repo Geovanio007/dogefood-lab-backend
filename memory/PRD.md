@@ -57,6 +57,11 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - **Rewards applied**: Points added to player.points, extra lives to player.extra_treats_balance, mythic ingredient and 2x buffs stored in spin_wheel_buffs collection
 - **Verified**: 9/9 backend tests passed, all frontend elements confirmed (iteration_17)
 
+### P0 Gameplay Bug Fixes (Mar 6, 2026) - FIXED
+- **Ingredient unlock race condition fixed**: `GameLabRedesign` now fetches player level first, then loads ingredients with the resolved level (no more default Level 1 ingredient lock on initial load)
+- **Spin prize mismatch fixed**: backend now returns deterministic spin metadata (`prize_index`, `landing_angle_degrees`, `full_spins`) and frontend rotation uses that server-provided landing angle
+- **Verification**: testing report `iteration_18.json` confirms both P0 issues fixed (11/11 backend tests passed + frontend UI validation)
+
 ## Deployment Info
 - **Frontend**: https://dogefoodlab.vercel.app (LIVE)
 - **Backend**: https://dogefood-lab-api.onrender.com (LIVE)
@@ -79,4 +84,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-March 2, 2026 - Spin the Wheel feature complete. Auto-Mixer subscription expiry fix complete.
+March 6, 2026 - P0 ingredient unlock and spin-wheel prize mismatch bugs fixed and verified.
