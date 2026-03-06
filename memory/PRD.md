@@ -62,6 +62,12 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - **Spin prize mismatch fixed**: backend now returns deterministic spin metadata (`prize_index`, `landing_angle_degrees`, `full_spins`) and frontend rotation uses that server-provided landing angle
 - **Verification**: testing report `iteration_18.json` confirms both P0 issues fixed (11/11 backend tests passed + frontend UI validation)
 
+### Wallet Connection Reliability Patch (Mar 6, 2026) - FIXED
+- **Network switch UX fix**: main header wrong-network action now uses `openChainModal()` (with fallback to account modal) so users can switch to DogeOS correctly.
+- **Service worker stability fix**: removed forced auto-reload on `SW_ACTIVATED`, reduced update polling aggressiveness, and switched static asset strategy to network-first to avoid stale wallet-connect bundles.
+- **Wallet metadata hardening**: WalletConnect metadata URL now uses dynamic `window.location.origin`; project ID is sourced directly from env.
+- **Verification**: `iteration_19.json` + frontend test agent confirmed connect modal reliability on desktop/mobile and no forced reload interruption during wallet flow.
+
 ## Deployment Info
 - **Frontend**: https://dogefoodlab.vercel.app (LIVE)
 - **Backend**: https://dogefood-lab-api.onrender.com (LIVE)
@@ -70,6 +76,7 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 
 ## Pending Issues
 1. Invisible grey text on Telegram (P2 - needs user details/screenshot)
+2. `GET /api/points/leaderboard` returns 500 (low priority; found during backend smoke test)
 
 ## Upcoming Tasks
 1. (P1) Implement referral program system ("Refer & Earn" card exists on main menu)
@@ -84,4 +91,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-March 6, 2026 - P0 ingredient unlock and spin-wheel prize mismatch bugs fixed and verified.
+March 6, 2026 - Wallet connection reliability patch completed and verified.
