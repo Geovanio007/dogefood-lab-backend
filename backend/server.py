@@ -8184,11 +8184,11 @@ SPIN_WHEEL_PRIZES = [
     {"id": "points_100", "label": "100 Points", "type": "points", "value": 100, "weight": 25, "color": "#3b82f6", "emoji": "star"},
     {"id": "points_150", "label": "150 Points", "type": "points", "value": 150, "weight": 20, "color": "#8b5cf6", "emoji": "sparkles"},
     {"id": "points_200", "label": "200 Points", "type": "points", "value": 200, "weight": 15, "color": "#06b6d4", "emoji": "gem"},
-    {"id": "points_300", "label": "300 Points", "type": "points", "value": 300, "weight": 10, "color": "#f59e0b", "emoji": "trophy"},
+    {"id": "points_300", "label": "300 Points", "type": "points", "value": 300, "weight": 10, "color": "#fbbf24", "emoji": "trophy"},
     {"id": "points_500", "label": "500 Points", "type": "points", "value": 500, "weight": 5, "color": "#ef4444", "emoji": "fire"},
     {"id": "extra_lives_2", "label": "2 Extra Lives", "type": "extra_lives", "value": 2, "weight": 12, "color": "#10b981", "emoji": "heart"},
     {"id": "extra_lives_4", "label": "4 Extra Lives", "type": "extra_lives", "value": 4, "weight": 5, "color": "#ec4899", "emoji": "hearts"},
-    {"id": "mythic_ingredient", "label": "Mythic Ingredient", "type": "mythic_ingredient", "value": 24, "weight": 3, "color": "#f97316", "emoji": "crown"},
+    {"id": "mythic_ingredient", "label": "Mythic Ingredient", "type": "mythic_ingredient", "value": 24, "weight": 3, "color": "#14b8a6", "emoji": "crown"},
     {"id": "double_next", "label": "2x Next Treat", "type": "double_next", "value": 2, "weight": 5, "color": "#a855f7", "emoji": "zap"},
 ]
 
