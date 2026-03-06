@@ -8362,13 +8362,23 @@ async def spin_the_wheel(data: dict):
 # Include the router in the main app
 app.include_router(api_router)
 
-# CORS Configuration - restrict origins in production
+# CORS Configuration - always include known frontend domains
 ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', '')
+# Known frontend domains that should always be allowed
+KNOWN_FRONTEND_ORIGINS = [
+    "https://doge-food-lab.vercel.app",
+    "https://dogefoodlab.vercel.app",
+    "http://localhost:3000",
+]
 if ALLOWED_ORIGINS == '*' or not ALLOWED_ORIGINS:
-    logging.warning("⚠️ CORS is set to allow all origins - restrict in production!")
+    logging.warning("CORS is set to allow all origins - restrict in production!")
     cors_origins = ["*"]
 else:
     cors_origins = [origin.strip() for origin in ALLOWED_ORIGINS.split(',') if origin.strip()]
+    # Merge with known origins
+    for origin in KNOWN_FRONTEND_ORIGINS:
+        if origin not in cors_origins:
+            cors_origins.append(origin)
 
 app.add_middleware(
     CORSMiddleware,
