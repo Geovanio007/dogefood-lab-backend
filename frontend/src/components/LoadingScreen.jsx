@@ -173,7 +173,7 @@ const LoadingScreen = ({ onLoadingComplete }) => {
       </div>
 
       {/* Custom styles for falling animation */}
-      <style jsx>{`
+      <style>{`
         @keyframes fall-splash {
           0% {
             transform: translateY(0) rotate(0deg) scale(1);

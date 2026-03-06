@@ -78,7 +78,7 @@ const UpdateNotification = () => {
         </div>
       </div>
       
-      <style jsx="true">{`
+      <style>{`
         @keyframes slide-up {
           from {
             opacity: 0;
