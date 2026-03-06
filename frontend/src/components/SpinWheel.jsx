@@ -131,11 +131,21 @@ const SpinWheel = ({ playerAddress, onPrizeWon }) => {
       });
       if (!res.ok) { setSpinning(false); return; }
       const data = await res.json();
-      const idx = data.prize_index, sa = 360/prizes.length;
-      const target = idx*sa + sa/2;
-      const spins = (6 + Math.random()*3) * 360;
-      const final = spins + (360 - target + 270) % 360;
-      setRotation(prev => prev + final);
+      const fallbackSliceAngle = prizes.length ? 360 / prizes.length : 0;
+      const prizeIndex = Number.isInteger(data.prize_index) ? data.prize_index : 0;
+      const fallbackTarget = prizeIndex * fallbackSliceAngle + fallbackSliceAngle / 2;
+      const fallbackLandingAngle = (360 - fallbackTarget + 270) % 360;
+
+      const landingAngle = typeof data.landing_angle_degrees === 'number'
+        ? data.landing_angle_degrees
+        : fallbackLandingAngle;
+      const fullSpins = Number.isInteger(data.full_spins) ? data.full_spins : 6;
+
+      setRotation(prev => {
+        const currentNormalized = ((prev % 360) + 360) % 360;
+        const adjustment = (landingAngle - currentNormalized + 360) % 360;
+        return prev + (fullSpins * 360) + adjustment;
+      });
       setTimeout(() => {
         setWonPrize(data); setShowConfetti(true);
         setSpinning(false); setCanSpin(false);

@@ -8271,6 +8271,13 @@ async def spin_the_wheel(data: dict):
             prize_index = i
             break
 
+    segment_angle = 360 / len(SPIN_WHEEL_PRIZES)
+    target_segment_center = (prize_index * segment_angle) + (segment_angle / 2)
+    pointer_angle = 270
+    landing_angle_degrees = (pointer_angle - target_segment_center) % 360
+    full_spins = random.randint(6, 8)
+    spin_rotation_degrees = (full_spins * 360) + landing_angle_degrees
+
     # Apply the prize
     reward_applied = False
     reward_details = {}
@@ -8352,6 +8359,9 @@ async def spin_the_wheel(data: dict):
             "emoji": selected_prize["emoji"]
         },
         "prize_index": prize_index,
+        "landing_angle_degrees": round(landing_angle_degrees, 6),
+        "full_spins": full_spins,
+        "spin_rotation_degrees": round(spin_rotation_degrees, 6),
         "reward_applied": reward_applied,
         "reward_details": reward_details,
         "next_spin_at": next_spin_at.isoformat(),

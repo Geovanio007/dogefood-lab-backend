@@ -233,9 +233,10 @@ const GameLabRedesign = ({ playerAddress }) => {
   }, [playerAddress]);
 
   // Load ingredients
-  const loadIngredients = useCallback(async () => {
+  const loadIngredients = useCallback(async (levelOverride = null) => {
     try {
-      const response = await fetch(`${API_URL}/api/ingredients/unlocked/${playerLevel}`);
+      const levelToLoad = typeof levelOverride === 'number' ? levelOverride : playerLevel;
+      const response = await fetch(`${API_URL}/api/ingredients/unlocked/${levelToLoad}`);
       if (response.ok) {
         const data = await response.json();
         
@@ -266,6 +267,12 @@ const GameLabRedesign = ({ playerAddress }) => {
     }
   }, [playerAddress]);
 
+  const refreshPlayerAndIngredients = useCallback(async () => {
+    const resolvedLevel = await loadPlayerData();
+    await loadIngredients(resolvedLevel);
+    return resolvedLevel;
+  }, [loadPlayerData, loadIngredients]);
+
   // Handle character selection
   const handleCharacterSelect = async (character) => {
     setSelectingCharacter(true);
@@ -280,7 +287,8 @@ const GameLabRedesign = ({ playerAddress }) => {
         setSelectedCharacter(character);
         setShowCharacterSelection(false);
         // Reload player data to get updated character info
-        await loadPlayerData();
+        const resolvedLevel = await loadPlayerData();
+        await loadIngredients(resolvedLevel);
         console.log('Character selected:', data);
       } else {
         const errorData = await response.json();
@@ -307,9 +315,10 @@ const GameLabRedesign = ({ playerAddress }) => {
           .then(r => r.ok ? r.json() : null)
           .catch(() => null);
         
+        const resolvedLevel = await loadPlayerData();
+
         await Promise.all([
-          loadPlayerData(), 
-          loadIngredients(), 
+          loadIngredients(resolvedLevel),
           loadActiveTreats(),
           subFetch.then(data => {
             if (data?.subscription?.expiring_soon) {
@@ -439,7 +448,8 @@ const GameLabRedesign = ({ playerAddress }) => {
         }, 3000);
         
         // Reload data in parallel for faster response
-        await Promise.all([loadPlayerData(), loadActiveTreats()]);
+        const resolvedLevel = await loadPlayerData();
+        await Promise.all([loadIngredients(resolvedLevel), loadActiveTreats()]);
       } else {
         setShowBrewingAnimation(false);
         
@@ -497,7 +507,7 @@ const GameLabRedesign = ({ playerAddress }) => {
       setCollectingTreat(null);
       setCollectedTreat(null);
       setCollectRewards(null);
-      loadPlayerData();
+      void refreshPlayerAndIngredients();
     }, 6000);
     
     try {
@@ -520,7 +530,7 @@ const GameLabRedesign = ({ playerAddress }) => {
         setCollectingTreat(null);
         setCollectedTreat(null);
         setCollectRewards(null);
-        loadPlayerData();
+        void refreshPlayerAndIngredients();
       }, 3000);
     } catch (err) {
       console.error('Error collecting treat:', err);
@@ -1519,7 +1529,7 @@ const GameLabRedesign = ({ playerAddress }) => {
                 setCollectingTreat(null);
                 setCollectedTreat(null);
                 setCollectRewards(null);
-                loadPlayerData();
+                void refreshPlayerAndIngredients();
               }}
               className="mt-3 text-xs text-white/50 hover:text-white/80 transition-colors"
               data-testid="dismiss-collect-animation"
@@ -1653,7 +1663,7 @@ const GameLabRedesign = ({ playerAddress }) => {
         playerAddress={playerAddress}
         onPrizeWon={(data) => {
           // Refresh player data after winning
-          loadPlayerData();
+          void refreshPlayerAndIngredients();
           loadActiveTreats();
         }}
       />
