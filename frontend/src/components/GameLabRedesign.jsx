@@ -200,7 +200,7 @@ const GameLabRedesign = ({ playerAddress }) => {
     }
   ];
 
-  // Load player data
+  // Load player data — returns the level for ingredient loading
   const loadPlayerData = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/api/player/${playerAddress}`);
@@ -219,13 +219,16 @@ const GameLabRedesign = ({ playerAddress }) => {
         } else {
           setShowCharacterSelection(true);
         }
+        return data.level || 1;
       } else {
         // New player - show character selection
         setShowCharacterSelection(true);
+        return 1;
       }
     } catch (err) {
       console.error('Error loading player:', err);
       setShowCharacterSelection(true);
+      return 1;
     }
   }, [playerAddress]);
 
