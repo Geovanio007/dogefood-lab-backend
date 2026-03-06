@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_NAME = 'dogefood-lab-v1';
+const CACHE_NAME = 'dogefood-lab-v2';
 
 // Assets to precache
 const PRECACHE_ASSETS = [
@@ -105,23 +105,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // For static assets (JS, CSS, images) - cache first, network fallback
+  // For static assets (JS, CSS, images) - network first, cache fallback
   if (url.pathname.startsWith('/static/') || 
       /\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$/.test(url.pathname)) {
     event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(event.request).then((response) => {
-          // Cache the fetched response
+      fetch(event.request)
+        .then((response) => {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
           });
           return response;
-        });
-      })
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }

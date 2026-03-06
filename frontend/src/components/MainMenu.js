@@ -753,22 +753,38 @@ const MainMenu = () => {
             <ThemeToggle className="!p-1.5 !w-8 !h-8" />
 
             <ConnectButton.Custom>
-              {({ account, chain, openAccountModal, openConnectModal, mounted, authenticationStatus }) => {
+              {({ account, chain, openAccountModal, openConnectModal, openChainModal, mounted, authenticationStatus }) => {
                 const ready = mounted && authenticationStatus !== 'loading';
                 const connected = ready && account && chain && (!authenticationStatus || authenticationStatus === 'authenticated');
                 if (!ready) return <div style={{ opacity: 0, pointerEvents: 'none' }} />;
                 if (!connected) return (
                   <button
-                    onClick={openConnectModal}
+                    onClick={() => {
+                      if (typeof openConnectModal === 'function') {
+                        openConnectModal();
+                      }
+                    }}
                     className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold h-8 sm:h-9 px-3 sm:px-4 rounded-xl transition-colors"
                     data-testid="connect-wallet-btn"
+                    title={isTelegram ? 'Connect with WalletConnect inside Telegram or open in external browser if needed' : 'Connect wallet'}
                   >
                     <Wallet className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Connect</span>
                   </button>
                 );
                 if (chain.unsupported) return (
-                  <button onClick={openAccountModal} className="bg-red-500/20 text-red-400 text-xs font-semibold h-8 sm:h-9 px-3 rounded-xl border border-red-500/30">
-                    Wrong Network
+                  <button
+                    onClick={() => {
+                      if (typeof openChainModal === 'function') {
+                        openChainModal();
+                      } else if (typeof openAccountModal === 'function') {
+                        openAccountModal();
+                      }
+                    }}
+                    className="bg-red-500/20 text-red-400 text-xs font-semibold h-8 sm:h-9 px-3 rounded-xl border border-red-500/30"
+                    data-testid="switch-network-btn"
+                    title="Switch to DogeOS Chikyū Testnet"
+                  >
+                    Switch Network
                   </button>
                 );
                 return (

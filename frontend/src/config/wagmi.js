@@ -30,7 +30,8 @@ export const dogeOSDevnet = defineChain({
 });
 
 // WalletConnect project ID - required for mobile wallet connections
-const projectId = process.env.REACT_APP_WALLETCONNECT_PROJECT_ID || '';
+const projectId = process.env.REACT_APP_WALLETCONNECT_PROJECT_ID;
+const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://dogefoodlab.vercel.app';
 
 export const wagmiConfig = getDefaultConfig({
   appName: 'DogeFood Lab Beta',
@@ -43,7 +44,7 @@ export const wagmiConfig = getDefaultConfig({
     metadata: {
       name: 'DogeFood Lab',
       description: 'Create treats, earn points, climb the leaderboard on DogeOS!',
-      url: 'https://app-eight-bay-35.vercel.app',
+      url: appUrl,
       icons: ['https://customer-assets.emergentagent.com/job_dogefoodlab/artifacts/ckey490s_20250812_154617.jpg']
     }
   }

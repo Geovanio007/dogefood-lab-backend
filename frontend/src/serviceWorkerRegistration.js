@@ -42,10 +42,10 @@ function registerValidSW(swUrl, config) {
       // Check for updates immediately
       registration.update();
 
-      // Check for updates every 60 seconds
+      // Check for updates every 5 minutes
       setInterval(() => {
         registration.update();
-      }, 60 * 1000);
+      }, 5 * 60 * 1000);
 
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
@@ -85,8 +85,13 @@ function registerValidSW(swUrl, config) {
   // Listen for messages from service worker
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SW_ACTIVATED') {
-      console.log('[SW] Service worker activated, reloading...');
-      window.location.reload();
+      console.log('[SW] Service worker activated');
+      if (updateCallback) {
+        updateCallback();
+      }
+      if (config && config.onUpdate) {
+        config.onUpdate(swRegistration);
+      }
     }
   });
 }
