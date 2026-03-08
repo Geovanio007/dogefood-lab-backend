@@ -74,6 +74,11 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - **Wallet options loading issue fixed**: switched RainbowKit to explicit static wallet list and compact modal, disabled dynamic multi-injected discovery to prevent skeleton/blank wallet options on mobile/Telegram-like conditions.
 - **Verification**: `iteration_20.json` confirms backend 8/8 tests passing and wallet modal working on desktop + mobile with MetaMask/Coinbase/Rainbow/WalletConnect/Browser Wallet visible.
 
+### Wallet Options Expansion (Mar 8, 2026) - FIXED
+- Added **OKX Wallet** as a default top-level wallet option in the connect modal (positioned right after MetaMask).
+- Expanded explicit wallet list to improve immediate availability without remote explorer dependency: MetaMask, OKX, Coinbase Wallet, Rainbow, Trust Wallet, Rabby, Phantom, WalletConnect (+ injected fallback).
+- **Verification**: `iteration_21.json` confirms no skeleton placeholders and all wallet options render on desktop and mobile; `/api/points/leaderboard` remains 200.
+
 ## Deployment Info
 - **Frontend**: https://dogefoodlab.vercel.app (LIVE)
 - **Backend**: https://dogefood-lab-api.onrender.com (LIVE)
@@ -96,4 +101,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-March 8, 2026 - Points leaderboard 500 and wallet options loading issue fixed and verified.
+March 8, 2026 - OKX wallet default option added and wallet list rendering verified.
