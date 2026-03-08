@@ -3,6 +3,10 @@ import {
   rainbowWallet,
   coinbaseWallet,
   metaMaskWallet,
+  okxWallet,
+  trustWallet,
+  rabbyWallet,
+  phantomWallet,
   walletConnectWallet,
   injectedWallet,
 } from '@rainbow-me/rainbowkit/wallets';
@@ -49,7 +53,7 @@ export const wagmiConfig = getDefaultConfig({
   wallets: [
     {
       groupName: 'Recommended',
-      wallets: [metaMaskWallet, coinbaseWallet, rainbowWallet, walletConnectWallet, injectedWallet],
+      wallets: [metaMaskWallet, okxWallet, coinbaseWallet, rainbowWallet, trustWallet, rabbyWallet, phantomWallet, walletConnectWallet, injectedWallet],
     },
   ],
   // Enable WalletConnect for mobile
