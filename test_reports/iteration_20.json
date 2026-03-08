@@ -1,0 +1,78 @@
+{
+  "summary": "Verified both fixes: (1) GET /api/points/leaderboard returns 200 with valid payload - 8/8 backend tests pass confirming KeyError fix with safe defaults. (2) Wallet modal shows all 5 wallet options (MetaMask, Coinbase Wallet, Rainbow, WalletConnect, Browser Wallet) reliably on both desktop and mobile. WalletConnect shows QR code flow - NO skeleton placeholders visible.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "WalletConnect QR view",
+        "issues": ["Minor React warning: 'errorCorrection' prop should be lowercase 'errorcorrection' - non-blocking"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_leaderboard_fix.py",
+    "/app/test_reports/pytest/leaderboard_fix_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "✓ points_system.py get_points_leaderboard() uses safe defaults: player.get('points', 0) or 0, player.get('level', 1) or 1",
+    "✓ Weekly points calculation uses safe access: t.get('amount') or 0 for null-safe summation",
+    "✓ wagmi.js: multiInjectedProviderDiscovery=false prevents wallet discovery skeleton issues",
+    "✓ wagmi.js: Explicit wallet list [metaMaskWallet, coinbaseWallet, rainbowWallet, walletConnectWallet, injectedWallet] ensures predictable rendering",
+    "✓ Web3Provider.js: RainbowKitProvider modalSize='compact' improves modal performance"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_leaderboard_fix.py (NEW - 8 test cases for leaderboard endpoint)"
+  ],
+  "success_rate": {
+    "backend": "100% - 8/8 leaderboard tests passed",
+    "frontend": "100% - Wallet modal working on desktop and mobile"
+  },
+  "test_credentials": "No credentials required",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Leaderboard KeyError fix verified with 8 backend tests. Wallet connect modal fix verified via Playwright on desktop (1920x1080) and mobile (390x844). All 5 wallet options visible: MetaMask, Coinbase Wallet, Rainbow, WalletConnect, Browser Wallet. WalletConnect shows QR code properly - no skeleton placeholders. The fix involved disabling multiInjectedProviderDiscovery and using explicit static wallet list.",
+  "verified_features": {
+    "leaderboard_keyerror_fix": {
+      "status": "VERIFIED",
+      "details": [
+        "GET /api/points/leaderboard returns 200 OK",
+        "Response has correct structure with 'leaderboard' array and 'generated_at' timestamp",
+        "All entries have required fields: rank, address, nickname, total_points, weekly_points, level, is_nft_holder, last_active",
+        "Safe defaults prevent KeyError: points=0, level=1, weekly_points=0",
+        "nft_holders_only filter works correctly (true/false)",
+        "Limit parameter respected (tested with limit=3)",
+        "Ranks assigned sequentially 1,2,3...",
+        "Sorted by total_points descending"
+      ]
+    },
+    "wallet_modal_fix": {
+      "status": "VERIFIED",
+      "details": [
+        "Desktop: Connect Wallet button opens modal with 5 wallet options",
+        "Mobile: Connect Wallet button opens modal with 5 wallet options",
+        "Wallet options: MetaMask, Coinbase Wallet, Rainbow, WalletConnect, Browser Wallet",
+        "WalletConnect: Clicking shows QR code 'Scan with your phone' - NOT skeleton placeholders",
+        "multiInjectedProviderDiscovery=false prevents dynamic wallet discovery issues",
+        "Explicit wallet list ensures predictable rendering on Telegram/mobile"
+      ]
+    }
+  },
+  "api_endpoints_tested": {
+    "GET /api/points/leaderboard?limit=10": "200 OK - Valid leaderboard with all fields",
+    "GET /api/points/leaderboard?limit=10&nft_holders_only=true": "200 OK - NFT holders only",
+    "GET /api/points/leaderboard?limit=50&nft_holders_only=false": "200 OK - All players",
+    "GET /api/points/leaderboard?limit=3": "200 OK - Respects limit param"
+  },
+  "frontend_pages_tested": {
+    "Desktop (1920x1080)": "Play Now -> Main Menu -> Connect Wallet -> Modal with 5 wallet options",
+    "Mobile (390x844)": "Play Now -> Main Menu -> Connect Wallet -> Modal with 5 wallet options -> WalletConnect -> QR code"
+  },
+  "rca_of_the_issue": "Leaderboard 500: KeyError when player documents had null/missing 'points', 'level', or 'amount' fields. Fix: Safe defaults with .get(field, default) or 0. Wallet skeleton: multiInjectedProviderDiscovery was dynamically discovering wallets causing skeleton placeholders on slow networks. Fix: Disabled discovery, used explicit static wallet list."
+}

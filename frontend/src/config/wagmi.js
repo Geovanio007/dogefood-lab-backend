@@ -1,4 +1,11 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import {
+  rainbowWallet,
+  coinbaseWallet,
+  metaMaskWallet,
+  walletConnectWallet,
+  injectedWallet,
+} from '@rainbow-me/rainbowkit/wallets';
 import { defineChain } from 'viem';
 
 // Define DogeOS Chikyū Testnet chain
@@ -38,6 +45,13 @@ export const wagmiConfig = getDefaultConfig({
   projectId: projectId,
   chains: [dogeOSDevnet],
   ssr: false,
+  multiInjectedProviderDiscovery: false,
+  wallets: [
+    {
+      groupName: 'Recommended',
+      wallets: [metaMaskWallet, coinbaseWallet, rainbowWallet, walletConnectWallet, injectedWallet],
+    },
+  ],
   // Enable WalletConnect for mobile
   walletConnectParameters: {
     projectId: projectId,

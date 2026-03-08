@@ -394,7 +394,8 @@ class PointsCollectionSystem:
     
     async def get_points_leaderboard(self, limit: int = 50, nft_holders_only: bool = True) -> List[Dict]:
         """Get current points leaderboard"""
-        
+        safe_limit = max(1, min(limit, 200))
+
         match_criteria = {"points": {"$gt": 0}}
         if nft_holders_only:
             match_criteria["is_nft_holder"] = True
@@ -402,10 +403,10 @@ class PointsCollectionSystem:
         pipeline = [
             {"$match": match_criteria},
             {"$sort": {"points": -1, "level": -1, "last_active": -1}},
-            {"$limit": limit}
+            {"$limit": safe_limit}
         ]
-        
-        players = await self.db.players.aggregate(pipeline).to_list(limit)
+
+        players = await self.db.players.aggregate(pipeline).to_list(safe_limit)
         
         leaderboard = []
         for rank, player in enumerate(players, 1):
@@ -414,18 +415,18 @@ class PointsCollectionSystem:
                 "player_address": player["address"],
                 "timestamp": {"$gte": datetime.utcnow() - timedelta(days=7)}
             }).to_list(100)
-            
-            weekly_points = sum(t["amount"] for t in recent_points)
+
+            weekly_points = sum(int((t.get("amount") or 0)) for t in recent_points)
             
             leaderboard.append({
                 "rank": rank,
                 "address": player["address"],
                 "nickname": player.get("nickname"),
-                "total_points": player["points"],
+                "total_points": int(player.get("points", 0) or 0),
                 "weekly_points": weekly_points,
-                "level": player["level"],
-                "is_nft_holder": player["is_nft_holder"],
-                "last_active": player["last_active"]
+                "level": int(player.get("level", 1) or 1),
+                "is_nft_holder": bool(player.get("is_nft_holder", False)),
+                "last_active": player.get("last_active")
             })
         
         return leaderboard

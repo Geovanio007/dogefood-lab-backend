@@ -10,7 +10,7 @@ export function Web3Provider({ children }) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
+        <RainbowKitProvider modalSize="compact">
           {children}
         </RainbowKitProvider>
       </QueryClientProvider>
