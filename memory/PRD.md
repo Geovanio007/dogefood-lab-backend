@@ -68,6 +68,12 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - **Wallet metadata hardening**: WalletConnect metadata URL now uses dynamic `window.location.origin`; project ID is sourced directly from env.
 - **Verification**: `iteration_19.json` + frontend test agent confirmed connect modal reliability on desktop/mobile and no forced reload interruption during wallet flow.
 
+### Leaderboard + Wallet Modal Reliability Fix (Mar 8, 2026) - FIXED
+- **`/api/points/leaderboard` 500 fixed**: patched `get_points_leaderboard()` with null-safe defaults for missing player fields (`points`, `level`, `is_nft_holder`) and safe weekly points summation.
+- **Parity fix applied** in both `backend/services/points_system.py` and `render-backend/services/points_system.py`.
+- **Wallet options loading issue fixed**: switched RainbowKit to explicit static wallet list and compact modal, disabled dynamic multi-injected discovery to prevent skeleton/blank wallet options on mobile/Telegram-like conditions.
+- **Verification**: `iteration_20.json` confirms backend 8/8 tests passing and wallet modal working on desktop + mobile with MetaMask/Coinbase/Rainbow/WalletConnect/Browser Wallet visible.
+
 ## Deployment Info
 - **Frontend**: https://dogefoodlab.vercel.app (LIVE)
 - **Backend**: https://dogefood-lab-api.onrender.com (LIVE)
@@ -76,7 +82,6 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 
 ## Pending Issues
 1. Invisible grey text on Telegram (P2 - needs user details/screenshot)
-2. `GET /api/points/leaderboard` returns 500 (low priority; found during backend smoke test)
 
 ## Upcoming Tasks
 1. (P1) Implement referral program system ("Refer & Earn" card exists on main menu)
@@ -91,4 +96,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-March 6, 2026 - Wallet connection reliability patch completed and verified.
+March 8, 2026 - Points leaderboard 500 and wallet options loading issue fixed and verified.
