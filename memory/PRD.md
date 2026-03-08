@@ -79,6 +79,12 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Expanded explicit wallet list to improve immediate availability without remote explorer dependency: MetaMask, OKX, Coinbase Wallet, Rainbow, Trust Wallet, Rabby, Phantom, WalletConnect (+ injected fallback).
 - **Verification**: `iteration_21.json` confirms no skeleton placeholders and all wallet options render on desktop and mobile; `/api/points/leaderboard` remains 200.
 
+### OKX Trigger Reliability (Mar 8, 2026) - FIXED
+- Reworked wallet config to keep OKX in top recommended options while improving extension detection path (`multiInjectedProviderDiscovery: true`).
+- Added **Telegram wallet deep-link bridge** to force OKX/WalletConnect URI handling via `Telegram.WebApp.openLink()` fallback (prevents no-op behavior in Telegram webview when custom URI handling is blocked).
+- Added OKX mobile deeplink override (`okx://main/wc?uri=...`) via `okxDeepLinkWallet` wrapper for stronger mobile app handoff.
+- **Verification**: `iteration_22.json` confirms OKX appears on desktop/mobile and clicking OKX transitions to connect flow (QR/details) instead of no-op; leaderboard API remains 200.
+
 ## Deployment Info
 - **Frontend**: https://dogefoodlab.vercel.app (LIVE)
 - **Backend**: https://dogefood-lab-api.onrender.com (LIVE)
@@ -101,4 +107,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-March 8, 2026 - OKX wallet default option added and wallet list rendering verified.
+March 8, 2026 - OKX trigger reliability improvements + Telegram deeplink fallback implemented and verified.
