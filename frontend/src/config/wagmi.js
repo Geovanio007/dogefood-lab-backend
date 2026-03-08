@@ -43,6 +43,7 @@ export const dogeOSDevnet = defineChain({
 // WalletConnect project ID - required for mobile wallet connections
 const projectId = process.env.REACT_APP_WALLETCONNECT_PROJECT_ID;
 const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://dogefoodlab.vercel.app';
+const isTelegramEnv = typeof window !== 'undefined' && Boolean(window.Telegram?.WebApp?.initData);
 
 const okxDeepLinkWallet = ({ projectId: wcProjectId, walletConnectParameters }) => {
   const baseWallet = okxWallet({ projectId: wcProjectId, walletConnectParameters });
@@ -60,11 +61,13 @@ export const wagmiConfig = getDefaultConfig({
   projectId: projectId,
   chains: [dogeOSDevnet],
   ssr: false,
-  multiInjectedProviderDiscovery: true,
+  multiInjectedProviderDiscovery: !isTelegramEnv,
   wallets: [
     {
       groupName: 'Recommended',
-      wallets: [metaMaskWallet, okxDeepLinkWallet, coinbaseWallet, rainbowWallet, trustWallet, rabbyWallet, phantomWallet, walletConnectWallet, injectedWallet],
+      wallets: isTelegramEnv
+        ? [okxDeepLinkWallet, walletConnectWallet, coinbaseWallet]
+        : [metaMaskWallet, okxDeepLinkWallet, coinbaseWallet, rainbowWallet, trustWallet, rabbyWallet, phantomWallet, walletConnectWallet, injectedWallet],
     },
   ],
   // Enable WalletConnect for mobile

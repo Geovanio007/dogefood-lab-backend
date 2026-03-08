@@ -1,0 +1,109 @@
+{
+  "summary": "Verified Telegram-specific wallet bug fixes via code-path validation and browser testing. All fixes correctly implemented.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Wallet Modal (RainbowKit)",
+        "issues": ["React warning about 'errorCorrection' prop on QR code SVG - cosmetic only, from RainbowKit library"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_telegram_wallet_fix.py",
+    "/app/test_reports/pytest/telegram_wallet_fix_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "✓ MainMenu.js: handleWalletConnectPress() correctly checks isTelegram and shows telegram-wallet-helper-modal when true, otherwise calls openConnectModal()",
+    "✓ MainMenu.js: Telegram wallet helper modal has all 4 actions: Open in MetaMask App, Open in OKX App, Use WalletConnect, Open in External Browser",
+    "✓ MainMenu.js: handleTelegramOpenMetaMask uses metamask.app.link/dapp/ deep link format",
+    "✓ MainMenu.js: handleTelegramOpenOKX uses okx://wallet/dapp/url?dappUrl= deep link format",
+    "✓ MainMenu.js: openTelegramSafeLink uses Telegram.WebApp.openLink for HTTP URLs, location.href for app deep links",
+    "✓ wagmi.js: isTelegramEnv detection via window.Telegram?.WebApp?.initData",
+    "✓ wagmi.js: Telegram environment uses restricted wallet set [okxDeepLinkWallet, walletConnectWallet, coinbaseWallet] - avoids MetaMask crash in Telegram",
+    "✓ wagmi.js: Non-Telegram uses full wallet set including metaMaskWallet, okxDeepLinkWallet, etc.",
+    "✓ wagmi.js: multiInjectedProviderDiscovery disabled in Telegram to prevent extension popup issues",
+    "✓ TelegramContext: installTelegramWalletDeepLinkBridge() intercepts okx://, okex://, wc:// URLs",
+    "✓ telegram.js: Bridge overrides window.open to route wallet deep-links through Telegram.WebApp.openLink"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_telegram_wallet_fix.py"
+  ],
+  "success_rate": {
+    "backend": "100% - All 5 tests pass (leaderboard structure, ordering, limits, health)",
+    "frontend": "100% - Non-Telegram flow verified: connect wallet opens RainbowKit modal, OKX click triggers QR code flow"
+  },
+  "test_credentials": "No credentials required",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Telegram wallet fixes verified via code review + browser testing. Cannot fully test Telegram runtime in CI. Implementation verified: (1) isTelegram triggers telegram-wallet-helper-modal instead of RainbowKit, (2) Modal has MetaMask/OKX/WalletConnect/External Browser buttons, (3) wagmi.js uses restricted wallet set in Telegram env, (4) Deep-link bridge handles okx:// and wc:// URIs.",
+  "verified_features": {
+    "telegram_safe_connect_mode": {
+      "status": "CODE VERIFIED",
+      "details": [
+        "handleWalletConnectPress checks isTelegram flag before showing modal",
+        "When isTelegram=true, shows telegram-wallet-helper-modal",
+        "When isTelegram=false, calls openConnectModal() (RainbowKit)",
+        "data-testid='telegram-wallet-helper-modal' exists in DOM when modal shown"
+      ]
+    },
+    "telegram_helper_modal_actions": {
+      "status": "CODE VERIFIED",
+      "details": [
+        "Open in MetaMask App: data-testid='telegram-open-metamask-btn', handler=handleTelegramOpenMetaMask",
+        "Open in OKX App: data-testid='telegram-open-okx-btn', handler=handleTelegramOpenOKX",
+        "Use WalletConnect: data-testid='telegram-open-walletconnect-btn', opens RainbowKit modal",
+        "Open in External Browser: data-testid='telegram-open-external-browser-btn', handler=handleTelegramOpenExternal"
+      ]
+    },
+    "wagmi_telegram_specific_wallets": {
+      "status": "CODE VERIFIED",
+      "details": [
+        "isTelegramEnv detection at wagmi.js:46 via window.Telegram?.WebApp?.initData",
+        "Telegram wallets: [okxDeepLinkWallet, walletConnectWallet, coinbaseWallet] - no MetaMask to avoid crash",
+        "Non-Telegram: full set [metaMaskWallet, okxDeepLinkWallet, coinbaseWallet, rainbowWallet, ...]",
+        "multiInjectedProviderDiscovery: !isTelegramEnv (disabled in Telegram)"
+      ]
+    },
+    "non_telegram_regression": {
+      "status": "UI VERIFIED",
+      "details": [
+        "Connect wallet button opens RainbowKit modal (not telegram helper)",
+        "All 8 wallets visible: MetaMask, OKX, Coinbase, Rainbow, Trust, Rabby, Phantom, WalletConnect",
+        "OKX click triggers 'Scan with OKX Wallet' QR code view (not no-op)"
+      ]
+    },
+    "backend_leaderboard_api": {
+      "status": "API VERIFIED",
+      "details": [
+        "GET /api/points/leaderboard returns 200 OK",
+        "Response structure: {leaderboard: [...], generated_at: string}",
+        "Entries contain rank, address, nickname, total_points, level, is_nft_holder",
+        "Ranks properly ordered, limit parameter respected"
+      ]
+    }
+  },
+  "api_endpoints_tested": {
+    "GET /api/points/leaderboard?limit=5": "200 OK - Valid leaderboard with ranked entries",
+    "GET /api/health": "200 OK - status=healthy, database=connected"
+  },
+  "frontend_pages_tested": {
+    "Main Menu (Desktop 1920x1080)": "Verified wallet modal opens with all 8 wallets, OKX triggers connect flow",
+    "Auth Modal": "Verified Connect Wallet and Sign Up as Guest buttons present"
+  },
+  "code_paths_validated": {
+    "MainMenu.handleWalletConnectPress": "Lines 753-762 - Correctly branches on isTelegram",
+    "MainMenu.handleTelegramOpenMetaMask": "Lines 736-740 - Uses metamask.app.link deep link",
+    "MainMenu.handleTelegramOpenOKX": "Lines 742-746 - Uses okx://wallet/dapp/url deep link",
+    "MainMenu.openTelegramSafeLink": "Lines 714-734 - Routes through Telegram.WebApp.openLink when available",
+    "wagmi.js wallets config": "Lines 65-71 - Conditional wallet set based on isTelegramEnv",
+    "telegram.js deep-link bridge": "Lines 303-348 - Intercepts and routes wallet URIs"
+  }
+}
