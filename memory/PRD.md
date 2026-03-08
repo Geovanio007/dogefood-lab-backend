@@ -91,6 +91,12 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Updated `wagmi` config to use Telegram-specific wallet set (`OKX + WalletConnect + Coinbase`) and disable injected wallet discovery in Telegram to avoid MetaMask crash/no-op behavior.
 - **Verification**: `iteration_23.json` confirms code-path correctness for Telegram mode and non-Telegram regression safety; backend leaderboard API still 200.
 
+### Direct Wallet-Logo Trigger Restoration (Mar 8, 2026) - FIXED
+- Removed the temporary Telegram helper modal path and restored direct `openConnectModal()` behavior from wallet logo click.
+- Reconfigured OKX connector to prioritize direct opening flow (`okxDeepLinkWallet` with mobile deep-link + `qrCode: undefined`) so clicking OKX transitions immediately into “Opening OKX Wallet…” instead of appearing as no-op.
+- Strengthened Telegram environment detection in wallet config and kept deep-link bridge support in Telegram utilities.
+- **Verification**: `iteration_24.json` confirms OKX click now transitions state correctly, connect modal opens directly, wallet list renders, and `/api/points/leaderboard` remains 200.
+
 ## Deployment Info
 - **Frontend**: https://dogefoodlab.vercel.app (LIVE)
 - **Backend**: https://dogefood-lab-api.onrender.com (LIVE)
@@ -113,4 +119,4 @@ Build a Web3-based game called "DogeFood Lab" where players mix ingredients to c
 - Deploy: Vercel (frontend), Render (backend)
 
 ## Last Updated
-March 8, 2026 - Telegram wallet safe mode + Telegram-specific wallet config implemented and verified.
+March 8, 2026 - Direct OKX wallet trigger behavior restored and verified.
