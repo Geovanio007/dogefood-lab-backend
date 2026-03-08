@@ -7,6 +7,7 @@ import {
   expandTelegramWebApp,
   setTelegramHeaderColor,
   optimizeForTelegramPlatform,
+  installTelegramWalletDeepLinkBridge,
   isTelegramMobile
 } from '../utils/telegram';
 
@@ -56,6 +57,7 @@ export const TelegramProvider = ({ children }) => {
           expandTelegramWebApp();
           setTelegramHeaderColor('#1f2937'); // Dark header for game theme
           optimizeForTelegramPlatform(); // Platform-specific optimizations
+          installTelegramWalletDeepLinkBridge();
           
           console.log('✅ Telegram WebApp initialized and optimized');
         } else {

@@ -298,3 +298,52 @@ export const optimizeForTelegramPlatform = () => {
     console.error('Error optimizing for Telegram platform:', error);
   }
 };
+
+// Improve wallet deep-link handling inside Telegram WebApp
+export const installTelegramWalletDeepLinkBridge = () => {
+  if (!isTelegramWebApp() || typeof window === 'undefined') return;
+
+  try {
+    if (window.__tgWalletDeepLinkBridgeInstalled) return;
+    const webApp = window.Telegram?.WebApp;
+    if (!webApp) return;
+
+    const originalWindowOpen = window.open.bind(window);
+
+    const shouldForceTelegramOpen = (url) => {
+      if (typeof url !== 'string') return false;
+      const lowerUrl = url.toLowerCase();
+      return (
+        lowerUrl.startsWith('okx://') ||
+        lowerUrl.startsWith('okex://') ||
+        lowerUrl.startsWith('wc:') ||
+        lowerUrl.includes('walletconnect') ||
+        lowerUrl.includes('wc?uri=')
+      );
+    };
+
+    window.open = (url, target, features) => {
+      if (shouldForceTelegramOpen(url)) {
+        try {
+          webApp.openLink(url, { try_instant_view: false });
+          return null;
+        } catch (openErr) {
+          try {
+            window.location.href = url;
+            return null;
+          } catch (hrefErr) {
+            console.error('Wallet deep-link fallback failed:', hrefErr);
+          }
+          console.error('Telegram openLink failed:', openErr);
+        }
+      }
+
+      return originalWindowOpen(url, target, features);
+    };
+
+    window.__tgWalletDeepLinkBridgeInstalled = true;
+    console.log('🔗 Telegram wallet deep-link bridge installed');
+  } catch (error) {
+    console.error('Error installing Telegram wallet deep-link bridge:', error);
+  }
+};

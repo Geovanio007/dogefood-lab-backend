@@ -44,16 +44,27 @@ export const dogeOSDevnet = defineChain({
 const projectId = process.env.REACT_APP_WALLETCONNECT_PROJECT_ID;
 const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://dogefoodlab.vercel.app';
 
+const okxDeepLinkWallet = ({ projectId: wcProjectId, walletConnectParameters }) => {
+  const baseWallet = okxWallet({ projectId: wcProjectId, walletConnectParameters });
+
+  return {
+    ...baseWallet,
+    mobile: {
+      getUri: (uri) => `okx://main/wc?uri=${encodeURIComponent(uri)}`,
+    },
+  };
+};
+
 export const wagmiConfig = getDefaultConfig({
   appName: 'DogeFood Lab Beta',
   projectId: projectId,
   chains: [dogeOSDevnet],
   ssr: false,
-  multiInjectedProviderDiscovery: false,
+  multiInjectedProviderDiscovery: true,
   wallets: [
     {
       groupName: 'Recommended',
-      wallets: [metaMaskWallet, okxWallet, coinbaseWallet, rainbowWallet, trustWallet, rabbyWallet, phantomWallet, walletConnectWallet, injectedWallet],
+      wallets: [metaMaskWallet, okxDeepLinkWallet, coinbaseWallet, rainbowWallet, trustWallet, rabbyWallet, phantomWallet, walletConnectWallet, injectedWallet],
     },
   ],
   // Enable WalletConnect for mobile
