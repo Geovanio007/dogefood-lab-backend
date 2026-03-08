@@ -550,7 +550,6 @@ const MainMenu = () => {
 
   // ─── Auth & User State ─────────────────────────────────────
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showTelegramWalletModal, setShowTelegramWalletModal] = useState(false);
   const [showGuestSignup, setShowGuestSignup] = useState(false);
   const [guestUsername, setGuestUsername] = useState('');
   const [guestSignupError, setGuestSignupError] = useState('');
@@ -711,56 +710,6 @@ const MainMenu = () => {
     } catch { setGuestSignupError('Network error'); setGuestSignupLoading(false); }
   };
 
-  const openTelegramSafeLink = useCallback((url) => {
-    if (typeof window === 'undefined' || !url) return;
-
-    try {
-      const isHttpLink = /^https?:/i.test(url);
-
-      if (isTelegram && window.Telegram?.WebApp?.openLink && isHttpLink) {
-        window.Telegram.WebApp.openLink(url, { try_instant_view: false });
-        return;
-      }
-
-      if (isTelegram && !isHttpLink) {
-        window.location.href = url;
-        return;
-      }
-
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } catch {
-      window.location.href = url;
-    }
-  }, [isTelegram]);
-
-  const handleTelegramOpenMetaMask = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    const dappPath = `${window.location.host}${window.location.pathname}${window.location.search}${window.location.hash}`;
-    openTelegramSafeLink(`https://metamask.app.link/dapp/${dappPath}`);
-  }, [openTelegramSafeLink]);
-
-  const handleTelegramOpenOKX = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    const dappUrl = encodeURIComponent(window.location.href);
-    openTelegramSafeLink(`okx://wallet/dapp/url?dappUrl=${dappUrl}`);
-  }, [openTelegramSafeLink]);
-
-  const handleTelegramOpenExternal = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    openTelegramSafeLink(window.location.href);
-  }, [openTelegramSafeLink]);
-
-  const handleWalletConnectPress = useCallback((openConnectModal) => {
-    if (isTelegram) {
-      setShowTelegramWalletModal(true);
-      return;
-    }
-
-    if (typeof openConnectModal === 'function') {
-      openConnectModal();
-    }
-  }, [isTelegram]);
-
   // ═══════════════════════════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════════════════════════
@@ -810,10 +759,14 @@ const MainMenu = () => {
                 if (!ready) return <div style={{ opacity: 0, pointerEvents: 'none' }} />;
                 if (!connected) return (
                   <button
-                    onClick={() => handleWalletConnectPress(openConnectModal)}
+                    onClick={() => {
+                      if (typeof openConnectModal === 'function') {
+                        openConnectModal();
+                      }
+                    }}
                     className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold h-8 sm:h-9 px-3 sm:px-4 rounded-xl transition-colors"
                     data-testid="connect-wallet-btn"
-                    title={isTelegram ? 'Open Telegram-safe wallet connect options' : 'Connect wallet'}
+                    title={isTelegram ? 'Connect wallet' : 'Connect wallet'}
                   >
                     <Wallet className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Connect</span>
                   </button>
@@ -1268,72 +1221,6 @@ const MainMenu = () => {
       <MusicPlayer />
 
       {/* ─── Auth Modal ───────────────────────────────────── */}
-      {showTelegramWalletModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" data-testid="telegram-wallet-helper-modal">
-          <div className="bg-[#151b28] rounded-2xl p-5 max-w-sm w-full shadow-2xl border border-white/[0.06] relative" data-testid="telegram-wallet-helper-card">
-            <button
-              onClick={() => setShowTelegramWalletModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
-              data-testid="telegram-wallet-helper-close-btn"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <h3 className="text-base font-bold text-white text-center mb-1" data-testid="telegram-wallet-helper-title">Connect Wallet (Telegram Safe Mode)</h3>
-            <p className="text-slate-400 text-xs text-center mb-4" data-testid="telegram-wallet-helper-description">
-              Telegram may block extension popups. Open directly in wallet app or external browser.
-            </p>
-
-            <div className="space-y-2.5">
-              <button
-                onClick={handleTelegramOpenMetaMask}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#0d1117] text-white font-semibold hover:bg-white/[0.06] transition-colors flex items-center justify-between gap-2 text-sm border border-white/[0.08]"
-                data-testid="telegram-open-metamask-btn"
-              >
-                <span>Open in MetaMask App</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={handleTelegramOpenOKX}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#0d1117] text-white font-semibold hover:bg-white/[0.06] transition-colors flex items-center justify-between gap-2 text-sm border border-white/[0.08]"
-                data-testid="telegram-open-okx-btn"
-              >
-                <span>Open in OKX App</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              <ConnectButton.Custom>
-                {({ openConnectModal }) => (
-                  <button
-                    onClick={() => {
-                      setShowTelegramWalletModal(false);
-                      if (typeof openConnectModal === 'function') {
-                        openConnectModal();
-                      }
-                    }}
-                    className="w-full py-2.5 px-4 rounded-xl bg-sky-600 text-white font-semibold hover:bg-sky-500 transition-colors flex items-center justify-between gap-2 text-sm"
-                    data-testid="telegram-open-walletconnect-btn"
-                  >
-                    <span>Use WalletConnect</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                )}
-              </ConnectButton.Custom>
-
-              <button
-                onClick={handleTelegramOpenExternal}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-500 transition-colors flex items-center justify-between gap-2 text-sm"
-                data-testid="telegram-open-external-browser-btn"
-              >
-                <span>Open in External Browser</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" data-testid="auth-modal">
           <div className="bg-[#151b28] rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-white/[0.06] relative">
@@ -1348,7 +1235,7 @@ const MainMenu = () => {
                 <div className="space-y-3">
                   <ConnectButton.Custom>
                     {({ openConnectModal }) => (
-                      <button onClick={() => { setShowAuthModal(false); handleWalletConnectPress(openConnectModal); }} className="w-full py-2.5 px-4 rounded-xl bg-sky-600 text-white font-semibold hover:bg-sky-500 transition-colors flex items-center justify-center gap-2 text-sm" data-testid="auth-connect-wallet">
+                      <button onClick={() => { setShowAuthModal(false); openConnectModal(); }} className="w-full py-2.5 px-4 rounded-xl bg-sky-600 text-white font-semibold hover:bg-sky-500 transition-colors flex items-center justify-center gap-2 text-sm" data-testid="auth-connect-wallet">
                         <Wallet className="w-4 h-4" /> Connect Wallet
                       </button>
                     )}

@@ -43,7 +43,21 @@ export const dogeOSDevnet = defineChain({
 // WalletConnect project ID - required for mobile wallet connections
 const projectId = process.env.REACT_APP_WALLETCONNECT_PROJECT_ID;
 const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://dogefoodlab.vercel.app';
-const isTelegramEnv = typeof window !== 'undefined' && Boolean(window.Telegram?.WebApp?.initData);
+
+const detectTelegramEnvironment = () => {
+  if (typeof window === 'undefined') return false;
+
+  const webApp = window.Telegram?.WebApp;
+  const platform = webApp?.platform;
+  const hasTelegramPlatform = typeof platform === 'string' && platform.length > 0 && platform !== 'unknown';
+  const hasInitData = typeof webApp?.initData === 'string' && webApp.initData.length > 0;
+  const hasUserInInitData = Boolean(webApp?.initDataUnsafe?.user?.id);
+  const telegramUserAgent = /Telegram/i.test(window.navigator?.userAgent || '');
+
+  return hasTelegramPlatform || hasInitData || hasUserInInitData || telegramUserAgent;
+};
+
+const isTelegramEnv = detectTelegramEnvironment();
 
 const okxDeepLinkWallet = ({ projectId: wcProjectId, walletConnectParameters }) => {
   const baseWallet = okxWallet({ projectId: wcProjectId, walletConnectParameters });
@@ -53,6 +67,7 @@ const okxDeepLinkWallet = ({ projectId: wcProjectId, walletConnectParameters }) 
     mobile: {
       getUri: (uri) => `okx://main/wc?uri=${encodeURIComponent(uri)}`,
     },
+    qrCode: undefined,
   };
 };
 
@@ -61,7 +76,7 @@ export const wagmiConfig = getDefaultConfig({
   projectId: projectId,
   chains: [dogeOSDevnet],
   ssr: false,
-  multiInjectedProviderDiscovery: !isTelegramEnv,
+  multiInjectedProviderDiscovery: false,
   wallets: [
     {
       groupName: 'Recommended',
