@@ -8381,6 +8381,7 @@ KNOWN_FRONTEND_ORIGINS = [
     "https://doge-food-lab.vercel.app",
     "https://dogefoodlab.vercel.app",
     "http://localhost:3000",
+    "https://dogefoodlab-frontend.onrender.com",
 ]
 if ALLOWED_ORIGINS == '*' or not ALLOWED_ORIGINS:
     logging.warning("CORS is set to allow all origins - restrict in production!")
