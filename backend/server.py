@@ -695,6 +695,155 @@ class SpecialIngredientHistory(BaseModel):
     expired_at: datetime
     treats_created: int = 0
     total_bonus_earned: int = 0
+# ============================================================
+# REFERRAL SYSTEM
+# ============================================================
+
+REFERRAL_POINTS_REFERRER = 500
+REFERRAL_POINTS_NEW_PLAYER = 250
+REFERRAL_MAX_PER_PLAYER = 50
+
+class ApplyReferralRequest(BaseModel):
+    new_player_address: str
+    referral_code: str
+
+def generate_referral_code(address: str) -> str:
+    hash_hex = hashlib.sha256(address.encode()).hexdigest()
+    return hash_hex[:8].upper()
+    
+
+@api_router.get("/referral/code/{address}")
+async def get_referral_code(address: str):
+    address = sanitize_address(address)
+    if not address:
+        raise HTTPException(status_code=400, detail="Invalid address")
+    player = await find_player_by_address(address)
+    if not player:
+        new_player = {
+            "id": str(uuid.uuid4()),
+            "address": address,
+            "points": 0,
+            "total_points_collected": 0,
+            "level": 1,
+            "experience": 0,
+            "created_treats": [],
+            "last_active": datetime.now(timezone.utc),
+            "auth_type": "wallet"
+        }
+        await db.players.insert_one(new_player)
+        player = new_player
+    code = generate_referral_code(player.get("address", address))
+    referral_count = await db.referrals.count_documents({
+        "referrer_address": player.get("address", address),
+        "status": "completed"
+    })
+    app_url = os.environ.get("FRONTEND_URL", "https://dogefoodlab-frontend.onrender.com")
+    referral_link = f"{app_url}?ref={code}"
+    return {
+        "referral_code": code,
+        "referral_link": referral_link,
+        "referral_count": referral_count,
+        "max_referrals": REFERRAL_MAX_PER_PLAYER,
+        "points_per_referral": REFERRAL_POINTS_REFERRER,
+        "remaining_slots": max(0, REFERRAL_MAX_PER_PLAYER - referral_count)
+    }
+
+
+@api_router.post("/referral/apply")
+async def apply_referral(data: ApplyReferralRequest):
+    new_address = sanitize_address(data.new_player_address)
+    referral_code = sanitize_string(data.referral_code, 20).upper()
+    if not new_address or not referral_code:
+        raise HTTPException(status_code=400, detail="Invalid request data")
+    new_player = await find_player_by_address(new_address)
+    if not new_player:
+        raise HTTPException(status_code=404, detail="New player not found")
+    if new_player.get("referral_used"):
+        raise HTTPException(status_code=400, detail="Referral code already applied to this account")
+    referrer = await db.players.find_one({"referral_code": referral_code}, {"_id": 0})
+    if not referrer:
+        all_players = await db.players.find(
+            {"address": {"$exists": True, "$nin": [None, ""]}},
+            {"address": 1}
+        ).to_list(10000)
+        for p in all_players:
+            if generate_referral_code(p["address"]) == referral_code:
+                referrer = await db.players.find_one({"address": p["address"]}, {"_id": 0})
+                break
+    if not referrer:
+        raise HTTPException(status_code=404, detail="Invalid referral code")
+    referrer_address = referrer.get("address")
+    if referrer_address == new_address:
+        raise HTTPException(status_code=400, detail="Cannot use your own referral code")
+    referral_count = await db.referrals.count_documents({
+        "referrer_address": referrer_address,
+        "status": "completed"
+    })
+    if referral_count >= REFERRAL_MAX_PER_PLAYER:
+        raise HTTPException(status_code=400, detail="Referrer has reached the maximum referral limit")
+    now = datetime.now(timezone.utc)
+    await db.referrals.insert_one({
+        "id": str(uuid.uuid4()),
+        "referrer_address": referrer_address,
+        "referred_address": new_address,
+        "referral_code": referral_code,
+        "status": "completed",
+        "created_at": now,
+        "referrer_points_awarded": REFERRAL_POINTS_REFERRER,
+        "referred_points_awarded": REFERRAL_POINTS_NEW_PLAYER
+    })
+    await db.players.update_one(
+        {"address": referrer_address},
+        {
+            "$inc": {"points": REFERRAL_POINTS_REFERRER, "total_points_collected": REFERRAL_POINTS_REFERRER},
+            "$set": {"referral_code": referral_code}
+        }
+    )
+    new_player_address_key = new_player.get("address", new_address)
+    await db.players.update_one(
+        {"address": new_player_address_key},
+        {
+            "$inc": {"points": REFERRAL_POINTS_NEW_PLAYER, "total_points_collected": REFERRAL_POINTS_NEW_PLAYER},
+            "$set": {"referral_used": True, "referred_by": referrer_address, "referred_by_code": referral_code}
+        }
+    )
+    logger.info(f"âœ… Referral applied: {referrer_address} referred {new_address}")
+    return {
+        "success": True,
+        "message": f"Referral applied! You earned {REFERRAL_POINTS_NEW_PLAYER} bonus points!",
+        "referrer_points_awarded": REFERRAL_POINTS_REFERRER,
+        "new_player_points_awarded": REFERRAL_POINTS_NEW_PLAYER,
+        "referrer_address": referrer_address
+    }
+
+
+@api_router.get("/referral/stats/{address}")
+async def get_referral_stats(address: str):
+    address = sanitize_address(address)
+    player = await find_player_by_address(address)
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    real_address = player.get("address", address)
+    referrals = await db.referrals.find(
+        {"referrer_address": real_address, "status": "completed"},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    enriched = []
+    for r in referrals:
+        referred_player = await find_player_by_address(r["referred_address"])
+        enriched.append({
+            "referred_address": r["referred_address"],
+            "referred_nickname": referred_player.get("nickname", "Anonymous") if referred_player else "Anonymous",
+            "points_awarded": r["referrer_points_awarded"],
+            "date": r["created_at"].isoformat() if hasattr(r["created_at"], "isoformat") else str(r["created_at"])
+        })
+    return {
+        "total_referrals": len(enriched),
+        "total_points_earned": len(enriched) * REFERRAL_POINTS_REFERRER,
+        "max_referrals": REFERRAL_MAX_PER_PLAYER,
+        "remaining_slots": max(0, REFERRAL_MAX_PER_PLAYER - len(enriched)),
+        "referrals": enriched
+    }
 
 # Player Management Routes
 @api_router.post("/player", response_model=Player)
