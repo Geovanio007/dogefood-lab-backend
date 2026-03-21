@@ -759,7 +759,6 @@ async def get_referral_code(address: str):
         "remaining_slots": max(0, REFERRAL_MAX_PER_PLAYER - referral_count)
     }
 
-
 @api_router.post("/referral/apply")
 async def apply_referral(data: ApplyReferralRequest):
     new_address = sanitize_address(data.new_player_address)
@@ -826,7 +825,6 @@ async def apply_referral(data: ApplyReferralRequest):
         "new_player_points_awarded": REFERRAL_POINTS_NEW_PLAYER,
         "referrer_address": referrer_address
     }
-
 
 @api_router.get("/referral/stats/{address}")
 async def get_referral_stats(address: str):
