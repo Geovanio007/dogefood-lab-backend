@@ -703,16 +703,13 @@ REFERRAL_POINTS_REFERRER = 500
 REFERRAL_POINTS_NEW_PLAYER = 250
 REFERRAL_MAX_PER_PLAYER = 50
 
-
 class ApplyReferralRequest(BaseModel):
     new_player_address: str
     referral_code: str
 
-
 def generate_referral_code(address: str) -> str:
     hash_hex = hashlib.sha256(address.encode()).hexdigest()
     return hash_hex[:8].upper()
-
 
 @api_router.get("/referral/code/{address}")
 async def get_referral_code(address: str):
@@ -749,7 +746,6 @@ async def get_referral_code(address: str):
         "points_per_referral": REFERRAL_POINTS_REFERRER,
         "remaining_slots": max(0, REFERRAL_MAX_PER_PLAYER - referral_count)
     }
-
 
 @api_router.post("/referral/apply")
 async def apply_referral(data: ApplyReferralRequest):
@@ -818,7 +814,6 @@ async def apply_referral(data: ApplyReferralRequest):
         "referrer_address": referrer_address
     }
 
-
 @api_router.get("/referral/stats/{address}")
 async def get_referral_stats(address: str):
     address = sanitize_address(address)
@@ -845,8 +840,7 @@ async def get_referral_stats(address: str):
         "max_referrals": REFERRAL_MAX_PER_PLAYER,
         "remaining_slots": max(0, REFERRAL_MAX_PER_PLAYER - len(enriched)),
         "referrals": enriched
-}
-
+    }
 # Player Management Routes
 @api_router.post("/player", response_model=Player)
 async def create_player(player_data: PlayerCreate):
