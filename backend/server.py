@@ -703,26 +703,22 @@ REFERRAL_POINTS_REFERRER = 500
 REFERRAL_POINTS_NEW_PLAYER = 250
 REFERRAL_MAX_PER_PLAYER = 50
 
+
 class ApplyReferralRequest(BaseModel):
     new_player_address: str
     referral_code: str
 
+
 def generate_referral_code(address: str) -> str:
     hash_hex = hashlib.sha256(address.encode()).hexdigest()
     return hash_hex[:8].upper()
-    
 
 @api_router.get("/referral/code/{address}")
 async def get_referral_code(address: str):
-    """Get a player's referral code and stats."""
-    # Don't sanitize â€” preserve TG_ prefix for Telegram users
     if not address:
         raise HTTPException(status_code=400, detail="Invalid address")
-
     player = await find_player_by_address(address)
-
     if not player:
-        # Auto-create player if they don't exist yet
         new_player = {
             "id": str(uuid.uuid4()),
             "address": address,
@@ -736,20 +732,14 @@ async def get_referral_code(address: str):
         }
         await db.players.insert_one(new_player)
         player = new_player
-
-    # Use stored address, fall back to request address (handles Telegram users)
     effective_address = player.get("address") or address
-
     code = generate_referral_code(effective_address)
-
     referral_count = await db.referrals.count_documents({
         "referrer_address": effective_address,
         "status": "completed"
     })
-
     app_url = os.environ.get("FRONTEND_URL", "https://dogefoodlab-frontend.onrender.com")
     referral_link = f"{app_url}?ref={code}"
-
     return {
         "referral_code": code,
         "referral_link": referral_link,
@@ -817,7 +807,7 @@ async def apply_referral(data: ApplyReferralRequest):
             "$set": {"referral_used": True, "referred_by": referrer_address, "referred_by_code": referral_code}
         }
     )
-    logger.info(f"âœ… Referral applied: {referrer_address} referred {new_address}")
+    logger.info(f"Referral applied: {referrer_address} referred {new_address}")
     return {
         "success": True,
         "message": f"Referral applied! You earned {REFERRAL_POINTS_NEW_PLAYER} bonus points!",
