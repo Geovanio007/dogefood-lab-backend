@@ -714,11 +714,15 @@ def generate_referral_code(address: str) -> str:
 
 @api_router.get("/referral/code/{address}")
 async def get_referral_code(address: str):
-    address = sanitize_address(address)
+    """Get a player's referral code and stats."""
+    # Don't sanitize â€” preserve TG_ prefix for Telegram users
     if not address:
         raise HTTPException(status_code=400, detail="Invalid address")
+
     player = await find_player_by_address(address)
+
     if not player:
+        # Auto-create player if they don't exist yet
         new_player = {
             "id": str(uuid.uuid4()),
             "address": address,
@@ -732,13 +736,20 @@ async def get_referral_code(address: str):
         }
         await db.players.insert_one(new_player)
         player = new_player
-    code = generate_referral_code(player.get("address", address))
+
+    # Use stored address, fall back to request address (handles Telegram users)
+    effective_address = player.get("address") or address
+
+    code = generate_referral_code(effective_address)
+
     referral_count = await db.referrals.count_documents({
-        "referrer_address": player.get("address", address),
+        "referrer_address": effective_address,
         "status": "completed"
     })
+
     app_url = os.environ.get("FRONTEND_URL", "https://dogefoodlab-frontend.onrender.com")
     referral_link = f"{app_url}?ref={code}"
+
     return {
         "referral_code": code,
         "referral_link": referral_link,
