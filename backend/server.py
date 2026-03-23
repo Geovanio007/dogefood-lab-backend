@@ -931,8 +931,9 @@ async def happy_hour_status():
 
 @api_router.get("/activity/recent")
 async def get_recent_activity(limit: int = 20):
-    """Get recent global treat activity for the live feed"""
+    """Get recent global treat activity and spin wheel wins for the live feed"""
     try:
+        # Fetch treats
         pipeline = [
             {"$sort": {"created_at": -1}},
             {"$limit": limit},
@@ -945,6 +946,7 @@ async def get_recent_activity(limit: int = 20):
             {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArrays": True}},
             {"$project": {
                 "_id": 0,
+                "activity_type": {"$literal": "treat"},
                 "treat_name": "$name",
                 "rarity": 1,
                 "points_reward": {"$ifNull": ["$points_reward", 0]},
@@ -956,21 +958,52 @@ async def get_recent_activity(limit: int = 20):
             }}
         ]
         treats = await db.treats.aggregate(pipeline).to_list(limit)
-        
-        # Convert datetime to ISO string with UTC marker
-        for t in treats:
-            if t.get("created_at"):
-                dt = t["created_at"]
+
+        # Fetch recent spin wheel wins
+        spin_pipeline = [
+            {"$sort": {"spun_at": -1}},
+            {"$limit": limit},
+            {"$lookup": {
+                "from": "players",
+                "localField": "player_address",
+                "foreignField": "address",
+                "as": "player_info"
+            }},
+            {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArrays": True}},
+            {"$project": {
+                "_id": 0,
+                "activity_type": {"$literal": "spin"},
+                "treat_name": "$prize_label",
+                "rarity": {"$literal": "Spin"},
+                "points_reward": {
+                    "$cond": [{"$eq": ["$prize_type", "points"]}, "$prize_value", 0]
+                },
+                "xp_reward": {"$literal": 0},
+                "player_nickname": {"$ifNull": ["$player_info.nickname", "Anonymous"]},
+                "player_address": 1,
+                "created_at": "$spun_at",
+                "emoji": "$prize_emoji"
+            }}
+        ]
+        spins = await db.spin_wheel_history.aggregate(spin_pipeline).to_list(limit)
+
+        # Merge and sort by created_at descending
+        combined = treats + spins
+
+        # Normalize datetime fields
+        for item in combined:
+            if item.get("created_at"):
+                dt = item["created_at"]
                 if hasattr(dt, 'isoformat'):
-                    # Ensure UTC marker: append Z for naive datetimes (assumed UTC)
                     iso = dt.isoformat()
                     if '+' not in iso and not iso.endswith('Z'):
                         iso += 'Z'
-                    t["created_at"] = iso
-                else:
-                    t["created_at"] = str(dt)
-        
-        return {"activity": treats}
+                    item["created_at"] = iso
+
+        # Sort combined list by created_at descending
+        combined.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+
+        return {"activity": combined[:limit]}
     except Exception as e:
         logger.error(f"Error fetching recent activity: {e}")
         return {"activity": []}
