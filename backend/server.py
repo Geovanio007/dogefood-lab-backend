@@ -4792,7 +4792,7 @@ async def reset_leaderboard(admin_key: str = None):
             "season_id": 1,
             "name": "Season 1 - Official Launch",
             "started_at": datetime.now(timezone.utc),
-            "end_date": datetime(2026, 3, 31, 23, 59, 59),  # Season 1 ends March 31, 2026
+            "end_date": datetime(2026, 4, 31, 23, 59, 59),  # Season 1 ends April 31, 2026
             "status": "active",
             "reset_at": datetime.now(timezone.utc)
         }
@@ -4833,7 +4833,7 @@ async def get_season_timer():
             if isinstance(end_date, str):
                 end_date = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
         else:
-            # Default Season 1 end date: March 31, 2026
+            # Default Season 1 end date: April 31, 2026
             end_date = datetime(2026, 3, 31, 23, 59, 59)
         
         now = datetime.now(timezone.utc)
