@@ -874,7 +874,9 @@ async def create_player(player_data: PlayerCreate):
 
 @api_router.get("/player/{address}", response_model=Player)
 async def get_player(address: str):
-    player = await db.players.find_one({"address": address})
+    player = await find_player_by_address(address)
+    if not player:
+        player = await db.players.find_one({"guest_id": address}, {"_id": 0})
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
     return Player(**player)
