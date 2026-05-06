@@ -874,9 +874,7 @@ async def create_player(player_data: PlayerCreate):
 
 @api_router.get("/player/{address}", response_model=Player)
 async def get_player(address: str):
-    player = await find_player_by_address(address)
-    if not player:
-        player = await db.players.find_one({"guest_id": address}, {"_id": 0})
+    player = await db.players.find_one({"address": address})
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
     return Player(**player)
@@ -1543,9 +1541,47 @@ async def update_player_streak(address: str):
         logger.error(f"Error updating streak: {e}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
+# =====================================================
+# SEASON LOCK HELPER
+# =====================================================
+
+async def check_season_active():
+    """
+    Raises HTTP 403 if Season 1 has ended so no new treats can be mixed.
+    Reads end_date from the DB seasons collection (same source as the
+    countdown timer), with a hard-coded fallback of 2026-03-31.
+    """
+    try:
+        season_doc = await db.seasons.find_one({"season_id": 1}, {"_id": 0})
+        if season_doc and season_doc.get("end_date"):
+            end_date = season_doc["end_date"]
+            if isinstance(end_date, str):
+                end_date = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+            if end_date.tzinfo is None:
+                end_date = end_date.replace(tzinfo=timezone.utc)
+        else:
+            end_date = datetime(2026, 3, 31, 23, 59, 59, tzinfo=timezone.utc)
+
+        if datetime.now(timezone.utc) >= end_date:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "SEASON_ENDED",
+                    "message": "Season 1 has ended. Mixing is disabled until Season 2 begins.",
+                }
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"Season check failed (allowing treat creation): {e}")
+
+
 # Treat Management Routes
 @api_router.post("/treats", response_model=DogeTreat)
 async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTasks):
+    # Block mixing when season has ended
+    await check_season_active()
+
     # Phase 2: Anti-cheat validation
     cheat_check = await anti_cheat_system.validate_treat_creation(
         treat_data.creator_address,
@@ -3544,6 +3580,9 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
     """Create treat with enhanced game mechanics including rarity calculation and timers"""
     
     try:
+        # Block mixing when season has ended
+        await check_season_active()
+
         # Validate treat creation
         validation = game_engine.validate_treat_creation(treat_data.ingredients, treat_data.player_level)
         if not validation["valid"]:
