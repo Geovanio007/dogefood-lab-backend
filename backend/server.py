@@ -8602,6 +8602,87 @@ async def spin_the_wheel(data: dict):
     }
 
 
+# ============================================================================
+# LAB ARENA — Phase 1: leaderboard, entry, chat, predictions, heat events
+# ============================================================================
+from services import arena_system  # noqa: E402
+
+
+@api_router.get("/arena/current")
+async def arena_current():
+    arena = await arena_system.get_or_create_current_arena(db)
+    heat = await arena_system.get_or_rotate_heat_event(db)
+    leaderboard = await arena_system.get_leaderboard(db, limit=20)
+    return {
+        "arena": arena,
+        "heat": heat,
+        "top": leaderboard["top"],
+        "entries_preview": leaderboard["entries"][:5],
+    }
+
+
+@api_router.get("/arena/leaderboard")
+async def arena_leaderboard(limit: int = 50):
+    return await arena_system.get_leaderboard(db, limit=min(limit, 100))
+
+
+@api_router.post("/arena/join")
+async def arena_join(payload: dict):
+    addr = (payload or {}).get("address")
+    nickname = (payload or {}).get("nickname")
+    if not addr:
+        raise HTTPException(status_code=400, detail="address required")
+    try:
+        result = await arena_system.join_arena(db, addr, nickname)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return result
+
+
+@api_router.get("/arena/chat")
+async def arena_chat_list(limit: int = 40):
+    msgs = await arena_system.get_chat(db, limit=min(limit, 100))
+    return {"messages": msgs}
+
+
+@api_router.post("/arena/chat")
+async def arena_chat_post(payload: dict):
+    addr = (payload or {}).get("address")
+    nickname = (payload or {}).get("nickname") or ""
+    text = (payload or {}).get("text") or ""
+    if not addr:
+        raise HTTPException(status_code=400, detail="address required")
+    try:
+        msg = await arena_system.post_chat(db, addr, nickname, text)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"message": msg}
+
+
+@api_router.get("/arena/heat")
+async def arena_heat():
+    return await arena_system.get_or_rotate_heat_event(db)
+
+
+@api_router.post("/arena/predict")
+async def arena_predict(payload: dict):
+    addr = (payload or {}).get("address")
+    target = (payload or {}).get("target_address")
+    if not addr or not target:
+        raise HTTPException(status_code=400, detail="address and target_address required")
+    try:
+        pred = await arena_system.place_prediction(db, addr, target)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"prediction": pred}
+
+
+@api_router.get("/arena/prediction/{address}")
+async def arena_user_prediction(address: str):
+    pred = await arena_system.get_user_prediction(db, address)
+    return {"prediction": pred}
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
