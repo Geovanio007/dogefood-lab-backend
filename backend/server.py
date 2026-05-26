@@ -639,32 +639,32 @@ KERNEL_OF_WOW = {
 # Combo configurations for bonus tiers
 # Each combo is a set of ingredient IDs that, when combined with Kernel of Wow, gives bonus
 KERNEL_BONUS_COMBOS = {
-    # 30% bonus - Legendary combo (hardest to get)
+    # 30% bonus - Legendary combo (hardest to get) - Season 2
     "legendary": {
         "bonus_percent": 30,
         "combos": [
-            {"ING001", "ING008", "ING015"},  # Crunchy Kibble + Cosmic Catnip + Moonrock Salt
-            {"ING005", "ING012", "ING018"},  # Shiba Crunch + Doge Dust + Stellar Syrup
+            {"S2_040", "S2_038", "S2_033"},  # Mythic Paw Crystals + Shiba Stardust Syrup + Titanium Taffy
+            {"S2_039", "S2_034", "S2_031"},  # Royal Rocket Crunch + Omega Bacon Powder + Golden Tail Granules
         ],
         "description": "Legendary WOW Combo - Maximum boost!"
     },
-    # 20% bonus - Epic combo
+    # 20% bonus - Epic combo - Season 2
     "epic": {
         "bonus_percent": 20,
         "combos": [
-            {"ING002", "ING007"},  # Golden Bone Dust + Love Potion
-            {"ING004", "ING011"},  # Meme Meat + Rainbow Sprinkles
-            {"ING003", "ING009"},  # Bacon Bits + Honey Glaze
+            {"S2_026", "S2_022"},  # Electric Biscuit Chunks + Quantum Treat Flakes
+            {"S2_029", "S2_021"},  # Darkmatter Donut Crumbs + Cyber Corn Nuggets
+            {"S2_030", "S2_024"},  # Stellar Steak Cubes + Astro Syrup Drops
         ],
         "description": "Epic WOW Combo - Strong boost!"
     },
-    # 15% bonus - Rare combo
+    # 15% bonus - Rare combo - Season 2
     "rare": {
         "bonus_percent": 15,
         "combos": [
-            {"ING001", "ING006"},  # Crunchy Kibble + Peanut Butter
-            {"ING002", "ING003"},  # Golden Bone Dust + Bacon Bits
-            {"ING005", "ING010"},  # Shiba Crunch + Cheese Powder
+            {"S2_011", "S2_015"},  # Galaxy Kibble + Boneblast Seasoning
+            {"S2_013", "S2_018"},  # Alpha Bacon Strips + Plasma Peanut Butter
+            {"S2_017", "S2_020"},  # Shiba Spice Cubes + Doge Dust Crunch
         ],
         "description": "Rare WOW Combo - Good boost!"
     },
@@ -3937,6 +3937,20 @@ async def get_unlocked_ingredients(player_level: int):
         "unlocked_count": len(unlocked),
         "locked_count": len(locked),
         "unlocked_by_category": unlocked_by_category,
+        "ingredients": [
+            {
+                "id": ing.id,
+                "name": ing.name,
+                "category": ing.category.value,
+                "emoji": ing.emoji,
+                "description": ing.description,
+                "special_effect": ing.special_effect.value,
+                "rarity_weight": ing.rarity_weight,
+                "color": ing.color,
+                "unlock_level": ing.unlock_level,
+            }
+            for ing in unlocked
+        ],
         "next_unlocks": next_unlocks,
         "categories": ing_system.get_category_info()
     }
