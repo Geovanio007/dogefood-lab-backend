@@ -65,14 +65,15 @@ _TIER_COLOR = {
 # ============================================================
 _S2_DATA = [
     # ---- STARTER (Level 1–10) ----
+    # First 3 unlocked at Level 1 so new players can immediately mix (matches Season 1 behavior).
     ("S2_001", "Pupcorn Bits",            1,  "🍿",  SpecialEffect.NONE,             "Light, airy starter snack — the basic crunch."),
-    ("S2_002", "Dogeberry Syrup",         2,  "🫐",  SpecialEffect.MINOR_XP_BOOST,   "Sweet meme-berry syrup with a faint XP shimmer."),
-    ("S2_003", "Bark Biscuit Crumbs",     3,  "🍪",  SpecialEffect.NONE,             "Crumbled biscuit base used in countless recipes."),
-    ("S2_004", "Meme Milk Capsules",      4,  "🥛",  SpecialEffect.MINOR_XP_BOOST,   "Frothy lab-grown milk in encapsulated form."),
-    ("S2_005", "Cheddar Woof Chips",      5,  "🧀",  SpecialEffect.NONE,             "Crispy cheddar chips with a Shiba kick."),
-    ("S2_006", "Rocket Ramen Strands",    6,  "🍜",  SpecialEffect.XP_BOOST,         "Hyper-speed noodle strands rich in flavor."),
-    ("S2_007", "Frosted Paw Sugar",       7,  "❄️",  SpecialEffect.VISUAL_EFFECT,    "Icy sugar that sparkles on contact."),
-    ("S2_008", "Moonbone Jelly",          8,  "🌙",  SpecialEffect.XP_BOOST,         "Lunar gelatin — soft, glowing, energizing."),
+    ("S2_002", "Dogeberry Syrup",         1,  "🫐",  SpecialEffect.MINOR_XP_BOOST,   "Sweet meme-berry syrup with a faint XP shimmer."),
+    ("S2_003", "Bark Biscuit Crumbs",     1,  "🍪",  SpecialEffect.NONE,             "Crumbled biscuit base used in countless recipes."),
+    ("S2_004", "Meme Milk Capsules",      2,  "🥛",  SpecialEffect.MINOR_XP_BOOST,   "Frothy lab-grown milk in encapsulated form."),
+    ("S2_005", "Cheddar Woof Chips",      3,  "🧀",  SpecialEffect.NONE,             "Crispy cheddar chips with a Shiba kick."),
+    ("S2_006", "Rocket Ramen Strands",    5,  "🍜",  SpecialEffect.XP_BOOST,         "Hyper-speed noodle strands rich in flavor."),
+    ("S2_007", "Frosted Paw Sugar",       6,  "❄️",  SpecialEffect.VISUAL_EFFECT,    "Icy sugar that sparkles on contact."),
+    ("S2_008", "Moonbone Jelly",          7,  "🌙",  SpecialEffect.XP_BOOST,         "Lunar gelatin — soft, glowing, energizing."),
     ("S2_009", "Turbo Tail Spice",        9,  "🌶️", SpecialEffect.TIMER_REDUCTION,  "Fiery spice that speeds up the reactor."),
     ("S2_010", "Pupperoni Slices",        10, "🍕",  SpecialEffect.XP_BOOST,         "Premium pupperoni — a starter staple favorite."),
 
