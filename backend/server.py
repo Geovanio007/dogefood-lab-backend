@@ -1579,6 +1579,9 @@ async def check_season_active():
 # Treat Management Routes
 @api_router.post("/treats", response_model=DogeTreat)
 async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTasks):
+    # Block mixing when season has ended
+    await check_season_active()
+
     # Phase 2: Anti-cheat validation
     cheat_check = await anti_cheat_system.validate_treat_creation(
         treat_data.creator_address,
@@ -3577,6 +3580,9 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
     """Create treat with enhanced game mechanics including rarity calculation and timers"""
     
     try:
+        # Block mixing when season has ended
+        await check_season_active()
+
         # Validate treat creation
         validation = game_engine.validate_treat_creation(treat_data.ingredients, treat_data.player_level)
         if not validation["valid"]:
@@ -8606,31 +8612,165 @@ from services import arena_system  # noqa: E402
 async def arena_current():
     arena = await arena_system.get_or_create_current_arena(db)
     heat = await arena_system.get_or_rotate_heat_event(db)
-    leaderboard = await arena_system.get_leaderboard(db, limit=20)
+    lb_response = await arena_leaderboard(limit=20)
+    leaderboard = lb_response if isinstance(lb_response, dict) else {"entries": [], "top": []}
     return {
         "arena": arena,
         "heat": heat,
-        "top": leaderboard["top"],
-        "entries_preview": leaderboard["entries"][:5],
+        "top": leaderboard.get("top", []),
+        "entries_preview": leaderboard.get("entries", [])[:5],
+        "entries": leaderboard.get("entries", []),
     }
 
 
+ARENA_ENTRY_FEE = 50  # points deducted when joining the arena
+
 @api_router.get("/arena/leaderboard")
 async def arena_leaderboard(limit: int = 50):
-    return await arena_system.get_leaderboard(db, limit=min(limit, 100))
+    """
+    Arena leaderboard — only paid entrants, scored on points earned AFTER joining.
+    arena_entries stores: player_address, joined_at, points_at_join, entry_fee_paid.
+    Arena score = current player points - points_at_join.
+    """
+    try:
+        limit = min(limit, 100)
+
+        # 1. Fetch only entries that paid the fee
+        raw_entries = await db.arena_entries.find(
+            {"entry_fee_paid": True},
+            {"_id": 0}
+        ).to_list(500)
+
+        if not raw_entries:
+            return {"entries": [], "top": [], "arena": None}
+
+        # 2. Pull live points from players collection for all entrants
+        addresses = [e["player_address"] for e in raw_entries if e.get("player_address")]
+        players_map = {}
+        if addresses:
+            async for p in db.players.find(
+                {"address": {"$in": addresses}},
+                {"_id": 0, "address": 1, "points": 1, "nickname": 1}
+            ):
+                players_map[p["address"]] = p
+
+        # 3. Calculate arena_score = points earned SINCE joining
+        for entry in raw_entries:
+            addr = entry.get("player_address")
+            player = players_map.get(addr, {})
+            current_points = player.get("points", 0)
+            points_at_join = entry.get("points_at_join", 0)
+            # Arena score = points earned after paying entry fee
+            entry["points"] = max(0, current_points - points_at_join)
+            # Keep nickname fresh
+            if player.get("nickname"):
+                entry["nickname"] = player["nickname"]
+
+        # 4. Sort by arena score, re-rank
+        raw_entries.sort(key=lambda e: e.get("points", 0), reverse=True)
+        for i, e in enumerate(raw_entries):
+            e["rank"] = i + 1
+
+        entries = raw_entries[:limit]
+        return {
+            "entries": entries,
+            "top": entries[:3],
+            "total_entrants": len(raw_entries),
+        }
+
+    except Exception as e:
+        logger.error(f"Arena leaderboard error: {e}")
+        return {"entries": [], "top": [], "error": str(e)}
 
 
 @api_router.post("/arena/join")
 async def arena_join(payload: dict):
+    """
+    Join the arena by paying the 50pt entry fee.
+    - Deducts ARENA_ENTRY_FEE from player.points
+    - Snapshots points_at_join so arena score starts from 0
+    - Adds to prize pool
+    - Idempotent: returns existing entry if already joined
+    """
     addr = (payload or {}).get("address")
-    nickname = (payload or {}).get("nickname")
+    nickname = (payload or {}).get("nickname") or ""
     if not addr:
         raise HTTPException(status_code=400, detail="address required")
+
     try:
-        result = await arena_system.join_arena(db, addr, nickname)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    return result
+        # Check if already joined this arena session
+        existing = await db.arena_entries.find_one(
+            {"player_address": addr, "entry_fee_paid": True},
+            {"_id": 0}
+        )
+        if existing:
+            return {
+                "success": True,
+                "already_joined": True,
+                "entry": existing,
+                "message": "Already in the arena!"
+            }
+
+        # Fetch player and check they have enough points
+        player = await db.players.find_one({"address": addr}, {"_id": 0, "points": 1, "nickname": 1})
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found. Play the game first!")
+
+        current_points = player.get("points", 0)
+        if current_points < ARENA_ENTRY_FEE:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Not enough points. Need {ARENA_ENTRY_FEE} pts to enter — you have {current_points}."
+            )
+
+        real_nickname = player.get("nickname") or nickname or addr[:8]
+        now = datetime.now(timezone.utc)
+
+        # Deduct entry fee from player
+        await db.players.update_one(
+            {"address": addr},
+            {"$inc": {"points": -ARENA_ENTRY_FEE}}
+        )
+
+        # Create arena entry — snapshot points AFTER fee deduction
+        points_at_join = current_points - ARENA_ENTRY_FEE
+        entry_doc = {
+            "id": str(uuid.uuid4()),
+            "player_address": addr,
+            "nickname": real_nickname,
+            "entry_fee_paid": True,
+            "entry_fee_amount": ARENA_ENTRY_FEE,
+            "points_at_join": points_at_join,
+            "joined_at": now,
+            "rank": 0,
+            "win_streak": 0,
+            "is_streaming": False,
+        }
+        await db.arena_entries.insert_one(entry_doc)
+
+        # Add entry fee to arena prize pool
+        await db.arenas.update_one(
+            {"status": "active"},
+            {"$inc": {"prize_pool": ARENA_ENTRY_FEE, "entries_count": 1}},
+            upsert=False
+        )
+
+        logger.info(f"Arena join: {real_nickname} ({addr[:16]}...) paid {ARENA_ENTRY_FEE}pts, snapshot={points_at_join}")
+
+        return {
+            "success": True,
+            "already_joined": False,
+            "entry": {k: v for k, v in entry_doc.items() if k != "_id"},
+            "points_deducted": ARENA_ENTRY_FEE,
+            "points_remaining": points_at_join,
+            "message": f"Welcome to the Arena, {real_nickname}! {ARENA_ENTRY_FEE} pts entry fee paid."
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Arena join error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_router.get("/arena/chat")
