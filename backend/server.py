@@ -1579,9 +1579,6 @@ async def check_season_active():
 # Treat Management Routes
 @api_router.post("/treats", response_model=DogeTreat)
 async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTasks):
-    # Block mixing when season has ended
-    await check_season_active()
-
     # Phase 2: Anti-cheat validation
     cheat_check = await anti_cheat_system.validate_treat_creation(
         treat_data.creator_address,
@@ -3580,9 +3577,6 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
     """Create treat with enhanced game mechanics including rarity calculation and timers"""
     
     try:
-        # Block mixing when season has ended
-        await check_season_active()
-
         # Validate treat creation
         validation = game_engine.validate_treat_creation(treat_data.ingredients, treat_data.player_level)
         if not validation["valid"]:
@@ -8793,3 +8787,4 @@ async def startup_event():
 async def shutdown_db_client():
     client.close()
     logger.info("Database connection closed")
+    
