@@ -8601,15 +8601,176 @@ async def spin_the_wheel(data: dict):
 # ============================================================================
 from services import arena_system  # noqa: E402
 
+# Reward points by final rank when an arena settles
+ARENA_REWARDS_BY_RANK = {1: 420, 2: 250, 3: 150, 4: 100, 5: 75}
+# Players ranked 6-20 get 35 pts each
+ARENA_REWARDS_RANGE_START = 6
+ARENA_REWARDS_RANGE_END   = 20
+ARENA_REWARDS_RANGE_PTS   = 35
+PREDICTION_COST           = 20
+PREDICTION_MULTIPLIER     = 3   # winner payout = cost * 3
+
+
+async def _get_active_arena() -> Optional[dict]:
+    """Return the active arena doc from db.arenas, or None."""
+    arena = await db.arenas.find_one({"status": "active"}, {"_id": 0})
+    return arena
+
+
+async def _settle_active_arena() -> dict:
+    """
+    Settle the current active arena:
+      1. Rank all entrants by arena score (current_points - points_at_join)
+      2. Credit reward points to top players' db.players documents
+      3. Settle pending predictions against the rank-1 winner
+      4. Mark arena as 'settled'
+    Returns a summary dict.
+    """
+    now = datetime.now(timezone.utc)
+    arena = await db.arenas.find_one({"status": "active"}, {"_id": 0})
+    if not arena:
+        return {"settled": False, "reason": "no active arena"}
+
+    arena_id = arena.get("id") or str(arena.get("_id", ""))
+
+    # --- Build ranked leaderboard (same logic as /arena/leaderboard) ---
+    raw_entries = await db.arena_entries.find(
+        {"entry_fee_paid": True}, {"_id": 0}
+    ).to_list(5000)
+
+    addresses = [e["player_address"] for e in raw_entries if e.get("player_address")]
+    players_map = {}
+    if addresses:
+        async for p in db.players.find(
+            {"address": {"$in": addresses}},
+            {"_id": 0, "address": 1, "points": 1, "nickname": 1}
+        ):
+            players_map[p["address"]] = p
+
+    for entry in raw_entries:
+        addr = entry.get("player_address")
+        player = players_map.get(addr, {})
+        current_points = player.get("points", 0)
+        points_at_join = entry.get("points_at_join", 0)
+        entry["arena_score"] = max(0, current_points - points_at_join)
+
+    raw_entries.sort(key=lambda e: e.get("arena_score", 0), reverse=True)
+
+    rewards_given = []
+
+    # --- Credit rank rewards ---
+    for idx, entry in enumerate(raw_entries):
+        rank = idx + 1
+        addr = entry.get("player_address")
+        if not addr:
+            continue
+
+        reward_pts = ARENA_REWARDS_BY_RANK.get(rank, 0)
+        if ARENA_REWARDS_RANGE_START <= rank <= ARENA_REWARDS_RANGE_END:
+            reward_pts = ARENA_REWARDS_RANGE_PTS
+
+        if reward_pts > 0:
+            await db.players.update_one(
+                {"address": addr},
+                {"$inc": {"points": reward_pts}}
+            )
+            rewards_given.append({
+                "address": addr,
+                "nickname": entry.get("nickname"),
+                "rank": rank,
+                "arena_score": entry.get("arena_score", 0),
+                "reward_pts": reward_pts,
+            })
+            logger.info(f"Arena settle: rank {rank} → {addr[:12]} +{reward_pts}pts")
+
+    # --- Settle predictions ---
+    winner_addr = raw_entries[0]["player_address"] if raw_entries else None
+    predictions_settled = 0
+    if winner_addr:
+        pending_preds = await db.arena_predictions.find(
+            {"arena_id": arena_id, "status": "pending"}, {"_id": 0}
+        ).to_list(5000)
+
+        for pred in pending_preds:
+            won = pred.get("target_address") == winner_addr
+            payout = pred["cost"] * PREDICTION_MULTIPLIER if won else 0
+            new_status = "won" if won else "lost"
+            if payout:
+                await db.players.update_one(
+                    {"address": pred["predictor_address"]},
+                    {"$inc": {"points": payout}}
+                )
+                logger.info(f"Prediction settled WON: {pred['predictor_address'][:12]} +{payout}pts")
+            await db.arena_predictions.update_one(
+                {"id": pred["id"]},
+                {"$set": {"status": new_status, "payout": payout, "settled_at": now.isoformat()}}
+            )
+            predictions_settled += 1
+
+    # --- Mark arena settled ---
+    await db.arenas.update_one(
+        {"status": "active"},
+        {"$set": {
+            "status": "settled",
+            "settled_at": now.isoformat(),
+            "winner_address": winner_addr,
+            "total_rewarded": sum(r["reward_pts"] for r in rewards_given),
+            "predictions_settled": predictions_settled,
+        }}
+    )
+
+    logger.info(
+        f"Arena settled: {len(rewards_given)} rewards, "
+        f"{predictions_settled} predictions, winner={winner_addr}"
+    )
+    return {
+        "settled": True,
+        "winner": winner_addr,
+        "rewards": rewards_given,
+        "predictions_settled": predictions_settled,
+    }
+
 
 @api_router.get("/arena/current")
 async def arena_current():
-    arena = await arena_system.get_or_create_current_arena(db)
+    """
+    Returns the active arena + live leaderboard.
+    Lazily settles an expired arena and creates a fresh one if needed.
+    """
+    now = datetime.now(timezone.utc)
+
+    # Check if active arena has expired — settle it and create a new one
+    active = await db.arenas.find_one({"status": "active"}, {"_id": 0})
+    if active:
+        ends_at_raw = active.get("ends_at")
+        if ends_at_raw:
+            ends_at = parse_utc_datetime(ends_at_raw)
+            if now >= ends_at:
+                logger.info("Arena expired — settling and creating new arena")
+                await _settle_active_arena()
+                active = None  # force creation below
+
+    if not active:
+        # Create a fresh 24h arena starting at the last UTC midnight
+        midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        ends = midnight + timedelta(hours=24)
+        new_arena = {
+            "id": str(uuid.uuid4()),
+            "status": "active",
+            "started_at": midnight.isoformat(),
+            "ends_at": ends.isoformat(),
+            "prize_pool": 0,
+            "entries_count": 0,
+        }
+        await db.arenas.insert_one(new_arena)
+        new_arena.pop("_id", None)
+        active = new_arena
+
     heat = await arena_system.get_or_rotate_heat_event(db)
     lb_response = await arena_leaderboard(limit=20)
     leaderboard = lb_response if isinstance(lb_response, dict) else {"entries": [], "top": []}
     return {
-        "arena": arena,
+        "arena": active,
         "heat": heat,
         "top": leaderboard.get("top", []),
         "entries_preview": leaderboard.get("entries", [])[:5],
@@ -8794,21 +8955,89 @@ async def arena_heat():
 
 @api_router.post("/arena/predict")
 async def arena_predict(payload: dict):
-    addr = (payload or {}).get("address")
+    """
+    Place a prediction on who will win the current arena.
+    Costs PREDICTION_COST pts. Only one active prediction per arena per player.
+    """
+    addr   = (payload or {}).get("address")
     target = (payload or {}).get("target_address")
     if not addr or not target:
         raise HTTPException(status_code=400, detail="address and target_address required")
+    if addr == target:
+        raise HTTPException(status_code=400, detail="Cannot predict yourself")
+
     try:
-        pred = await arena_system.place_prediction(db, addr, target)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    return {"prediction": pred}
+        arena = await _get_active_arena()
+        if not arena:
+            raise HTTPException(status_code=400, detail="No active arena right now")
+
+        arena_id = arena.get("id", "")
+
+        # Only one pending prediction per arena
+        existing = await db.arena_predictions.find_one(
+            {"arena_id": arena_id, "predictor_address": addr, "status": "pending"},
+            {"_id": 0}
+        )
+        if existing:
+            raise HTTPException(status_code=400, detail="You already have an active prediction this arena")
+
+        # Check player has enough points
+        player = await db.players.find_one({"address": addr}, {"_id": 0, "points": 1})
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        if player.get("points", 0) < PREDICTION_COST:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Need {PREDICTION_COST} pts to predict — you have {player.get('points', 0)}"
+            )
+
+        # Deduct cost and create prediction
+        await db.players.update_one(
+            {"address": addr},
+            {"$inc": {"points": -PREDICTION_COST}}
+        )
+        pred = {
+            "id": str(uuid.uuid4()),
+            "arena_id": arena_id,
+            "predictor_address": addr,
+            "target_address": target,
+            "cost": PREDICTION_COST,
+            "payout_multiplier": PREDICTION_MULTIPLIER,
+            "status": "pending",
+            "payout": 0,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.arena_predictions.insert_one(pred)
+        pred.pop("_id", None)
+
+        logger.info(f"Prediction placed: {addr[:12]} → {target[:12]}")
+        return {"prediction": pred}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Arena predict error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_router.get("/arena/prediction/{address}")
 async def arena_user_prediction(address: str):
-    pred = await arena_system.get_user_prediction(db, address)
-    return {"prediction": pred}
+    """Return the player's current pending prediction for the active arena."""
+    try:
+        arena = await _get_active_arena()
+        if not arena:
+            return {"prediction": None}
+
+        arena_id = arena.get("id", "")
+        pred = await db.arena_predictions.find_one(
+            {"arena_id": arena_id, "predictor_address": address},
+            {"_id": 0},
+            sort=[("created_at", -1)]  # most recent first in case of duplicates
+        )
+        return {"prediction": pred}
+    except Exception as e:
+        logger.error(f"Arena prediction lookup error: {e}")
+        return {"prediction": None}
 
 
 # Include the router in the main app
@@ -8921,4 +9150,3 @@ async def startup_event():
 async def shutdown_db_client():
     client.close()
     logger.info("Database connection closed")
-    
