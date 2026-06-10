@@ -1031,9 +1031,12 @@ async def happy_hour_status():
 
 @api_router.get("/activity/recent")
 async def get_recent_activity(limit: int = 20):
-    """Get recent global treat activity for the live feed"""
+    """Get recent global activity: treat creations + spin wheel outcomes + arena rewards"""
     try:
-        pipeline = [
+        now = datetime.now(timezone.utc)
+
+        # ── 1. Treat creations (sorted by created_at as before) ──────────
+        treat_pipeline = [
             {"$sort": {"created_at": -1}},
             {"$limit": limit},
             {"$lookup": {
@@ -1045,6 +1048,7 @@ async def get_recent_activity(limit: int = 20):
             {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArrays": True}},
             {"$project": {
                 "_id": 0,
+                "type": {"$literal": "treat"},
                 "treat_name": "$name",
                 "rarity": 1,
                 "points_reward": {"$ifNull": ["$points_reward", 0]},
@@ -1052,25 +1056,45 @@ async def get_recent_activity(limit: int = 20):
                 "player_nickname": {"$ifNull": ["$player_info.nickname", "Anonymous"]},
                 "player_address": "$creator_address",
                 "created_at": 1,
-                "emoji": 1
+                "emoji": 1,
             }}
         ]
-        treats = await db.treats.aggregate(pipeline).to_list(limit)
-        
-        # Convert datetime to ISO string with UTC marker
-        for t in treats:
-            if t.get("created_at"):
-                dt = t["created_at"]
+        treat_events = await db.treats.aggregate(treat_pipeline).to_list(limit)
+
+        # ── 2. Spin wheel + arena events from activity_feed ───────────────
+        feed_events = await db.activity_feed.find(
+            {}, {"_id": 0}
+        ).sort("created_at", -1).limit(limit).to_list(limit)
+
+        # ── 3. Merge, sort by created_at desc, take top `limit` ───────────
+        all_events = treat_events + feed_events
+
+        def _parse_dt(val):
+            if val is None:
+                return datetime.min.replace(tzinfo=timezone.utc)
+            if hasattr(val, 'timestamp'):
+                return val if val.tzinfo else val.replace(tzinfo=timezone.utc)
+            try:
+                return datetime.fromisoformat(str(val).replace("Z", "+00:00"))
+            except Exception:
+                return datetime.min.replace(tzinfo=timezone.utc)
+
+        all_events.sort(key=lambda e: _parse_dt(e.get("created_at")), reverse=True)
+        all_events = all_events[:limit]
+
+        # ── 4. Normalise created_at → ISO string ──────────────────────────
+        for e in all_events:
+            if e.get("created_at"):
+                dt = e["created_at"]
                 if hasattr(dt, 'isoformat'):
-                    # Ensure UTC marker: append Z for naive datetimes (assumed UTC)
                     iso = dt.isoformat()
                     if '+' not in iso and not iso.endswith('Z'):
                         iso += 'Z'
-                    t["created_at"] = iso
+                    e["created_at"] = iso
                 else:
-                    t["created_at"] = str(dt)
-        
-        return {"activity": treats}
+                    e["created_at"] = str(e["created_at"])
+
+        return {"activity": all_events}
     except Exception as e:
         logger.error(f"Error fetching recent activity: {e}")
         return {"activity": []}
@@ -8859,6 +8883,26 @@ async def spin_the_wheel(data: dict):
         "spun_at": now,
         "reward_applied": reward_applied
     })
+
+    # Write to global activity feed
+    try:
+        _spin_player = await db.players.find_one({"address": player_address}, {"_id": 0, "nickname": 1})
+        _spin_nickname = (_spin_player or {}).get("nickname") or player_address[:8]
+        await db.activity_feed.insert_one({
+            "id": str(uuid.uuid4()),
+            "type": "spin",
+            "player_address": player_address,
+            "player_nickname": _spin_nickname,
+            "prize_label": selected_prize["label"],
+            "prize_type": selected_prize["type"],
+            "prize_value": selected_prize["value"],
+            "emoji": selected_prize.get("emoji", "star"),
+            "points_reward": selected_prize["value"] if selected_prize["type"] == "points" else 0,
+            "xp_reward": 0,
+            "created_at": now.isoformat(),
+        })
+    except Exception as _feed_err:
+        logger.warning(f"Activity feed write failed (spin): {_feed_err}")
 
 
     # Calculate next spin time
