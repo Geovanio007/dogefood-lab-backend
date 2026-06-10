@@ -1632,6 +1632,13 @@ async def update_player_streak(address: str):
 # Treat Management Routes
 @api_router.post("/treats", response_model=DogeTreat)
 async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTasks):
+    # ── TREAT CREATION LOCKED ────────────────────────────────────────
+    raise HTTPException(
+        status_code=503,
+        detail="Treat creation is temporarily locked. Please check back soon!"
+    )
+    # ── END LOCK ───────────────────────────────────────────────
+
     # Phase 2: Anti-cheat validation
     cheat_check = await anti_cheat_system.validate_treat_creation(
         treat_data.creator_address,
@@ -3693,7 +3700,13 @@ async def get_rarity_system():
 @api_router.post("/treats/enhanced")
 async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_tasks: BackgroundTasks):
     """Create treat with enhanced game mechanics including rarity calculation and timers"""
-    
+    # ── TREAT CREATION LOCKED ────────────────────────────────────────
+    raise HTTPException(
+        status_code=503,
+        detail="Treat creation is temporarily locked. Please check back soon!"
+    )
+    # ── END LOCK ───────────────────────────────────────────────
+
     try:
         # Validate treat creation
         validation = game_engine.validate_treat_creation(treat_data.ingredients, treat_data.player_level)
