@@ -74,13 +74,13 @@ async def get_or_create_current_arena(db) -> dict:
     ends = started + timedelta(hours=ARENA_DURATION_HOURS)
     arena = {
         "id": str(uuid.uuid4()),
-        "started_at": started,
-        "ends_at": ends,
+        "started_at": started.isoformat(),
+        "ends_at": ends.isoformat(),
         "status": "active",
         "prize_pool": 0,
         "entries_count": 0,
         "heat_event": _pick_heat_event(started),
-        "heat_event_started_at": started,
+        "heat_event_started_at": started.isoformat(),
     }
     await db.arena_sessions.insert_one(dict(arena))
     return _strip_id(arena)
@@ -95,6 +95,14 @@ async def settle_arena(db, arena_id: str) -> dict:
     entries = await db.arena_entries.find(
         {"arena_id": arena_id}, {"_id": 0}
     ).sort("points", -1).to_list(length=10000)
+
+    # Nothing to settle if nobody joined
+    if not entries:
+        await db.arena_sessions.update_one(
+            {"id": arena_id},
+            {"$set": {"status": "settled", "settled_at": _utcnow().isoformat(), "final_rewards": []}}
+        )
+        return await db.arena_sessions.find_one({"id": arena_id}, {"_id": 0}) or {}
 
     rewards = []
     for idx, entry in enumerate(entries):
@@ -112,7 +120,6 @@ async def settle_arena(db, arena_id: str) -> dict:
                 "points": reward_points,
                 "kind": reward_kind,
             })
-            # Credit points to the player
             await db.players.update_one(
                 {"address": entry["player_address"]},
                 {"$inc": {"points": reward_points}}
@@ -135,13 +142,13 @@ async def settle_arena(db, arena_id: str) -> dict:
                 "kind": "mystery",
             })
 
-    # Settle predictions: anyone who picked the rank-1 winner gets 3x payout
-    winner_addr = entries[0]["player_address"] if entries else None
+    # Settle predictions against rank-1 winner (3x payout)
+    winner_addr = entries[0]["player_address"]
     preds = await db.arena_predictions.find(
         {"arena_id": arena_id, "status": "pending"}, {"_id": 0}
     ).to_list(length=10000)
     for p in preds:
-        won = winner_addr and p["target_address"] == winner_addr
+        won = p["target_address"] == winner_addr
         payout = p["cost"] * 3 if won else 0
         if payout:
             await db.players.update_one(
@@ -150,14 +157,25 @@ async def settle_arena(db, arena_id: str) -> dict:
             )
         await db.arena_predictions.update_one(
             {"id": p["id"]},
-            {"$set": {"status": "won" if won else "lost", "payout": payout}}
+            {"$set": {
+                "status": "won" if won else "lost",
+                "payout": payout,
+                "settled_at": _utcnow().isoformat(),
+            }}
         )
 
+    # Mark settled — store all datetimes as ISO strings to avoid BSON serialization issues
     await db.arena_sessions.update_one(
         {"id": arena_id},
-        {"$set": {"status": "settled", "settled_at": _utcnow(), "final_rewards": rewards}}
+        {"$set": {
+            "status": "settled",
+            "settled_at": _utcnow().isoformat(),
+            "winner_address": winner_addr,
+            "final_rewards": rewards,
+        }}
     )
-    return await db.arena_sessions.find_one({"id": arena_id}, {"_id": 0})
+    result = await db.arena_sessions.find_one({"id": arena_id}, {"_id": 0})
+    return result or {}
 
 
 # ─── Entries / leaderboard ──────────────────────────────────────────────────
@@ -191,10 +209,11 @@ async def join_arena(db, player_address: str, nickname: Optional[str]) -> dict:
         "player_address": player_address,
         "nickname": nickname or player.get("nickname") or player_address[:8],
         "points": 0,
+        "points_at_join": player.get("points", 0) - ENTRY_FEE_POINTS,
         "win_streak": 0,
         "is_streaming": False,
-        "joined_at": _utcnow(),
-        "last_active_at": _utcnow(),
+        "joined_at": _utcnow().isoformat(),
+        "last_active_at": _utcnow().isoformat(),
     }
     await db.arena_entries.insert_one(dict(entry))
 
@@ -212,7 +231,7 @@ async def credit_arena_score(db, player_address: str, points_delta: int, treat_r
     arena = await db.arena_sessions.find_one({"status": "active"}, {"_id": 0})
     if not arena:
         return
-    update = {"$inc": {"points": points_delta}, "$set": {"last_active_at": _utcnow()}}
+    update = {"$inc": {"points": points_delta}, "$set": {"last_active_at": _utcnow().isoformat()}}
     if treat_rarity and treat_rarity.lower() in ("legendary", "mythic"):
         update["$inc"]["win_streak"] = 1
     res = await db.arena_entries.update_one(
@@ -318,7 +337,7 @@ async def post_chat(db, player_address: str, nickname: str, text: str) -> dict:
         "nickname": nickname or player_address[:8],
         "badge": badge,
         "text": text,
-        "created_at": _utcnow(),
+        "created_at": _utcnow().isoformat(),
     }
     await db.arena_chat.insert_one(dict(msg))
     return msg
@@ -366,9 +385,10 @@ async def place_prediction(db, predictor_address: str, target_address: str) -> d
         "cost": PREDICTION_COST,
         "payout_multiplier": 3,
         "status": "pending",
-        "created_at": _utcnow(),
+        "created_at": _utcnow().isoformat(),
     }
     await db.arena_predictions.insert_one(dict(pred))
+    pred.pop("_id", None)
     return pred
 
 
@@ -378,5 +398,6 @@ async def get_user_prediction(db, predictor_address: str) -> Optional[dict]:
         return None
     return await db.arena_predictions.find_one(
         {"arena_id": arena["id"], "predictor_address": predictor_address},
-        {"_id": 0}
+        {"_id": 0},
+        sort=[("created_at", -1)],
     )
