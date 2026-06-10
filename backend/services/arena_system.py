@@ -155,6 +155,25 @@ async def settle_arena(db, arena_id: str) -> dict:
                 {"address": p["predictor_address"]},
                 {"$inc": {"points": payout}}
             )
+            # Activity feed — prediction win
+            try:
+                _pred_player = await db.players.find_one(
+                    {"address": p["predictor_address"]}, {"_id": 0, "nickname": 1}
+                )
+                _pred_nick = (_pred_player or {}).get("nickname") or p["predictor_address"][:8]
+                await db.activity_feed.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "type": "arena_prediction",
+                    "player_address": p["predictor_address"],
+                    "player_nickname": _pred_nick,
+                    "points_reward": payout,
+                    "xp_reward": 0,
+                    "emoji": "crystal_ball",
+                    "prize_label": f"Prediction Win +{payout} pts",
+                    "created_at": _utcnow().isoformat(),
+                })
+            except Exception:
+                pass
         await db.arena_predictions.update_one(
             {"id": p["id"]},
             {"$set": {
@@ -174,6 +193,25 @@ async def settle_arena(db, arena_id: str) -> dict:
             "final_rewards": rewards,
         }}
     )
+
+    # Activity feed — arena leaderboard rewards
+    try:
+        for r in rewards:
+            if r.get("points", 0) > 0:
+                await db.activity_feed.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "type": "arena_reward",
+                    "player_address": r["address"],
+                    "player_nickname": r.get("nickname") or r["address"][:8],
+                    "points_reward": r["points"],
+                    "xp_reward": 0,
+                    "emoji": "trophy" if r.get("rank") == 1 else "medal",
+                    "prize_label": f"Arena Rank #{r['rank']} +{r['points']} pts" if r.get("rank") else f"Arena Mystery Drop +{r['points']} pts",
+                    "created_at": _utcnow().isoformat(),
+                })
+    except Exception:
+        pass
+
     result = await db.arena_sessions.find_one({"id": arena_id}, {"_id": 0})
     return result or {}
 
@@ -401,3 +439,4 @@ async def get_user_prediction(db, predictor_address: str) -> Optional[dict]:
         {"_id": 0},
         sort=[("created_at", -1)],
     )
+    
