@@ -160,16 +160,19 @@ async def settle_arena(db, arena_id: str) -> dict:
                 _pred_player = await db.players.find_one(
                     {"address": p["predictor_address"]}, {"_id": 0, "nickname": 1}
                 )
-                _pred_nick = (_pred_player or {}).get("nickname") or p["predictor_address"][:8]
+                _pred_nick = (_pred_player or {}).get("nickname") or "Anonymous"
                 await db.activity_feed.insert_one({
                     "id": str(uuid.uuid4()),
+                    "activity_type": "arena_prediction",
                     "type": "arena_prediction",
                     "player_address": p["predictor_address"],
                     "player_nickname": _pred_nick,
+                    "treat_name": f"🔮 Prediction Win +{payout} pts",
+                    "prize_label": f"Prediction Win +{payout} pts",
                     "points_reward": payout,
                     "xp_reward": 0,
+                    "rarity": None,
                     "emoji": "crystal_ball",
-                    "prize_label": f"Prediction Win +{payout} pts",
                     "created_at": _utcnow().isoformat(),
                 })
             except Exception:
@@ -198,15 +201,20 @@ async def settle_arena(db, arena_id: str) -> dict:
     try:
         for r in rewards:
             if r.get("points", 0) > 0:
+                _rank_label = f"Arena Rank #{r['rank']} +{r['points']} pts" if r.get("rank") else f"Arena Mystery Drop +{r['points']} pts"
+                _emoji = "trophy" if r.get("rank") == 1 else "medal"
                 await db.activity_feed.insert_one({
                     "id": str(uuid.uuid4()),
+                    "activity_type": "arena_reward",
                     "type": "arena_reward",
                     "player_address": r["address"],
-                    "player_nickname": r.get("nickname") or r["address"][:8],
+                    "player_nickname": r.get("nickname") or "Anonymous",
+                    "treat_name": f"🏆 {_rank_label}" if r.get("rank") == 1 else f"🥈 {_rank_label}",
+                    "prize_label": _rank_label,
                     "points_reward": r["points"],
                     "xp_reward": 0,
-                    "emoji": "trophy" if r.get("rank") == 1 else "medal",
-                    "prize_label": f"Arena Rank #{r['rank']} +{r['points']} pts" if r.get("rank") else f"Arena Mystery Drop +{r['points']} pts",
+                    "rarity": None,
+                    "emoji": _emoji,
                     "created_at": _utcnow().isoformat(),
                 })
     except Exception:
