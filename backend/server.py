@@ -1048,6 +1048,7 @@ async def get_recent_activity(limit: int = 20):
             {"$unwind": {"path": "$player_info", "preserveNullAndEmptyArrays": True}},
             {"$project": {
                 "_id": 0,
+                "activity_type": {"$literal": "treat"},
                 "type": {"$literal": "treat"},
                 "treat_name": "$name",
                 "rarity": 1,
@@ -8887,15 +8888,18 @@ async def spin_the_wheel(data: dict):
     # Write to global activity feed
     try:
         _spin_player = await db.players.find_one({"address": player_address}, {"_id": 0, "nickname": 1})
-        _spin_nickname = (_spin_player or {}).get("nickname") or player_address[:8]
+        _spin_nickname = (_spin_player or {}).get("nickname") or "Anonymous"
         await db.activity_feed.insert_one({
             "id": str(uuid.uuid4()),
+            "activity_type": "spin",
             "type": "spin",
             "player_address": player_address,
             "player_nickname": _spin_nickname,
+            "treat_name": f"🎰 {selected_prize['label']}",
             "prize_label": selected_prize["label"],
             "prize_type": selected_prize["type"],
             "prize_value": selected_prize["value"],
+            "rarity": None,
             "emoji": selected_prize.get("emoji", "star"),
             "points_reward": selected_prize["value"] if selected_prize["type"] == "points" else 0,
             "xp_reward": 0,
