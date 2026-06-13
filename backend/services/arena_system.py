@@ -9,28 +9,31 @@ import uuid
 import random
 import re
 
-ENTRY_FEE_POINTS = 50
-ARENA_DURATION_HOURS = 24
+ENTRY_FEE_POINTS      = 50
+ARENA_DURATION_HOURS  = 24
 CHAT_COOLDOWN_SECONDS = 3
-CHAT_MAX_LENGTH = 220
-PREDICTION_COST = 20
+CHAT_MAX_LENGTH       = 220
+PREDICTION_COST       = 20
 
-# Reward structure (in points). Mystery drop fires for ~10% of remaining entrants.
-REWARDS_BY_RANK = {1: 420, 2: 250, 3: 150, 4: 100, 5: 75}
+# Prize pool split percentages by rank (must sum <= 100)
+# Remainder after rank 1-5 + range goes to mystery pool
+PRIZE_SPLIT = {1: 0.50, 2: 0.20, 3: 0.12, 4: 0.08, 5: 0.05}
+PRIZE_RANGE_SHARE  = 0.03   # ranks 6-20 share this slice equally
+PRIZE_MYSTERY_PCT  = 0.02   # ~2% split among ~10% random players below rank 20
+
 RANKS_FOR_INGREDIENTS_MIN = 6
 RANKS_FOR_INGREDIENTS_MAX = 20
 
 # Heat events — rotate every ~30 minutes
 HEAT_EVENTS = [
-    {"id": "golden_hour",  "name": "Golden Hour",   "blurb": "All point gains x2", "color": "#facc15", "intensity": "high"},
-    {"id": "lab_surge",    "name": "Lab Surge",     "blurb": "Rare ingredient drops active", "color": "#38bdf8", "intensity": "mid"},
-    {"id": "overclock",    "name": "Overclock Mode","blurb": "Mix timers reduced 50%", "color": "#fb923c", "intensity": "high"},
-    {"id": "crit_state",   "name": "Critical Mix",  "blurb": "Higher rarity odds for 30 min", "color": "#ec4899", "intensity": "extreme"},
-    {"id": "idle_calm",    "name": "Calm Phase",    "blurb": "Standard rates — strategize", "color": "#94a3b8", "intensity": "low"},
+    {"id": "golden_hour", "name": "Golden Hour",    "blurb": "All point gains x2",              "color": "#facc15", "intensity": "high"},
+    {"id": "lab_surge",   "name": "Lab Surge",      "blurb": "Rare ingredient drops active",    "color": "#38bdf8", "intensity": "mid"},
+    {"id": "overclock",   "name": "Overclock Mode", "blurb": "Mix timers reduced 50%",          "color": "#fb923c", "intensity": "high"},
+    {"id": "crit_state",  "name": "Critical Mix",   "blurb": "Higher rarity odds for 30 min",  "color": "#ec4899", "intensity": "extreme"},
+    {"id": "idle_calm",   "name": "Calm Phase",     "blurb": "Standard rates — strategize",    "color": "#94a3b8", "intensity": "low"},
 ]
 HEAT_EVENT_DURATION_MIN = 30
 
-# Anti-spam profanity stub (extend as needed)
 _BANNED_PATTERNS = [re.compile(r"\b(spam|scam|hack)\b", re.IGNORECASE)]
 
 
@@ -39,7 +42,6 @@ def _utcnow() -> datetime:
 
 
 def _current_window_start() -> datetime:
-    """Round to the most recent 24h UTC boundary so arenas always reset on the hour 00:00 UTC."""
     n = _utcnow()
     return n.replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -51,175 +53,231 @@ def _strip_id(doc: Optional[dict]) -> Optional[dict]:
     return doc
 
 
+def _parse_dt(val) -> datetime:
+    """Safely parse a datetime value that may be a string or datetime object."""
+    if val is None:
+        return datetime.min.replace(tzinfo=timezone.utc)
+    if hasattr(val, "timestamp"):
+        return val if val.tzinfo else val.replace(tzinfo=timezone.utc)
+    try:
+        return datetime.fromisoformat(str(val).replace("Z", "+00:00"))
+    except Exception:
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+
 # ─── Arena lifecycle ────────────────────────────────────────────────────────
 
 async def get_or_create_current_arena(db) -> dict:
-    """Returns the active arena document. If the previous one expired, settles it
-    and creates a fresh one (lazy reset — no scheduler required)."""
+    """Returns the active arena document, settling and rolling over if expired.
+
+    Uses an atomic findOneAndUpdate to claim the settle lock so concurrent
+    requests cannot double-settle the same arena.
+    """
     now = _utcnow()
+
+    # Look for active arena
     active = await db.arena_sessions.find_one({"status": "active"}, {"_id": 0})
 
     if active:
-        ends_at = active["ends_at"]
-        if isinstance(ends_at, str):
-            ends_at = datetime.fromisoformat(ends_at.replace("Z", "+00:00"))
-        if ends_at.tzinfo is None:
-            ends_at = ends_at.replace(tzinfo=timezone.utc)
+        ends_at = _parse_dt(active.get("ends_at"))
         if ends_at > now:
-            return active
-        # expired — settle and roll
-        await settle_arena(db, active["id"])
+            return active   # still running — fast path
+
+        # Expired: atomically claim the settle lock by flipping status to
+        # "settling".  Only the request that wins this update proceeds.
+        claimed = await db.arena_sessions.find_one_and_update(
+            {"id": active["id"], "status": "active"},
+            {"$set": {"status": "settling"}},
+            return_document=True,
+        )
+        if claimed:
+            # We won the race — do the settle
+            await settle_arena(db, active["id"])
+        else:
+            # Another request is already settling — just wait and fall through
+            # to create a new arena below (find_one will return None or settling doc)
+            pass
+
+    # No active arena (or we just settled one) — create a fresh one
+    # Guard: check again in case another concurrent request already created it
+    still_active = await db.arena_sessions.find_one({"status": "active"}, {"_id": 0})
+    if still_active:
+        return still_active
 
     started = _current_window_start()
-    ends = started + timedelta(hours=ARENA_DURATION_HOURS)
-    arena = {
-        "id": str(uuid.uuid4()),
-        "started_at": started.isoformat(),
-        "ends_at": ends.isoformat(),
-        "status": "active",
-        "prize_pool": 0,
-        "entries_count": 0,
-        "heat_event": _pick_heat_event(started),
+    ends    = started + timedelta(hours=ARENA_DURATION_HOURS)
+    arena   = {
+        "id":                   str(uuid.uuid4()),
+        "started_at":           started.isoformat(),
+        "ends_at":              ends.isoformat(),
+        "status":               "active",
+        "prize_pool":           0,
+        "entries_count":        0,
+        "heat_event":           _pick_heat_event(started),
         "heat_event_started_at": started.isoformat(),
     }
     await db.arena_sessions.insert_one(dict(arena))
-    return _strip_id(arena)
+    arena.pop("_id", None)
+    return arena
 
 
 async def settle_arena(db, arena_id: str) -> dict:
-    """Finalize an arena: rank entries, distribute rewards, mark settled."""
-    arena = await db.arena_sessions.find_one({"id": arena_id}, {"_id": 0})
-    if not arena or arena.get("status") == "settled":
-        return arena or {}
+    """
+    Finalize an arena:
+      1. Distribute the actual prize_pool by percentage split (not hardcoded amounts)
+      2. Settle pending predictions: rank-1 winner's predictors get 3× payout
+      3. Mark arena as 'settled' with ISO timestamp
+
+    The race condition is handled upstream in get_or_create_current_arena via
+    the atomic 'settling' status flip — by the time we get here we are the
+    only coroutine running this for this arena_id.
+    """
+    arena = await db.arena_sessions.find_one(
+        {"id": arena_id, "status": "settling"}, {"_id": 0}
+    )
+    if not arena:
+        # Already settled or doesn't exist
+        return {}
+
+    prize_pool = int(arena.get("prize_pool", 0))
 
     entries = await db.arena_entries.find(
         {"arena_id": arena_id}, {"_id": 0}
     ).sort("points", -1).to_list(length=10000)
 
-    # Nothing to settle if nobody joined
-    if not entries:
-        await db.arena_sessions.update_one(
-            {"id": arena_id},
-            {"$set": {"status": "settled", "settled_at": _utcnow().isoformat(), "final_rewards": []}}
-        )
-        return await db.arena_sessions.find_one({"id": arena_id}, {"_id": 0}) or {}
-
     rewards = []
-    for idx, entry in enumerate(entries):
-        rank = idx + 1
-        reward_points = REWARDS_BY_RANK.get(rank, 0)
-        reward_kind = "points"
-        if rank >= RANKS_FOR_INGREDIENTS_MIN and rank <= RANKS_FOR_INGREDIENTS_MAX:
-            reward_points = 35
-            reward_kind = "points+ingredient"
-        if reward_points:
-            rewards.append({
-                "address": entry["player_address"],
-                "nickname": entry.get("nickname"),
-                "rank": rank,
-                "points": reward_points,
-                "kind": reward_kind,
-            })
-            await db.players.update_one(
-                {"address": entry["player_address"]},
-                {"$inc": {"points": reward_points}}
-            )
 
-    # Mystery drop on ~10% random surviving entrants below top 20
-    pool = entries[RANKS_FOR_INGREDIENTS_MAX:]
-    if pool:
-        mystery_count = max(1, len(pool) // 10)
-        for winner in random.sample(pool, min(mystery_count, len(pool))):
-            await db.players.update_one(
-                {"address": winner["player_address"]},
-                {"$inc": {"points": 20}}
-            )
-            rewards.append({
-                "address": winner["player_address"],
-                "nickname": winner.get("nickname"),
-                "rank": None,
-                "points": 20,
-                "kind": "mystery",
-            })
+    if entries:
+        # ── Ranked rewards from prize pool ────────────────────────────────
+        for idx, entry in enumerate(entries):
+            rank = idx + 1
+            addr = entry["player_address"]
+            reward_pts = 0
+            reward_kind = "points"
 
-    # Settle predictions against rank-1 winner (3x payout)
-    winner_addr = entries[0]["player_address"]
-    preds = await db.arena_predictions.find(
-        {"arena_id": arena_id, "status": "pending"}, {"_id": 0}
-    ).to_list(length=10000)
-    for p in preds:
-        won = p["target_address"] == winner_addr
-        payout = p["cost"] * 3 if won else 0
-        if payout:
-            await db.players.update_one(
-                {"address": p["predictor_address"]},
-                {"$inc": {"points": payout}}
-            )
-            # Activity feed — prediction win
-            try:
-                _pred_player = await db.players.find_one(
-                    {"address": p["predictor_address"]}, {"_id": 0, "nickname": 1}
+            if rank in PRIZE_SPLIT and prize_pool > 0:
+                reward_pts = max(1, round(prize_pool * PRIZE_SPLIT[rank]))
+            elif RANKS_FOR_INGREDIENTS_MIN <= rank <= RANKS_FOR_INGREDIENTS_MAX and prize_pool > 0:
+                # Split PRIZE_RANGE_SHARE equally among ranks 6-20
+                range_count = RANKS_FOR_INGREDIENTS_MAX - RANKS_FOR_INGREDIENTS_MIN + 1
+                reward_pts  = max(1, round(prize_pool * PRIZE_RANGE_SHARE / range_count))
+                reward_kind = "points+ingredient"
+
+            if reward_pts > 0:
+                await db.players.update_one(
+                    {"address": addr},
+                    {"$inc": {"points": reward_pts}}
                 )
-                _pred_nick = (_pred_player or {}).get("nickname") or "Anonymous"
-                await db.activity_feed.insert_one({
-                    "id": str(uuid.uuid4()),
-                    "activity_type": "arena_prediction",
-                    "type": "arena_prediction",
-                    "player_address": p["predictor_address"],
-                    "player_nickname": _pred_nick,
-                    "treat_name": f"🔮 Prediction Win +{payout} pts",
-                    "prize_label": f"Prediction Win +{payout} pts",
-                    "points_reward": payout,
-                    "xp_reward": 0,
-                    "rarity": None,
-                    "emoji": "crystal_ball",
-                    "created_at": _utcnow().isoformat(),
+                rewards.append({
+                    "address":  addr,
+                    "nickname": entry.get("nickname") or "Anonymous",
+                    "rank":     rank,
+                    "points":   reward_pts,
+                    "kind":     reward_kind,
                 })
-            except Exception:
-                pass
-        await db.arena_predictions.update_one(
-            {"id": p["id"]},
-            {"$set": {
-                "status": "won" if won else "lost",
-                "payout": payout,
-                "settled_at": _utcnow().isoformat(),
-            }}
-        )
 
-    # Mark settled — store all datetimes as ISO strings to avoid BSON serialization issues
+        # ── Mystery drop (~2% of pool to ~10% of lower-ranked players) ───
+        mystery_pool_pts = max(0, round(prize_pool * PRIZE_MYSTERY_PCT))
+        lower_players    = entries[RANKS_FOR_INGREDIENTS_MAX:]
+        if lower_players and mystery_pool_pts > 0:
+            mystery_count = max(1, len(lower_players) // 10)
+            mystery_per   = max(1, mystery_pool_pts // mystery_count)
+            for winner in random.sample(lower_players, min(mystery_count, len(lower_players))):
+                await db.players.update_one(
+                    {"address": winner["player_address"]},
+                    {"$inc": {"points": mystery_per}}
+                )
+                rewards.append({
+                    "address":  winner["player_address"],
+                    "nickname": winner.get("nickname") or "Anonymous",
+                    "rank":     None,
+                    "points":   mystery_per,
+                    "kind":     "mystery",
+                })
+
+        # ── Settle predictions ────────────────────────────────────────────
+        winner_addr = entries[0]["player_address"]
+        preds = await db.arena_predictions.find(
+            {"arena_id": arena_id, "status": "pending"}, {"_id": 0}
+        ).to_list(length=10000)
+
+        for p in preds:
+            won    = p["target_address"] == winner_addr
+            payout = p["cost"] * 3 if won else 0
+            if payout:
+                await db.players.update_one(
+                    {"address": p["predictor_address"]},
+                    {"$inc": {"points": payout}}
+                )
+                # Activity feed — prediction win
+                try:
+                    _pred_player = await db.players.find_one(
+                        {"address": p["predictor_address"]}, {"_id": 0, "nickname": 1}
+                    )
+                    _pred_nick = (_pred_player or {}).get("nickname") or "Anonymous"
+                    await db.activity_feed.insert_one({
+                        "id":              str(uuid.uuid4()),
+                        "activity_type":   "arena_prediction",
+                        "type":            "arena_prediction",
+                        "player_address":  p["predictor_address"],
+                        "player_nickname": _pred_nick,
+                        "treat_name":      f"🔮 Prediction Win +{payout} pts",
+                        "prize_label":     f"Prediction Win +{payout} pts",
+                        "points_reward":   payout,
+                        "xp_reward":       0,
+                        "rarity":          None,
+                        "emoji":           "crystal_ball",
+                        "created_at":      _utcnow().isoformat(),
+                    })
+                except Exception:
+                    pass
+
+            await db.arena_predictions.update_one(
+                {"id": p["id"]},
+                {"$set": {
+                    "status":      "won" if won else "lost",
+                    "payout":      payout,
+                    "settled_at":  _utcnow().isoformat(),
+                }}
+            )
+
+        # ── Activity feed — leaderboard rewards ───────────────────────────
+        try:
+            for r in rewards:
+                if r.get("points", 0) > 0:
+                    rank_label = (
+                        f"Arena Rank #{r['rank']} +{r['points']} pts"
+                        if r.get("rank") else
+                        f"Arena Mystery Drop +{r['points']} pts"
+                    )
+                    await db.activity_feed.insert_one({
+                        "id":              str(uuid.uuid4()),
+                        "activity_type":   "arena_reward",
+                        "type":            "arena_reward",
+                        "player_address":  r["address"],
+                        "player_nickname": r.get("nickname") or "Anonymous",
+                        "treat_name":      f"🏆 {rank_label}" if r.get("rank") == 1 else f"🥈 {rank_label}",
+                        "prize_label":     rank_label,
+                        "points_reward":   r["points"],
+                        "xp_reward":       0,
+                        "rarity":          None,
+                        "emoji":           "trophy" if r.get("rank") == 1 else "medal",
+                        "created_at":      _utcnow().isoformat(),
+                    })
+        except Exception:
+            pass
+
+    # ── Mark settled ──────────────────────────────────────────────────────
     await db.arena_sessions.update_one(
         {"id": arena_id},
         {"$set": {
-            "status": "settled",
-            "settled_at": _utcnow().isoformat(),
-            "winner_address": winner_addr,
-            "final_rewards": rewards,
+            "status":         "settled",
+            "settled_at":     _utcnow().isoformat(),
+            "winner_address": entries[0]["player_address"] if entries else None,
+            "final_rewards":  rewards,
+            "prize_pool_paid": prize_pool,
         }}
     )
-
-    # Activity feed — arena leaderboard rewards
-    try:
-        for r in rewards:
-            if r.get("points", 0) > 0:
-                _rank_label = f"Arena Rank #{r['rank']} +{r['points']} pts" if r.get("rank") else f"Arena Mystery Drop +{r['points']} pts"
-                _emoji = "trophy" if r.get("rank") == 1 else "medal"
-                await db.activity_feed.insert_one({
-                    "id": str(uuid.uuid4()),
-                    "activity_type": "arena_reward",
-                    "type": "arena_reward",
-                    "player_address": r["address"],
-                    "player_nickname": r.get("nickname") or "Anonymous",
-                    "treat_name": f"🏆 {_rank_label}" if r.get("rank") == 1 else f"🥈 {_rank_label}",
-                    "prize_label": _rank_label,
-                    "points_reward": r["points"],
-                    "xp_reward": 0,
-                    "rarity": None,
-                    "emoji": _emoji,
-                    "created_at": _utcnow().isoformat(),
-                })
-    except Exception:
-        pass
-
     result = await db.arena_sessions.find_one({"id": arena_id}, {"_id": 0})
     return result or {}
 
@@ -250,15 +308,15 @@ async def join_arena(db, player_address: str, nickname: Optional[str]) -> dict:
     )
 
     entry = {
-        "id": str(uuid.uuid4()),
-        "arena_id": arena["id"],
+        "id":            str(uuid.uuid4()),
+        "arena_id":      arena["id"],
         "player_address": player_address,
-        "nickname": nickname or player.get("nickname") or player_address[:8],
-        "points": 0,
+        "nickname":      nickname or player.get("nickname") or "Anonymous",
+        "points":        0,
         "points_at_join": player.get("points", 0) - ENTRY_FEE_POINTS,
-        "win_streak": 0,
-        "is_streaming": False,
-        "joined_at": _utcnow().isoformat(),
+        "win_streak":    0,
+        "is_streaming":  False,
+        "joined_at":     _utcnow().isoformat(),
         "last_active_at": _utcnow().isoformat(),
     }
     await db.arena_entries.insert_one(dict(entry))
@@ -273,20 +331,17 @@ async def join_arena(db, player_address: str, nickname: Optional[str]) -> dict:
 
 
 async def credit_arena_score(db, player_address: str, points_delta: int, treat_rarity: Optional[str] = None) -> None:
-    """Called by treat creation flow when a player mints a treat — auto-credits arena score."""
+    """Called by treat collection flow to credit arena score."""
     arena = await db.arena_sessions.find_one({"status": "active"}, {"_id": 0})
     if not arena:
         return
     update = {"$inc": {"points": points_delta}, "$set": {"last_active_at": _utcnow().isoformat()}}
     if treat_rarity and treat_rarity.lower() in ("legendary", "mythic"):
         update["$inc"]["win_streak"] = 1
-    res = await db.arena_entries.update_one(
+    await db.arena_entries.update_one(
         {"arena_id": arena["id"], "player_address": player_address},
         update
     )
-    if res.matched_count == 0:
-        # player isn't in the arena; nothing to do
-        return
 
 
 async def get_leaderboard(db, limit: int = 50) -> dict:
@@ -295,16 +350,13 @@ async def get_leaderboard(db, limit: int = 50) -> dict:
         {"arena_id": arena["id"]}, {"_id": 0}
     ).sort("points", -1).limit(limit)
     entries = await cursor.to_list(length=limit)
-    ranked = [
-        {**e, "rank": idx + 1}
-        for idx, e in enumerate(entries)
-    ]
-    top = ranked[0] if ranked else None
+    ranked  = [{**e, "rank": idx + 1} for idx, e in enumerate(entries)]
+    top     = ranked[0] if ranked else None
     return {
-        "arena": arena,
-        "top": top,
+        "arena":   arena,
+        "top":     top,
         "entries": ranked,
-        "now": _utcnow().isoformat(),
+        "now":     _utcnow().isoformat(),
     }
 
 
@@ -317,25 +369,21 @@ def _pick_heat_event(seed_dt: datetime) -> dict:
 
 async def get_or_rotate_heat_event(db) -> dict:
     arena = await get_or_create_current_arena(db)
-    started = arena.get("heat_event_started_at") or arena["started_at"]
-    if isinstance(started, str):
-        started = datetime.fromisoformat(started.replace("Z", "+00:00"))
-    if started.tzinfo is None:
-        started = started.replace(tzinfo=timezone.utc)
+    started = _parse_dt(arena.get("heat_event_started_at") or arena["started_at"])
     elapsed_min = (_utcnow() - started).total_seconds() / 60.0
     if elapsed_min >= HEAT_EVENT_DURATION_MIN:
         new_event = _pick_heat_event(_utcnow())
         new_start = _utcnow()
         await db.arena_sessions.update_one(
             {"id": arena["id"]},
-            {"$set": {"heat_event": new_event, "heat_event_started_at": new_start}}
+            {"$set": {"heat_event": new_event, "heat_event_started_at": new_start.isoformat()}}
         )
-        arena["heat_event"] = new_event
-        arena["heat_event_started_at"] = new_start
-        started = new_start
+        arena["heat_event"]            = new_event
+        arena["heat_event_started_at"] = new_start.isoformat()
+        started                        = new_start
     return {
-        "event": arena["heat_event"],
-        "started_at": started.isoformat(),
+        "event":        arena["heat_event"],
+        "started_at":   started.isoformat() if hasattr(started, "isoformat") else str(started),
         "duration_min": HEAT_EVENT_DURATION_MIN,
     }
 
@@ -351,7 +399,7 @@ def _sanitize_chat(text: str) -> str:
 
 async def post_chat(db, player_address: str, nickname: str, text: str) -> dict:
     arena = await get_or_create_current_arena(db)
-    text = _sanitize_chat(text)
+    text  = _sanitize_chat(text)
     if not text:
         raise ValueError("empty message")
 
@@ -361,15 +409,10 @@ async def post_chat(db, player_address: str, nickname: str, text: str) -> dict:
         projection={"_id": 0, "created_at": 1}
     )
     if last:
-        last_dt = last["created_at"]
-        if isinstance(last_dt, str):
-            last_dt = datetime.fromisoformat(last_dt.replace("Z", "+00:00"))
-        if last_dt.tzinfo is None:
-            last_dt = last_dt.replace(tzinfo=timezone.utc)
+        last_dt = _parse_dt(last["created_at"])
         if (_utcnow() - last_dt).total_seconds() < CHAT_COOLDOWN_SECONDS:
             raise ValueError(f"slow down — wait {CHAT_COOLDOWN_SECONDS}s between messages")
 
-    # Optional rank badge
     entry = await db.arena_entries.find_one(
         {"arena_id": arena["id"], "player_address": player_address},
         {"_id": 0, "points": 1}
@@ -377,20 +420,21 @@ async def post_chat(db, player_address: str, nickname: str, text: str) -> dict:
     badge = "competitor" if entry else "spectator"
 
     msg = {
-        "id": str(uuid.uuid4()),
-        "arena_id": arena["id"],
+        "id":             str(uuid.uuid4()),
+        "arena_id":       arena["id"],
         "player_address": player_address,
-        "nickname": nickname or player_address[:8],
-        "badge": badge,
-        "text": text,
-        "created_at": _utcnow().isoformat(),
+        "nickname":       nickname or "Anonymous",
+        "badge":          badge,
+        "text":           text,
+        "created_at":     _utcnow().isoformat(),
     }
     await db.arena_chat.insert_one(dict(msg))
+    msg.pop("_id", None)
     return msg
 
 
 async def get_chat(db, limit: int = 40) -> List[dict]:
-    arena = await get_or_create_current_arena(db)
+    arena  = await get_or_create_current_arena(db)
     cursor = db.arena_chat.find(
         {"arena_id": arena["id"]}, {"_id": 0}
     ).sort("created_at", -1).limit(limit)
@@ -424,14 +468,14 @@ async def place_prediction(db, predictor_address: str, target_address: str) -> d
     )
 
     pred = {
-        "id": str(uuid.uuid4()),
-        "arena_id": arena["id"],
+        "id":                str(uuid.uuid4()),
+        "arena_id":          arena["id"],
         "predictor_address": predictor_address,
-        "target_address": target_address,
-        "cost": PREDICTION_COST,
+        "target_address":    target_address,
+        "cost":              PREDICTION_COST,
         "payout_multiplier": 3,
-        "status": "pending",
-        "created_at": _utcnow().isoformat(),
+        "status":            "pending",
+        "created_at":        _utcnow().isoformat(),
     }
     await db.arena_predictions.insert_one(dict(pred))
     pred.pop("_id", None)
