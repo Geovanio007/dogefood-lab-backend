@@ -3049,6 +3049,17 @@ async def collect_treat(treat_id: str, data: dict):
         
         final_points_reward = base_points_reward + points_bonus + happy_hour_bonus
         final_xp_reward = base_xp_reward + xp_bonus
+
+        # ── Apply Golden Hour heat event (points x2) ──────────────────────
+        try:
+            collect_heat_id = await arena_system.get_active_heat_event_id(db)
+            if collect_heat_id == "golden_hour":
+                original_pts = final_points_reward
+                final_points_reward = final_points_reward * 2
+                bonus_details["golden_hour_bonus"] = final_points_reward - original_pts
+                logger.info(f"✨ Heat: Golden Hour — points doubled: {original_pts} → {final_points_reward}")
+        except Exception as _heat_err:
+            logger.warning(f"Heat event check failed (non-fatal): {_heat_err}")
         
         # Run treat update and player stats update in parallel
         treat_update_task = db.treats.update_one(
@@ -3787,6 +3798,23 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
                 rare_chance_bonus = character_bonuses.get("rare_chance_bonus", 0.15)
                 logger.info(f"🦖 Rex bonus: +{rare_chance_bonus*100}% rare chance for {treat_data.creator_address}")
         
+        # ── Apply active heat event modifiers ─────────────────────────────
+        heat_event_id = await arena_system.get_active_heat_event_id(db)
+        heat_rare_bonus   = 0.0
+        heat_timer_factor = 1.0  # multiplier on brewing time (1.0 = no change)
+
+        if heat_event_id == "lab_surge":
+            heat_rare_bonus = 0.10
+            logger.info("🧪 Heat: Lab Surge — +10% rare chance active")
+        elif heat_event_id == "crit_state":
+            heat_rare_bonus = 0.20
+            logger.info("🔴 Heat: Critical Mix — +20% rare chance active")
+        elif heat_event_id == "overclock":
+            heat_timer_factor = 0.50
+            logger.info("⚡ Heat: Overclock Mode — brewing time halved")
+
+        rare_chance_bonus = min(rare_chance_bonus + heat_rare_bonus, 0.60)  # cap at 60%
+
         # Calculate treat outcome using game engine with character bonus
         treat_outcome = game_engine.calculate_treat_outcome(
             treat_data.ingredients, treat_data.player_level, treat_data.creator_address,
@@ -3808,6 +3836,14 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             treat_outcome["timer_duration_hours"] = treat_outcome["timer_duration_seconds"] / 3600
             treat_outcome["streak_time_reduction"] = original_timer - treat_outcome["timer_duration_seconds"]
             logger.info(f"⏱️ Streak time reduction: {original_timer}s -> {treat_outcome['timer_duration_seconds']}s (-{brewing_reduction}%)")
+        
+        # Apply Overclock heat event timer reduction (stacks with streak reduction)
+        if heat_timer_factor < 1.0:
+            original_timer = treat_outcome.get("timer_duration_seconds", 0)
+            treat_outcome["timer_duration_seconds"] = max(60, int(original_timer * heat_timer_factor))
+            treat_outcome["timer_duration_hours"] = treat_outcome["timer_duration_seconds"] / 3600
+            treat_outcome["heat_time_reduction"] = original_timer - treat_outcome["timer_duration_seconds"]
+            logger.info(f"⚡ Overclock applied: {original_timer}s → {treat_outcome['timer_duration_seconds']}s")
         
         # Get current season info
         current_season = season_manager.get_season_info()
