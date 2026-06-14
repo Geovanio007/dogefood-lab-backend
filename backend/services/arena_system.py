@@ -388,6 +388,21 @@ async def get_or_rotate_heat_event(db) -> dict:
     }
 
 
+async def get_active_heat_event_id(db) -> str:
+    """
+    Returns the current heat event id string (e.g. 'golden_hour', 'crit_state').
+    Used by treat creation and collect endpoints to apply live modifiers.
+    Returns 'idle_calm' if no active arena or heat event found.
+    """
+    try:
+        arena = await db.arena_sessions.find_one({"status": "active"}, {"_id": 0, "heat_event": 1})
+        if arena and arena.get("heat_event"):
+            return arena["heat_event"].get("id", "idle_calm")
+    except Exception:
+        pass
+    return "idle_calm"
+
+
 # ─── Chat ───────────────────────────────────────────────────────────────────
 
 def _sanitize_chat(text: str) -> str:
