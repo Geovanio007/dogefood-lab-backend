@@ -241,29 +241,29 @@ async def settle_arena(db, arena_id: str) -> dict:
                 }}
             )
 
-        # ── Activity feed — leaderboard rewards ───────────────────────────
+        # ── Activity feed — single summary entry for the whole settlement ──
+        # Writing one entry per ranked player floods the feed every cycle.
+        # Instead write one summary showing the winner and total rewarded.
         try:
-            for r in rewards:
-                if r.get("points", 0) > 0:
-                    rank_label = (
-                        f"Arena Rank #{r['rank']} +{r['points']} pts"
-                        if r.get("rank") else
-                        f"Arena Mystery Drop +{r['points']} pts"
-                    )
-                    await db.activity_feed.insert_one({
-                        "id":              str(uuid.uuid4()),
-                        "activity_type":   "arena_reward",
-                        "type":            "arena_reward",
-                        "player_address":  r["address"],
-                        "player_nickname": r.get("nickname") or "Anonymous",
-                        "treat_name":      f"🏆 {rank_label}" if r.get("rank") == 1 else f"🥈 {rank_label}",
-                        "prize_label":     rank_label,
-                        "points_reward":   r["points"],
-                        "xp_reward":       0,
-                        "rarity":          None,
-                        "emoji":           "trophy" if r.get("rank") == 1 else "medal",
-                        "created_at":      _utcnow().isoformat(),
-                    })
+            if rewards:
+                winner_reward = next((r for r in rewards if r.get("rank") == 1), rewards[0])
+                total_rewarded = sum(r["points"] for r in rewards)
+                await db.activity_feed.insert_one({
+                    "id":              str(uuid.uuid4()),
+                    "activity_type":   "arena_settled",
+                    "type":            "arena_settled",
+                    "player_address":  winner_reward["address"],
+                    "player_nickname": winner_reward.get("nickname") or "Anonymous",
+                    "treat_name":      f"🏆 Arena Settled — {winner_reward.get('nickname') or 'Anonymous'} wins!",
+                    "prize_label":     f"Arena Winner +{winner_reward['points']} pts",
+                    "points_reward":   winner_reward["points"],
+                    "xp_reward":       0,
+                    "rarity":          None,
+                    "emoji":           "trophy",
+                    "participants":    len(entries),
+                    "total_rewarded":  total_rewarded,
+                    "created_at":      _utcnow().isoformat(),
+                })
         except Exception:
             pass
 
@@ -386,21 +386,6 @@ async def get_or_rotate_heat_event(db) -> dict:
         "started_at":   started.isoformat() if hasattr(started, "isoformat") else str(started),
         "duration_min": HEAT_EVENT_DURATION_MIN,
     }
-
-
-async def get_active_heat_event_id(db) -> str:
-    """
-    Returns the current heat event id string (e.g. 'golden_hour', 'crit_state').
-    Used by treat creation and collect endpoints to apply live modifiers.
-    Returns 'idle_calm' if no active arena or heat event found.
-    """
-    try:
-        arena = await db.arena_sessions.find_one({"status": "active"}, {"_id": 0, "heat_event": 1})
-        if arena and arena.get("heat_event"):
-            return arena["heat_event"].get("id", "idle_calm")
-    except Exception:
-        pass
-    return "idle_calm"
 
 
 # ─── Chat ───────────────────────────────────────────────────────────────────
