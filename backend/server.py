@@ -1063,8 +1063,11 @@ async def get_recent_activity(limit: int = 20):
         treat_events = await db.treats.aggregate(treat_pipeline).to_list(limit)
 
         # ── 2. Spin wheel + arena events from activity_feed ───────────────
+        # Only show events from the last 48 hours to prevent old arena
+        # settlement cycles accumulating and flooding the feed.
+        cutoff_48h = (now - timedelta(hours=48)).isoformat()
         feed_events = await db.activity_feed.find(
-            {}, {"_id": 0}
+            {"created_at": {"$gte": cutoff_48h}}, {"_id": 0}
         ).sort("created_at", -1).limit(limit).to_list(limit)
 
         # ── 3. Merge, sort by created_at desc, take top `limit` ───────────
