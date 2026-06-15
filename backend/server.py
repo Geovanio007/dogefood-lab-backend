@@ -5064,6 +5064,138 @@ if not ADMIN_SECRET:
     logging.warning(f"⚠️ ADMIN_SECRET not set - generated temporary key (set env var in production)")
 
 
+@api_router.post("/admin/season2-reset")
+async def season2_reset(admin_key: str = None):
+    """
+    Season 1 → Season 2 transition:
+      1. Snapshot each player's current rank on the leaderboard
+      2. Calculate their s1_lab_tokens using the same formula as Leaderboard.jsx calcRewards():
+           rank 1-10:  floor(6_000_000 * ((11 - rank) / 55) * 1.5)
+           rank 11-20: floor(4_000_000 * ((21 - rank) / 55) * 0.7)
+           rank 21-50: floor(4_000_000 * ((51 - rank) / 465) * 0.2)
+           rank 51+:   0
+      3. Reset ALL players' points, experience and level to 0/1
+      4. Preserve treats
+    """
+    if not admin_key or admin_key != ADMIN_SECRET:
+        await asyncio.sleep(2)
+        raise HTTPException(status_code=403, detail="Unauthorized: Invalid admin key")
+
+    try:
+        now = datetime.now(timezone.utc)
+
+        # ── Mirror of Leaderboard.jsx constants ──────────────────────────
+        SEASON_1_POOL = 20_000_000
+        TOP10_POOL  = SEASON_1_POOL * 0.30   # 6 000 000
+        TOP20_POOL  = SEASON_1_POOL * 0.20   # 4 000 000
+        TOP50_POOL  = SEASON_1_POOL * 0.20   # 4 000 000
+
+        def calc_rewards(rank: int) -> int:
+            """Exact replica of calcRewards() in Leaderboard.jsx"""
+            if rank <= 10:
+                return int(TOP10_POOL * ((11 - rank) / 55) * 1.5)
+            if rank <= 20:
+                return int(TOP20_POOL * ((21 - rank) / 55) * 0.7)
+            if rank <= 50:
+                return int(TOP50_POOL * ((51 - rank) / 465) * 0.2)
+            return 0
+
+        # ── 1. Build ranked leaderboard (same logic as /leaderboard) ─────
+        active_addresses = await db.treats.distinct(
+            "creator_address",
+            {
+                "brewing_status": "collected",
+                "creator_address": {"$nin": [None, "", "GUEST_USER"]}
+            }
+        )
+
+        ranked_players = []
+        if active_addresses:
+            ranked_players = await db.players.find(
+                {"address": {"$in": active_addresses}, "points": {"$gt": 0}},
+                {"_id": 0, "address": 1, "points": 1, "vip_bonus_claimed": 1}
+            ).sort([("points", -1), ("level", -1)]).to_list(length=100000)
+
+        # Apply same VIP-only skip as leaderboard endpoint
+        ranked_players = [
+            p for p in ranked_players
+            if not (p.get("vip_bonus_claimed") and p.get("points", 0) <= 500)
+        ]
+
+        # ── 2. Write s1 snapshot + reset points/xp/level for ranked ──────
+        players_with_lab = 0
+        for idx, player in enumerate(ranked_players):
+            rank = idx + 1
+            addr = player["address"]
+            pts  = player.get("points", 0)
+            lab  = calc_rewards(rank)
+
+            await db.players.update_one(
+                {"address": addr},
+                {"$set": {
+                    "points":        0,
+                    "experience":    0,
+                    "level":         1,
+                    "s1_points":     pts,
+                    "s1_rank":       rank,
+                    "s1_lab_tokens": lab,
+                    "s1_settled_at": now.isoformat(),
+                }}
+            )
+            if lab > 0:
+                players_with_lab += 1
+
+        # ── 3. Reset ALL remaining players (not on leaderboard) ───────────
+        ranked_addrs = [p["address"] for p in ranked_players]
+        await db.players.update_many(
+            {"address": {"$nin": ranked_addrs}},
+            {"$set": {
+                "points":        0,
+                "experience":    0,
+                "level":         1,
+                "s1_points":     0,
+                "s1_rank":       None,
+                "s1_lab_tokens": 0,
+                "s1_settled_at": now.isoformat(),
+            }}
+        )
+
+        # ── 4. Season markers ─────────────────────────────────────────────
+        await db.seasons.update_one(
+            {"season_id": 1},
+            {"$set": {"status": "settled", "ended_at": now.isoformat()}},
+            upsert=True
+        )
+        await db.seasons.update_one(
+            {"season_id": 2},
+            {"$set": {
+                "season_id":  2,
+                "name":       "Season 2 — Reactor",
+                "status":     "active",
+                "started_at": now.isoformat(),
+            }},
+            upsert=True
+        )
+
+        logger.info(
+            f"🚀 SEASON 2 RESET — {len(ranked_players)} ranked reset, "
+            f"{players_with_lab} players earned $LAB"
+        )
+
+        return {
+            "success":          True,
+            "message":          "🚀 Season 2 has begun! All points, XP and levels reset.",
+            "ranked_players":   len(ranked_players),
+            "players_with_lab": players_with_lab,
+            "note":             "LAB amounts calculated from Leaderboard.jsx calcRewards()",
+            "executed_at":      now.isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(f"Season 2 reset error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/admin/reset-leaderboard")
 async def reset_leaderboard(admin_key: str = None):
     """
