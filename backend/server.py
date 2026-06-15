@@ -1519,7 +1519,7 @@ async def get_player_weekly_stats(address: str):
         ]
         rarity_results = await db.treats.aggregate(stats_pipeline).to_list(10)
         
-        rarity_counts = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
+        rarity_counts = {"Starter": 0, "Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
         total_treats = 0
         total_points = 0
         total_xp = 0
@@ -8199,7 +8199,7 @@ async def get_auto_mixer_agent_status():
         mixes_last_hour = len([m for m in recent_mixes if (now - parse_utc_datetime(m.get("created_at", now))).total_seconds() < 3600])
         
         # Rarity breakdown of recent mixes
-        rarity_breakdown = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
+        rarity_breakdown = {"Starter": 0, "Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
         total_points = 0
         total_xp = 0
         
@@ -8303,7 +8303,7 @@ async def get_auto_mixer_detailed_stats(player_address: str):
         last_7d = [m for m in all_history if (now - m.get("created_at", now)).total_seconds() < 604800]
         
         # Rarity breakdown (all time)
-        rarity_counts = {"Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
+        rarity_counts = {"Starter": 0, "Common": 0, "Uncommon": 0, "Rare": 0, "Epic": 0, "Legendary": 0, "Mythic": 0}
         total_points = 0
         total_xp = 0
         ingredient_usage = {}
