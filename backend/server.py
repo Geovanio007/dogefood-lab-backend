@@ -423,6 +423,11 @@ class Player(BaseModel):
     level: int = 1
     experience: int = 0
     points: int = 0
+    # Season 1 snapshot (written by /admin/season2-reset)
+    s1_points: Optional[int] = None
+    s1_rank: Optional[int] = None
+    s1_lab_tokens: Optional[int] = None
+    s1_settled_at: Optional[str] = None
     created_treats: List[str] = []
     last_active: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
