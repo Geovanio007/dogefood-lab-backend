@@ -1326,6 +1326,8 @@ async def verify_extra_life_payment(request: ExtraLifeVerifyRequest):
         if not purchase:
             raise HTTPException(status_code=404, detail="Purchase not found or already processed")
         
+        # Use cost_doge as the floor — any amount >= cost_doge is valid.
+        # The unique_amount is only for auto-detection matching, not for rejecting valid payments.
         expected_amount = purchase["cost_doge"]
         
         # Use the existing DOGE verification function
@@ -1352,7 +1354,10 @@ async def verify_extra_life_payment(request: ExtraLifeVerifyRequest):
         }
         
         is_confirmed = confirmations >= AUTO_MIXER_CONFIG["required_confirmations"]
-        amount_valid = payment_amount >= expected_amount
+        # Accept if payment_amount is within 0.05 of cost_doge (handles wallet rounding)
+        # or if payment_amount exactly matches the unique_amount shown to the player
+        unique_amount = purchase.get("unique_amount", expected_amount)
+        amount_valid = (payment_amount >= expected_amount - 0.05) or (abs(payment_amount - unique_amount) <= 0.05)
         
         if is_confirmed and amount_valid:
             update_data["status"] = "completed"
@@ -7155,7 +7160,7 @@ async def check_and_activate_pending_payments():
     
     try:
         # Get recent transactions to the payment address
-        transactions = await get_address_transactions_tatum(payment_address, 50)
+        transactions = await get_address_transactions_tatum(payment_address, 100)
         
         if not transactions:
             return {"checked": 0, "activated": 0}
@@ -7255,16 +7260,18 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
     Falls back to base amount matching for legacy orders without unique_amount.
     """
     now = datetime.now(timezone.utc)
-    tolerance = 0.001  # Very tight tolerance for unique amounts
+    tolerance = 0.05  # Wider tolerance so wallets that round to 2-3 decimal places still match
     
     # Filter to exclude test addresses
     real_address_filter = {
         "player_address": {"$not": {"$regex": "^(TEST_|test_|D_test_|TESTBOT_)"}}
     }
     
-    # 1. Try EXACT unique amount matching first (new orders have unique_amount)
-    
-    # Check extra life purchases with unique_amount
+    # 1. Try unique amount matching (new orders have unique_amount).
+    #    Tolerance of 0.05 handles wallet rounding to 2-3 decimal places.
+    #    Also falls back to cost_doge floor in case player sent the round number.
+
+    # Check extra life purchases by unique_amount
     pending_purchase = await db.extra_life_purchases.find_one(
         {
             "status": "pending",
@@ -7273,10 +7280,24 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
         },
         sort=[("created_at", 1)]
     )
-    
+
+    # Fallback: player sent the round cost_doge (e.g. 10.000 instead of 10.047)
+    if not pending_purchase:
+        pending_purchase = await db.extra_life_purchases.find_one(
+            {
+                "status": "pending",
+                "cost_doge": {"$gte": amount - tolerance, "$lte": amount + tolerance},
+                "unique_amount": {"$exists": True},
+                **real_address_filter
+            },
+            sort=[("created_at", 1)]
+        )
+        if pending_purchase:
+            logger.info(f"Extra life matched by cost_doge floor: sent {amount}, cost_doge {pending_purchase['cost_doge']}, unique_amount {pending_purchase.get('unique_amount')}")
+
     if pending_purchase:
         treats_to_grant = pending_purchase["treats_amount"]
-        
+
         await db.extra_life_purchases.update_one(
             {"id": pending_purchase["id"]},
             {"$set": {
@@ -7288,7 +7309,7 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
                 "auto_activated": True
             }}
         )
-        
+
         # Grant extra treats to player
         await db.players.update_one(
             {"address": pending_purchase["player_address"]},
@@ -7308,17 +7329,17 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
             },
             upsert=True
         )
-        
+
         logger.info(f"Auto-activated extra life {pending_purchase['id']} for {pending_purchase['player_address']} (+{treats_to_grant} treats, TX: {tx_hash[:20]}...)")
-        
+
         return {
             "type": "extra_life",
             "order_id": pending_purchase["id"],
             "player_address": pending_purchase["player_address"],
             "treats_granted": treats_to_grant
         }
-    
-    # Check subscriptions with unique_amount
+
+    # Check subscriptions by unique_amount
     pending_sub = await db.auto_mixer_subscriptions.find_one(
         {
             "status": "pending",
@@ -7327,6 +7348,20 @@ async def match_and_activate_payment(tx_hash: str, amount: float, confirmations:
         },
         sort=[("created_at", 1)]
     )
+
+    # Fallback: player sent the round monthly_fee_doge (e.g. 30.000 instead of 30.047)
+    if not pending_sub:
+        pending_sub = await db.auto_mixer_subscriptions.find_one(
+            {
+                "status": "pending",
+                "payment_amount": {"$gte": amount - tolerance, "$lte": amount + tolerance},
+                "unique_amount": {"$exists": True},
+                **real_address_filter
+            },
+            sort=[("created_at", 1)]
+        )
+        if pending_sub:
+            logger.info(f"Subscription matched by base fee floor: sent {amount}, unique_amount {pending_sub.get('unique_amount')}")
     
     if pending_sub:
         subscription_end = now + timedelta(days=30)
@@ -9301,4 +9336,3 @@ async def startup_event():
 async def shutdown_db_client():
     client.close()
     logger.info("Database connection closed")
-    
