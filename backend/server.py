@@ -5206,6 +5206,148 @@ async def season2_reset(admin_key: str = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============================================================================
+# SEASON 1 SNAPSHOT RECOVERY
+# Re-applies s1_rank, s1_points, s1_lab_tokens for the top 19 players using
+# the verified end-of-season-1 leaderboard values. Use dry_run=true first.
+# ============================================================================
+
+import re as _re_s1
+from fastapi import Body
+
+# rank -> {nickname_prefix, points, lab_tokens}
+_SEASON1_TOP19 = [
+    {"rank":  1, "prefix": "xpulga",    "points": 93320, "lab_tokens": 1636363},
+    {"rank":  2, "prefix": "Rhino",     "points": 47491, "lab_tokens": 1472727},
+    {"rank":  3, "prefix": "Ramzes",    "points": 45331, "lab_tokens": 1309090},
+    {"rank":  4, "prefix": "The_",      "points": 34116, "lab_tokens": 1145454},
+    {"rank":  5, "prefix": "Doginals",  "points": 30799, "lab_tokens":  981818},
+    {"rank":  6, "prefix": "Giannib",   "points": 29730, "lab_tokens":  818181},
+    {"rank":  7, "prefix": "YoWass",    "points": 29617, "lab_tokens":  654545},
+    {"rank":  8, "prefix": "Tin_Fo",    "points": 26903, "lab_tokens":  490909},
+    {"rank":  9, "prefix": "Sus",       "points": 24031, "lab_tokens":  327272},
+    {"rank": 10, "prefix": "Lidlloh",   "points": 12062, "lab_tokens":  163636},
+    {"rank": 11, "prefix": "TheZen",    "points":  7829, "lab_tokens":  509090},
+    {"rank": 12, "prefix": "Jamaya",    "points":  7052, "lab_tokens":  458181},
+    {"rank": 13, "prefix": "Herbalist", "points":  4782, "lab_tokens":  407272},
+    {"rank": 14, "prefix": "Player",    "points":  3417, "lab_tokens":  356363},
+    {"rank": 15, "prefix": "Vibing",    "points":  2762, "lab_tokens":  305454},
+    {"rank": 16, "prefix": "DogFoo",    "points":  2368, "lab_tokens":  254545},
+    {"rank": 17, "prefix": "Scienti",   "points":  2027, "lab_tokens":  203636},
+    {"rank": 18, "prefix": "Cyberf",    "points":  1630, "lab_tokens":  152727},
+    {"rank": 19, "prefix": "Queen",     "points":  1508, "lab_tokens":  101818},
+]
+
+
+@api_router.post("/admin/season1-restore-snapshot")
+async def season1_restore_snapshot(
+    admin_key: str = None,
+    dry_run: bool = True,
+    overrides: dict = Body(default={})
+):
+    """
+    Recovery endpoint. Re-applies the Season 1 snapshot
+    (s1_rank, s1_points, s1_lab_tokens) for the 19 verified top players.
+
+    - admin_key: required, same ADMIN_SECRET as season2-reset.
+    - dry_run:   true (default) returns the planned actions without writing.
+                 Pass dry_run=false to actually update the documents.
+    - overrides: { "<rank>": "<wallet_address>" } to force a specific wallet
+                 when nickname matching is ambiguous. Example:
+                 {"14": "0xabc...", "17": "0xdef..."}
+    """
+    if not admin_key or admin_key != ADMIN_SECRET:
+        await asyncio.sleep(2)
+        raise HTTPException(status_code=403, detail="Unauthorized: Invalid admin key")
+
+    overrides = {int(k): v for k, v in (overrides or {}).items()}
+    now = datetime.now(timezone.utc).isoformat()
+    report = []
+
+    for entry in _SEASON1_TOP19:
+        rank   = entry["rank"]
+        prefix = entry["prefix"]
+        pts    = entry["points"]
+        lab    = entry["lab_tokens"]
+
+        forced_addr = overrides.get(rank)
+        chosen = None
+
+        if forced_addr:
+            doc = await db.players.find_one({"address": forced_addr}, {"_id": 0, "address": 1, "nickname": 1})
+            if not doc:
+                report.append({
+                    "rank": rank, "prefix": prefix,
+                    "status": "OVERRIDE_NOT_FOUND",
+                    "forced_address": forced_addr
+                })
+                continue
+            chosen = doc
+        else:
+            regex = {"$regex": f"^{_re_s1.escape(prefix)}", "$options": "i"}
+            candidates = await db.players.find(
+                {"nickname": regex},
+                {"_id": 0, "address": 1, "nickname": 1, "created_treats": 1}
+            ).to_list(length=20)
+
+            if not candidates:
+                report.append({"rank": rank, "prefix": prefix, "status": "NO_MATCH"})
+                continue
+
+            if len(candidates) > 1:
+                report.append({
+                    "rank": rank, "prefix": prefix,
+                    "status": "AMBIGUOUS",
+                    "candidates": [
+                        {
+                            "address": c["address"],
+                            "nickname": c.get("nickname"),
+                            "treat_count": len(c.get("created_treats") or [])
+                        }
+                        for c in candidates
+                    ],
+                    "hint": f"Re-call with overrides={{\"{rank}\": \"<address>\"}}"
+                })
+                continue
+
+            chosen = candidates[0]
+
+        action = {
+            "rank": rank,
+            "prefix": prefix,
+            "address": chosen["address"],
+            "nickname": chosen.get("nickname"),
+            "s1_points": pts,
+            "s1_lab_tokens": lab,
+            "status": "DRY_RUN" if dry_run else "UPDATED",
+        }
+        if not dry_run:
+            await db.players.update_one(
+                {"address": chosen["address"]},
+                {"$set": {
+                    "s1_rank":       rank,
+                    "s1_points":     pts,
+                    "s1_lab_tokens": lab,
+                    "s1_settled_at": now,
+                }}
+            )
+        report.append(action)
+
+    summary = {
+        "matched":   sum(1 for r in report if r["status"] in ("DRY_RUN", "UPDATED")),
+        "no_match":  sum(1 for r in report if r["status"] == "NO_MATCH"),
+        "ambiguous": sum(1 for r in report if r["status"] == "AMBIGUOUS"),
+    }
+
+    return {
+        "success": True,
+        "dry_run": dry_run,
+        "executed_at": now,
+        "summary": summary,
+        "report": report,
+        "hint": "If summary.matched == 19 in dry-run, re-call with ?dry_run=false to apply."
+    }
+
 @api_router.post("/admin/reset-leaderboard")
 async def reset_leaderboard(admin_key: str = None):
     """
