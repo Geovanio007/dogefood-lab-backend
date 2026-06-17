@@ -3177,13 +3177,15 @@ async def get_leaderboard(limit: int = 200):
 
 
     if not active_creator_addresses:
-        return []
-
-
-    query = {
-        "address": {"$in": active_creator_addresses},
-        "points": {"$gt": 0}
-    }
+        # Season just started — no treats collected yet, show all registered players
+        query = {
+            "address": {"$nin": [None, "", "GUEST_USER"]},
+            "telegram_id": {"$exists": True}
+        }
+    else:
+        query = {
+            "address": {"$in": active_creator_addresses},
+        }
     
     projection = {
         "_id": 0,
@@ -6147,16 +6149,15 @@ async def get_current_tournament():
         )
         
         if not tournament:
-            # Return default tournament info for Season 1
-            # Tournament starts 2 weeks before season end (March 31, 2026)
-            # So tournament starts around March 17, 2026
+            # Season 2: Jun 17 – Sep 17 2026
+            # Qualification runs all season; knockout bracket begins Sep 1 2026
             return {
-                "id": "season1_championship",
+                "id": "season2_championship",
                 "name": "Treat Masters Champions League",
-                "season": 1,
+                "season": 2,
                 "status": "qualification",
-                "qualification_ends": "2026-03-17T00:00:00Z",
-                "tournament_starts": "2026-03-17T00:00:00Z",
+                "qualification_ends": "2026-09-01T00:00:00Z",
+                "tournament_starts": "2026-09-01T00:00:00Z",
                 "matches": [],
                 "prize_pool": "$LAB / DOGE Rewards",
                 "champion": None
