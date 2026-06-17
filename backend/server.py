@@ -973,7 +973,10 @@ async def create_player(player_data: PlayerCreate):
 
 @api_router.get("/player/{address}", response_model=Player)
 async def get_player(address: str):
-    player = await db.players.find_one({"address": address})
+    # Use centralised lookup so TG_/tg_ Telegram players and guest players are found
+    player = await find_player_by_address(address)
+    if not player and address.startswith("guest_"):
+        player = await db.players.find_one({"guest_id": address}, {"_id": 0})
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
     return Player(**player)
@@ -3186,13 +3189,35 @@ async def get_leaderboard(limit: int = 200):
     if not active_creator_addresses:
         # Season just started — no treats collected yet, show all registered players
         query = {
-            "address": {"$nin": [None, "", "GUEST_USER"]},
-            "telegram_id": {"$exists": True}
+            "$or": [
+                {"address": {"$nin": [None, "", "GUEST_USER"]}},
+                {"telegram_id": {"$exists": True, "$ne": None}}
+            ]
         }
     else:
-        query = {
-            "address": {"$in": active_creator_addresses},
-        }
+        # Split creator addresses into wallet addresses and tg_ telegram addresses
+        tg_ids = []
+        wallet_addresses = []
+        for addr in active_creator_addresses:
+            if addr and addr.lower().startswith("tg_"):
+                try:
+                    tg_ids.append(int(addr[3:]))
+                except (ValueError, TypeError):
+                    pass
+            elif addr:
+                wallet_addresses.append(addr)
+
+        # Build a query that matches both wallet players and telegram players
+        or_clauses = []
+        if wallet_addresses:
+            or_clauses.append({"address": {"$in": wallet_addresses}})
+        if tg_ids:
+            or_clauses.append({"telegram_id": {"$in": tg_ids}})
+        
+        if or_clauses:
+            query = {"$or": or_clauses} if len(or_clauses) > 1 else or_clauses[0]
+        else:
+            query = {"address": {"$in": active_creator_addresses}}
     
     projection = {
         "_id": 0,
