@@ -1852,8 +1852,15 @@ async def get_player_profile(address: str):
             "level": 1,
             "profile_image": None
         }
-    
-    return player
+
+    # Always return points/level as numbers so the frontend never gets null
+    return {
+        **player,
+        "points": int(player.get("points") or 0),
+        "level":  int(player.get("level")  or 1),
+        "nickname": player.get("nickname") or player.get("telegram_first_name") or player.get("telegram_username") or None,
+        "profile_image": player.get("profile_image") or None,
+    }
 
 
 @api_router.post("/player/{address}/profile-image")
