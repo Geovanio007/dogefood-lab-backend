@@ -5952,18 +5952,52 @@ async def delete_chat_message(message_id: str, sender_address: str):
 
 
 # ============================================
-# NOTIFICATION SYSTEM ENDPOINTS
+# NOTIFICATION SYSTEM ENDPOINTS  (v2 — Web Push + Telegram)
 # ============================================
+#
+# What this section does:
+#   • Telegram notifications work via the existing python-telegram-bot library.
+#     We additionally probe the bot+user once on subscribe so we can tell the
+#     UI to surface a "Start bot" deep link if the user has never /start'd it.
+#   • Browser notifications now use real Web Push (VAPID + service worker)
+#     via the `pywebpush` library. Both MyDoge in-app browser and regular
+#     browsers will show a native permission prompt and then receive pushes
+#     even when the tab is closed.
+#
+# Required env vars (set on Render / your backend host):
+#   VAPID_PUBLIC_KEY    = public VAPID key (URL-safe base64, raw form)
+#   VAPID_PRIVATE_KEY   = matching private key (URL-safe base64)
+#   VAPID_SUBJECT       = mailto:you@example.com  (or https://yoursite)
+#   TELEGRAM_BOT_TOKEN  = existing bot token (already set)
+#   TELEGRAM_BOT_USERNAME = bot username WITHOUT the @  (e.g. DogeFoodLabBot)
+#
+# Required dependency (add to requirements.txt):
+#   pywebpush==2.0.0
+#
+# How to generate a VAPID key pair (one-time, locally):
+#   pip install pywebpush
+#   python -c "from py_vapid import Vapid01; v=Vapid01(); v.generate_keys();
+#              print('PUBLIC:', v.public_pem().decode()); print('PRIVATE:', v.private_pem().decode())"
+#   …or use https://web-push-codelab.glitch.me/ which gives the URL-safe
+#   base64 form directly. You already provided the public key — re-generate
+#   if you don't have the matching private key.
 
+from pywebpush import webpush, WebPushException  # noqa: E402
 
-# VAPID keys for web push (generate once and store)
-VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U")
+VAPID_PUBLIC_KEY = os.environ.get(
+    "VAPID_PUBLIC_KEY",
+    "BAwws7g8riBGLvAQCHhCifyk1UKE0HL38SF6T9c_7NKZf8Ab5x2jUXxp8I8oJQEucSGe_sTiTG3mok47cwfCHCY",
+)
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "mailto:admin@dogefoodlab.com")
+TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "")
 
 
 class NotificationSubscription(BaseModel):
     player_address: Optional[str] = None
     telegram_id: Optional[int] = None
+    username: Optional[str] = None
+    first_name: Optional[str] = None
     subscription: Optional[dict] = None
     treat_ready: bool = True
     limit_reset: bool = True
@@ -5977,19 +6011,94 @@ class ScheduleNotification(BaseModel):
     reset_time: Optional[str] = None
 
 
+# ── Public config endpoint (consumed by NotificationContext on mount) ─────────
+@api_router.get("/notifications/config")
+async def get_notifications_config():
+    return {
+        "vapidPublicKey": VAPID_PUBLIC_KEY,
+        "botUsername": TELEGRAM_BOT_USERNAME,
+    }
+
+
+# Kept for backwards compatibility with any old clients.
 @api_router.get("/notifications/vapid-key")
 async def get_vapid_key():
-    """Get VAPID public key for web push subscription"""
     return {"publicKey": VAPID_PUBLIC_KEY}
 
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+async def _try_send_telegram_welcome(telegram_id: int) -> bool:
+    """Send the welcome message via Telegram. Returns False if the user
+    has not /start'd the bot yet (Telegram refuses with 'Forbidden:
+    bot can't initiate conversation with a user' in that case)."""
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    if not bot_token:
+        return False
+    try:
+        bot = Bot(token=bot_token)
+        await bot.send_message(
+            chat_id=telegram_id,
+            text=(
+                "🔔 Notifications enabled!\n\n"
+                "You'll be notified when:\n"
+                "✅ Your treats are ready to collect\n"
+                "🔄 Your daily limit resets\n\n"
+                "Happy brewing! 🧪"
+            ),
+        )
+        return True
+    except Exception as e:
+        logger.warning(f"Telegram welcome to {telegram_id} failed: {e}")
+        return False
+
+
+async def send_web_push(subscription_info: dict, title: str, body: str,
+                        url: str = "/", icon: str = "/dogefood-logo.png") -> bool:
+    """Send a Web Push notification. Returns False if the subscription
+    is expired / invalid so the caller can mark it inactive."""
+    if not VAPID_PRIVATE_KEY:
+        logger.warning("VAPID_PRIVATE_KEY not configured — skipping web push")
+        return False
+    if not subscription_info or not subscription_info.get("endpoint"):
+        return False
+
+    payload = json.dumps({
+        "title": title,
+        "body": body,
+        "url": url,
+        "icon": icon,
+    })
+
+    try:
+        # pywebpush is synchronous — run it in a thread so we don't block.
+        await asyncio.to_thread(
+            webpush,
+            subscription_info=subscription_info,
+            data=payload,
+            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_claims={"sub": VAPID_SUBJECT},
+        )
+        return True
+    except WebPushException as e:
+        status = getattr(getattr(e, "response", None), "status_code", None)
+        if status in (404, 410):
+            # Subscription gone — caller should mark inactive.
+            logger.info(f"Web push subscription expired (status {status})")
+            return False
+        logger.warning(f"WebPushException: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"send_web_push unexpected error: {e}")
+        return False
+
+
+# ── Telegram subscribe / unsubscribe / preferences ────────────────────────────
 @api_router.post("/notifications/telegram/subscribe")
 async def subscribe_telegram_notifications(data: NotificationSubscription):
-    """Subscribe to Telegram notifications"""
     try:
         if not data.telegram_id:
             raise HTTPException(status_code=400, detail="Telegram ID required")
-        
+
         await db.notification_subscriptions.update_one(
             {"telegram_id": data.telegram_id},
             {
@@ -5999,25 +6108,24 @@ async def subscribe_telegram_notifications(data: NotificationSubscription):
                     "treat_ready": data.treat_ready,
                     "limit_reset": data.limit_reset,
                     "subscribed_at": datetime.now(timezone.utc),
-                    "active": True
+                    "active": True,
                 }
             },
-            upsert=True
+            upsert=True,
         )
-        
-        # Send confirmation message via Telegram
-        bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-        if bot_token:
-            try:
-                bot = Bot(token=bot_token)
-                await bot.send_message(
-                    chat_id=data.telegram_id,
-                    text="🔔 Notifications enabled!\n\nYou'll be notified when:\n✅ Your treats are ready to collect\n🔄 Your daily limit resets\n\nHappy brewing! 🧪"
-                )
-            except Exception as e:
-                logger.warning(f"Failed to send Telegram confirmation: {e}")
-        
-        return {"success": True, "message": "Telegram notifications enabled"}
+
+        # Probe whether the user has /start'd the bot — if yes, send welcome.
+        # If not, return a flag so the UI can show "Open bot & press Start".
+        delivered = await _try_send_telegram_welcome(data.telegram_id)
+
+        return {
+            "success": True,
+            "message": "Telegram notifications enabled",
+            "requires_bot_start": not delivered,
+            "bot_username": TELEGRAM_BOT_USERNAME,
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error subscribing to Telegram notifications: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -6025,16 +6133,13 @@ async def subscribe_telegram_notifications(data: NotificationSubscription):
 
 @api_router.post("/notifications/telegram/unsubscribe")
 async def unsubscribe_telegram_notifications(data: NotificationSubscription):
-    """Unsubscribe from Telegram notifications"""
     try:
         if not data.telegram_id:
             raise HTTPException(status_code=400, detail="Telegram ID required")
-        
         await db.notification_subscriptions.update_one(
             {"telegram_id": data.telegram_id},
-            {"$set": {"active": False}}
+            {"$set": {"active": False}},
         )
-        
         return {"success": True, "message": "Telegram notifications disabled"}
     except Exception as e:
         logger.error(f"Error unsubscribing from Telegram notifications: {e}")
@@ -6043,51 +6148,46 @@ async def unsubscribe_telegram_notifications(data: NotificationSubscription):
 
 @api_router.post("/notifications/telegram/preferences")
 async def update_telegram_preferences(data: NotificationSubscription):
-    """Update Telegram notification preferences"""
     try:
         if not data.telegram_id:
             raise HTTPException(status_code=400, detail="Telegram ID required")
-        
         await db.notification_subscriptions.update_one(
             {"telegram_id": data.telegram_id},
-            {
-                "$set": {
-                    "treat_ready": data.treat_ready,
-                    "limit_reset": data.limit_reset
-                }
-            }
+            {"$set": {"treat_ready": data.treat_ready, "limit_reset": data.limit_reset}},
         )
-        
         return {"success": True}
     except Exception as e:
         logger.error(f"Error updating Telegram preferences: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── Web Push subscribe / unsubscribe / preferences ────────────────────────────
 @api_router.post("/notifications/web/subscribe")
 async def subscribe_web_notifications(data: NotificationSubscription):
-    """Subscribe to web push notifications"""
     try:
-        if not data.player_address or not data.subscription:
-            raise HTTPException(status_code=400, detail="Player address and subscription required")
-        
+        if not data.player_address:
+            raise HTTPException(status_code=400, detail="Player address required")
+
+        update = {
+            "player_address": data.player_address,
+            "type": "web",
+            "treat_ready": data.treat_ready,
+            "limit_reset": data.limit_reset,
+            "subscribed_at": datetime.now(timezone.utc),
+            "active": True,
+        }
+        # subscription may be None for fallback in-tab Notification API users.
+        if data.subscription:
+            update["subscription"] = data.subscription
+
         await db.notification_subscriptions.update_one(
-            {"player_address": data.player_address},
-            {
-                "$set": {
-                    "player_address": data.player_address,
-                    "type": "web",
-                    "subscription": data.subscription,
-                    "treat_ready": data.treat_ready,
-                    "limit_reset": data.limit_reset,
-                    "subscribed_at": datetime.now(timezone.utc),
-                    "active": True
-                }
-            },
-            upsert=True
+            {"player_address": data.player_address, "type": "web"},
+            {"$set": update},
+            upsert=True,
         )
-        
         return {"success": True, "message": "Web push notifications enabled"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error subscribing to web notifications: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -6095,16 +6195,13 @@ async def subscribe_web_notifications(data: NotificationSubscription):
 
 @api_router.post("/notifications/web/unsubscribe")
 async def unsubscribe_web_notifications(data: NotificationSubscription):
-    """Unsubscribe from web push notifications"""
     try:
         if not data.player_address:
             raise HTTPException(status_code=400, detail="Player address required")
-        
         await db.notification_subscriptions.update_one(
-            {"player_address": data.player_address},
-            {"$set": {"active": False}}
+            {"player_address": data.player_address, "type": "web"},
+            {"$set": {"active": False}},
         )
-        
         return {"success": True, "message": "Web push notifications disabled"}
     except Exception as e:
         logger.error(f"Error unsubscribing from web notifications: {e}")
@@ -6113,30 +6210,22 @@ async def unsubscribe_web_notifications(data: NotificationSubscription):
 
 @api_router.post("/notifications/web/preferences")
 async def update_web_preferences(data: NotificationSubscription):
-    """Update web push notification preferences"""
     try:
         if not data.player_address:
             raise HTTPException(status_code=400, detail="Player address required")
-        
         await db.notification_subscriptions.update_one(
-            {"player_address": data.player_address},
-            {
-                "$set": {
-                    "treat_ready": data.treat_ready,
-                    "limit_reset": data.limit_reset
-                }
-            }
+            {"player_address": data.player_address, "type": "web"},
+            {"$set": {"treat_ready": data.treat_ready, "limit_reset": data.limit_reset}},
         )
-        
         return {"success": True}
     except Exception as e:
         logger.error(f"Error updating web preferences: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── Schedule endpoints (called from GameLab when a treat starts brewing) ──────
 @api_router.post("/notifications/schedule/treat-ready")
 async def schedule_treat_ready_notification(data: ScheduleNotification, background_tasks: BackgroundTasks):
-    """Schedule a notification for when a treat is ready"""
     try:
         notification_data = {
             "id": str(uuid.uuid4()),
@@ -6144,22 +6233,20 @@ async def schedule_treat_ready_notification(data: ScheduleNotification, backgrou
             "treat_name": data.treat_name,
             "ready_time": data.ready_time,
             "created_at": datetime.now(timezone.utc),
-            "sent": False
+            "sent": False,
         }
-        
         if data.telegram_id:
             notification_data["telegram_id"] = data.telegram_id
         elif data.player_address:
             notification_data["player_address"] = data.player_address
         else:
             raise HTTPException(status_code=400, detail="Telegram ID or player address required")
-        
+
         await db.scheduled_notifications.insert_one(notification_data)
-        
-        # Schedule background task to send notification
         background_tasks.add_task(send_scheduled_notification, notification_data["id"])
-        
         return {"success": True, "notification_id": notification_data["id"]}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error scheduling treat notification: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -6167,195 +6254,208 @@ async def schedule_treat_ready_notification(data: ScheduleNotification, backgrou
 
 @api_router.post("/notifications/schedule/limit-reset")
 async def schedule_limit_reset_notification(data: ScheduleNotification, background_tasks: BackgroundTasks):
-    """Schedule a notification for when daily limit resets"""
     try:
         notification_data = {
             "id": str(uuid.uuid4()),
             "type": "limit_reset",
             "reset_time": data.reset_time,
             "created_at": datetime.now(timezone.utc),
-            "sent": False
+            "sent": False,
         }
-        
         if data.telegram_id:
             notification_data["telegram_id"] = data.telegram_id
         elif data.player_address:
             notification_data["player_address"] = data.player_address
         else:
             raise HTTPException(status_code=400, detail="Telegram ID or player address required")
-        
+
         await db.scheduled_notifications.insert_one(notification_data)
-        
-        # Schedule background task to send notification
         background_tasks.add_task(send_scheduled_notification, notification_data["id"])
-        
         return {"success": True, "notification_id": notification_data["id"]}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error scheduling limit reset notification: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── Delivery (now supports BOTH Telegram and Web Push) ────────────────────────
 async def send_scheduled_notification(notification_id: str):
-    """Background task to send scheduled notification immediately when ready"""
+    """Send a single scheduled notification immediately if its target time has
+    elapsed. Idempotent — marks `sent: True` after success."""
     try:
         notification = await db.scheduled_notifications.find_one({"id": notification_id})
         if not notification or notification.get("sent"):
             return
-        
-        # Calculate if notification should be sent now
+
+        # Compute whether this notification's target time has elapsed.
         now = datetime.now(timezone.utc)
+
+        def parse_dt(value):
+            if isinstance(value, str):
+                dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                return dt
+            if hasattr(value, "tzinfo") and value.tzinfo is None:
+                return value.replace(tzinfo=timezone.utc)
+            return value
+
         should_send = False
-        
         if notification["type"] == "treat_ready" and notification.get("ready_time"):
-            ready_time_str = notification["ready_time"]
-            if isinstance(ready_time_str, str):
-                ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "+00:00"))
-                if ready_time.tzinfo is None:
-                    ready_time = ready_time.replace(tzinfo=timezone.utc)
-            else:
-                ready_time = ready_time_str
-                if hasattr(ready_time, 'tzinfo') and ready_time.tzinfo is None:
-                    ready_time = ready_time.replace(tzinfo=timezone.utc)
-            should_send = now >= ready_time
+            should_send = now >= parse_dt(notification["ready_time"])
         elif notification["type"] == "limit_reset" and notification.get("reset_time"):
-            reset_time_str = notification["reset_time"]
-            if isinstance(reset_time_str, str):
-                reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "+00:00"))
-                if reset_time.tzinfo is None:
-                    reset_time = reset_time.replace(tzinfo=timezone.utc)
-            else:
-                reset_time = reset_time_str
-                if hasattr(reset_time, 'tzinfo') and reset_time.tzinfo is None:
-                    reset_time = reset_time.replace(tzinfo=timezone.utc)
-            should_send = now >= reset_time
-        
+            should_send = now >= parse_dt(notification["reset_time"])
+
         if not should_send:
-            # Not ready yet - will be picked up by the notification processor loop
-            return
-        
-        # Check if subscription is still active and send
+            return  # processor loop will pick it up later
+
+        # Build message text.
+        if notification["type"] == "treat_ready":
+            title = "🍖 Treat Ready!"
+            body = (
+                f"Your {notification.get('treat_name', 'treat')} is ready to collect — "
+                f"head to the lab before it gets cold!"
+            )
+        else:
+            title = "🔄 Daily Limit Reset"
+            body = "You can create more treats now. Time to brew!"
+
+        # ── Telegram delivery ───────────────────────────────────────────────
         if notification.get("telegram_id"):
             sub = await db.notification_subscriptions.find_one({
                 "telegram_id": notification["telegram_id"],
-                "active": True
+                "active": True,
             })
             if not sub:
-                # Mark as sent to prevent retry
                 await db.scheduled_notifications.update_one(
                     {"id": notification_id},
-                    {"$set": {"sent": True, "skipped_reason": "subscription_inactive"}}
+                    {"$set": {"sent": True, "skipped_reason": "subscription_inactive"}},
                 )
                 return
-            
-            # Check preference
+
             if notification["type"] == "treat_ready" and not sub.get("treat_ready", True):
                 await db.scheduled_notifications.update_one(
                     {"id": notification_id},
-                    {"$set": {"sent": True, "skipped_reason": "preference_disabled"}}
+                    {"$set": {"sent": True, "skipped_reason": "preference_disabled"}},
                 )
                 return
             if notification["type"] == "limit_reset" and not sub.get("limit_reset", True):
                 await db.scheduled_notifications.update_one(
                     {"id": notification_id},
-                    {"$set": {"sent": True, "skipped_reason": "preference_disabled"}}
+                    {"$set": {"sent": True, "skipped_reason": "preference_disabled"}},
                 )
                 return
-            
-            # Send Telegram notification
+
             bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
             if bot_token:
                 try:
                     bot = Bot(token=bot_token)
-                    if notification["type"] == "treat_ready":
-                        message = f"🍖 Your {notification.get('treat_name', 'treat')} is ready!\n\nHead to the lab to collect it before it gets cold! 🧪"
-                    else:
-                        message = "🔄 Daily limit reset!\n\nYou can now create more treats. Time to brew! 🧪"
-                    
-                    await bot.send_message(chat_id=notification["telegram_id"], text=message)
-                    logger.info(f"📬 Sent Telegram notification to {notification['telegram_id']}: {notification['type']}")
+                    await bot.send_message(chat_id=notification["telegram_id"], text=f"{title}\n\n{body}")
+                    logger.info(f"📬 Telegram delivered: {notification_id}")
                 except Exception as e:
-                    logger.warning(f"Failed to send Telegram notification to {notification.get('telegram_id')}: {e}")
-                    # Don't mark as sent so it can be retried
-                    return
-        
-        # Mark as sent
+                    logger.warning(f"Telegram send failed for {notification.get('telegram_id')}: {e}")
+                    return  # don't mark sent, retry later
+
+        # ── Web push delivery ───────────────────────────────────────────────
+        elif notification.get("player_address"):
+            sub = await db.notification_subscriptions.find_one({
+                "player_address": notification["player_address"],
+                "type": "web",
+                "active": True,
+            })
+            if not sub:
+                await db.scheduled_notifications.update_one(
+                    {"id": notification_id},
+                    {"$set": {"sent": True, "skipped_reason": "subscription_inactive"}},
+                )
+                return
+
+            if notification["type"] == "treat_ready" and not sub.get("treat_ready", True):
+                await db.scheduled_notifications.update_one(
+                    {"id": notification_id},
+                    {"$set": {"sent": True, "skipped_reason": "preference_disabled"}},
+                )
+                return
+            if notification["type"] == "limit_reset" and not sub.get("limit_reset", True):
+                await db.scheduled_notifications.update_one(
+                    {"id": notification_id},
+                    {"$set": {"sent": True, "skipped_reason": "preference_disabled"}},
+                )
+                return
+
+            subscription_info = sub.get("subscription")
+            if not subscription_info:
+                # In-tab only fallback — there's no PushSubscription, so nothing
+                # to send while the tab is closed. Mark sent.
+                await db.scheduled_notifications.update_one(
+                    {"id": notification_id},
+                    {"$set": {"sent": True, "skipped_reason": "no_push_subscription"}},
+                )
+                return
+
+            ok = await send_web_push(
+                subscription_info,
+                title=title,
+                body=body,
+                url="/lab",
+            )
+            if not ok:
+                # Mark subscription inactive on expired/invalid endpoint
+                await db.notification_subscriptions.update_one(
+                    {"_id": sub["_id"]},
+                    {"$set": {"active": False, "deactivated_reason": "push_failed"}},
+                )
+                await db.scheduled_notifications.update_one(
+                    {"id": notification_id},
+                    {"$set": {"sent": True, "skipped_reason": "push_failed"}},
+                )
+                return
+            logger.info(f"📬 Web push delivered: {notification_id}")
+
+        # Mark sent.
         await db.scheduled_notifications.update_one(
             {"id": notification_id},
-            {"$set": {"sent": True, "sent_at": datetime.now(timezone.utc)}}
+            {"$set": {"sent": True, "sent_at": datetime.now(timezone.utc)}},
         )
-        
+
     except Exception as e:
         logger.error(f"Error sending scheduled notification {notification_id}: {e}")
 
 
 async def notification_processor_loop():
-    """Background loop that checks for pending notifications every minute"""
-    logger.info("🔔 Notification processor loop started")
-    
+    """Background loop that checks for pending notifications every 30 seconds."""
+    logger.info("🔔 Notification processor loop started (Telegram + Web Push)")
+
     while True:
         try:
             now = datetime.now(timezone.utc)
-            now_iso = now.isoformat()
-            
-            # Find all unsent notifications that are ready to be sent
-            # Use multiple time format comparisons for robustness
-            pending_notifications = await db.scheduled_notifications.find({
-                "sent": False
-            }).to_list(100)
-            
-            notifications_to_send = []
-            for notif in pending_notifications:
-                should_send = False
-                
-                # Check treat ready time
-                if notif.get("type") == "treat_ready" and notif.get("ready_time"):
-                    ready_time_str = notif["ready_time"]
-                    try:
-                        if isinstance(ready_time_str, str):
-                            ready_time = datetime.fromisoformat(ready_time_str.replace("Z", "+00:00"))
-                            if ready_time.tzinfo is None:
-                                ready_time = ready_time.replace(tzinfo=timezone.utc)
-                        else:
-                            ready_time = ready_time_str
-                            if hasattr(ready_time, 'tzinfo') and ready_time.tzinfo is None:
-                                ready_time = ready_time.replace(tzinfo=timezone.utc)
-                        should_send = now >= ready_time
-                    except Exception as e:
-                        logger.warning(f"Error parsing ready_time {ready_time_str}: {e}")
-                
-                # Check limit reset time
-                elif notif.get("type") == "limit_reset" and notif.get("reset_time"):
-                    reset_time_str = notif["reset_time"]
-                    try:
-                        if isinstance(reset_time_str, str):
-                            reset_time = datetime.fromisoformat(reset_time_str.replace("Z", "+00:00"))
-                            if reset_time.tzinfo is None:
-                                reset_time = reset_time.replace(tzinfo=timezone.utc)
-                        else:
-                            reset_time = reset_time_str
-                            if hasattr(reset_time, 'tzinfo') and reset_time.tzinfo is None:
-                                reset_time = reset_time.replace(tzinfo=timezone.utc)
-                        should_send = now >= reset_time
-                    except Exception as e:
-                        logger.warning(f"Error parsing reset_time {reset_time_str}: {e}")
-                
-                if should_send:
-                    notifications_to_send.append(notif)
-            
-            if notifications_to_send:
-                logger.info(f"📬 Found {len(notifications_to_send)} pending notifications ready to send")
-            
-            for notification in notifications_to_send:
+
+            pending = await db.scheduled_notifications.find({"sent": False}).to_list(200)
+
+            for notif in pending:
                 try:
-                    await send_scheduled_notification(notification["id"])
+                    target_str = notif.get("ready_time") if notif.get("type") == "treat_ready" else notif.get("reset_time")
+                    if not target_str:
+                        continue
+                    if isinstance(target_str, str):
+                        target = datetime.fromisoformat(target_str.replace("Z", "+00:00"))
+                        if target.tzinfo is None:
+                            target = target.replace(tzinfo=timezone.utc)
+                    else:
+                        target = target_str
+                        if hasattr(target, "tzinfo") and target.tzinfo is None:
+                            target = target.replace(tzinfo=timezone.utc)
+
+                    if now >= target:
+                        await send_scheduled_notification(notif["id"])
                 except Exception as e:
-                    logger.error(f"Error processing notification {notification.get('id')}: {e}")
-            
+                    logger.warning(f"Error processing notification {notif.get('id')}: {e}")
+
         except Exception as e:
             logger.error(f"Error in notification processor loop: {e}")
-        
-        # Check every 60 seconds
-        await asyncio.sleep(60)
+
+        await asyncio.sleep(30)
 
 
 # ============================================
