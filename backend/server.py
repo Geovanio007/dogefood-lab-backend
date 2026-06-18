@@ -3377,6 +3377,66 @@ async def merge_duplicate_telegram_players(admin_key: str = None, dry_run: bool 
     }
 
 
+@api_router.post("/admin/normalize-telegram-creator-addresses")
+async def normalize_telegram_creator_addresses(admin_key: str = None, dry_run: bool = True):
+    """
+    Rewrite every `treats.creator_address` and `activity_feed.player_address`
+    of the form `tg_<id>` (lowercase) to the canonical `TG_<id>` (uppercase).
+
+    This is the post-migration cleanup for documents written by frontend
+    builds that used the lowercase form. Run once after deploying the
+    uppercase-`TG_` App.js. Safe + idempotent — re-running on a clean DB is
+    a no-op.
+    """
+    if not admin_key or admin_key != ADMIN_SECRET:
+        await asyncio.sleep(2)
+        raise HTTPException(status_code=403, detail="Unauthorized: Invalid admin key")
+
+    summary = {"dry_run": dry_run, "collections": {}}
+
+    # ── treats ──────────────────────────────────────────────────────
+    tg_treat_addrs = await db.treats.distinct(
+        "creator_address", {"creator_address": {"$regex": "^tg_"}}
+    )
+    treat_changes = []
+    for low in tg_treat_addrs:
+        canonical = "TG_" + low[3:]
+        count = await db.treats.count_documents({"creator_address": low})
+        treat_changes.append({"from": low, "to": canonical, "count": count})
+        if not dry_run and count:
+            await db.treats.update_many(
+                {"creator_address": low},
+                {"$set": {"creator_address": canonical}}
+            )
+    summary["collections"]["treats"] = {
+        "lowercase_addresses_found": len(tg_treat_addrs),
+        "total_docs_affected": sum(c["count"] for c in treat_changes),
+        "changes": treat_changes,
+    }
+
+    # ── activity_feed ───────────────────────────────────────────────
+    tg_feed_addrs = await db.activity_feed.distinct(
+        "player_address", {"player_address": {"$regex": "^tg_"}}
+    )
+    feed_changes = []
+    for low in tg_feed_addrs:
+        canonical = "TG_" + low[3:]
+        count = await db.activity_feed.count_documents({"player_address": low})
+        feed_changes.append({"from": low, "to": canonical, "count": count})
+        if not dry_run and count:
+            await db.activity_feed.update_many(
+                {"player_address": low},
+                {"$set": {"player_address": canonical}}
+            )
+    summary["collections"]["activity_feed"] = {
+        "lowercase_addresses_found": len(tg_feed_addrs),
+        "total_docs_affected": sum(c["count"] for c in feed_changes),
+        "changes": feed_changes,
+    }
+
+    return summary
+
+
 # Leaderboard Routes
 @api_router.get("/leaderboard")
 async def get_leaderboard(limit: int = 200):
@@ -9592,12 +9652,31 @@ async def arena_leaderboard(limit: int = 50):
     return await arena_system.get_leaderboard(db, limit=min(limit, 100))
 
 
+async def _canonical_address(addr: str) -> str:
+    """Resolve any caller-supplied address (e.g. lowercase `tg_<id>`,
+    uppercase `TG_<id>`, or a wallet) to the address actually stored on the
+    canonical player document. Falls back to the input unchanged when no
+    player is found, so non-TG callers are unaffected.
+
+    This protects every endpoint that does direct `find_one({"address":...})`
+    or MongoDB `$lookup` joins against case-sensitivity drift between
+    historical/migrated docs and freshly-deployed frontend payloads.
+    """
+    if not addr:
+        return addr
+    player = await find_player_by_address(addr)
+    if player and player.get("address"):
+        return player["address"]
+    return addr
+
+
 @api_router.post("/arena/join")
 async def arena_join(payload: dict):
     addr = (payload or {}).get("address")
     nickname = (payload or {}).get("nickname")
     if not addr:
         raise HTTPException(status_code=400, detail="address required")
+    addr = await _canonical_address(addr)  # tg_<id> → TG_<id>
     try:
         result = await arena_system.join_arena(db, addr, nickname)
     except ValueError as e:
@@ -9618,6 +9697,7 @@ async def arena_chat_post(payload: dict):
     text = (payload or {}).get("text") or ""
     if not addr:
         raise HTTPException(status_code=400, detail="address required")
+    addr = await _canonical_address(addr)
     try:
         msg = await arena_system.post_chat(db, addr, nickname, text)
     except ValueError as e:
@@ -9636,6 +9716,8 @@ async def arena_predict(payload: dict):
     target = (payload or {}).get("target_address")
     if not addr or not target:
         raise HTTPException(status_code=400, detail="address and target_address required")
+    addr = await _canonical_address(addr)
+    target = await _canonical_address(target)
     try:
         pred = await arena_system.place_prediction(db, addr, target)
     except ValueError as e:
@@ -9645,6 +9727,7 @@ async def arena_predict(payload: dict):
 
 @api_router.get("/arena/prediction/{address}")
 async def arena_user_prediction(address: str):
+    address = await _canonical_address(address)
     pred = await arena_system.get_user_prediction(db, address)
     return {"prediction": pred}
 
