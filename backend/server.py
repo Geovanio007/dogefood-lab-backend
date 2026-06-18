@@ -3231,7 +3231,10 @@ async def merge_duplicate_telegram_players(admin_key: str = None, dry_run: bool 
     if not admin_key or admin_key != ADMIN_SECRET:
         await asyncio.sleep(2)
         raise HTTPException(status_code=403, detail="Unauthorized: Invalid admin key")
-    # Bucket every doc that looks like a TG player by telegram_id
+    # Bucket every doc that looks like a TG player by telegram_id.
+    # IMPORTANT: include the raw _id field — some historical docs were inserted
+    # without the application-level `id` (uuid) field, so we must address them
+    # by their ObjectId instead.
     buckets = {}  # int_tg_id -> [docs]
     async for doc in db.players.find({"$or": [
         {"address": {"$regex": "^[tT][gG]_"}},
@@ -3274,6 +3277,7 @@ async def merge_duplicate_telegram_players(admin_key: str = None, dry_run: bool 
         total_xp = int(keeper.get("experience") or 0)
         merged_treats = list(keeper.get("created_treats") or [])
         keeper_id = keeper.get("id")
+        keeper_oid = keeper.get("_id")  # always present — MongoDB ObjectId
 
         for loser in losers:
             total_points += int(loser.get("points") or 0)
@@ -3304,27 +3308,38 @@ async def merge_duplicate_telegram_players(admin_key: str = None, dry_run: bool 
                 keeper_update[k] = keeper[k]
 
         loser_ids = [loser.get("id") for loser in losers]
+        loser_oids = [loser.get("_id") for loser in losers if loser.get("_id") is not None]
         loser_addresses = [loser.get("address") for loser in losers if loser.get("address")]
 
         merged_summary.append({
             "telegram_id": tg_int,
             "keeper_id": keeper_id,
+            "keeper_oid": str(keeper_oid) if keeper_oid else None,
             "canonical_address": canonical_address,
             "merged_points": total_points,
             "merged_treats": len(merged_treats),
             "removed_doc_ids": loser_ids,
+            "removed_doc_oids": [str(x) for x in loser_oids],
             "removed_addresses": loser_addresses,
         })
 
         if not dry_run:
-            # 1. Update keeper
+            # 1. Update keeper — address it by ObjectId because `id` may be null
+            #    on legacy docs.
+            keeper_filter = {"_id": keeper_oid} if keeper_oid is not None else {"id": keeper_id}
+            # Also ensure the application-level `id` field exists going forward
+            if not keeper.get("id"):
+                keeper_update["id"] = str(uuid.uuid4())
             await db.players.update_one(
-                {"id": keeper_id},
+                keeper_filter,
                 {"$set": keeper_update}
             )
-            # 2. Delete losers
-            if loser_ids:
-                await db.players.delete_many({"id": {"$in": loser_ids}})
+            # 2. Delete losers — prefer _id, fall back to id
+            if loser_oids:
+                await db.players.delete_many({"_id": {"$in": loser_oids}})
+            id_only_loser_ids = [lid for lid in loser_ids if lid is not None]
+            if id_only_loser_ids:
+                await db.players.delete_many({"id": {"$in": id_only_loser_ids}})
             # 3. Normalise treats.creator_address for this user
             variants = [f"TG_{tg_int}", f"tg_{tg_int}"]
             await db.treats.update_many(
