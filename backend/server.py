@@ -3324,28 +3324,51 @@ async def merge_duplicate_telegram_players(admin_key: str = None, dry_run: bool 
         })
 
         if not dry_run:
-            # 1. Update keeper — address it by ObjectId because `id` may be null
-            #    on legacy docs.
-            keeper_filter = {"_id": keeper_oid} if keeper_oid is not None else {"id": keeper_id}
-            # Also ensure the application-level `id` field exists going forward
-            if not keeper.get("id"):
-                keeper_update["id"] = str(uuid.uuid4())
-            await db.players.update_one(
-                keeper_filter,
-                {"$set": keeper_update}
-            )
-            # 2. Delete losers — prefer _id, fall back to id
-            if loser_oids:
-                await db.players.delete_many({"_id": {"$in": loser_oids}})
-            id_only_loser_ids = [lid for lid in loser_ids if lid is not None]
-            if id_only_loser_ids:
-                await db.players.delete_many({"id": {"$in": id_only_loser_ids}})
-            # 3. Normalise treats.creator_address for this user
-            variants = [f"TG_{tg_int}", f"tg_{tg_int}"]
-            await db.treats.update_many(
-                {"creator_address": {"$in": variants}},
-                {"$set": {"creator_address": canonical_address}}
-            )
+            try:
+                # 1. Clear `address` on losers FIRST to avoid a unique-index
+                #    collision when the keeper takes ownership of it. Multiple
+                #    documents may legitimately have a null address.
+                if loser_oids:
+                    await db.players.update_many(
+                        {"_id": {"$in": loser_oids}},
+                        {"$set": {"address": None}}
+                    )
+                id_only_loser_ids = [lid for lid in loser_ids if lid is not None]
+                if id_only_loser_ids:
+                    await db.players.update_many(
+                        {"id": {"$in": id_only_loser_ids}},
+                        {"$set": {"address": None}}
+                    )
+
+                # 2. Update keeper — address it by ObjectId because `id` may
+                #    be null on legacy docs. Auto-fill a fresh uuid `id` if
+                #    the keeper lacks one so future address-based filters work.
+                keeper_filter = {"_id": keeper_oid} if keeper_oid is not None else {"id": keeper_id}
+                if not keeper.get("id"):
+                    keeper_update["id"] = str(uuid.uuid4())
+                await db.players.update_one(
+                    keeper_filter,
+                    {"$set": keeper_update}
+                )
+
+                # 3. Delete losers
+                if loser_oids:
+                    await db.players.delete_many({"_id": {"$in": loser_oids}})
+                if id_only_loser_ids:
+                    await db.players.delete_many({"id": {"$in": id_only_loser_ids}})
+
+                # 4. Normalise treats.creator_address for this user
+                variants = [f"TG_{tg_int}", f"tg_{tg_int}"]
+                await db.treats.update_many(
+                    {"creator_address": {"$in": variants}},
+                    {"$set": {"creator_address": canonical_address}}
+                )
+                merged_summary[-1]["status"] = "merged"
+            except Exception as merge_exc:
+                merged_summary[-1]["status"] = f"failed: {type(merge_exc).__name__}: {str(merge_exc)[:300]}"
+                logger.error(f"Migration failed for tg_{tg_int}: {merge_exc}")
+                # Do NOT abort the loop — keep merging the rest.
+                continue
 
     return {
         "dry_run": dry_run,
