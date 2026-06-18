@@ -40,39 +40,69 @@ def parse_utc_datetime(dt_val) -> datetime:
 
 
 async def find_player_by_address(address: str):
-    """Find player by address, handling Telegram TG_/tg_ case mismatch."""
+    """Find player by address, handling Telegram TG_/tg_ case mismatch
+    and historical duplicate documents.
+
+    For Telegram users, historical code paths created up to THREE separate
+    player documents for the same user:
+      A1) {address: "tg_<id>", telegram_id: null}    (lowercase, legacy)
+      A2) {address: "TG_<id>", telegram_id: null}    (UPPERCASE, modern)
+      B ) {address: null,     telegram_id: <int>}    (Telegram-auth doc)
+
+    Because the previous lookup returned whichever doc matched FIRST in the
+    fallback chain, a player's gameplay points (stored on one doc) could be
+    permanently invisible to other endpoints that happened to find a
+    different doc first.
+
+    Fix: collect every candidate document and return the canonical one —
+    defined as the doc with the most points (tie-breaker: most treats).
+    This guarantees endpoints all converge on the same record regardless
+    of the caller's case/prefix style.
+    """
     if not address:
         return None
 
+    # Non-Telegram (wallet / guest / 0x… / etc.): single exact lookup
+    if not address.lower().startswith("tg_"):
+        return await db.players.find_one({"address": address}, {"_id": 0})
 
-    player = await db.players.find_one({"address": address}, {"_id": 0})
-    if player:
-        return player
+    tg_id_str = address[3:]
+    candidates = []
+    seen_ids = set()
 
+    def _add(p):
+        if p and p.get("id") not in seen_ids:
+            seen_ids.add(p.get("id"))
+            candidates.append(p)
 
-    if address.lower().startswith("tg_"):
-        tg_id = address[3:]
+    # Gather every variant in parallel
+    or_clauses = [
+        {"address": address},
+        {"address": f"TG_{tg_id_str}"},
+        {"address": f"tg_{tg_id_str}"},
+    ]
+    try:
+        or_clauses.append({"telegram_id": int(tg_id_str)})
+    except (ValueError, TypeError):
+        pass
 
+    async for doc in db.players.find({"$or": or_clauses}, {"_id": 0}):
+        _add(doc)
 
-        player = await db.players.find_one({"address": f"TG_{tg_id}"}, {"_id": 0})
-        if player:
-            return player
+    if not candidates:
+        return None
 
+    # Pick the canonical document: highest points, then most treats created,
+    # then most recent last_active. This is the doc that has actually been
+    # receiving gameplay updates.
+    def _rank(d):
+        return (
+            int(d.get("points") or 0),
+            len(d.get("created_treats") or []),
+            str(d.get("last_active") or ""),
+        )
 
-        player = await db.players.find_one({"address": f"tg_{tg_id}"}, {"_id": 0})
-        if player:
-            return player
-
-
-        try:
-            player = await db.players.find_one({"telegram_id": int(tg_id)}, {"_id": 0})
-            if player:
-                return player
-        except (ValueError, TypeError):
-            pass
-
-
-    return None
+    return max(candidates, key=_rank)
 
 
 
@@ -3174,6 +3204,142 @@ async def collect_treat(treat_id: str, data: dict):
 
 
 # Leaderboard Routes
+
+
+@api_router.post("/admin/merge-duplicate-telegram-players")
+async def merge_duplicate_telegram_players(admin_key: str = None, dry_run: bool = True):
+    """
+    One-shot migration: merge duplicate Telegram player documents.
+
+    Auth: requires `admin_key` matching ADMIN_SECRET (same as /admin/season2-reset).
+    Example:
+        curl -X POST \
+          "https://.../api/admin/merge-duplicate-telegram-players?admin_key=...&dry_run=true"
+
+    For every TG user that has more than one document in the players
+    collection (e.g. {address:"tg_<id>"}, {address:"TG_<id>"},
+    {telegram_id:<id>, address:null}), this:
+      1. Picks the doc with the highest points as the "canonical" keeper.
+      2. Sums points/experience/created_treats from siblings into the keeper.
+      3. Copies any missing telegram identity fields onto the keeper.
+      4. Deletes the sibling docs.
+      5. Re-points treats.creator_address to a single canonical form
+         (TG_<id>) so future $inc updates always hit the same doc.
+
+    Set `dry_run=false` to actually apply changes.
+    """
+    if not admin_key or admin_key != ADMIN_SECRET:
+        await asyncio.sleep(2)
+        raise HTTPException(status_code=403, detail="Unauthorized: Invalid admin key")
+    # Bucket every doc that looks like a TG player by telegram_id
+    buckets = {}  # int_tg_id -> [docs]
+    async for doc in db.players.find({"$or": [
+        {"address": {"$regex": "^[tT][gG]_"}},
+        {"telegram_id": {"$exists": True, "$ne": None}},
+    ]}):
+        addr = doc.get("address") or ""
+        tg_int = None
+        if doc.get("telegram_id") is not None:
+            try:
+                tg_int = int(doc["telegram_id"])
+            except (ValueError, TypeError):
+                tg_int = None
+        if tg_int is None and addr.lower().startswith("tg_"):
+            try:
+                tg_int = int(addr[3:])
+            except (ValueError, TypeError):
+                tg_int = None
+        if tg_int is None:
+            continue
+        buckets.setdefault(tg_int, []).append(doc)
+
+    merged_summary = []
+    for tg_int, docs in buckets.items():
+        if len(docs) < 2:
+            continue  # already a single doc — nothing to merge
+
+        # Choose canonical doc: highest points, then most treats, then most recent
+        def _rank(d):
+            return (
+                int(d.get("points") or 0),
+                len(d.get("created_treats") or []),
+                str(d.get("last_active") or ""),
+            )
+        docs_sorted = sorted(docs, key=_rank, reverse=True)
+        keeper = docs_sorted[0]
+        losers = docs_sorted[1:]
+
+        # Aggregate numeric fields
+        total_points = int(keeper.get("points") or 0)
+        total_xp = int(keeper.get("experience") or 0)
+        merged_treats = list(keeper.get("created_treats") or [])
+        keeper_id = keeper.get("id")
+
+        for loser in losers:
+            total_points += int(loser.get("points") or 0)
+            total_xp += int(loser.get("experience") or 0)
+            for t in (loser.get("created_treats") or []):
+                if t not in merged_treats:
+                    merged_treats.append(t)
+            # Fill missing identity fields onto the keeper
+            for k in ("telegram_id", "telegram_username", "telegram_first_name",
+                      "telegram_last_name", "nickname", "profile_image",
+                      "selected_character", "character_bonuses", "auth_type"):
+                if not keeper.get(k) and loser.get(k):
+                    keeper[k] = loser[k]
+
+        canonical_address = f"TG_{tg_int}"
+        keeper_update = {
+            "address": canonical_address,
+            "telegram_id": tg_int,
+            "points": total_points,
+            "experience": total_xp,
+            "created_treats": merged_treats,
+        }
+        # Carry any newly-filled identity fields too
+        for k in ("telegram_username", "telegram_first_name", "telegram_last_name",
+                  "nickname", "profile_image", "selected_character",
+                  "character_bonuses", "auth_type"):
+            if keeper.get(k) is not None:
+                keeper_update[k] = keeper[k]
+
+        loser_ids = [loser.get("id") for loser in losers]
+        loser_addresses = [loser.get("address") for loser in losers if loser.get("address")]
+
+        merged_summary.append({
+            "telegram_id": tg_int,
+            "keeper_id": keeper_id,
+            "canonical_address": canonical_address,
+            "merged_points": total_points,
+            "merged_treats": len(merged_treats),
+            "removed_doc_ids": loser_ids,
+            "removed_addresses": loser_addresses,
+        })
+
+        if not dry_run:
+            # 1. Update keeper
+            await db.players.update_one(
+                {"id": keeper_id},
+                {"$set": keeper_update}
+            )
+            # 2. Delete losers
+            if loser_ids:
+                await db.players.delete_many({"id": {"$in": loser_ids}})
+            # 3. Normalise treats.creator_address for this user
+            variants = [f"TG_{tg_int}", f"tg_{tg_int}"]
+            await db.treats.update_many(
+                {"creator_address": {"$in": variants}},
+                {"$set": {"creator_address": canonical_address}}
+            )
+
+    return {
+        "dry_run": dry_run,
+        "telegram_users_with_duplicates": len(merged_summary),
+        "details": merged_summary,
+    }
+
+
+# Leaderboard Routes
 @api_router.get("/leaderboard")
 async def get_leaderboard(limit: int = 200):
     # Only include active players who collected treats
@@ -3198,22 +3364,30 @@ async def get_leaderboard(limit: int = 200):
         # Split creator addresses into wallet addresses and tg_ telegram addresses
         tg_ids = []
         wallet_addresses = []
+        tg_address_variants = []  # both TG_<id> and tg_<id> for legacy duplicate docs
         for addr in active_creator_addresses:
             if addr and addr.lower().startswith("tg_"):
+                raw_id = addr[3:]
+                tg_address_variants.append(f"TG_{raw_id}")
+                tg_address_variants.append(f"tg_{raw_id}")
                 try:
-                    tg_ids.append(int(addr[3:]))
+                    tg_ids.append(int(raw_id))
                 except (ValueError, TypeError):
                     pass
             elif addr:
                 wallet_addresses.append(addr)
 
-        # Build a query that matches both wallet players and telegram players
+        # Build a query that matches both wallet players and telegram players.
+        # IMPORTANT: include TG_/tg_ address variants because historical
+        # gameplay points live on those docs (not the telegram_id-only doc).
         or_clauses = []
         if wallet_addresses:
             or_clauses.append({"address": {"$in": wallet_addresses}})
+        if tg_address_variants:
+            or_clauses.append({"address": {"$in": tg_address_variants}})
         if tg_ids:
             or_clauses.append({"telegram_id": {"$in": tg_ids}})
-        
+
         if or_clauses:
             query = {"$or": or_clauses} if len(or_clauses) > 1 else or_clauses[0]
         else:
@@ -3236,6 +3410,55 @@ async def get_leaderboard(limit: int = 200):
     }
     
     top_players = await db.players.find(query, projection).sort([("points", -1), ("level", -1)]).limit(limit + 20).to_list(limit + 20)
+
+    # Dedupe duplicate Telegram docs: a single TG user can have up to three
+    # records in the DB (tg_<id>, TG_<id>, telegram_id-only). Keep the one
+    # with the highest points so the leaderboard never shows an "empty"
+    # duplicate. Wallet users are not deduped (address is a stable id).
+    deduped = []
+    seen_tg = {}
+    for p in top_players:
+        addr = p.get("address") or ""
+        tg_id_val = p.get("telegram_id")
+        tg_key = None
+        if tg_id_val is not None:
+            tg_key = int(tg_id_val)
+        elif addr.lower().startswith("tg_"):
+            try:
+                tg_key = int(addr[3:])
+            except (ValueError, TypeError):
+                tg_key = None
+
+        if tg_key is None:
+            deduped.append(p)
+            continue
+
+        existing = seen_tg.get(tg_key)
+        if existing is None:
+            seen_tg[tg_key] = p
+        else:
+            # Keep whichever doc has more points (tie → more level → has address)
+            def _rank(d):
+                return (
+                    int(d.get("points") or 0),
+                    int(d.get("level") or 0),
+                    1 if d.get("address") else 0,
+                )
+            if _rank(p) > _rank(existing):
+                # Carry over telegram identity fields from the loser if missing
+                for k in ("telegram_id", "telegram_first_name", "nickname"):
+                    if not p.get(k) and existing.get(k):
+                        p[k] = existing[k]
+                seen_tg[tg_key] = p
+            else:
+                for k in ("telegram_id", "telegram_first_name", "nickname"):
+                    if not existing.get(k) and p.get(k):
+                        existing[k] = p[k]
+
+    # Re-assemble: wallet players in original order + best TG doc per user
+    deduped.extend(seen_tg.values())
+    deduped.sort(key=lambda d: (-(d.get("points") or 0), -(d.get("level") or 0)))
+    top_players = deduped
     
     # Character data mapping
     character_data = {
