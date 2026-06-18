@@ -5108,14 +5108,20 @@ async def get_current_season_info():
 async def get_ingredients(level: int = 1):
     """Get all ingredients available at the specified level"""
     ingredients = ingredient_system.export_ingredients_for_frontend(level)
-    # Include active heat event so the frontend can highlight bonus ingredients
+    # Include active heat event so the frontend can highlight bonus ingredients.
+    # Import arena_system locally so this never fails if the module-level import
+    # hasn't run yet (it lives at the bottom of this file).
+    heat_event_id = "idle_calm"
+    heat_event = None
     try:
-        heat_event_id = await arena_system.get_active_heat_event_id(db)
-        heat_event = None
+        from services import arena_system as _arena
+        heat_event_id = await _arena.get_active_heat_event_id(db)
         if heat_event_id and heat_event_id != "idle_calm":
-            arena = await db.arena_sessions.find_one({"status": "active"}, {"_id": 0, "heat_event": 1, "heat_event_started_at": 1})
-            if arena and arena.get("heat_event"):
-                heat_event = arena["heat_event"]
+            arena_doc = await db.arena_sessions.find_one(
+                {"status": "active"}, {"_id": 0, "heat_event": 1}
+            )
+            if arena_doc and arena_doc.get("heat_event"):
+                heat_event = arena_doc["heat_event"]
     except Exception:
         heat_event_id = "idle_calm"
         heat_event = None
