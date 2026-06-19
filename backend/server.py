@@ -9900,6 +9900,88 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# SHIBA GROWTH SYSTEM
+# ═══════════════════════════════════════════════════════════════════════════════
+
+SHIBA_STAGES = [
+    {"id": 0, "name": "Tiny Pup",    "xp_required": 0},
+    {"id": 1, "name": "Young Pup",   "xp_required": 150},
+    {"id": 2, "name": "Teen Shiba",  "xp_required": 400},
+    {"id": 3, "name": "Adult Shiba", "xp_required": 800},
+    {"id": 4, "name": "Alpha Shiba", "xp_required": 1500},
+    {"id": 5, "name": "Mythic Lab",  "xp_required": 2800},
+]
+RARITY_XP = {"Common": 8, "Uncommon": 18, "Rare": 35, "Epic": 65, "Legendary": 110, "Mythic": 200}
+
+def _shiba_stage(xp: int) -> int:
+    stage = 0
+    for s in SHIBA_STAGES:
+        if xp >= s["xp_required"]:
+            stage = s["id"]
+    return stage
+
+
+@api_router.get("/shiba/{player_address}")
+async def get_shiba(player_address: str):
+    """Get or return 404 if pet doesn't exist yet."""
+    pet = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
+    if not pet:
+        raise HTTPException(status_code=404, detail="No pet found")
+    return pet
+
+
+@api_router.post("/shiba/{player_address}/create")
+async def create_shiba(player_address: str):
+    """Create a new Shiba pet for a player."""
+    existing = await db.player_pets.find_one({"owner": player_address})
+    if existing:
+        existing.pop("_id", None)
+        return existing
+    pet = {
+        "pet_id": str(uuid.uuid4()),
+        "owner": player_address,
+        "current_stage": 0,
+        "current_xp": 0,
+        "total_treats_fed": 0,
+        "favorite_ingredient": None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_fed_at": None,
+    }
+    await db.player_pets.insert_one(pet)
+    pet.pop("_id", None)
+    return pet
+
+
+@api_router.post("/shiba/{player_address}/feed")
+async def feed_shiba(player_address: str, body: dict):
+    """Record a feeding, update XP and stage."""
+    treat_rarity = body.get("treat_rarity", "Common")
+    xp_gained    = int(body.get("xp_gained", RARITY_XP.get(treat_rarity, 8)))
+
+    pet = await db.player_pets.find_one({"owner": player_address})
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found — create one first")
+
+    new_xp    = (pet.get("current_xp") or 0) + xp_gained
+    new_stage = _shiba_stage(new_xp)
+    now       = datetime.now(timezone.utc).isoformat()
+
+    await db.player_pets.update_one(
+        {"owner": player_address},
+        {"$set": {
+            "current_xp":      new_xp,
+            "current_stage":   new_stage,
+            "last_fed_at":     now,
+        },
+        "$inc": {"total_treats_fed": 1}},
+    )
+
+    updated = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
+    evolved = new_stage > (pet.get("current_stage") or 0)
+    return {"pet": updated, "xp_gained": xp_gained, "evolved": evolved, "new_stage": new_stage}
+
+
 @app.on_event("startup")
 async def startup_event():
     """Start background schedulers on app startup"""
