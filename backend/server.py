@@ -4198,7 +4198,16 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             treat_outcome["timer_duration_hours"] = treat_outcome["timer_duration_seconds"] / 3600
             treat_outcome["heat_time_reduction"] = original_timer - treat_outcome["timer_duration_seconds"]
             logger.info(f"⚡ Overclock applied: {original_timer}s → {treat_outcome['timer_duration_seconds']}s")
-        
+
+        # ── CRITICAL: Recalculate ready_at from the FINAL timer duration ──────
+        # game_engine sets ready_at using the original timer before any reductions.
+        # Streak and Overclock both update timer_duration_seconds but never fix
+        # ready_at — so the brewing countdown runs to the wrong time.
+        # Recalculate here so what's stored in DB matches the reduced timer.
+        final_timer_seconds = treat_outcome.get("timer_duration_seconds", 3600)
+        treat_outcome["ready_at"] = int(datetime.now(timezone.utc).timestamp()) + final_timer_seconds
+        logger.info(f"✅ ready_at recalculated: now + {final_timer_seconds}s")
+
         # Get current season info
         current_season = season_manager.get_season_info()
         season_id = current_season.season_id
