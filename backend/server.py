@@ -9857,6 +9857,122 @@ async def arena_user_prediction(address: str):
     pred = await arena_system.get_user_prediction(db, address)
     return {"prediction": pred}
 
+# ============================================================
+# 🐕  SHIBA PET ROUTES  (Lab page — pet feeding feature)
+# ============================================================
+# These endpoints back the ShibaGrowth.jsx component on the Lab page.
+# Stored in the `player_pets` collection, keyed by `owner` = player_address.
+#
+# IMPORTANT: The two specific sub-routes (/shiba/create/{addr} and
+# /shiba/feed/{addr}) MUST be declared BEFORE the generic
+# /shiba/{player_address} GET, otherwise FastAPI would happily route
+# /shiba/create/<addr> into get_shiba() with player_address="create"
+# and return the wrong response.
+# ------------------------------------------------------------
+
+# XP awarded per treat rarity when fed to the pet
+SHIBA_RARITY_XP = {
+    "Starter":   8,
+    "Common":    8,
+    "Uncommon":  18,
+    "Rare":      35,
+    "Epic":      65,
+    "Legendary": 110,
+    "Mythic":    200,
+}
+
+# Stage thresholds — must match STAGES[] in frontend/src/components/ShibaGrowth.jsx
+SHIBA_STAGE_XP = [0, 150, 400, 800, 1500, 2800]
+
+
+def _shiba_stage(xp: int) -> int:
+    """Return the highest stage (0–5) the pet qualifies for at `xp` total XP."""
+    stage = 0
+    for i, threshold in enumerate(SHIBA_STAGE_XP):
+        if xp >= threshold:
+            stage = i
+    return stage
+
+
+@api_router.post("/shiba/create/{player_address}")
+async def create_shiba(player_address: str):
+    """Idempotent: returns the existing pet, or creates a new one if none exists."""
+    existing = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
+    if existing:
+        return existing
+
+    pet = {
+        "pet_id":             str(uuid.uuid4()),
+        "owner":              player_address,
+        "current_stage":      0,
+        "current_xp":         0,
+        "total_treats_fed":   0,
+        "favorite_ingredient": None,
+        "created_at":         datetime.utcnow().isoformat(),
+        "last_fed_at":        None,
+    }
+    await db.player_pets.insert_one(pet)
+    pet.pop("_id", None)  # remove ObjectId injected by insert_one
+    return pet
+
+
+@api_router.post("/shiba/feed/{player_address}")
+async def feed_shiba(player_address: str, body: dict):
+    """Record a feeding, update XP + stage. Auto-creates the pet if missing."""
+    treat_rarity = body.get("treat_rarity", "Common")
+    xp_gained    = int(body.get("xp_gained", SHIBA_RARITY_XP.get(treat_rarity, 8)))
+
+    pet = await db.player_pets.find_one({"owner": player_address})
+    if not pet:
+        # First feed creates the pet — never 404 the user mid-animation
+        pet = {
+            "pet_id":             str(uuid.uuid4()),
+            "owner":              player_address,
+            "current_stage":      0,
+            "current_xp":         0,
+            "total_treats_fed":   0,
+            "favorite_ingredient": None,
+            "created_at":         datetime.utcnow().isoformat(),
+            "last_fed_at":        None,
+        }
+        await db.player_pets.insert_one(pet)
+
+    new_xp    = (pet.get("current_xp") or 0) + xp_gained
+    new_stage = _shiba_stage(new_xp)
+    now_iso   = datetime.utcnow().isoformat()
+
+    await db.player_pets.update_one(
+        {"owner": player_address},
+        {
+            "$set": {
+                "current_xp":    new_xp,
+                "current_stage": new_stage,
+                "last_fed_at":   now_iso,
+            },
+            "$inc": {"total_treats_fed": 1},
+        },
+    )
+
+    updated = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
+    evolved = new_stage > (pet.get("current_stage") or 0)
+    return {
+        "pet":         updated,
+        "xp_gained":   xp_gained,
+        "evolved":     evolved,
+        "new_stage":   new_stage,
+    }
+
+
+@api_router.get("/shiba/{player_address}")
+async def get_shiba(player_address: str):
+    """Return the pet — 404 if none exists yet (frontend will then call /shiba/create/:address)."""
+    pet = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
+    if not pet:
+        raise HTTPException(status_code=404, detail="No pet found")
+    return pet
+# ============================================================
+#  END SHIBA PET ROUTES
+# ============================================================
 
 # Include the router in the main app
 app.include_router(api_router)
