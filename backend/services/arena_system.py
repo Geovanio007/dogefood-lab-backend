@@ -403,6 +403,66 @@ async def get_active_heat_event_id(db) -> str:
     return "idle_calm"
 
 
+# ─── Background heat event scheduler ────────────────────────────────────────
+
+async def run_heat_event_scheduler(db):
+    """
+    Background task started at server boot.
+    Rotates heat events every 30 minutes on a real wall-clock schedule,
+    completely independent of user traffic / arena page visits.
+    """
+    import asyncio
+    import logging
+    logger = logging.getLogger("heat_scheduler")
+    logger.info("🔥 Heat event scheduler starting")
+
+    while True:
+        try:
+            arena = await db.arena_sessions.find_one(
+                {"status": "active"},
+                {"_id": 0, "id": 1, "heat_event_started_at": 1, "heat_event": 1}
+            )
+            if arena:
+                started = _parse_dt(arena.get("heat_event_started_at"))
+                elapsed_min = (_utcnow() - started).total_seconds() / 60.0
+                remaining_sec = max(0, (HEAT_EVENT_DURATION_MIN - elapsed_min) * 60)
+
+                if remaining_sec < 10:
+                    # Time to rotate to a new random event
+                    new_event = _pick_heat_event(_utcnow())
+                    new_start = _utcnow()
+                    await db.arena_sessions.update_one(
+                        {"id": arena["id"]},
+                        {"$set": {
+                            "heat_event":            new_event,
+                            "heat_event_started_at": new_start.isoformat(),
+                        }}
+                    )
+                    logger.info(
+                        f"🔥 Heat event rotated → {new_event['name']} "
+                        f"(id={new_event['id']}) next rotation in {HEAT_EVENT_DURATION_MIN}min"
+                    )
+                    # Sleep the full duration before checking again
+                    await asyncio.sleep(HEAT_EVENT_DURATION_MIN * 60)
+                else:
+                    # Sleep until just before the next rotation
+                    sleep_time = min(remaining_sec - 5, 60)
+                    await asyncio.sleep(max(sleep_time, 10))
+            else:
+                # No active arena — check again in 60 seconds
+                await asyncio.sleep(60)
+
+        except asyncio.CancelledError:
+            logger.info("🔥 Heat event scheduler stopped")
+            break
+        except Exception as exc:
+            logger.warning(f"🔥 Heat scheduler error (will retry in 30s): {exc}")
+            try:
+                await asyncio.sleep(30)
+            except asyncio.CancelledError:
+                break
+
+
 # ─── Chat ───────────────────────────────────────────────────────────────────
 
 def _sanitize_chat(text: str) -> str:
