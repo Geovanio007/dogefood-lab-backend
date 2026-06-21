@@ -56,7 +56,7 @@ async def find_player_by_address(address: str):
     permanently invisible to other endpoints that happened to find a
     different doc first.
 
-    Fix: collect every candidate document and return the canonical one —
+    Fix: collect every candidate document and return the canonical one â€”
     defined as the doc with the most points (tie-breaker: most treats).
     This guarantees endpoints all converge on the same record regardless
     of the caller's case/prefix style.
@@ -64,7 +64,7 @@ async def find_player_by_address(address: str):
     if not address:
         return None
 
-    # Non-Telegram (wallet / guest / 0x… / etc.): single exact lookup
+    # Non-Telegram (wallet / guest / 0xâ€¦ / etc.): single exact lookup
     if not address.lower().startswith("tg_"):
         return await db.players.find_one({"address": address}, {"_id": 0})
 
@@ -124,7 +124,7 @@ def verify_wallet_signature(wallet_address: str, signature: str, message: str, e
     if not wallet_address or not signature or not message:
         return False, "Missing signature material"
 
-    # The message must reference this exact telegram_id — prevents a
+    # The message must reference this exact telegram_id â€” prevents a
     # signature signed for a different purpose/account being replayed here.
     if f"telegram_id: {expected_telegram_id}" not in message:
         return False, "Signed message does not match this Telegram account"
@@ -142,10 +142,10 @@ def verify_wallet_signature(wallet_address: str, signature: str, message: str, e
     if age.total_seconds() < 0:
         return False, "Signed message timestamp is in the future"
     if age.total_seconds() > max_age_minutes * 60:
-        return False, "Signature has expired — please reconnect your wallet"
+        return False, "Signature has expired â€” please reconnect your wallet"
 
     # Recover the address that actually signed this message and compare it
-    # (case-insensitively — checksummed vs lowercase hex) to the claimed address.
+    # (case-insensitively â€” checksummed vs lowercase hex) to the claimed address.
     try:
         encoded = encode_defunct(text=message)
         recovered_address = Account.recover_message(encoded, signature=signature)
@@ -217,7 +217,7 @@ FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "dogefood-lab")
 
 
 if not FIREBASE_API_KEY:
-    logging.warning("⚠️ FIREBASE_API_KEY not set - Firebase authentication will not work")
+    logging.warning("âš ï¸ FIREBASE_API_KEY not set - Firebase authentication will not work")
 
 
 ROOT_DIR = Path(__file__).parent
@@ -228,7 +228,7 @@ load_dotenv(ROOT_DIR / '.env')
 # SECURITY: MONGO_URL MUST be set via environment variable
 MONGO_URL = os.getenv("MONGO_URL")
 if not MONGO_URL:
-    logging.error("❌ CRITICAL: MONGO_URL environment variable not set!")
+    logging.error("âŒ CRITICAL: MONGO_URL environment variable not set!")
     raise ValueError("MONGO_URL environment variable is required")
 
 
@@ -246,10 +246,10 @@ try:
     async def test_connection():
         try:
             await client.admin.command('ping')
-            logging.info("✅ MongoDB Atlas connection successful")
+            logging.info("âœ… MongoDB Atlas connection successful")
             return True
         except Exception as e:
-            logging.error(f"❌ MongoDB connection failed: {str(e)}")
+            logging.error(f"âŒ MongoDB connection failed: {str(e)}")
             return False
     
 except Exception as e:
@@ -267,7 +267,7 @@ merkle_generator = MerkleTreeGenerator()
 # SECURITY: GAME_SECRET_KEY should be set via environment variable in production
 GAME_SECRET_KEY = os.environ.get('GAME_SECRET_KEY')
 if not GAME_SECRET_KEY:
-    logging.warning("⚠️ GAME_SECRET_KEY not set - using development key (NOT SAFE FOR PRODUCTION)")
+    logging.warning("âš ï¸ GAME_SECRET_KEY not set - using development key (NOT SAFE FOR PRODUCTION)")
     GAME_SECRET_KEY = 'development_key_' + os.urandom(16).hex()
 
 
@@ -452,7 +452,7 @@ async def auto_select_kernel_holder():
                 {"$set": {"has_special_ingredient": True, "special_ingredient_expires": expires_at}}
             )
         
-        logger.info(f"🌟 Kernel of Wow auto-granted to {player_nickname} ({player_identifier}) until {expires_at}")
+        logger.info(f"ðŸŒŸ Kernel of Wow auto-granted to {player_nickname} ({player_identifier}) until {expires_at}")
         return True
         
     except Exception as e:
@@ -464,7 +464,7 @@ async def kernel_scheduler_loop():
     """Background loop that checks every hour if a new holder needs to be selected"""
     global background_task_started
     background_task_started = True
-    logger.info("🚀 Kernel of Wow scheduler loop started")
+    logger.info("ðŸš€ Kernel of Wow scheduler loop started")
     
     while True:
         try:
@@ -978,7 +978,7 @@ async def apply_referral(data: ApplyReferralRequest):
         }
     )
 
-    logger.info(f"✅ Referral applied: {referrer_address} referred {new_address} | +{REFERRAL_POINTS_REFERRER} / +{REFERRAL_POINTS_NEW_PLAYER} pts")
+    logger.info(f"âœ… Referral applied: {referrer_address} referred {new_address} | +{REFERRAL_POINTS_REFERRER} / +{REFERRAL_POINTS_NEW_PLAYER} pts")
 
     return {
         "success": True,
@@ -1040,7 +1040,7 @@ async def create_player(player_data: PlayerCreate):
         is_vip = True
         starting_points = 500  # VIP Scientist bonus
         vip_bonus_claimed = True
-        logger.info(f"🌟 VIP Scientist registered: {player_data.address} - Awarded 500 bonus points!")
+        logger.info(f"ðŸŒŸ VIP Scientist registered: {player_data.address} - Awarded 500 bonus points!")
     
     player = Player(
         address=player_data.address,
@@ -1127,7 +1127,7 @@ async def get_recent_activity(limit: int = 20):
     try:
         now = datetime.now(timezone.utc)
 
-        # ── 1. Treat creations (sorted by created_at as before) ──────────
+        # â”€â”€ 1. Treat creations (sorted by created_at as before) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         treat_pipeline = [
             {"$sort": {"created_at": -1}},
             {"$limit": limit},
@@ -1154,7 +1154,7 @@ async def get_recent_activity(limit: int = 20):
         ]
         treat_events = await db.treats.aggregate(treat_pipeline).to_list(limit)
 
-        # ── 2. Spin wheel + arena events from activity_feed ───────────────
+        # â”€â”€ 2. Spin wheel + arena events from activity_feed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         # Only show events from the last 48 hours to prevent old arena
         # settlement cycles accumulating and flooding the feed.
         cutoff_48h = (now - timedelta(hours=48)).isoformat()
@@ -1162,7 +1162,7 @@ async def get_recent_activity(limit: int = 20):
             {"created_at": {"$gte": cutoff_48h}}, {"_id": 0}
         ).sort("created_at", -1).limit(limit).to_list(limit)
 
-        # ── 3. Merge, sort by created_at desc, take top `limit` ───────────
+        # â”€â”€ 3. Merge, sort by created_at desc, take top `limit` â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         all_events = treat_events + feed_events
 
         def _parse_dt(val):
@@ -1178,7 +1178,7 @@ async def get_recent_activity(limit: int = 20):
         all_events.sort(key=lambda e: _parse_dt(e.get("created_at")), reverse=True)
         all_events = all_events[:limit]
 
-        # ── 4. Normalise created_at → ISO string ──────────────────────────
+        # â”€â”€ 4. Normalise created_at â†’ ISO string â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         for e in all_events:
             if e.get("created_at"):
                 dt = e["created_at"]
@@ -1198,14 +1198,14 @@ async def get_recent_activity(limit: int = 20):
 
 
 
-# ─── Live Chat Endpoints ──────────────────────────────────────
+# â”€â”€â”€ Live Chat Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 @api_router.get("/chat/messages")
 async def get_chat_messages(limit: int = 50):
     """Get recent chat messages for the live feed"""
     try:
-        # Simple find with sort — NO $lookup needed, nicknames are stored in messages
+        # Simple find with sort â€” NO $lookup needed, nicknames are stored in messages
         messages = await db.chat_messages.find(
             {},
             {"_id": 0}
@@ -1256,7 +1256,7 @@ async def send_chat_message(data: dict):
             raise HTTPException(status_code=404, detail="Player not found")
 
 
-        emoji_chars = set('😀😁😂🤣😃😄😅😆😉😊😋😎😍😘🥰😗😙🥲😚☺😌😛😝😜🤪🤨🧐🤓😎🥳🤩😏😒😞😔😟😕🙁☹😣😖😫😩🥺😢😭😤😠😡🤬🤯😳🥵🥶😱😨😰😥😓🫣🤗🫡🤔🫢🤭🤫🤥😶😐😑😬🫠🫨🙄😯😦😧😮😲🥱😴🤤😪😵🫥🤐🥴🤢🤮🤧😷🤒🤕🤑🤠😈👿👹👺🤡💩👻💀☠👽👾🤖🎃😺😸😹😻😼😽🙀😿😾🫶🤲👐🙌👏🤝👍👎👊✊🤛🤜🤞✌🫰🤟🤘👌🤌🤏👈👉👆🖕👇☝🫵👋🤚🖐✋🖖🫳🫴👊👏🔥❤💛💚💙💜🖤🤍🤎💔❣💕💞💓💗💖💘💝🏆🎯🎮🎲🎰🎪🎨🎭🎬🎤🎧🎼🎵🎶🐕🐶🐩🦮🐕‍🦺🐾💎✨🌟⭐💫🎉🎊🪄')
+        emoji_chars = set('ðŸ˜€ðŸ˜ðŸ˜‚ðŸ¤£ðŸ˜ƒðŸ˜„ðŸ˜…ðŸ˜†ðŸ˜‰ðŸ˜ŠðŸ˜‹ðŸ˜ŽðŸ˜ðŸ˜˜ðŸ¥°ðŸ˜—ðŸ˜™ðŸ¥²ðŸ˜šâ˜ºðŸ˜ŒðŸ˜›ðŸ˜ðŸ˜œðŸ¤ªðŸ¤¨ðŸ§ðŸ¤“ðŸ˜ŽðŸ¥³ðŸ¤©ðŸ˜ðŸ˜’ðŸ˜žðŸ˜”ðŸ˜ŸðŸ˜•ðŸ™â˜¹ðŸ˜£ðŸ˜–ðŸ˜«ðŸ˜©ðŸ¥ºðŸ˜¢ðŸ˜­ðŸ˜¤ðŸ˜ ðŸ˜¡ðŸ¤¬ðŸ¤¯ðŸ˜³ðŸ¥µðŸ¥¶ðŸ˜±ðŸ˜¨ðŸ˜°ðŸ˜¥ðŸ˜“ðŸ«£ðŸ¤—ðŸ«¡ðŸ¤”ðŸ«¢ðŸ¤­ðŸ¤«ðŸ¤¥ðŸ˜¶ðŸ˜ðŸ˜‘ðŸ˜¬ðŸ« ðŸ«¨ðŸ™„ðŸ˜¯ðŸ˜¦ðŸ˜§ðŸ˜®ðŸ˜²ðŸ¥±ðŸ˜´ðŸ¤¤ðŸ˜ªðŸ˜µðŸ«¥ðŸ¤ðŸ¥´ðŸ¤¢ðŸ¤®ðŸ¤§ðŸ˜·ðŸ¤’ðŸ¤•ðŸ¤‘ðŸ¤ ðŸ˜ˆðŸ‘¿ðŸ‘¹ðŸ‘ºðŸ¤¡ðŸ’©ðŸ‘»ðŸ’€â˜ ðŸ‘½ðŸ‘¾ðŸ¤–ðŸŽƒðŸ˜ºðŸ˜¸ðŸ˜¹ðŸ˜»ðŸ˜¼ðŸ˜½ðŸ™€ðŸ˜¿ðŸ˜¾ðŸ«¶ðŸ¤²ðŸ‘ðŸ™ŒðŸ‘ðŸ¤ðŸ‘ðŸ‘ŽðŸ‘ŠâœŠðŸ¤›ðŸ¤œðŸ¤žâœŒðŸ«°ðŸ¤ŸðŸ¤˜ðŸ‘ŒðŸ¤ŒðŸ¤ðŸ‘ˆðŸ‘‰ðŸ‘†ðŸ–•ðŸ‘‡â˜ðŸ«µðŸ‘‹ðŸ¤šðŸ–âœ‹ðŸ––ðŸ«³ðŸ«´ðŸ‘ŠðŸ‘ðŸ”¥â¤ðŸ’›ðŸ’šðŸ’™ðŸ’œðŸ–¤ðŸ¤ðŸ¤ŽðŸ’”â£ðŸ’•ðŸ’žðŸ’“ðŸ’—ðŸ’–ðŸ’˜ðŸ’ðŸ†ðŸŽ¯ðŸŽ®ðŸŽ²ðŸŽ°ðŸŽªðŸŽ¨ðŸŽ­ðŸŽ¬ðŸŽ¤ðŸŽ§ðŸŽ¼ðŸŽµðŸŽ¶ðŸ•ðŸ¶ðŸ©ðŸ¦®ðŸ•â€ðŸ¦ºðŸ¾ðŸ’Žâœ¨ðŸŒŸâ­ðŸ’«ðŸŽ‰ðŸŽŠðŸª„')
         is_emoji_only = all(c in emoji_chars or c == ' ' for c in message)
 
 
@@ -1418,7 +1418,7 @@ async def verify_extra_life_payment(request: ExtraLifeVerifyRequest):
         if not purchase:
             raise HTTPException(status_code=404, detail="Purchase not found or already processed")
         
-        # Use cost_doge as the floor — any amount >= cost_doge is valid.
+        # Use cost_doge as the floor â€” any amount >= cost_doge is valid.
         # The unique_amount is only for auto-detection matching, not for rejecting valid payments.
         expected_amount = purchase["cost_doge"]
         
@@ -1678,7 +1678,7 @@ async def get_player_weekly_stats(address: str):
         avg_treats_per_day = total_treats / 7 if total_treats > 0 else 0
         avg_points_per_day = total_points / 7 if total_points > 0 else 0
         
-        # Get player rank — only count players who have created treats
+        # Get player rank â€” only count players who have created treats
         leaderboard_cursor = db.players.find(
             {
                 "total_treats_created": {"$gt": 0},
@@ -1695,6 +1695,44 @@ async def get_player_weekly_stats(address: str):
                 player_rank = idx + 1
                 break
         
+        # â”€â”€ Arena & bonus activity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # Participation = arena entries the player has ever joined.
+        # Wins = settled arena sessions where this player finished #1.
+        arena_participations = await db.arena_entries.count_documents({"player_address": address})
+        arena_wins = await db.arena_sessions.count_documents({"status": "settled", "winner_address": address})
+        arena_losses = max(arena_participations - arena_wins, 0)
+        arena_win_rate = round((arena_wins / arena_participations) * 100) if arena_participations > 0 else 0
+
+        # Total arena reward points earned across all settled sessions.
+        arena_points_earned = 0
+        try:
+            arena_reward_pipeline = [
+                {"$match": {"status": "settled", "final_rewards.address": address}},
+                {"$unwind": "$final_rewards"},
+                {"$match": {"final_rewards.address": address}},
+                {"$group": {"_id": None, "total": {"$sum": {"$ifNull": ["$final_rewards.points", 0]}}}}
+            ]
+            arena_reward_res = await db.arena_sessions.aggregate(arena_reward_pipeline).to_list(1)
+            if arena_reward_res:
+                arena_points_earned = arena_reward_res[0].get("total", 0)
+        except Exception:
+            arena_points_earned = 0
+
+        # Kernel-of-Wow bonus points earned (special ingredient holder records).
+        kernel_bonus_total = 0
+        try:
+            bonus_pipeline = [
+                {"$match": {"player_address": address}},
+                {"$group": {"_id": None, "total": {"$sum": {"$ifNull": ["$total_bonus_earned", 0]}}}}
+            ]
+            bonus_res = await db.special_ingredient_holders.aggregate(bonus_pipeline).to_list(1)
+            if bonus_res:
+                kernel_bonus_total = bonus_res[0].get("total", 0)
+        except Exception:
+            kernel_bonus_total = 0
+
+        vip_bonus = 500 if player.get("vip_bonus_claimed") else 0
+
         # Serialize player data (exclude _id)
         player_data = {
             "nickname": player.get("nickname", f"Scientist"),
@@ -1725,6 +1763,18 @@ async def get_player_weekly_stats(address: str):
                 "avg_points_per_day": round(avg_points_per_day, 1)
             },
             "rarity_breakdown": rarity_counts,
+            "arena": {
+                "participations": arena_participations,
+                "wins": arena_wins,
+                "losses": arena_losses,
+                "win_rate": arena_win_rate,
+                "points_earned": arena_points_earned
+            },
+            "bonuses": {
+                "kernel_bonus_total": kernel_bonus_total,
+                "vip_bonus": vip_bonus,
+                "total": kernel_bonus_total + vip_bonus
+            },
             "streak": {
                 "current": streak_info.get("current_streak", 0),
                 "longest": streak_info.get("longest_streak", 0),
@@ -1874,7 +1924,7 @@ async def select_player_character(address: str, character_id: str):
         }
     )
     
-    logger.info(f"🧪 Character selected: {address} chose {character_id}")
+    logger.info(f"ðŸ§ª Character selected: {address} chose {character_id}")
     
     return {
         "success": True, 
@@ -1986,7 +2036,7 @@ async def update_profile_image(address: str, data: dict):
                 {"$set": {"profile_image": image_data, "last_active": datetime.now(timezone.utc).isoformat()}}
             )
         else:
-            # No existing player matched at all — create a new wallet-style record.
+            # No existing player matched at all â€” create a new wallet-style record.
             # (Telegram/guest players should already exist via registration, so this
             # path is effectively wallet-only.)
             await db.players.insert_one({
@@ -2046,7 +2096,7 @@ async def credit_existing_nft_holders():
                 "old_points": current_points,
                 "new_points": current_points + 500
             })
-            logger.info(f"🌟 Credited VIP bonus to {address}: {current_points} -> {current_points + 500}")
+            logger.info(f"ðŸŒŸ Credited VIP bonus to {address}: {current_points} -> {current_points + 500}")
         
         return {
             "success": True,
@@ -2088,7 +2138,7 @@ async def credit_single_nft_holder(address: str):
                 "can_convert_points": True
             }
             await db.players.insert_one(new_player)
-            logger.info(f"🌟 Created new VIP player with bonus: {address}")
+            logger.info(f"ðŸŒŸ Created new VIP player with bonus: {address}")
             return {
                 "success": True,
                 "address": address,
@@ -2129,7 +2179,7 @@ async def credit_single_nft_holder(address: str):
             }
         )
         
-        logger.info(f"🌟 Manually credited VIP bonus to {address}: {current_points} -> {current_points + 500}")
+        logger.info(f"ðŸŒŸ Manually credited VIP bonus to {address}: {current_points} -> {current_points + 500}")
         
         return {
             "success": True,
@@ -2183,7 +2233,7 @@ async def remove_test_users():
                 "nickname": nickname,
                 "points": points
             })
-            logger.info(f"🗑️ Removed test user: {address} ({nickname})")
+            logger.info(f"ðŸ—‘ï¸ Removed test user: {address} ({nickname})")
         
         return {
             "success": True,
@@ -2332,7 +2382,7 @@ async def verify_nft_on_blockchain(address: str):
                             "$inc": {"points": 500}
                         }
                     )
-                    logger.info(f"🌟 DogeOS verified & credited: {address}")
+                    logger.info(f"ðŸŒŸ DogeOS verified & credited: {address}")
                     return {
                         "address": address,
                         "is_holder": True,
@@ -2461,7 +2511,7 @@ async def verify_all_nft_holders_blockchain():
                             })
                             logger.info(f"NFT batch verify: Credited {address} with 500 bonus points")
                         else:
-                            # Already credited — ensure flags are correct
+                            # Already credited â€” ensure flags are correct
                             await db.players.update_one(
                                 {"address": address},
                                 {"$set": {"is_nft_holder": True, "is_vip": True}}
@@ -2508,7 +2558,7 @@ SOLANA_RPC_URL = f"https://mainnet.helius-rpc.com/?api-key={HELIUS_API_KEY}" if 
 
 
 if not HELIUS_API_KEY:
-    logging.warning("⚠️ HELIUS_API_KEY not set - using public Solana RPC (rate limited)")
+    logging.warning("âš ï¸ HELIUS_API_KEY not set - using public Solana RPC (rate limited)")
 
 
 
@@ -2628,7 +2678,7 @@ async def verify_dogeonews_token_holder(player_address: str, solana_address: str
                         "can_convert_points": True  # Token holders can convert to $LAB
                     }}
                 )
-                logger.info(f"✅ Verified $DOGEONEWS holder: {player_address} with {token_balance:,.0f} tokens")
+                logger.info(f"âœ… Verified $DOGEONEWS holder: {player_address} with {token_balance:,.0f} tokens")
                 return {
                     "success": True,
                     "player_address": player_address,
@@ -2825,7 +2875,7 @@ async def scan_and_credit_all_nft_holders():
             raise HTTPException(status_code=500, detail="Failed to fetch NFT holders from DogeOS")
         
         nft_holders = {h["address"].lower(): int(h["value"]) for h in data.get("result", [])}
-        logger.info(f"🔍 Found {len(nft_holders)} DogeFood NFT holders on DogeOS")
+        logger.info(f"ðŸ” Found {len(nft_holders)} DogeFood NFT holders on DogeOS")
         
         credited = []
         already_credited = []
@@ -2867,7 +2917,7 @@ async def scan_and_credit_all_nft_holders():
                             "nft_count": nft_count,
                             "action": "credited"
                         })
-                        logger.info(f"🌟 Credited: {holder_address} ({player.get('nickname')})")
+                        logger.info(f"ðŸŒŸ Credited: {holder_address} ({player.get('nickname')})")
                     else:
                         # Ensure VIP status is set
                         await db.players.update_one(
@@ -3151,14 +3201,14 @@ async def collect_treat(treat_id: str, data: dict):
                 points_bonus_percent = character_bonuses.get("points_bonus", 0.20)
                 points_bonus = int(base_points_reward * points_bonus_percent)
                 bonus_details["luna_points_bonus"] = points_bonus
-                logger.info(f"🌙 Luna bonus: +{points_bonus} points ({points_bonus_percent*100}%) for {player_address}")
+                logger.info(f"ðŸŒ™ Luna bonus: +{points_bonus} points ({points_bonus_percent*100}%) for {player_address}")
             
             # Max: +10% Experience bonus
             if selected_character == "max" or character_bonuses.get("experience_bonus"):
                 xp_bonus_percent = character_bonuses.get("experience_bonus", 0.10)
                 xp_bonus = int(base_xp_reward * xp_bonus_percent)
                 bonus_details["max_xp_bonus"] = xp_bonus
-                logger.info(f"🔥 Max bonus: +{xp_bonus} XP ({xp_bonus_percent*100}%) for {player_address}")
+                logger.info(f"ðŸ”¥ Max bonus: +{xp_bonus} XP ({xp_bonus_percent*100}%) for {player_address}")
         
         # Calculate final rewards with bonuses
         happy_hour_bonus = 0
@@ -3170,20 +3220,20 @@ async def collect_treat(treat_id: str, data: dict):
         final_points_reward = base_points_reward + points_bonus + happy_hour_bonus
         final_xp_reward = base_xp_reward + xp_bonus
 
-        # ── Apply heat event collect bonuses ──────────────────────────────
+        # â”€â”€ Apply heat event collect bonuses â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         try:
             collect_heat_id = await arena_system.get_active_heat_event_id(db)
             if collect_heat_id == "golden_hour":
                 original_pts = final_points_reward
                 final_points_reward = final_points_reward * 2
                 bonus_details["golden_hour_bonus"] = final_points_reward - original_pts
-                logger.info(f"✨ Heat: Golden Hour — points doubled: {original_pts} → {final_points_reward}")
+                logger.info(f"âœ¨ Heat: Golden Hour â€” points doubled: {original_pts} â†’ {final_points_reward}")
             elif collect_heat_id == "crit_state":
                 # Critical Mix: +50% points bonus on collect in addition to higher rarity at brew
                 original_pts = final_points_reward
                 final_points_reward = int(final_points_reward * 1.5)
                 bonus_details["crit_state_bonus"] = final_points_reward - original_pts
-                logger.info(f"✨ Heat: Critical Mix — +50% points: {original_pts} → {final_points_reward}")
+                logger.info(f"âœ¨ Heat: Critical Mix â€” +50% points: {original_pts} â†’ {final_points_reward}")
         except Exception as _heat_err:
             logger.warning(f"Heat event check failed (non-fatal): {_heat_err}")
         
@@ -3235,7 +3285,7 @@ async def collect_treat(treat_id: str, data: dict):
             # Run both updates in parallel
             await asyncio.gather(treat_update_task, player_update_task)
 
-            # Credit arena leaderboard score (non-fatal — never block a collect)
+            # Credit arena leaderboard score (non-fatal â€” never block a collect)
             try:
                 await arena_system.credit_arena_score(
                     db,
@@ -3312,7 +3362,7 @@ async def merge_duplicate_telegram_players(admin_key: str = None, dry_run: bool 
         await asyncio.sleep(2)
         raise HTTPException(status_code=403, detail="Unauthorized: Invalid admin key")
     # Bucket every doc that looks like a TG player by telegram_id.
-    # IMPORTANT: include the raw _id field — some historical docs were inserted
+    # IMPORTANT: include the raw _id field â€” some historical docs were inserted
     # without the application-level `id` (uuid) field, so we must address them
     # by their ObjectId instead.
     buckets = {}  # int_tg_id -> [docs]
@@ -3339,7 +3389,7 @@ async def merge_duplicate_telegram_players(admin_key: str = None, dry_run: bool 
     merged_summary = []
     for tg_int, docs in buckets.items():
         if len(docs) < 2:
-            continue  # already a single doc — nothing to merge
+            continue  # already a single doc â€” nothing to merge
 
         # Choose canonical doc: highest points, then most treats, then most recent
         def _rank(d):
@@ -3357,7 +3407,7 @@ async def merge_duplicate_telegram_players(admin_key: str = None, dry_run: bool 
         total_xp = int(keeper.get("experience") or 0)
         merged_treats = list(keeper.get("created_treats") or [])
         keeper_id = keeper.get("id")
-        keeper_oid = keeper.get("_id")  # always present — MongoDB ObjectId
+        keeper_oid = keeper.get("_id")  # always present â€” MongoDB ObjectId
 
         for loser in losers:
             total_points += int(loser.get("points") or 0)
@@ -3420,7 +3470,7 @@ async def merge_duplicate_telegram_players(admin_key: str = None, dry_run: bool 
                         {"$set": {"address": None}}
                     )
 
-                # 2. Update keeper — address it by ObjectId because `id` may
+                # 2. Update keeper â€” address it by ObjectId because `id` may
                 #    be null on legacy docs. Auto-fill a fresh uuid `id` if
                 #    the keeper lacks one so future address-based filters work.
                 keeper_filter = {"_id": keeper_oid} if keeper_oid is not None else {"id": keeper_id}
@@ -3447,7 +3497,7 @@ async def merge_duplicate_telegram_players(admin_key: str = None, dry_run: bool 
             except Exception as merge_exc:
                 merged_summary[-1]["status"] = f"failed: {type(merge_exc).__name__}: {str(merge_exc)[:300]}"
                 logger.error(f"Migration failed for tg_{tg_int}: {merge_exc}")
-                # Do NOT abort the loop — keep merging the rest.
+                # Do NOT abort the loop â€” keep merging the rest.
                 continue
 
     return {
@@ -3465,7 +3515,7 @@ async def normalize_telegram_creator_addresses(admin_key: str = None, dry_run: b
 
     This is the post-migration cleanup for documents written by frontend
     builds that used the lowercase form. Run once after deploying the
-    uppercase-`TG_` App.js. Safe + idempotent — re-running on a clean DB is
+    uppercase-`TG_` App.js. Safe + idempotent â€” re-running on a clean DB is
     a no-op.
     """
     if not admin_key or admin_key != ADMIN_SECRET:
@@ -3474,7 +3524,7 @@ async def normalize_telegram_creator_addresses(admin_key: str = None, dry_run: b
 
     summary = {"dry_run": dry_run, "collections": {}}
 
-    # ── treats ──────────────────────────────────────────────────────
+    # â”€â”€ treats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     tg_treat_addrs = await db.treats.distinct(
         "creator_address", {"creator_address": {"$regex": "^tg_"}}
     )
@@ -3494,7 +3544,7 @@ async def normalize_telegram_creator_addresses(admin_key: str = None, dry_run: b
         "changes": treat_changes,
     }
 
-    # ── activity_feed ───────────────────────────────────────────────
+    # â”€â”€ activity_feed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     tg_feed_addrs = await db.activity_feed.distinct(
         "player_address", {"player_address": {"$regex": "^tg_"}}
     )
@@ -3531,7 +3581,7 @@ async def get_leaderboard(limit: int = 200):
 
 
     if not active_creator_addresses:
-        # Season just started — no treats collected yet, show all registered players
+        # Season just started â€” no treats collected yet, show all registered players
         query = {
             "$or": [
                 {"address": {"$nin": [None, "", "GUEST_USER"]}},
@@ -3615,7 +3665,7 @@ async def get_leaderboard(limit: int = 200):
         if existing is None:
             seen_tg[tg_key] = p
         else:
-            # Keep whichever doc has more points (tie → more level → has address)
+            # Keep whichever doc has more points (tie â†’ more level â†’ has address)
             def _rank(d):
                 return (
                     int(d.get("points") or 0),
@@ -3830,7 +3880,7 @@ async def verify_player_nft(address: str, data: dict = None):
         is_holder = data.get("is_nft_holder", False)
         nft_balance = data.get("nft_balance", 0)
         
-        logger.info(f"🔍 Verifying NFT status for {address}: holder={is_holder}, balance={nft_balance}")
+        logger.info(f"ðŸ” Verifying NFT status for {address}: holder={is_holder}, balance={nft_balance}")
         
         # Check if player exists
         existing_player = await db.players.find_one({"address": address})
@@ -3852,7 +3902,7 @@ async def verify_player_nft(address: str, data: dict = None):
                             "$inc": {"points": 500}
                         }
                     )
-                    logger.info(f"🌟 VIP bonus awarded to existing player: {address} - 500 points!")
+                    logger.info(f"ðŸŒŸ VIP bonus awarded to existing player: {address} - 500 points!")
                     return {
                         "address": address,
                         "is_nft_holder": True,
@@ -3956,7 +4006,7 @@ async def verify_nft_ownership(address: str, is_holder: str = "false"):
                             "$inc": {"points": 500}
                         }
                     )
-                    logger.info(f"🌟 VIP bonus awarded to existing player: {address} - 500 points!")
+                    logger.info(f"ðŸŒŸ VIP bonus awarded to existing player: {address} - 500 points!")
                     return {
                         "address": address,
                         "is_nft_holder": True,
@@ -3989,7 +4039,7 @@ async def verify_nft_ownership(address: str, is_holder: str = "false"):
                     "can_convert_points": True
                 }
                 await db.players.insert_one(new_player)
-                logger.info(f"🌟 New VIP player created: {address} - 500 bonus points!")
+                logger.info(f"ðŸŒŸ New VIP player created: {address} - 500 bonus points!")
                 return {
                     "address": address,
                     "is_nft_holder": True,
@@ -4192,7 +4242,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         
         player, recent_treats_24h = await asyncio.gather(player_task, treats_task)
         
-        # Anti-cheat validation — pass prefetched data to avoid re-querying
+        # Anti-cheat validation â€” pass prefetched data to avoid re-querying
         cheat_check = await anti_cheat_system.validate_treat_creation(
             treat_data.creator_address,
             {"ingredients": treat_data.ingredients, "level": treat_data.player_level},
@@ -4230,22 +4280,22 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             # Rex: +15% rare treat chance
             if selected_character == "rex" or character_bonuses.get("rare_chance_bonus"):
                 rare_chance_bonus = character_bonuses.get("rare_chance_bonus", 0.15)
-                logger.info(f"🦖 Rex bonus: +{rare_chance_bonus*100}% rare chance for {treat_data.creator_address}")
+                logger.info(f"ðŸ¦– Rex bonus: +{rare_chance_bonus*100}% rare chance for {treat_data.creator_address}")
         
-        # ── Apply active heat event modifiers ─────────────────────────────
+        # â”€â”€ Apply active heat event modifiers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         heat_event_id = await arena_system.get_active_heat_event_id(db)
         heat_rare_bonus   = 0.0
         heat_timer_factor = 1.0  # multiplier on brewing time (1.0 = no change)
 
         if heat_event_id == "lab_surge":
             heat_rare_bonus = 0.10
-            logger.info("🧪 Heat: Lab Surge — +10% rare chance active")
+            logger.info("ðŸ§ª Heat: Lab Surge â€” +10% rare chance active")
         elif heat_event_id == "crit_state":
             heat_rare_bonus = 0.20
-            logger.info("🔴 Heat: Critical Mix — +20% rare chance active")
+            logger.info("ðŸ”´ Heat: Critical Mix â€” +20% rare chance active")
         elif heat_event_id == "overclock":
             heat_timer_factor = 0.50
-            logger.info("⚡ Heat: Overclock Mode — brewing time halved")
+            logger.info("âš¡ Heat: Overclock Mode â€” brewing time halved")
 
         rare_chance_bonus = min(rare_chance_bonus + heat_rare_bonus, 0.60)  # cap at 60%
 
@@ -4260,7 +4310,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             original_xp = treat_outcome.get("xp_reward", 0)
             treat_outcome["xp_reward"] = int(original_xp * xp_multiplier)
             treat_outcome["streak_xp_bonus"] = treat_outcome["xp_reward"] - original_xp
-            logger.info(f"🔥 Streak XP bonus: {original_xp} -> {treat_outcome['xp_reward']} ({xp_multiplier}x)")
+            logger.info(f"ðŸ”¥ Streak XP bonus: {original_xp} -> {treat_outcome['xp_reward']} ({xp_multiplier}x)")
         
         # Apply streak brewing time reduction
         if brewing_reduction > 0:
@@ -4269,7 +4319,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             treat_outcome["timer_duration_seconds"] = int(original_timer * reduction_factor)
             treat_outcome["timer_duration_hours"] = treat_outcome["timer_duration_seconds"] / 3600
             treat_outcome["streak_time_reduction"] = original_timer - treat_outcome["timer_duration_seconds"]
-            logger.info(f"⏱️ Streak time reduction: {original_timer}s -> {treat_outcome['timer_duration_seconds']}s (-{brewing_reduction}%)")
+            logger.info(f"â±ï¸ Streak time reduction: {original_timer}s -> {treat_outcome['timer_duration_seconds']}s (-{brewing_reduction}%)")
         
         # Apply Overclock heat event timer reduction (stacks with streak reduction)
         if heat_timer_factor < 1.0:
@@ -4277,16 +4327,16 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             treat_outcome["timer_duration_seconds"] = max(60, int(original_timer * heat_timer_factor))
             treat_outcome["timer_duration_hours"] = treat_outcome["timer_duration_seconds"] / 3600
             treat_outcome["heat_time_reduction"] = original_timer - treat_outcome["timer_duration_seconds"]
-            logger.info(f"⚡ Overclock applied: {original_timer}s → {treat_outcome['timer_duration_seconds']}s")
+            logger.info(f"âš¡ Overclock applied: {original_timer}s â†’ {treat_outcome['timer_duration_seconds']}s")
 
-        # ── CRITICAL: Recalculate ready_at from the FINAL timer duration ──────
+        # â”€â”€ CRITICAL: Recalculate ready_at from the FINAL timer duration â”€â”€â”€â”€â”€â”€
         # game_engine sets ready_at using the original timer before any reductions.
         # Streak and Overclock both update timer_duration_seconds but never fix
-        # ready_at — so the brewing countdown runs to the wrong time.
+        # ready_at â€” so the brewing countdown runs to the wrong time.
         # Recalculate here so what's stored in DB matches the reduced timer.
         final_timer_seconds = treat_outcome.get("timer_duration_seconds", 3600)
         treat_outcome["ready_at"] = int(datetime.now(timezone.utc).timestamp()) + final_timer_seconds
-        logger.info(f"✅ ready_at recalculated: now + {final_timer_seconds}s")
+        logger.info(f"âœ… ready_at recalculated: now + {final_timer_seconds}s")
 
         # Get current season info
         current_season = season_manager.get_season_info()
@@ -4362,7 +4412,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             "points_reward": final_points_reward,
             "xp_reward": final_xp_reward,
             "kernel_bonus": kernel_bonus,  # Store bonus info in treat
-            "rarity_emoji": treat_outcome.get("rarity_emoji", "⚪"),
+            "rarity_emoji": treat_outcome.get("rarity_emoji", "âšª"),
             "rarity_color": treat_outcome.get("rarity_color", "#9CA3AF"),
             "nft_metadata": {
                 "name": f"{treat_outcome['rarity']} DogeFood Treat",
@@ -4479,7 +4529,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
         # Build kernel bonus message
         kernel_message = ""
         if kernel_bonus:
-            kernel_message = f" 🌟 KERNEL OF WOW {kernel_bonus['tier'].upper()}! +{kernel_bonus['bonus_percent']}% bonus!"
+            kernel_message = f" ðŸŒŸ KERNEL OF WOW {kernel_bonus['tier'].upper()}! +{kernel_bonus['bonus_percent']}% bonus!"
         
         return {
             "treat": treat_response,
@@ -4496,7 +4546,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             "daily_status": daily_status,
             "streak": streak_result,
             "kernel_bonus": kernel_bonus,
-            "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']:.1f} hours.{streak_message}{kernel_message}{'(Offchain storage)' if season_id == 1 else ''}{' 🎉 Sack completed! +50 XP bonus!' if sack_just_completed else ''}"
+            "message": f"Season {season_id} {treat_outcome['rarity']} treat created! Brewing for {treat_outcome['timer_duration_hours']:.1f} hours.{streak_message}{kernel_message}{'(Offchain storage)' if season_id == 1 else ''}{' ðŸŽ‰ Sack completed! +50 XP bonus!' if sack_just_completed else ''}"
         }
         
     except HTTPException:
@@ -4895,7 +4945,7 @@ async def register_guest_player(request: Request):
         }
         
         await db.players.insert_one(player_data)
-        logger.info(f"👤 Guest player registered: {username} ({guest_id})")
+        logger.info(f"ðŸ‘¤ Guest player registered: {username} ({guest_id})")
         
         return {
             "success": True,
@@ -5013,7 +5063,7 @@ async def register_firebase_player(request: Request):
         }
         
         await db.players.insert_one(player_data)
-        logger.info(f"🔥 Firebase player registered: {final_username} ({provider}) - {email}")
+        logger.info(f"ðŸ”¥ Firebase player registered: {final_username} ({provider}) - {email}")
         
         return {
             "success": True,
@@ -5076,7 +5126,7 @@ async def link_nft_wallet(request: Request):
             update_data["is_vip"] = True
             update_data["vip_bonus_claimed"] = True
             update_data["points"] = player.get("points", 0) + 500
-            logger.info(f"🌟 VIP bonus awarded to {player.get('nickname')}: +500 points")
+            logger.info(f"ðŸŒŸ VIP bonus awarded to {player.get('nickname')}: +500 points")
         
         await db.players.update_one(
             {"id": player_id},
@@ -5123,7 +5173,7 @@ async def link_wallet_to_telegram(request: Request):
             raise HTTPException(status_code=401, detail="Invalid Telegram authentication")
         
         # Cryptographically verify that whoever sent this request actually
-        # controls `wallet_address` — without this, anyone could claim any
+        # controls `wallet_address` â€” without this, anyone could claim any
         # address was theirs just by sending a string in the request body.
         is_valid, error_reason = verify_wallet_signature(wallet_address, signature, message, telegram_id)
         if not is_valid:
@@ -5325,7 +5375,7 @@ async def delete_player(address: str, admin_key: str):
     # Delete their treats too
     treats_result = await db.treats.delete_many({"player_address": address})
     
-    logger.info(f"🗑️ Deleted player: {address} and {treats_result.deleted_count} treats")
+    logger.info(f"ðŸ—‘ï¸ Deleted player: {address} and {treats_result.deleted_count} treats")
     
     return {
         "message": f"Player deleted successfully",
@@ -5370,7 +5420,7 @@ async def cleanup_test_players(admin_key: str = None):
     test_addresses = [p["address"] for p in test_players]
     treats_result = await db.treats.delete_many({"player_address": {"$in": test_addresses}})
     
-    logger.info(f"🧹 Cleaned up {result.deleted_count} test players and {treats_result.deleted_count} treats")
+    logger.info(f"ðŸ§¹ Cleaned up {result.deleted_count} test players and {treats_result.deleted_count} treats")
     
     return {
         "message": f"Successfully cleaned up test players",
@@ -5502,7 +5552,7 @@ async def root():
 @app.get("/health")
 async def detailed_health():
     return {
-        "message": "🧪 DogeFood Lab API",
+        "message": "ðŸ§ª DogeFood Lab API",
         "version": "1.0.0",
         "docs": "/docs",
         "health": "/api/health"
@@ -5512,7 +5562,7 @@ async def detailed_health():
 # API Health check
 @api_router.get("/")
 async def api_root():
-    return {"message": "DogeFood Lab API is running! 🐕🧪"}
+    return {"message": "DogeFood Lab API is running! ðŸ•ðŸ§ª"}
 
 
 # ============================================
@@ -5525,13 +5575,13 @@ ADMIN_SECRET = os.environ.get("ADMIN_SECRET")
 if not ADMIN_SECRET:
     # Generate a secure random admin key if not provided
     ADMIN_SECRET = os.urandom(32).hex()
-    logging.warning(f"⚠️ ADMIN_SECRET not set - generated temporary key (set env var in production)")
+    logging.warning(f"âš ï¸ ADMIN_SECRET not set - generated temporary key (set env var in production)")
 
 
 @api_router.post("/admin/season2-reset")
 async def season2_reset(admin_key: str = None):
     """
-    Season 1 → Season 2 transition:
+    Season 1 â†’ Season 2 transition:
       1. Snapshot each player's current rank on the leaderboard
       2. Calculate their s1_lab_tokens using the same formula as Leaderboard.jsx calcRewards():
            rank 1-10:  floor(6_000_000 * ((11 - rank) / 55) * 1.5)
@@ -5548,7 +5598,7 @@ async def season2_reset(admin_key: str = None):
     try:
         now = datetime.now(timezone.utc)
 
-        # ── Mirror of Leaderboard.jsx constants ──────────────────────────
+        # â”€â”€ Mirror of Leaderboard.jsx constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         SEASON_1_POOL = 20_000_000
         TOP10_POOL  = SEASON_1_POOL * 0.30   # 6 000 000
         TOP20_POOL  = SEASON_1_POOL * 0.20   # 4 000 000
@@ -5564,7 +5614,7 @@ async def season2_reset(admin_key: str = None):
                 return int(TOP50_POOL * ((51 - rank) / 465) * 0.2)
             return 0
 
-        # ── 1. Build ranked leaderboard (same logic as /leaderboard) ─────
+        # â”€â”€ 1. Build ranked leaderboard (same logic as /leaderboard) â”€â”€â”€â”€â”€
         active_addresses = await db.treats.distinct(
             "creator_address",
             {
@@ -5586,7 +5636,7 @@ async def season2_reset(admin_key: str = None):
             if not (p.get("vip_bonus_claimed") and p.get("points", 0) <= 500)
         ]
 
-        # ── 2. Write s1 snapshot + reset points/xp/level for ranked ──────
+        # â”€â”€ 2. Write s1 snapshot + reset points/xp/level for ranked â”€â”€â”€â”€â”€â”€
         players_with_lab = 0
         for idx, player in enumerate(ranked_players):
             rank = idx + 1
@@ -5609,7 +5659,7 @@ async def season2_reset(admin_key: str = None):
             if lab > 0:
                 players_with_lab += 1
 
-        # ── 3. Reset ALL remaining players (not on leaderboard) ───────────
+        # â”€â”€ 3. Reset ALL remaining players (not on leaderboard) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         ranked_addrs = [p["address"] for p in ranked_players]
         await db.players.update_many(
             {"address": {"$nin": ranked_addrs}},
@@ -5624,7 +5674,7 @@ async def season2_reset(admin_key: str = None):
             }}
         )
 
-        # ── 4. Season markers ─────────────────────────────────────────────
+        # â”€â”€ 4. Season markers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         await db.seasons.update_one(
             {"season_id": 1},
             {"$set": {"status": "settled", "ended_at": now.isoformat()}},
@@ -5634,7 +5684,7 @@ async def season2_reset(admin_key: str = None):
             {"season_id": 2},
             {"$set": {
                 "season_id":  2,
-                "name":       "Season 2 — Reactor",
+                "name":       "Season 2 â€” Reactor",
                 "status":     "active",
                 "started_at": now.isoformat(),
             }},
@@ -5642,13 +5692,13 @@ async def season2_reset(admin_key: str = None):
         )
 
         logger.info(
-            f"🚀 SEASON 2 RESET — {len(ranked_players)} ranked reset, "
+            f"ðŸš€ SEASON 2 RESET â€” {len(ranked_players)} ranked reset, "
             f"{players_with_lab} players earned $LAB"
         )
 
         return {
             "success":          True,
-            "message":          "🚀 Season 2 has begun! All points, XP and levels reset.",
+            "message":          "ðŸš€ Season 2 has begun! All points, XP and levels reset.",
             "ranked_players":   len(ranked_players),
             "players_with_lab": players_with_lab,
             "note":             "LAB amounts calculated from Leaderboard.jsx calcRewards()",
@@ -5858,11 +5908,11 @@ async def reset_leaderboard(admin_key: str = None):
             upsert=True
         )
         
-        logger.info(f"🚀 SEASON 1 OFFICIALLY STARTED! Leaderboard reset. {result.modified_count} players reset, {vip_result.modified_count} VIP bonuses awarded.")
+        logger.info(f"ðŸš€ SEASON 1 OFFICIALLY STARTED! Leaderboard reset. {result.modified_count} players reset, {vip_result.modified_count} VIP bonuses awarded.")
         
         return {
             "success": True,
-            "message": "🚀 Season 1 officially started! Leaderboard has been reset.",
+            "message": "ðŸš€ Season 1 officially started! Leaderboard has been reset.",
             "players_reset": result.modified_count,
             "vip_bonuses_awarded": vip_result.modified_count,
             "treats_cleared": treats_deleted.deleted_count,
@@ -6065,14 +6115,14 @@ async def delete_chat_message(message_id: str, sender_address: str):
 
 
 # ============================================
-# NOTIFICATION SYSTEM ENDPOINTS  (v2 — Web Push + Telegram)
+# NOTIFICATION SYSTEM ENDPOINTS  (v2 â€” Web Push + Telegram)
 # ============================================
 #
 # What this section does:
-#   • Telegram notifications work via the existing python-telegram-bot library.
+#   â€¢ Telegram notifications work via the existing python-telegram-bot library.
 #     We additionally probe the bot+user once on subscribe so we can tell the
 #     UI to surface a "Start bot" deep link if the user has never /start'd it.
-#   • Browser notifications now use real Web Push (VAPID + service worker)
+#   â€¢ Browser notifications now use real Web Push (VAPID + service worker)
 #     via the `pywebpush` library. Both MyDoge in-app browser and regular
 #     browsers will show a native permission prompt and then receive pushes
 #     even when the tab is closed.
@@ -6091,8 +6141,8 @@ async def delete_chat_message(message_id: str, sender_address: str):
 #   pip install pywebpush
 #   python -c "from py_vapid import Vapid01; v=Vapid01(); v.generate_keys();
 #              print('PUBLIC:', v.public_pem().decode()); print('PRIVATE:', v.private_pem().decode())"
-#   …or use https://web-push-codelab.glitch.me/ which gives the URL-safe
-#   base64 form directly. You already provided the public key — re-generate
+#   â€¦or use https://web-push-codelab.glitch.me/ which gives the URL-safe
+#   base64 form directly. You already provided the public key â€” re-generate
 #   if you don't have the matching private key.
 
 from pywebpush import webpush, WebPushException  # noqa: E402
@@ -6124,7 +6174,7 @@ class ScheduleNotification(BaseModel):
     reset_time: Optional[str] = None
 
 
-# ── Public config endpoint (consumed by NotificationContext on mount) ─────────
+# â”€â”€ Public config endpoint (consumed by NotificationContext on mount) â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @api_router.get("/notifications/config")
 async def get_notifications_config():
     return {
@@ -6139,7 +6189,7 @@ async def get_vapid_key():
     return {"publicKey": VAPID_PUBLIC_KEY}
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async def _try_send_telegram_welcome(telegram_id: int) -> bool:
     """Send the welcome message via Telegram. Returns False if the user
     has not /start'd the bot yet (Telegram refuses with 'Forbidden:
@@ -6152,11 +6202,11 @@ async def _try_send_telegram_welcome(telegram_id: int) -> bool:
         await bot.send_message(
             chat_id=telegram_id,
             text=(
-                "🔔 Notifications enabled!\n\n"
+                "ðŸ”” Notifications enabled!\n\n"
                 "You'll be notified when:\n"
-                "✅ Your treats are ready to collect\n"
-                "🔄 Your daily limit resets\n\n"
-                "Happy brewing! 🧪"
+                "âœ… Your treats are ready to collect\n"
+                "ðŸ”„ Your daily limit resets\n\n"
+                "Happy brewing! ðŸ§ª"
             ),
         )
         return True
@@ -6170,7 +6220,7 @@ async def send_web_push(subscription_info: dict, title: str, body: str,
     """Send a Web Push notification. Returns False if the subscription
     is expired / invalid so the caller can mark it inactive."""
     if not VAPID_PRIVATE_KEY:
-        logger.warning("VAPID_PRIVATE_KEY not configured — skipping web push")
+        logger.warning("VAPID_PRIVATE_KEY not configured â€” skipping web push")
         return False
     if not subscription_info or not subscription_info.get("endpoint"):
         return False
@@ -6183,7 +6233,7 @@ async def send_web_push(subscription_info: dict, title: str, body: str,
     })
 
     try:
-        # pywebpush is synchronous — run it in a thread so we don't block.
+        # pywebpush is synchronous â€” run it in a thread so we don't block.
         await asyncio.to_thread(
             webpush,
             subscription_info=subscription_info,
@@ -6195,7 +6245,7 @@ async def send_web_push(subscription_info: dict, title: str, body: str,
     except WebPushException as e:
         status = getattr(getattr(e, "response", None), "status_code", None)
         if status in (404, 410):
-            # Subscription gone — caller should mark inactive.
+            # Subscription gone â€” caller should mark inactive.
             logger.info(f"Web push subscription expired (status {status})")
             return False
         logger.warning(f"WebPushException: {e}")
@@ -6205,7 +6255,7 @@ async def send_web_push(subscription_info: dict, title: str, body: str,
         return False
 
 
-# ── Telegram subscribe / unsubscribe / preferences ────────────────────────────
+# â”€â”€ Telegram subscribe / unsubscribe / preferences â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @api_router.post("/notifications/telegram/subscribe")
 async def subscribe_telegram_notifications(data: NotificationSubscription):
     try:
@@ -6227,7 +6277,7 @@ async def subscribe_telegram_notifications(data: NotificationSubscription):
             upsert=True,
         )
 
-        # Probe whether the user has /start'd the bot — if yes, send welcome.
+        # Probe whether the user has /start'd the bot â€” if yes, send welcome.
         # If not, return a flag so the UI can show "Open bot & press Start".
         delivered = await _try_send_telegram_welcome(data.telegram_id)
 
@@ -6274,7 +6324,7 @@ async def update_telegram_preferences(data: NotificationSubscription):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── Web Push subscribe / unsubscribe / preferences ────────────────────────────
+# â”€â”€ Web Push subscribe / unsubscribe / preferences â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @api_router.post("/notifications/web/subscribe")
 async def subscribe_web_notifications(data: NotificationSubscription):
     try:
@@ -6336,7 +6386,7 @@ async def update_web_preferences(data: NotificationSubscription):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── Schedule endpoints (called from GameLab when a treat starts brewing) ──────
+# â”€â”€ Schedule endpoints (called from GameLab when a treat starts brewing) â”€â”€â”€â”€â”€â”€
 @api_router.post("/notifications/schedule/treat-ready")
 async def schedule_treat_ready_notification(data: ScheduleNotification, background_tasks: BackgroundTasks):
     try:
@@ -6392,10 +6442,10 @@ async def schedule_limit_reset_notification(data: ScheduleNotification, backgrou
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── Delivery (now supports BOTH Telegram and Web Push) ────────────────────────
+# â”€â”€ Delivery (now supports BOTH Telegram and Web Push) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async def send_scheduled_notification(notification_id: str):
     """Send a single scheduled notification immediately if its target time has
-    elapsed. Idempotent — marks `sent: True` after success."""
+    elapsed. Idempotent â€” marks `sent: True` after success."""
     try:
         notification = await db.scheduled_notifications.find_one({"id": notification_id})
         if not notification or notification.get("sent"):
@@ -6425,16 +6475,16 @@ async def send_scheduled_notification(notification_id: str):
 
         # Build message text.
         if notification["type"] == "treat_ready":
-            title = "🍖 Treat Ready!"
+            title = "ðŸ– Treat Ready!"
             body = (
-                f"Your {notification.get('treat_name', 'treat')} is ready to collect — "
+                f"Your {notification.get('treat_name', 'treat')} is ready to collect â€” "
                 f"head to the lab before it gets cold!"
             )
         else:
-            title = "🔄 Daily Limit Reset"
+            title = "ðŸ”„ Daily Limit Reset"
             body = "You can create more treats now. Time to brew!"
 
-        # ── Telegram delivery ───────────────────────────────────────────────
+        # â”€â”€ Telegram delivery â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if notification.get("telegram_id"):
             sub = await db.notification_subscriptions.find_one({
                 "telegram_id": notification["telegram_id"],
@@ -6465,12 +6515,12 @@ async def send_scheduled_notification(notification_id: str):
                 try:
                     bot = Bot(token=bot_token)
                     await bot.send_message(chat_id=notification["telegram_id"], text=f"{title}\n\n{body}")
-                    logger.info(f"📬 Telegram delivered: {notification_id}")
+                    logger.info(f"ðŸ“¬ Telegram delivered: {notification_id}")
                 except Exception as e:
                     logger.warning(f"Telegram send failed for {notification.get('telegram_id')}: {e}")
                     return  # don't mark sent, retry later
 
-        # ── Web push delivery ───────────────────────────────────────────────
+        # â”€â”€ Web push delivery â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         elif notification.get("player_address"):
             sub = await db.notification_subscriptions.find_one({
                 "player_address": notification["player_address"],
@@ -6499,7 +6549,7 @@ async def send_scheduled_notification(notification_id: str):
 
             subscription_info = sub.get("subscription")
             if not subscription_info:
-                # In-tab only fallback — there's no PushSubscription, so nothing
+                # In-tab only fallback â€” there's no PushSubscription, so nothing
                 # to send while the tab is closed. Mark sent.
                 await db.scheduled_notifications.update_one(
                     {"id": notification_id},
@@ -6524,7 +6574,7 @@ async def send_scheduled_notification(notification_id: str):
                     {"$set": {"sent": True, "skipped_reason": "push_failed"}},
                 )
                 return
-            logger.info(f"📬 Web push delivered: {notification_id}")
+            logger.info(f"ðŸ“¬ Web push delivered: {notification_id}")
 
         # Mark sent.
         await db.scheduled_notifications.update_one(
@@ -6538,7 +6588,7 @@ async def send_scheduled_notification(notification_id: str):
 
 async def notification_processor_loop():
     """Background loop that checks for pending notifications every 30 seconds."""
-    logger.info("🔔 Notification processor loop started (Telegram + Web Push)")
+    logger.info("ðŸ”” Notification processor loop started (Telegram + Web Push)")
 
     while True:
         try:
@@ -6715,7 +6765,7 @@ async def get_current_tournament():
         )
         
         if not tournament:
-            # Season 2: Jun 17 – Sep 17 2026
+            # Season 2: Jun 17 â€“ Sep 17 2026
             # Qualification runs all season; knockout bracket begins Sep 1 2026
             return {
                 "id": "season2_championship",
@@ -8161,13 +8211,13 @@ async def payment_check_loop():
     
     # Wait a bit before starting to allow the app to fully initialize
     await asyncio.sleep(10)
-    logger.info("💰 Payment check loop starting...")
+    logger.info("ðŸ’° Payment check loop starting...")
     
     while payment_check_running:
         try:
             result = await check_and_activate_pending_payments()
             if result.get("activated", 0) > 0:
-                logger.info(f"💰 Auto-activated {result['activated']} payment(s)")
+                logger.info(f"ðŸ’° Auto-activated {result['activated']} payment(s)")
         except Exception as e:
             logger.error(f"Payment check loop error: {e}")
         
@@ -8653,7 +8703,7 @@ async def get_auto_mixer_subscription(player_address: str):
         if subscription:
             now = datetime.now(timezone.utc)
             
-            # Handle subscription_end as string or datetime — always normalize
+            # Handle subscription_end as string or datetime â€” always normalize
             sub_end = subscription.get("subscription_end")
             if sub_end:
                 try:
@@ -8663,7 +8713,7 @@ async def get_auto_mixer_subscription(player_address: str):
                 
                 if sub_end and subscription.get("status") == "active":
                     if sub_end <= now:
-                        # Subscription has expired — update status
+                        # Subscription has expired â€” update status
                         await db.auto_mixer_subscriptions.update_one(
                             {"id": subscription["id"]},
                             {"$set": {"status": "expired", "updated_at": now}}
@@ -8964,7 +9014,7 @@ async def get_auto_mixer_agent_status():
         for ing_id, count in top_ingredients:
             ing_data = ingredient_system.get_ingredient(ing_id)
             ing_name = ing_data.name if ing_data else ing_id
-            ing_emoji = ing_data.emoji if ing_data else "🧪"
+            ing_emoji = ing_data.emoji if ing_data else "ðŸ§ª"
             top_ingredients_with_names.append({
                 "ingredient_id": ing_id,
                 "name": ing_name,
@@ -9073,7 +9123,7 @@ async def get_auto_mixer_detailed_stats(player_address: str):
             in_window = current_hour >= start_hour or current_hour < end_hour
             window_hours = (24 - start_hour) + end_hour
         
-        # Calculate subscription progress — handle string dates
+        # Calculate subscription progress â€” handle string dates
         sub_start = subscription.get("subscription_start")
         sub_end = subscription.get("subscription_end")
         if sub_start and isinstance(sub_start, str):
@@ -9089,7 +9139,7 @@ async def get_auto_mixer_detailed_stats(player_address: str):
         
         if sub_start and sub_end:
             if sub_end <= now:
-                # Subscription expired — update status
+                # Subscription expired â€” update status
                 await db.auto_mixer_subscriptions.update_one(
                     {"id": subscription.get("id")},
                     {"$set": {"status": "expired", "updated_at": now}}
@@ -9193,9 +9243,9 @@ async def trigger_auto_mixer_now():
         current_hour = now.hour
         results = []
         
-        logger.info(f"🤖 Manual trigger at {now.strftime('%H:%M:%S')} UTC (hour: {current_hour})")
+        logger.info(f"ðŸ¤– Manual trigger at {now.strftime('%H:%M:%S')} UTC (hour: {current_hour})")
         
-        # Find active subscriptions — manual date filtering for string/datetime compatibility
+        # Find active subscriptions â€” manual date filtering for string/datetime compatibility
         all_active_subs = await db.auto_mixer_subscriptions.find({
             "status": "active"
         }).to_list(1000)
@@ -9224,7 +9274,7 @@ async def trigger_auto_mixer_now():
                 {"$set": {"status": "expired", "updated_at": now}}
             )
         
-        logger.info(f"🤖 Found {len(active_subs)} active subscriptions ({len(expired_ids)} expired)")
+        logger.info(f"ðŸ¤– Found {len(active_subs)} active subscriptions ({len(expired_ids)} expired)")
         
         for sub in active_subs:
             try:
@@ -9379,7 +9429,7 @@ async def trigger_auto_mixer_now():
                     "status": "error",
                     "reason": str(e)
                 })
-                logger.error(f"🤖 ❌ Error: {str(e)}")
+                logger.error(f"ðŸ¤– âŒ Error: {str(e)}")
         
         return {
             "triggered_at": now.isoformat(),
@@ -9406,14 +9456,14 @@ async def auto_mixer_processor_loop():
     - Uses the same treat creation limits as manual play
     - Automatically expires subscriptions past their end date
     """
-    logger.info("🤖 Auto-mixer processor started (respects game treat limits)")
+    logger.info("ðŸ¤– Auto-mixer processor started (respects game treat limits)")
     
     while True:
         try:
             now = datetime.now(timezone.utc)
             current_hour = now.hour
             
-            logger.info(f"🤖 Auto-mixer checking at {now.strftime('%H:%M:%S')} UTC (hour: {current_hour})")
+            logger.info(f"ðŸ¤– Auto-mixer checking at {now.strftime('%H:%M:%S')} UTC (hour: {current_hour})")
             
             # Step 1: Fetch ALL subscriptions with status "active" and filter manually
             # (subscription_end may be stored as string or datetime, so MongoDB $gt is unreliable)
@@ -9430,12 +9480,12 @@ async def auto_mixer_processor_loop():
                     try:
                         sub_end = parse_utc_datetime(sub_end)
                     except Exception:
-                        logger.warning(f"🤖 Could not parse subscription_end for {sub.get('player_address', '?')}: {sub_end}")
+                        logger.warning(f"ðŸ¤– Could not parse subscription_end for {sub.get('player_address', '?')}: {sub_end}")
                         continue
                     if sub_end <= now:
-                        # Subscription has expired — mark for update
+                        # Subscription has expired â€” mark for update
                         expired_ids.append(sub["id"])
-                        logger.info(f"🤖 Subscription expired for {sub.get('player_address', '?')[:15]}... (ended {sub_end.isoformat()})")
+                        logger.info(f"ðŸ¤– Subscription expired for {sub.get('player_address', '?')[:15]}... (ended {sub_end.isoformat()})")
                         continue
                     active_subs.append(sub)
                 else:
@@ -9447,9 +9497,9 @@ async def auto_mixer_processor_loop():
                     {"id": {"$in": expired_ids}},
                     {"$set": {"status": "expired", "updated_at": now}}
                 )
-                logger.info(f"🤖 Expired {result.modified_count} subscription(s)")
+                logger.info(f"ðŸ¤– Expired {result.modified_count} subscription(s)")
             
-            logger.info(f"🤖 Found {len(active_subs)} truly active subscriptions ({len(expired_ids)} just expired)")
+            logger.info(f"ðŸ¤– Found {len(active_subs)} truly active subscriptions ({len(expired_ids)} just expired)")
             
             for sub in active_subs:
                 try:
@@ -9465,7 +9515,7 @@ async def auto_mixer_processor_loop():
                         in_window = current_hour >= start_hour or current_hour < end_hour
                     
                     if not in_window:
-                        logger.info(f"🤖 {player_address[:15]}... outside subscription window ({start_hour}:00-{end_hour}:00)")
+                        logger.info(f"ðŸ¤– {player_address[:15]}... outside subscription window ({start_hour}:00-{end_hour}:00)")
                         continue
                     
                     # CHECK GAME TREAT LIMITS using anti_cheat_system
@@ -9477,10 +9527,10 @@ async def auto_mixer_processor_loop():
                     treats_in_window = treat_status.get("treats_in_window", 0)
                     streak_bonus = treat_status.get("streak_bonus", {})
                     
-                    logger.info(f"🤖 {player_address[:15]}... treats: {treats_in_window}/{window_limit}, remaining: {remaining}, can_create: {can_create}")
+                    logger.info(f"ðŸ¤– {player_address[:15]}... treats: {treats_in_window}/{window_limit}, remaining: {remaining}, can_create: {can_create}")
                     
                     if not can_create or remaining <= 0:
-                        logger.info(f"🤖 {player_address[:15]}... at treat limit, skipping")
+                        logger.info(f"ðŸ¤– {player_address[:15]}... at treat limit, skipping")
                         continue
                     
                     # Get player info
@@ -9578,21 +9628,21 @@ async def auto_mixer_processor_loop():
                     except:
                         pass
                     
-                    logger.info(f"🤖 ✅ Created '{treat_name}' for {player_address[:15]}... ({treats_in_window + 1}/{window_limit} in window)")
+                    logger.info(f"ðŸ¤– âœ… Created '{treat_name}' for {player_address[:15]}... ({treats_in_window + 1}/{window_limit} in window)")
                     
                 except Exception as e:
-                    logger.error(f"🤖 ❌ Error for {sub.get('player_address', 'unknown')[:15]}...: {str(e)}")
+                    logger.error(f"ðŸ¤– âŒ Error for {sub.get('player_address', 'unknown')[:15]}...: {str(e)}")
                     import traceback
                     traceback.print_exc()
                     continue
                     
         except Exception as e:
-            logger.error(f"🤖 ❌ Error in auto-mixer loop: {str(e)}")
+            logger.error(f"ðŸ¤– âŒ Error in auto-mixer loop: {str(e)}")
             import traceback
             traceback.print_exc()
         
         # Check every 30 minutes (respects game limits, so no need to check frequently)
-        logger.info("🤖 Auto-mixer sleeping for 30 minutes...")
+        logger.info("ðŸ¤– Auto-mixer sleeping for 30 minutes...")
         await asyncio.sleep(1800)
 
 
@@ -9665,7 +9715,7 @@ async def get_spin_wheel_status(player_address: str):
 
 @api_router.post("/spin-wheel/spin")
 async def spin_the_wheel(data: dict):
-    """Execute a spin — 1 free spin per 24 hours"""
+    """Execute a spin â€” 1 free spin per 24 hours"""
     player_address = data.get("player_address")
     if not player_address:
         raise HTTPException(status_code=400, detail="Player address required")
@@ -9801,7 +9851,7 @@ async def spin_the_wheel(data: dict):
             "type": "spin",
             "player_address": player_address,
             "player_nickname": _spin_nickname,
-            "treat_name": f"🎰 {selected_prize['label']}",
+            "treat_name": f"ðŸŽ° {selected_prize['label']}",
             "prize_label": selected_prize["label"],
             "prize_type": selected_prize["type"],
             "prize_value": selected_prize["value"],
@@ -9842,7 +9892,7 @@ async def spin_the_wheel(data: dict):
 
 
 # ============================================================================
-# LAB ARENA — Phase 1: leaderboard, entry, chat, predictions, heat events
+# LAB ARENA â€” Phase 1: leaderboard, entry, chat, predictions, heat events
 # ============================================================================
 from services import arena_system  # noqa: E402
 
@@ -9889,7 +9939,7 @@ async def arena_join(payload: dict):
     nickname = (payload or {}).get("nickname")
     if not addr:
         raise HTTPException(status_code=400, detail="address required")
-    addr = await _canonical_address(addr)  # tg_<id> → TG_<id>
+    addr = await _canonical_address(addr)  # tg_<id> â†’ TG_<id>
     try:
         result = await arena_system.join_arena(db, addr, nickname)
     except ValueError as e:
@@ -9945,7 +9995,7 @@ async def arena_user_prediction(address: str):
     return {"prediction": pred}
 
 # ============================================================
-# 🐕  SHIBA PET ROUTES  (Lab page — pet feeding feature)
+# ðŸ•  SHIBA PET ROUTES  (Lab page â€” pet feeding feature)
 # ============================================================
 # These endpoints back the ShibaGrowth.jsx component on the Lab page.
 # Stored in the `player_pets` collection, keyed by `owner` = player_address.
@@ -9968,12 +10018,12 @@ SHIBA_RARITY_XP = {
     "Mythic":    200,
 }
 
-# Stage thresholds — must match STAGES[] in frontend/src/components/ShibaGrowth.jsx
+# Stage thresholds â€” must match STAGES[] in frontend/src/components/ShibaGrowth.jsx
 SHIBA_STAGE_XP = [0, 150, 400, 800, 1500, 2800]
 
 
 def _shiba_stage(xp: int) -> int:
-    """Return the highest stage (0–5) the pet qualifies for at `xp` total XP."""
+    """Return the highest stage (0â€“5) the pet qualifies for at `xp` total XP."""
     stage = 0
     for i, threshold in enumerate(SHIBA_STAGE_XP):
         if xp >= threshold:
@@ -10011,7 +10061,7 @@ async def feed_shiba(player_address: str, body: dict):
 
     pet = await db.player_pets.find_one({"owner": player_address})
     if not pet:
-        # First feed creates the pet — never 404 the user mid-animation
+        # First feed creates the pet â€” never 404 the user mid-animation
         pet = {
             "pet_id":             str(uuid.uuid4()),
             "owner":              player_address,
@@ -10052,7 +10102,7 @@ async def feed_shiba(player_address: str, body: dict):
 
 @api_router.get("/shiba/{player_address}")
 async def get_shiba(player_address: str):
-    """Return the pet — 404 if none exists yet (frontend will then call /shiba/create/:address)."""
+    """Return the pet â€” 404 if none exists yet (frontend will then call /shiba/create/:address)."""
     pet = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
     if not pet:
         raise HTTPException(status_code=404, detail="No pet found")
@@ -10103,9 +10153,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # SHIBA GROWTH SYSTEM
-# ═══════════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 SHIBA_STAGES = [
     {"id": 0, "name": "Tiny Pup",    "xp_required": 0},
@@ -10130,7 +10180,7 @@ def _shiba_stage(xp: int) -> int:
 
 @api_router.post("/shiba/create/{player_address}")
 async def create_shiba(player_address: str):
-    """Get existing pet or create a new one — idempotent."""
+    """Get existing pet or create a new one â€” idempotent."""
     existing = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
     if existing:
         return existing
@@ -10157,7 +10207,7 @@ async def feed_shiba(player_address: str, body: dict):
 
     pet = await db.player_pets.find_one({"owner": player_address})
     if not pet:
-        # Auto-create rather than error — first feed creates the pet
+        # Auto-create rather than error â€” first feed creates the pet
         pet = {
             "pet_id": str(uuid.uuid4()),
             "owner": player_address,
@@ -10193,7 +10243,7 @@ async def feed_shiba(player_address: str, body: dict):
 
 @api_router.get("/shiba/{player_address}")
 async def get_shiba(player_address: str):
-    """Get pet — returns 404 if none exists yet (frontend will call /shiba/create/:address)."""
+    """Get pet â€” returns 404 if none exists yet (frontend will call /shiba/create/:address)."""
     pet = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
     if not pet:
         raise HTTPException(status_code=404, detail="No pet found")
@@ -10203,7 +10253,7 @@ async def get_shiba(player_address: str):
 @app.on_event("startup")
 async def startup_event():
     """Start background schedulers on app startup"""
-    logger.info("🚀 DogeFood Lab API starting...")
+    logger.info("ðŸš€ DogeFood Lab API starting...")
     
     # Create indexes for performance
     try:
@@ -10238,41 +10288,41 @@ async def startup_event():
         # This ensures Render's health check passes first
         await asyncio.sleep(30)
         
-        logger.info("📌 Starting background tasks...")
+        logger.info("ðŸ“Œ Starting background tasks...")
         
         # Start the Kernel of Wow scheduler loop as a background task
         asyncio.create_task(kernel_scheduler_loop())
-        logger.info("🎯 Kernel of Wow background scheduler started")
+        logger.info("ðŸŽ¯ Kernel of Wow background scheduler started")
         
         # Start the notification processor loop
         asyncio.create_task(notification_processor_loop())
-        logger.info("🔔 Notification processor started")
+        logger.info("ðŸ”” Notification processor started")
         
         # Start the auto-mixer processor loop
         asyncio.create_task(auto_mixer_processor_loop())
-        logger.info("🤖 Auto-mixer processor started")
+        logger.info("ðŸ¤– Auto-mixer processor started")
         
         # Start the heat event background scheduler
         try:
             asyncio.create_task(arena_system.run_heat_event_scheduler(db))
-            logger.info("🔥 Heat event scheduler started")
+            logger.info("ðŸ”¥ Heat event scheduler started")
         except Exception as _heat_sched_err:
-            logger.error(f"🔥 Heat scheduler failed to start: {_heat_sched_err}")
+            logger.error(f"ðŸ”¥ Heat scheduler failed to start: {_heat_sched_err}")
         
         # Start the payment auto-detection loop (optional, non-blocking)
         try:
             tatum_key = AUTO_MIXER_CONFIG.get("tatum_api_key", "")
             if tatum_key and len(tatum_key) > 10:
                 asyncio.create_task(payment_check_loop())
-                logger.info("💰 Payment auto-detection scheduled")
+                logger.info("ðŸ’° Payment auto-detection scheduled")
             else:
-                logger.info("⚠️ Payment auto-detection disabled - no valid Tatum API key")
+                logger.info("âš ï¸ Payment auto-detection disabled - no valid Tatum API key")
         except Exception as e:
-            logger.error(f"⚠️ Failed to start payment checker: {e}")
+            logger.error(f"âš ï¸ Failed to start payment checker: {e}")
     
     # Schedule delayed startup as a background task
     asyncio.create_task(delayed_startup())
-    logger.info("✅ API ready to accept requests")
+    logger.info("âœ… API ready to accept requests")
 
 
 @app.on_event("shutdown")
