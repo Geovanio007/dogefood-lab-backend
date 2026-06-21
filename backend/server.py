@@ -18,6 +18,8 @@ import random
 import asyncio
 from telegram import Bot
 import httpx  # For Firebase verification
+from eth_account import Account
+from eth_account.messages import encode_defunct
 
 
 
@@ -103,6 +105,58 @@ async def find_player_by_address(address: str):
         )
 
     return max(candidates, key=_rank)
+
+
+
+
+def verify_wallet_signature(wallet_address: str, signature: str, message: str, expected_telegram_id, max_age_minutes: int = 15):
+    """
+    Verify that `signature` is a valid EIP-191 personal_sign signature of
+    `message`, produced by the private key controlling `wallet_address`.
+
+    Also checks that the message actually references `expected_telegram_id`
+    (so a signature can't be lifted from an unrelated context and replayed
+    here) and that it isn't stale (limits how long a captured signature
+    stays usable, since there's no separate nonce store).
+
+    Returns (True, None) on success, or (False, "reason") on failure.
+    """
+    if not wallet_address or not signature or not message:
+        return False, "Missing signature material"
+
+    # The message must reference this exact telegram_id — prevents a
+    # signature signed for a different purpose/account being replayed here.
+    if f"telegram_id: {expected_telegram_id}" not in message:
+        return False, "Signed message does not match this Telegram account"
+
+    # Pull the ISO timestamp out of the message and enforce freshness.
+    ts_match = re.search(r'at (\d{4}-\d{2}-\d{2}T[\d:.]+Z)', message)
+    if not ts_match:
+        return False, "Signed message missing timestamp"
+    try:
+        signed_at = datetime.fromisoformat(ts_match.group(1).replace('Z', '+00:00'))
+    except ValueError:
+        return False, "Signed message has an invalid timestamp"
+
+    age = datetime.now(timezone.utc) - signed_at
+    if age.total_seconds() < 0:
+        return False, "Signed message timestamp is in the future"
+    if age.total_seconds() > max_age_minutes * 60:
+        return False, "Signature has expired — please reconnect your wallet"
+
+    # Recover the address that actually signed this message and compare it
+    # (case-insensitively — checksummed vs lowercase hex) to the claimed address.
+    try:
+        encoded = encode_defunct(text=message)
+        recovered_address = Account.recover_message(encoded, signature=signature)
+    except Exception as e:
+        return False, f"Could not verify signature: {str(e)}"
+
+    if recovered_address.lower() != wallet_address.lower():
+        return False, "Signature does not match the claimed wallet address"
+
+    return True, None
+
 
 
 
@@ -1751,22 +1805,29 @@ async def get_player_treats(address: str):
 @api_router.post("/player/{address}/update-username")
 async def update_player_username(address: str, username: str):
     """Update player's username/nickname"""
-    # Check if username is already taken
-    existing = await db.players.find_one({"nickname": username, "address": {"$ne": address}})
-    if existing:
-        raise HTTPException(status_code=400, detail="Username already taken")
-    
     # Validate username (3-20 chars, alphanumeric and underscores only)
     import re
     if not re.match(r'^[a-zA-Z0-9_]{3,20}$', username):
         raise HTTPException(status_code=400, detail="Username must be 3-20 characters, alphanumeric and underscores only")
-    
+
+    # Resolve the real player document (handles TG_/tg_ case + telegram_id fallback)
+    player = await find_player_by_address(address)
+    if not player and address.startswith("guest_"):
+        player = await db.players.find_one({"guest_id": address}, {"_id": 0})
+
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    # Check if username is already taken by a *different* player document
+    existing = await db.players.find_one({"nickname": username, "id": {"$ne": player.get("id")}})
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already taken")
+
     result = await db.players.update_one(
-        {"address": address},
-        {"$set": {"nickname": username}},
-        upsert=True
+        {"id": player.get("id")},
+        {"$set": {"nickname": username}}
     )
-    
+
     return {"success": True, "username": username}
 
 
@@ -1780,10 +1841,17 @@ async def select_player_character(address: str, character_id: str):
     valid_characters = ['max', 'rex', 'luna']
     if character_id not in valid_characters:
         raise HTTPException(status_code=400, detail=f"Invalid character. Must be one of: {valid_characters}")
-    
+
+    # Resolve the real player document (handles TG_/tg_ case + telegram_id fallback)
+    player = await find_player_by_address(address)
+    if not player and address.startswith("guest_"):
+        player = await db.players.find_one({"guest_id": address}, {"_id": 0})
+
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+
     # Check if player already has a character selected
-    player = await db.players.find_one({"address": address}, {"_id": 0})
-    if player and player.get("selected_character"):
+    if player.get("selected_character"):
         raise HTTPException(
             status_code=400, 
             detail="Character already selected. Character choice is permanent and cannot be changed!"
@@ -1797,14 +1865,13 @@ async def select_player_character(address: str, character_id: str):
     }
     
     result = await db.players.update_one(
-        {"address": address},
+        {"id": player.get("id")},
         {
             "$set": {
                 "selected_character": character_id,
                 "character_bonuses": character_bonuses.get(character_id, {})
             }
-        },
-        upsert=True
+        }
     )
     
     logger.info(f"🧪 Character selected: {address} chose {character_id}")
@@ -1907,16 +1974,23 @@ async def update_profile_image(address: str, data: dict):
         # Validate image size (base64 adds ~33% overhead, so 2MB file = ~2.7MB base64)
         if len(image_data) > 3 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="Image too large (max 2MB)")
-        
-        # Update player's profile image
-        result = await db.players.update_one(
-            {"address": address},
-            {"$set": {"profile_image": image_data, "last_active": datetime.now(timezone.utc).isoformat()}}
-        )
-        
-        if result.modified_count == 0:
-            # Player doesn't exist, create them
+
+        # Resolve the real player document (handles TG_/tg_ case + telegram_id fallback)
+        player = await find_player_by_address(address)
+        if not player and address.startswith("guest_"):
+            player = await db.players.find_one({"guest_id": address}, {"_id": 0})
+
+        if player:
+            await db.players.update_one(
+                {"id": player.get("id")},
+                {"$set": {"profile_image": image_data, "last_active": datetime.now(timezone.utc).isoformat()}}
+            )
+        else:
+            # No existing player matched at all — create a new wallet-style record.
+            # (Telegram/guest players should already exist via registration, so this
+            # path is effectively wallet-only.)
             await db.players.insert_one({
+                "id": str(uuid.uuid4()),
                 "address": address,
                 "profile_image": image_data,
                 "created_at": datetime.now(timezone.utc).isoformat(),
@@ -5047,6 +5121,13 @@ async def link_wallet_to_telegram(request: Request):
         
         if not telegram_id:
             raise HTTPException(status_code=401, detail="Invalid Telegram authentication")
+        
+        # Cryptographically verify that whoever sent this request actually
+        # controls `wallet_address` — without this, anyone could claim any
+        # address was theirs just by sending a string in the request body.
+        is_valid, error_reason = verify_wallet_signature(wallet_address, signature, message, telegram_id)
+        if not is_valid:
+            raise HTTPException(status_code=401, detail=f"Wallet signature verification failed: {error_reason}")
         
         # Find existing Telegram user
         telegram_player = await db.players.find_one({"telegram_id": telegram_id})
