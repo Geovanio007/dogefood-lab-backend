@@ -3096,7 +3096,7 @@ async def collect_treat(treat_id: str, data: dict):
         final_points_reward = base_points_reward + points_bonus + happy_hour_bonus
         final_xp_reward = base_xp_reward + xp_bonus
 
-        # ── Apply Golden Hour heat event (points x2) ──────────────────────
+        # ── Apply heat event collect bonuses ──────────────────────────────
         try:
             collect_heat_id = await arena_system.get_active_heat_event_id(db)
             if collect_heat_id == "golden_hour":
@@ -3104,6 +3104,12 @@ async def collect_treat(treat_id: str, data: dict):
                 final_points_reward = final_points_reward * 2
                 bonus_details["golden_hour_bonus"] = final_points_reward - original_pts
                 logger.info(f"✨ Heat: Golden Hour — points doubled: {original_pts} → {final_points_reward}")
+            elif collect_heat_id == "crit_state":
+                # Critical Mix: +50% points bonus on collect in addition to higher rarity at brew
+                original_pts = final_points_reward
+                final_points_reward = int(final_points_reward * 1.5)
+                bonus_details["crit_state_bonus"] = final_points_reward - original_pts
+                logger.info(f"✨ Heat: Critical Mix — +50% points: {original_pts} → {final_points_reward}")
         except Exception as _heat_err:
             logger.warning(f"Heat event check failed (non-fatal): {_heat_err}")
         
@@ -10166,8 +10172,11 @@ async def startup_event():
         logger.info("🤖 Auto-mixer processor started")
         
         # Start the heat event background scheduler
-        asyncio.create_task(arena_system.run_heat_event_scheduler(db))
-        logger.info("🔥 Heat event scheduler started")
+        try:
+            asyncio.create_task(arena_system.run_heat_event_scheduler(db))
+            logger.info("🔥 Heat event scheduler started")
+        except Exception as _heat_sched_err:
+            logger.error(f"🔥 Heat scheduler failed to start: {_heat_sched_err}")
         
         # Start the payment auto-detection loop (optional, non-blocking)
         try:
