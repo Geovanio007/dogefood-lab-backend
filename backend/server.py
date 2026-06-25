@@ -10137,6 +10137,79 @@ async def feed_shiba(player_address: str, body: dict):
     }
 
 
+@api_router.get("/shiba/leaderboard")
+async def get_shiba_leaderboard(limit: int = 10):
+    """
+    Top pets by XP — 'Pack Leaders'. Joins each pet with its owner's
+    nickname so the leaderboard can show who raised it, not just an
+    address. Declared BEFORE /shiba/{player_address} (see routing-order
+    note above) so 'leaderboard' is never swallowed as an address.
+    """
+    pets = await db.player_pets.find(
+        {"current_xp": {"$gt": 0}}, {"_id": 0}
+    ).sort("current_xp", -1).limit(max(1, min(limit, 50))).to_list(50)
+
+    if not pets:
+        return {"pets": []}
+
+    owners = [p.get("owner") for p in pets if p.get("owner")]
+    # Resolve nicknames for every owner in one batch rather than N queries.
+    # Mirrors find_player_by_address's TG_/tg_ handling: build the set of
+    # possible identifiers (raw address, both TG_ casings, telegram_id) and
+    # do a single $or lookup.
+    tg_ids = []
+    or_clauses = [{"address": {"$in": owners}}]
+    for addr in owners:
+        if isinstance(addr, str) and addr.lower().startswith("tg_"):
+            try:
+                tg_ids.append(int(addr[3:]))
+            except (ValueError, TypeError):
+                pass
+    if tg_ids:
+        or_clauses.append({"telegram_id": {"$in": tg_ids}})
+
+    owner_docs = await db.players.find(
+        {"$or": or_clauses},
+        {"_id": 0, "address": 1, "telegram_id": 1, "nickname": 1, "telegram_first_name": 1,
+         "selected_character": 1, "is_nft_holder": 1}
+    ).to_list(len(owners) * 2 + 10)
+
+    # Build a lookup keyed by every identifier form an owner string might take.
+    owner_by_key = {}
+    for doc in owner_docs:
+        keys = set()
+        if doc.get("address"):
+            keys.add(doc["address"].lower())
+        if doc.get("telegram_id") is not None:
+            keys.add(f"tg_{doc['telegram_id']}")
+        for k in keys:
+            owner_by_key[k] = doc
+
+    result = []
+    for p in pets:
+        owner_addr = p.get("owner") or ""
+        owner_doc = owner_by_key.get(owner_addr.lower())
+        if not owner_doc and owner_addr.lower().startswith("tg_"):
+            owner_doc = owner_by_key.get(owner_addr.lower())
+
+        nickname = None
+        if owner_doc:
+            nickname = owner_doc.get("nickname") or owner_doc.get("telegram_first_name")
+        short_owner = (owner_addr[:6] + "…" + owner_addr[-4:]) if len(owner_addr) > 12 else owner_addr
+
+        result.append({
+            "owner": owner_addr,
+            "owner_nickname": nickname or f"Scientist {short_owner}",
+            "owner_is_nft_holder": bool(owner_doc.get("is_nft_holder")) if owner_doc else False,
+            "current_xp": p.get("current_xp", 0),
+            "current_stage": p.get("current_stage", 0),
+            "total_treats_fed": p.get("total_treats_fed", 0),
+            "favorite_ingredient": p.get("favorite_ingredient"),
+        })
+
+    return {"pets": result}
+
+
 @api_router.get("/shiba/{player_address}")
 async def get_shiba(player_address: str):
     """Return the pet — 404 if none exists yet (frontend will then call /shiba/create/:address)."""
