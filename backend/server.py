@@ -3778,22 +3778,37 @@ async def get_leaderboard(limit: int = 200):
 # ── $LAB reward pools/formula — kept in exact sync with Leaderboard.jsx's
 # calcRewards() and the season2_reset settlement script below. If either
 # changes, update all three together.
+#
+# FIX (see calc_lab_reward below): the original per-tier multipliers
+# (1.5 / 0.7 / 0.2) were tuned independently and didn't connect smoothly —
+# rank 10 paid 163,636 while rank 11 paid 509,090, more than 3x MORE for a
+# worse rank. The multipliers below are solved so tier 2's ceiling sits
+# just under tier 1's floor, and tier 3's ceiling sits just under tier 2's
+# floor, guaranteeing every rank pays strictly more than the rank below it.
 _LAB_SEASON_POOL = 20_000_000
 _LAB_TOP10_POOL = _LAB_SEASON_POOL * 0.30
 _LAB_TOP20_POOL = _LAB_SEASON_POOL * 0.20
 _LAB_TOP50_POOL = _LAB_SEASON_POOL * 0.20
 
+_LAB_TIER1_MULT = 1.5
+_LAB_TIER2_MULT = 0.225 * 0.97          # solved so rank 11 < rank 10
+_LAB_TIER3_MULT = 0.0634090909090909 * 0.94   # solved so rank 21 < rank 20
+
 
 def calc_lab_reward(rank: Optional[int]) -> int:
-    """Exact replica of calcRewards() in Leaderboard.jsx — same formula,
-    same tiers, same rounding (floor via int truncation)."""
+    """Same overall shape as the original calcRewards() in Leaderboard.jsx
+    (top 10 / 11-20 / 21-50 tiers, same pool split), but with corrected
+    per-tier multipliers so the curve is strictly monotonically decreasing
+    — a better rank always pays at least as much as a worse one. The
+    original multipliers (1.5 / 0.7 / 0.2) caused rank 11 to outpay rank 10
+    and rank 21 to outpay rank 20; verified fixed across all 50 ranks."""
     if not rank or rank > 50:
         return 0
     if rank <= 10:
-        return int(_LAB_TOP10_POOL * ((11 - rank) / 55) * 1.5)
+        return int(_LAB_TOP10_POOL * ((11 - rank) / 55) * _LAB_TIER1_MULT)
     if rank <= 20:
-        return int(_LAB_TOP20_POOL * ((21 - rank) / 55) * 0.7)
-    return int(_LAB_TOP50_POOL * ((51 - rank) / 465) * 0.2)
+        return int(_LAB_TOP20_POOL * ((21 - rank) / 55) * _LAB_TIER2_MULT)
+    return int(_LAB_TOP50_POOL * ((51 - rank) / 465) * _LAB_TIER3_MULT)
 
 
 @api_router.get("/player/{address}/lab-estimate")
@@ -5688,11 +5703,15 @@ async def season2_reset(admin_key: str = None):
     """
     Season 1 → Season 2 transition:
       1. Snapshot each player's current rank on the leaderboard
-      2. Calculate their s1_lab_tokens using the same formula as Leaderboard.jsx calcRewards():
+      2. Calculate their s1_lab_tokens using the same corrected formula as
+         calc_lab_reward() / Leaderboard.jsx calcRewards():
            rank 1-10:  floor(6_000_000 * ((11 - rank) / 55) * 1.5)
-           rank 11-20: floor(4_000_000 * ((21 - rank) / 55) * 0.7)
-           rank 21-50: floor(4_000_000 * ((51 - rank) / 465) * 0.2)
+           rank 11-20: floor(4_000_000 * ((21 - rank) / 55) * 0.21825)
+           rank 21-50: floor(4_000_000 * ((51 - rank) / 465) * 0.0596046)
            rank 51+:   0
+         (Multipliers corrected from the original 1.5/0.7/0.2 — those
+         caused rank 11 to outpay rank 10 and rank 21 to outpay rank 20.
+         See calc_lab_reward()'s docstring for the derivation.)
       3. Reset ALL players' points, experience and level to 0/1
       4. Preserve treats
     """
@@ -5710,13 +5729,15 @@ async def season2_reset(admin_key: str = None):
         TOP50_POOL  = SEASON_1_POOL * 0.20   # 4 000 000
 
         def calc_rewards(rank: int) -> int:
-            """Exact replica of calcRewards() in Leaderboard.jsx"""
+            """Same formula/tiers as calc_lab_reward() above — kept as a
+            local copy here since this admin script predates that helper
+            and is only invoked once per season transition."""
             if rank <= 10:
-                return int(TOP10_POOL * ((11 - rank) / 55) * 1.5)
+                return int(TOP10_POOL * ((11 - rank) / 55) * _LAB_TIER1_MULT)
             if rank <= 20:
-                return int(TOP20_POOL * ((21 - rank) / 55) * 0.7)
+                return int(TOP20_POOL * ((21 - rank) / 55) * _LAB_TIER2_MULT)
             if rank <= 50:
-                return int(TOP50_POOL * ((51 - rank) / 465) * 0.2)
+                return int(TOP50_POOL * ((51 - rank) / 465) * _LAB_TIER3_MULT)
             return 0
 
         # ── 1. Build ranked leaderboard (same logic as /leaderboard) ─────
