@@ -3775,6 +3775,74 @@ async def get_leaderboard(limit: int = 200):
     return leaderboard
 
 
+# ── $LAB reward pools/formula — kept in exact sync with Leaderboard.jsx's
+# calcRewards() and the season2_reset settlement script below. If either
+# changes, update all three together.
+_LAB_SEASON_POOL = 20_000_000
+_LAB_TOP10_POOL = _LAB_SEASON_POOL * 0.30
+_LAB_TOP20_POOL = _LAB_SEASON_POOL * 0.20
+_LAB_TOP50_POOL = _LAB_SEASON_POOL * 0.20
+
+
+def calc_lab_reward(rank: Optional[int]) -> int:
+    """Exact replica of calcRewards() in Leaderboard.jsx — same formula,
+    same tiers, same rounding (floor via int truncation)."""
+    if not rank or rank > 50:
+        return 0
+    if rank <= 10:
+        return int(_LAB_TOP10_POOL * ((11 - rank) / 55) * 1.5)
+    if rank <= 20:
+        return int(_LAB_TOP20_POOL * ((21 - rank) / 55) * 0.7)
+    return int(_LAB_TOP50_POOL * ((51 - rank) / 465) * 0.2)
+
+
+@api_router.get("/player/{address}/lab-estimate")
+async def get_player_lab_estimate(address: str):
+    """
+    Live estimate of a player's $LAB reward if the season ended right now.
+    Reuses get_leaderboard() directly (not a re-implementation) so this
+    number can never disagree with what the Leaderboard page itself shows
+    — it finds the player's current display rank in that exact same
+    ranked list, then applies the identical reward formula.
+    """
+    leaderboard = await get_leaderboard(limit=200)
+
+    player = await find_player_by_address(address)
+    if not player and address.startswith("guest_"):
+        player = await db.players.find_one({"guest_id": address}, {"_id": 0})
+
+    # Match this player's entry on the leaderboard by whichever identifier
+    # it was keyed on (address, or tg_<telegram_id> per get_leaderboard's
+    # own fallback at player_address construction time).
+    canonical_address = (player or {}).get("address")
+    telegram_id = (player or {}).get("telegram_id")
+    candidates = {a for a in [
+        address,
+        canonical_address,
+        f"tg_{telegram_id}" if telegram_id is not None else None,
+        f"TG_{telegram_id}" if telegram_id is not None else None,
+    ] if a}
+
+    rank = None
+    points = (player or {}).get("points", 0)
+    for entry in leaderboard:
+        if entry.get("address") in candidates or entry.get("address", "").lower() in {c.lower() for c in candidates}:
+            rank = entry["rank"]
+            points = entry.get("points", points)
+            break
+
+    estimated_lab = calc_lab_reward(rank)
+
+    return {
+        "address": address,
+        "rank": rank,
+        "points": points,
+        "estimated_lab": estimated_lab,
+        "in_reward_range": rank is not None and rank <= 50,
+        "note": "Live estimate based on current rank — final amount is settled at season end and may change as standings shift."
+    }
+
+
 # Game Stats Routes
 @api_router.get("/stats")
 async def get_game_stats():
