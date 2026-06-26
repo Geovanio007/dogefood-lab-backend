@@ -10436,8 +10436,22 @@ async def feed_shiba(player_address: str, body: dict):
     )
 
     updated = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
-    evolved = new_stage > (pet.get("current_stage") or 0)
-    return {"pet": updated, "xp_gained": xp_gained, "evolved": evolved, "new_stage": new_stage}
+    evolved  = new_stage > (pet.get("current_stage") or 0)
+
+    # ── Check for XP milestone crates ──────────────────────────────────────
+    old_xp = (pet.get("current_xp") or 0)
+    earned_crates = _check_milestone_crates(old_xp, new_xp, player_address)
+    if earned_crates:
+        await db.lab_crates.insert_many(earned_crates)
+        logger.info(f"🎁 {len(earned_crates)} Lab Crate(s) earned by {player_address}")
+
+    return {
+        "pet":          updated,
+        "xp_gained":    xp_gained,
+        "evolved":      evolved,
+        "new_stage":    new_stage,
+        "crates_earned": [{"id": c["id"], "crate_type": c["crate_type"], "milestone_label": c["milestone_label"]} for c in earned_crates],
+    }
 
 
 @api_router.get("/shiba/{player_address}")
@@ -10447,6 +10461,199 @@ async def get_shiba(player_address: str):
     if not pet:
         raise HTTPException(status_code=404, detail="No pet found")
     return pet
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LAB CRATE + PET WARDROBE SYSTEM
+# ═══════════════════════════════════════════════════════════════════════════════
+
+CRATE_REWARD_TABLES = {
+    "basic": [
+        {"type": "lives",      "value": 1,   "label": "+1 Extra Life",       "icon": "❤️",  "rarity": "Common",    "weight": 30},
+        {"type": "lives",      "value": 2,   "label": "+2 Extra Lives",      "icon": "❤️",  "rarity": "Uncommon",  "weight": 20},
+        {"type": "points",     "value": 100, "label": "100 Points",          "icon": "⭐",  "rarity": "Common",    "weight": 25},
+        {"type": "points",     "value": 250, "label": "250 Points",          "icon": "⭐",  "rarity": "Uncommon",  "weight": 15},
+        {"type": "ingredient", "value": "Quantum Bone Dust",  "icon": "🦴", "rarity": "Rare",      "weight": 7},
+        {"type": "cosmetic",   "value": "cap_basic",          "icon": "🧢", "rarity": "Common",    "weight": 3},
+    ],
+    "rare": [
+        {"type": "lives",      "value": 2,   "label": "+2 Extra Lives",      "icon": "❤️",  "rarity": "Uncommon",  "weight": 20},
+        {"type": "lives",      "value": 3,   "label": "+3 Extra Lives",      "icon": "❤️",  "rarity": "Rare",      "weight": 10},
+        {"type": "points",     "value": 250, "label": "250 Points",          "icon": "⭐",  "rarity": "Uncommon",  "weight": 20},
+        {"type": "points",     "value": 500, "label": "500 Points",          "icon": "💎",  "rarity": "Rare",      "weight": 15},
+        {"type": "ingredient", "value": "Lunar Syrup",        "icon": "🌙", "rarity": "Rare",      "weight": 15},
+        {"type": "ingredient", "value": "Toxic Cheese",       "icon": "🧀", "rarity": "Epic",      "weight": 8},
+        {"type": "cosmetic",   "value": "goggles_lab",        "icon": "🥽", "rarity": "Rare",      "weight": 8},
+        {"type": "cosmetic",   "value": "aura_fire",          "icon": "🔥", "rarity": "Rare",      "weight": 4},
+    ],
+    "elite": [
+        {"type": "lives",      "value": 3,   "label": "+3 Extra Lives",      "icon": "❤️",  "rarity": "Rare",      "weight": 15},
+        {"type": "points",     "value": 500, "label": "500 Points",          "icon": "💎",  "rarity": "Rare",      "weight": 20},
+        {"type": "points",     "value": 1000,"label": "1000 Points",         "icon": "🌟",  "rarity": "Epic",      "weight": 10},
+        {"type": "ingredient", "value": "Golden Bacon Extract","icon": "🥓","rarity": "Epic",      "weight": 20},
+        {"type": "ingredient", "value": "Plasma Kibble",      "icon": "⚡", "rarity": "Legendary", "weight": 10},
+        {"type": "cosmetic",   "value": "crown_gold",         "icon": "👑", "rarity": "Epic",      "weight": 12},
+        {"type": "cosmetic",   "value": "aura_electric",      "icon": "⚡", "rarity": "Legendary", "weight": 8},
+        {"type": "cosmetic",   "value": "armor_reactor",      "icon": "🛡️","rarity": "Epic",      "weight": 5},
+    ],
+    "legendary": [
+        {"type": "lives",      "value": 5,   "label": "+5 Extra Lives",      "icon": "❤️",  "rarity": "Legendary", "weight": 10},
+        {"type": "points",     "value": 1000,"label": "1000 Points",         "icon": "🌟",  "rarity": "Epic",      "weight": 15},
+        {"type": "points",     "value": 2500,"label": "2500 Points",         "icon": "💥",  "rarity": "Legendary", "weight": 8},
+        {"type": "ingredient", "value": "Galaxy Protein",     "icon": "🌌", "rarity": "Legendary", "weight": 20},
+        {"type": "cosmetic",   "value": "crown_mythic",       "icon": "💎", "rarity": "Mythic",    "weight": 15},
+        {"type": "cosmetic",   "value": "aura_galaxy",        "icon": "🌌", "rarity": "Mythic",    "weight": 15},
+        {"type": "cosmetic",   "value": "suit_scientist",     "icon": "🦺", "rarity": "Mythic",    "weight": 12},
+        {"type": "cosmetic",   "value": "jetpack_rocket",     "icon": "🚀", "rarity": "Legendary", "weight": 5},
+    ],
+}
+
+XP_MILESTONES = [
+    {"xp": 150,  "stage": 1, "crate": "basic",     "label": "Young Pup"},
+    {"xp": 400,  "stage": 2, "crate": "basic",     "label": "Teen Shiba"},
+    {"xp": 600,  "stage": 2, "crate": "rare",      "label": "Mid Growth"},
+    {"xp": 800,  "stage": 3, "crate": "rare",      "label": "Adult Shiba"},
+    {"xp": 1100, "stage": 3, "crate": "elite",     "label": "Evolved"},
+    {"xp": 1500, "stage": 4, "crate": "elite",     "label": "Alpha Shiba"},
+    {"xp": 2000, "stage": 4, "crate": "legendary", "label": "Champion"},
+    {"xp": 2800, "stage": 5, "crate": "legendary", "label": "Mythic Lab"},
+]
+
+
+def _pick_crate_reward(crate_type: str) -> dict:
+    import random
+    table = CRATE_REWARD_TABLES.get(crate_type, CRATE_REWARD_TABLES["basic"])
+    total = sum(r["weight"] for r in table)
+    roll = random.uniform(0, total)
+    cumulative = 0
+    for reward in table:
+        cumulative += reward["weight"]
+        if roll <= cumulative:
+            return reward
+    return table[-1]
+
+
+def _check_milestone_crates(old_xp: int, new_xp: int, player_address: str) -> list:
+    """Return list of crates earned for XP milestones crossed between old_xp and new_xp."""
+    earned = []
+    for m in XP_MILESTONES:
+        if old_xp < m["xp"] <= new_xp:
+            earned.append({
+                "id": str(uuid.uuid4()),
+                "owner": player_address,
+                "crate_type": m["crate"],
+                "milestone_label": m["label"],
+                "milestone_xp": m["xp"],
+                "status": "pending",
+                "earned_at": datetime.now(timezone.utc).isoformat(),
+            })
+    return earned
+
+
+@api_router.post("/shiba/crate/{crate_id}/open")
+async def open_lab_crate(crate_id: str, body: dict):
+    """Open a pending Lab Crate and generate rewards."""
+    player_address = body.get("player_address")
+    if not player_address:
+        raise HTTPException(status_code=400, detail="player_address required")
+
+    crate = await db.lab_crates.find_one({"id": crate_id, "owner": player_address, "status": "pending"})
+    if not crate:
+        raise HTTPException(status_code=404, detail="Crate not found or already opened")
+
+    # Generate 3 rewards
+    rewards = []
+    for _ in range(3):
+        r = _pick_crate_reward(crate["crate_type"])
+        reward = dict(r)
+        reward.pop("weight", None)
+        if not reward.get("label"):
+            reward["label"] = reward.get("value", "Reward")
+        rewards.append(reward)
+
+    # Apply rewards to player
+    points_total = sum(r["value"] for r in rewards if r["type"] == "points")
+    lives_total  = sum(r["value"] for r in rewards if r["type"] == "lives")
+    cosmetics    = [r["value"] for r in rewards if r["type"] == "cosmetic"]
+    ingredients  = [r["value"] for r in rewards if r["type"] == "ingredient"]
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Grant points
+    if points_total > 0:
+        player = await find_player_by_address(player_address)
+        if player:
+            filter_q = {"address": player["address"]} if player.get("address") else {"telegram_id": player.get("telegram_id")}
+            await db.players.update_one(filter_q, {"$inc": {"points": points_total}})
+
+    # Grant extra lives
+    if lives_total > 0:
+        await db.players.update_one(
+            {"address": player_address},
+            {"$inc": {"extra_treats_balance": lives_total}},
+            upsert=True
+        )
+
+    # Grant cosmetics
+    if cosmetics:
+        await db.player_wardrobes.update_one(
+            {"owner": player_address},
+            {"$addToSet": {"owned": {"$each": cosmetics}}},
+            upsert=True
+        )
+
+    # Mark crate as opened
+    await db.lab_crates.update_one(
+        {"id": crate_id},
+        {"$set": {"status": "opened", "opened_at": now, "rewards": rewards}}
+    )
+
+    return {"rewards": rewards, "points_granted": points_total, "lives_granted": lives_total}
+
+
+@api_router.get("/shiba/crates/{player_address}")
+async def get_pending_crates(player_address: str):
+    """Get all pending (unopened) Lab Crates for a player."""
+    crates = await db.lab_crates.find(
+        {"owner": player_address, "status": "pending"},
+        {"_id": 0}
+    ).sort("earned_at", 1).to_list(50)
+    return {"crates": crates, "count": len(crates)}
+
+
+@api_router.get("/shiba/wardrobe/{player_address}")
+async def get_wardrobe(player_address: str):
+    """Get player's cosmetic inventory and equipped items."""
+    wardrobe = await db.player_wardrobes.find_one({"owner": player_address}, {"_id": 0})
+    if not wardrobe:
+        return {"owned": [], "equipped": {}}
+    return {"owned": wardrobe.get("owned", []), "equipped": wardrobe.get("equipped", {})}
+
+
+@api_router.post("/shiba/wardrobe/{player_address}/equip")
+async def equip_cosmetic(player_address: str, body: dict):
+    item_id  = body.get("item_id")
+    category = body.get("category")
+    if not item_id or not category:
+        raise HTTPException(status_code=400, detail="item_id and category required")
+    await db.player_wardrobes.update_one(
+        {"owner": player_address},
+        {"$set": {f"equipped.{category}": item_id}},
+        upsert=True
+    )
+    return {"ok": True}
+
+
+@api_router.post("/shiba/wardrobe/{player_address}/unequip")
+async def unequip_cosmetic(player_address: str, body: dict):
+    category = body.get("category")
+    if not category:
+        raise HTTPException(status_code=400, detail="category required")
+    await db.player_wardrobes.update_one(
+        {"owner": player_address},
+        {"$unset": {f"equipped.{category}": ""}}
+    )
+    return {"ok": True}
 
 
 @app.on_event("startup")
