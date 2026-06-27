@@ -10611,6 +10611,80 @@ async def open_lab_crate(crate_id: str, body: dict):
     return {"rewards": rewards, "points_granted": points_total, "lives_granted": lives_total}
 
 
+@api_router.post("/admin/shiba/backfill-crates")
+async def backfill_milestone_crates(admin_key: str = None):
+    """
+    One-time migration: scans all existing player pets, compares their
+    current_xp against XP_MILESTONES, and grants any crates they never
+    received because they earned XP before the crate system existed.
+    Safe to run multiple times — skips milestones already credited.
+    """
+    if admin_key != ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    now = datetime.now(timezone.utc).isoformat()
+    pets = await db.player_pets.find({}, {"_id": 0}).to_list(10000)
+
+    total_pets      = len(pets)
+    total_granted   = 0
+    skipped         = 0
+    results         = []
+
+    for pet in pets:
+        player_address = pet.get("owner")
+        current_xp     = pet.get("current_xp", 0) or 0
+
+        if not player_address or current_xp == 0:
+            skipped += 1
+            continue
+
+        # Find which milestones this player has already been credited
+        # (check existing crates in lab_crates collection)
+        existing_crates = await db.lab_crates.find(
+            {"owner": player_address},
+            {"_id": 0, "milestone_xp": 1}
+        ).to_list(100)
+        already_credited_xp = {c["milestone_xp"] for c in existing_crates if c.get("milestone_xp")}
+
+        # Determine which milestones they've passed but haven't been credited for
+        owed_crates = []
+        for m in XP_MILESTONES:
+            if current_xp >= m["xp"] and m["xp"] not in already_credited_xp:
+                owed_crates.append({
+                    "id":               str(uuid.uuid4()),
+                    "owner":            player_address,
+                    "crate_type":       m["crate"],
+                    "milestone_label":  m["label"],
+                    "milestone_xp":     m["xp"],
+                    "status":           "pending",
+                    "earned_at":        now,
+                    "backfilled":       True,
+                })
+
+        if owed_crates:
+            await db.lab_crates.insert_many(owed_crates)
+            total_granted += len(owed_crates)
+            results.append({
+                "player": player_address,
+                "xp": current_xp,
+                "crates_granted": len(owed_crates),
+                "milestones": [c["milestone_label"] for c in owed_crates],
+            })
+            logger.info(
+                f"[Backfill] {player_address} → {len(owed_crates)} crate(s) "
+                f"(XP={current_xp}): {[c['milestone_label'] for c in owed_crates]}"
+            )
+
+    return {
+        "ok":             True,
+        "total_pets":     total_pets,
+        "pets_updated":   len(results),
+        "crates_granted": total_granted,
+        "skipped":        skipped,
+        "details":        results,
+    }
+
+
 @api_router.get("/shiba/crates/{player_address}")
 async def get_pending_crates(player_address: str):
     """Get all pending (unopened) Lab Crates for a player."""
