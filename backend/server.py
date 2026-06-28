@@ -512,6 +512,11 @@ class Player(BaseModel):
     s1_rank: Optional[int] = None
     s1_lab_tokens: Optional[int] = None
     s1_settled_at: Optional[str] = None
+    # Manual admin top-up added on top of the live rank-based $LAB estimate
+    # (see calc_lab_reward / get_player_lab_estimate). Deliberately NOT
+    # read by get_leaderboard() or the Leaderboard page — only surfaces on
+    # the live lab-estimate endpoint (MyTreats page, Lab page top bar).
+    lab_bonus_allocation: int = 0
     created_treats: List[str] = []
     last_active: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -3847,12 +3852,16 @@ async def get_player_lab_estimate(address: str):
             break
 
     estimated_lab = calc_lab_reward(rank)
+    bonus_allocation = (player or {}).get("lab_bonus_allocation") or 0
+    total_estimated_lab = estimated_lab + bonus_allocation
 
     return {
         "address": address,
         "rank": rank,
         "points": points,
-        "estimated_lab": estimated_lab,
+        "estimated_lab": total_estimated_lab,
+        "rank_based_lab": estimated_lab,
+        "bonus_lab": bonus_allocation,
         "in_reward_range": rank is not None and rank <= 50,
         "note": "Live estimate based on current rank — final amount is settled at season end and may change as standings shift."
     }
@@ -5696,6 +5705,96 @@ if not ADMIN_SECRET:
     # Generate a secure random admin key if not provided
     ADMIN_SECRET = os.urandom(32).hex()
     logging.warning(f"⚠️ ADMIN_SECRET not set - generated temporary key (set env var in production)")
+
+
+class GrantLabBonusRequest(BaseModel):
+    # Identify the player by whichever of these is known — nickname is
+    # typically easiest since that's what's visible in-game/on Discord.
+    nickname: Optional[str] = None
+    telegram_username: Optional[str] = None
+    address: Optional[str] = None
+    amount: int
+    reason: Optional[str] = None
+    # Grant key: pass the same string again to make a repeat call a no-op
+    # instead of stacking the bonus a second time (e.g. if this endpoint
+    # is accidentally called twice for the same top-up).
+    grant_key: str
+
+
+@api_router.post("/admin/player/grant-lab-bonus")
+async def grant_lab_bonus(payload: dict, admin_key: str = Query(...)):
+    """
+    Add a manual $LAB bonus on top of a player's live rank-based estimate
+    (see calc_lab_reward / get_player_lab_estimate). This does NOT touch
+    get_leaderboard() or anything the Leaderboard page reads — it only
+    affects the lab-estimate endpoint that backs the MyTreats page and the
+    Lab page's $LAB display.
+
+    Idempotent: each grant is recorded under `grant_key` in the player's
+    `lab_bonus_grants` list. Calling this again with the same grant_key
+    is a no-op (returns the existing grant instead of adding twice) —
+    safe to retry if a request times out or gets called twice by mistake.
+    """
+    if not admin_key or admin_key != ADMIN_SECRET:
+        await asyncio.sleep(2)
+        raise HTTPException(status_code=403, detail="Unauthorized: Invalid admin key")
+
+    req = GrantLabBonusRequest(**payload)
+
+    if not any([req.nickname, req.telegram_username, req.address]):
+        raise HTTPException(status_code=400, detail="Provide nickname, telegram_username, or address to identify the player")
+
+    # Resolve the player by whichever identifier was given.
+    player = None
+    if req.address:
+        player = await find_player_by_address(req.address)
+    if not player and req.nickname:
+        player = await db.players.find_one({"nickname": req.nickname})
+    if not player and req.telegram_username:
+        player = await db.players.find_one({"telegram_username": req.telegram_username})
+
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found with the given identifier(s)")
+
+    existing_grants = player.get("lab_bonus_grants") or []
+    already_applied = next((g for g in existing_grants if g.get("grant_key") == req.grant_key), None)
+    if already_applied:
+        return {
+            "success": True,
+            "already_applied": True,
+            "player_nickname": player.get("nickname"),
+            "grant": already_applied,
+            "new_total_bonus": player.get("lab_bonus_allocation", 0),
+            "message": "This grant_key was already applied — no changes made (idempotent no-op)."
+        }
+
+    new_total_bonus = (player.get("lab_bonus_allocation") or 0) + req.amount
+    grant_record = {
+        "grant_key": req.grant_key,
+        "amount": req.amount,
+        "reason": req.reason,
+        "granted_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    await db.players.update_one(
+        {"id": player["id"]},
+        {
+            "$set": {"lab_bonus_allocation": new_total_bonus},
+            "$push": {"lab_bonus_grants": grant_record},
+        }
+    )
+
+    logger.info(f"💰 Granted {req.amount:,} $LAB bonus to {player.get('nickname')} "
+                f"(reason: {req.reason}) — new total bonus: {new_total_bonus:,}")
+
+    return {
+        "success": True,
+        "already_applied": False,
+        "player_nickname": player.get("nickname"),
+        "grant": grant_record,
+        "new_total_bonus": new_total_bonus,
+        "message": f"Granted {req.amount:,} $LAB. Player's lab-estimate will now include this on top of their rank-based reward."
+    }
 
 
 @api_router.post("/admin/season2-reset")
