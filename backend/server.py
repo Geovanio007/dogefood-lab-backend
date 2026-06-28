@@ -5748,10 +5748,43 @@ async def grant_lab_bonus(payload: dict, admin_key: str = Query(...)):
     player = None
     if req.address:
         player = await find_player_by_address(req.address)
+        # Support the UI's truncated display format, e.g. "TG_848...3476"
+        # (shown when the full telegram_id doesn't fit on screen) — strip
+        # the "TG_"/"tg_" prefix and the "..." middle, then match on
+        # telegram_id by prefix+suffix digits instead of an exact value.
+        if not player and isinstance(req.address, str) and "..." in req.address:
+            raw = req.address.split("_", 1)[-1] if "_" in req.address else req.address
+            prefix, _, suffix = raw.partition("...")
+            prefix, suffix = prefix.strip(), suffix.strip()
+            if prefix.isdigit() and suffix.isdigit():
+                candidates = await db.players.find(
+                    {"telegram_id": {"$exists": True, "$ne": None}},
+                    {"telegram_id": 1, "id": 1, "nickname": 1, "lab_bonus_allocation": 1, "lab_bonus_grants": 1}
+                ).to_list(5000)
+                matches = [c for c in candidates
+                           if str(c.get("telegram_id", "")).startswith(prefix)
+                           and str(c.get("telegram_id", "")).endswith(suffix)]
+                if len(matches) == 1:
+                    player = matches[0]
+                elif len(matches) > 1:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"Truncated address matched {len(matches)} players — need the full telegram_id to disambiguate."
+                    )
     if not player and req.nickname:
-        player = await db.players.find_one({"nickname": req.nickname})
+        # Case-insensitive exact match (anchored, not a substring search) —
+        # a plain {"nickname": req.nickname} lookup is case-sensitive in
+        # Mongo and silently misses if the stored casing differs at all
+        # from what was typed (this was the original bug).
+        import re as _re
+        player = await db.players.find_one({
+            "nickname": {"$regex": f"^{_re.escape(req.nickname)}$", "$options": "i"}
+        })
     if not player and req.telegram_username:
-        player = await db.players.find_one({"telegram_username": req.telegram_username})
+        import re as _re
+        player = await db.players.find_one({
+            "telegram_username": {"$regex": f"^{_re.escape(req.telegram_username)}$", "$options": "i"}
+        })
 
     if not player:
         raise HTTPException(status_code=404, detail="Player not found with the given identifier(s)")
