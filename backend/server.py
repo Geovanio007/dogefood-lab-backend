@@ -10734,3 +10734,49 @@ async def startup_event():
 async def shutdown_db_client():
     client.close()
     logger.info("Database connection closed")
+
+
+# Include the router in the main app
+#
+# CRITICAL: without this call, NONE of the @api_router routes defined
+# throughout this file are actually registered with the FastAPI app —
+# every request to any /api/* endpoint returns a 404 as if the route
+# doesn't exist, which is exactly what "everything fails to fetch on the
+# frontend" looks like. This was missing entirely before this fix.
+app.include_router(api_router)
+
+
+# CORS Configuration - always include known frontend domains
+#
+# CRITICAL: without app.add_middleware(CORSMiddleware, ...) below, browsers
+# block every cross-origin request from the frontend (dogefoodlab.xyz)
+# to this API's own origin (onrender.com) before it even reaches a route
+# handler — this also produces "failed to fetch" on the frontend, on top
+# of (or even instead of) the missing-router issue above.
+ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', '')
+# Known frontend domains that should always be allowed
+KNOWN_FRONTEND_ORIGINS = [
+    "https://www.dogefoodlab.xyz",
+    "https://dogefoodlab.xyz",
+    "https://doge-food-lab.vercel.app",
+    "https://dogefoodlab.vercel.app",
+    "http://localhost:3000",
+]
+if ALLOWED_ORIGINS == '*' or not ALLOWED_ORIGINS:
+    logging.warning("CORS is set to allow all origins - restrict in production!")
+    cors_origins = ["*"]
+else:
+    cors_origins = [origin.strip() for origin in ALLOWED_ORIGINS.split(',') if origin.strip()]
+    # Merge with known origins
+    for origin in KNOWN_FRONTEND_ORIGINS:
+        if origin not in cors_origins:
+            cors_origins.append(origin)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
