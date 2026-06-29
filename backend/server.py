@@ -529,6 +529,13 @@ class Player(BaseModel):
     # read by get_leaderboard() or the Leaderboard page — only surfaces on
     # the live lab-estimate endpoint (MyTreats page, Lab page top bar).
     lab_bonus_allocation: int = 0
+    # Ingredients won from Lab Crates — each unlocks the ingredient for the
+    # player for 48 hours regardless of their level, then it expires and
+    # is no longer usable. Stored as a list rather than a single value so
+    # multiple crate-won ingredients can be active (with independent
+    # expiry times) at once. Expired entries are filtered out on read,
+    # not deleted, so the grant history remains visible if ever needed.
+    temp_unlocked_ingredients: List[dict] = []
     created_treats: List[str] = []
     last_active: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -10403,24 +10410,42 @@ async def open_lab_crate(crate_id: str, body: dict):
     points_total = sum(r["value"] for r in rewards if r["type"] == "points")
     lives_total  = sum(r["value"] for r in rewards if r["type"] == "lives")
     cosmetics    = [r["value"] for r in rewards if r["type"] == "cosmetic"]
-    ingredients  = [r["value"] for r in rewards if r["type"] == "ingredient"]
+    ingredient_ids = [r["value"] for r in rewards if r["type"] == "ingredient"]
 
-    now = datetime.now(timezone.utc).isoformat()
+    now_dt = datetime.now(timezone.utc)
+    now = now_dt.isoformat()
+
+    # Resolve the real player document once (handles TG_/tg_ case +
+    # telegram_id fallback) and reuse it for every grant below, instead of
+    # filtering separately by raw address per reward type — that pattern
+    # previously created duplicate orphan player documents for Telegram
+    # players (same root cause fixed elsewhere in this file).
+    player = await find_player_by_address(player_address)
+    player_filter = None
+    if player:
+        player_filter = {"id": player["id"]}
+    elif player_address and not player_address.startswith("guest_") and player_address != "GUEST_USER":
+        # No player document exists at all yet — create a minimal one now
+        # rather than letting every grant below silently no-op (the same
+        # defensive-creation pattern used in create_treat/collect_treat).
+        short_addr = player_address[:6] + player_address[-4:] if len(player_address) > 10 else player_address
+        new_player_doc = {
+            "id": str(uuid.uuid4()),
+            "address": player_address,
+            "nickname": f"Scientist {short_addr}",
+            "created_treats": [],
+            "last_active": now,
+        }
+        await db.players.insert_one(new_player_doc)
+        player_filter = {"id": new_player_doc["id"]}
 
     # Grant points
-    if points_total > 0:
-        player = await find_player_by_address(player_address)
-        if player:
-            filter_q = {"address": player["address"]} if player.get("address") else {"telegram_id": player.get("telegram_id")}
-            await db.players.update_one(filter_q, {"$inc": {"points": points_total}})
+    if points_total > 0 and player_filter:
+        await db.players.update_one(player_filter, {"$inc": {"points": points_total}})
 
     # Grant extra lives
-    if lives_total > 0:
-        await db.players.update_one(
-            {"address": player_address},
-            {"$inc": {"extra_treats_balance": lives_total}},
-            upsert=True
-        )
+    if lives_total > 0 and player_filter:
+        await db.players.update_one(player_filter, {"$inc": {"extra_treats_balance": lives_total}})
 
     # Grant cosmetics
     if cosmetics:
@@ -10430,13 +10455,87 @@ async def open_lab_crate(crate_id: str, body: dict):
             upsert=True
         )
 
+    # Grant ingredients — temporarily unlocked for 48 hours regardless of
+    # the player's level, then they expire. This is the actual fix for
+    # "ingredients won never appear on the player's ingredient list": the
+    # IDs now come from the real Season 2 catalog (services/ingredient_system.py)
+    # instead of fictional names, AND they're actually written somewhere
+    # the Lab page's ingredient tray can read from (see
+    # GET /player/{address}/temp-ingredients below).
+    granted_ingredients = []
+    if ingredient_ids and player_filter:
+        expires_at = (now_dt + timedelta(hours=48)).isoformat()
+        grants = []
+        for ing_id in ingredient_ids:
+            ing = ingredient_system.get_ingredient(ing_id)
+            grant = {
+                "ingredient_id": ing_id,
+                "ingredient_name": ing.name if ing else ing_id,
+                "granted_at": now,
+                "expires_at": expires_at,
+                "source": "lab_crate",
+            }
+            grants.append(grant)
+            granted_ingredients.append(grant)
+        await db.players.update_one(
+            player_filter,
+            {"$push": {"temp_unlocked_ingredients": {"$each": grants}}}
+        )
+
     # Mark crate as opened
     await db.lab_crates.update_one(
         {"id": crate_id},
         {"$set": {"status": "opened", "opened_at": now, "rewards": rewards}}
     )
 
-    return {"rewards": rewards, "points_granted": points_total, "lives_granted": lives_total}
+    return {
+        "rewards": rewards,
+        "points_granted": points_total,
+        "lives_granted": lives_total,
+        "ingredients_granted": granted_ingredients,
+    }
+
+
+@api_router.get("/player/{player_address}/temp-ingredients")
+async def get_temp_unlocked_ingredients(player_address: str):
+    """
+    Active (non-expired) Lab-Crate-won ingredients for a player, with the
+    real catalog metadata (name, emoji, color, rarity tier) merged in plus
+    a `seconds_remaining` countdown so the frontend can show a live timer.
+    Expired entries are filtered out here rather than deleted from the
+    document, so the grant history stays intact.
+    """
+    player = await find_player_by_address(player_address)
+    if not player:
+        return {"ingredients": []}
+
+    now = datetime.now(timezone.utc)
+    active = []
+    for grant in player.get("temp_unlocked_ingredients", []):
+        try:
+            expires_at = datetime.fromisoformat(grant["expires_at"])
+        except (KeyError, ValueError):
+            continue
+        if expires_at <= now:
+            continue  # expired — omit, don't delete
+
+        ing = ingredient_system.get_ingredient(grant["ingredient_id"])
+        active.append({
+            "id": grant["ingredient_id"],
+            "name": ing.name if ing else grant.get("ingredient_name", grant["ingredient_id"]),
+            "emoji": ing.emoji if ing else "❓",
+            "color": ing.color if ing else "#94a3b8",
+            "category": ing.category.value if ing else "Rare",
+            "description": ing.description if ing else "A rare ingredient won from a Lab Crate.",
+            "source": grant.get("source", "lab_crate"),
+            "granted_at": grant["granted_at"],
+            "expires_at": grant["expires_at"],
+            "seconds_remaining": max(0, int((expires_at - now).total_seconds())),
+        })
+
+    # Soonest-expiring first, so the most urgent one shows up first in any UI.
+    active.sort(key=lambda x: x["seconds_remaining"])
+    return {"ingredients": active}
 
 
 @api_router.post("/admin/shiba/backfill-crates")
@@ -10532,7 +10631,10 @@ CRATE_REWARD_TABLES = {
         {"type": "lives",      "value": 2,   "label": "+2 Extra Lives",      "icon": "❤️",  "rarity": "Uncommon",  "weight": 20},
         {"type": "points",     "value": 100, "label": "100 Points",          "icon": "⭐",  "rarity": "Common",    "weight": 25},
         {"type": "points",     "value": 250, "label": "250 Points",          "icon": "⭐",  "rarity": "Uncommon",  "weight": 15},
-        {"type": "ingredient", "value": "Quantum Bone Dust",  "icon": "🦴", "rarity": "Rare",      "weight": 7},
+        # Real Season 2 ingredient (was the fictional "Quantum Bone Dust",
+        # which never existed in services/ingredient_system.py and could
+        # never show up on the player's ingredient list as a result).
+        {"type": "ingredient", "value": "S2_015",  "icon": "💥", "rarity": "Rare",      "weight": 7},
         {"type": "cosmetic",   "value": "cap_basic",          "icon": "🧢", "rarity": "Common",    "weight": 3},
     ],
     "rare": [
@@ -10540,8 +10642,9 @@ CRATE_REWARD_TABLES = {
         {"type": "lives",      "value": 3,   "label": "+3 Extra Lives",      "icon": "❤️",  "rarity": "Rare",      "weight": 10},
         {"type": "points",     "value": 250, "label": "250 Points",          "icon": "⭐",  "rarity": "Uncommon",  "weight": 20},
         {"type": "points",     "value": 500, "label": "500 Points",          "icon": "💎",  "rarity": "Rare",      "weight": 15},
-        {"type": "ingredient", "value": "Lunar Syrup",        "icon": "🌙", "rarity": "Rare",      "weight": 15},
-        {"type": "ingredient", "value": "Toxic Cheese",       "icon": "🧀", "rarity": "Epic",      "weight": 8},
+        # Real ingredients (was fictional "Lunar Syrup" / "Toxic Cheese")
+        {"type": "ingredient", "value": "S2_008",  "icon": "🌙", "rarity": "Rare",      "weight": 15},
+        {"type": "ingredient", "value": "S2_035",  "icon": "🧀", "rarity": "Epic",      "weight": 8},
         {"type": "cosmetic",   "value": "goggles_lab",        "icon": "🥽", "rarity": "Rare",      "weight": 8},
         {"type": "cosmetic",   "value": "aura_fire",          "icon": "🔥", "rarity": "Rare",      "weight": 4},
     ],
@@ -10549,8 +10652,9 @@ CRATE_REWARD_TABLES = {
         {"type": "lives",      "value": 3,   "label": "+3 Extra Lives",      "icon": "❤️",  "rarity": "Rare",      "weight": 15},
         {"type": "points",     "value": 500, "label": "500 Points",          "icon": "💎",  "rarity": "Rare",      "weight": 20},
         {"type": "points",     "value": 1000,"label": "1000 Points",         "icon": "🌟",  "rarity": "Epic",      "weight": 10},
-        {"type": "ingredient", "value": "Golden Bacon Extract","icon": "🥓","rarity": "Epic",      "weight": 20},
-        {"type": "ingredient", "value": "Plasma Kibble",      "icon": "⚡", "rarity": "Legendary", "weight": 10},
+        # Real ingredients (was fictional "Golden Bacon Extract" / "Plasma Kibble")
+        {"type": "ingredient", "value": "S2_034",  "icon": "🥓", "rarity": "Epic",      "weight": 20},
+        {"type": "ingredient", "value": "S2_046",  "icon": "🪐", "rarity": "Legendary", "weight": 10},
         {"type": "cosmetic",   "value": "crown_gold",         "icon": "👑", "rarity": "Epic",      "weight": 12},
         {"type": "cosmetic",   "value": "aura_electric",      "icon": "⚡", "rarity": "Legendary", "weight": 8},
         {"type": "cosmetic",   "value": "armor_reactor",      "icon": "🛡️","rarity": "Epic",      "weight": 5},
@@ -10559,7 +10663,8 @@ CRATE_REWARD_TABLES = {
         {"type": "lives",      "value": 5,   "label": "+5 Extra Lives",      "icon": "❤️",  "rarity": "Legendary", "weight": 10},
         {"type": "points",     "value": 1000,"label": "1000 Points",         "icon": "🌟",  "rarity": "Epic",      "weight": 15},
         {"type": "points",     "value": 2500,"label": "2500 Points",         "icon": "💥",  "rarity": "Legendary", "weight": 8},
-        {"type": "ingredient", "value": "Galaxy Protein",     "icon": "🌌", "rarity": "Legendary", "weight": 20},
+        # Real ingredient (was fictional "Galaxy Protein")
+        {"type": "ingredient", "value": "S2_047",  "icon": "🐉", "rarity": "Legendary", "weight": 20},
         {"type": "cosmetic",   "value": "crown_mythic",       "icon": "💎", "rarity": "Mythic",    "weight": 15},
         {"type": "cosmetic",   "value": "aura_galaxy",        "icon": "🌌", "rarity": "Mythic",    "weight": 15},
         {"type": "cosmetic",   "value": "suit_scientist",     "icon": "🦺", "rarity": "Mythic",    "weight": 12},
