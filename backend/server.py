@@ -21,6 +21,18 @@ import httpx  # For Firebase verification
 from eth_account import Account
 from eth_account.messages import encode_defunct
 
+# Standard logger setup. This was previously missing entirely — `import
+# logging` was present but `logger` itself was never instantiated, even
+# though logger.info/.warning/.error are called 230+ times throughout
+# this file. The very first call (in startup_event, at app boot) raised
+# NameError: name 'logger' is not defined and crashed the deploy before
+# the app could finish starting.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 
 
 
