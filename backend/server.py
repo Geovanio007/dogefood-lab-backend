@@ -10291,226 +10291,6 @@ def _shiba_stage(xp: int) -> int:
 
 @api_router.post("/shiba/create/{player_address}")
 async def create_shiba(player_address: str):
-    """Idempotent: returns the existing pet, or creates a new one if none exists."""
-    existing = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
-    if existing:
-        return existing
-
-    pet = {
-        "pet_id":             str(uuid.uuid4()),
-        "owner":              player_address,
-        "current_stage":      0,
-        "current_xp":         0,
-        "total_treats_fed":   0,
-        "favorite_ingredient": None,
-        "created_at":         datetime.utcnow().isoformat(),
-        "last_fed_at":        None,
-    }
-    await db.player_pets.insert_one(pet)
-    pet.pop("_id", None)  # remove ObjectId injected by insert_one
-    return pet
-
-
-@api_router.post("/shiba/feed/{player_address}")
-async def feed_shiba(player_address: str, body: dict):
-    """Record a feeding, update XP + stage. Auto-creates the pet if missing."""
-    treat_rarity = body.get("treat_rarity", "Common")
-    xp_gained    = int(body.get("xp_gained", SHIBA_RARITY_XP.get(treat_rarity, 8)))
-
-    pet = await db.player_pets.find_one({"owner": player_address})
-    if not pet:
-        # First feed creates the pet — never 404 the user mid-animation
-        pet = {
-            "pet_id":             str(uuid.uuid4()),
-            "owner":              player_address,
-            "current_stage":      0,
-            "current_xp":         0,
-            "total_treats_fed":   0,
-            "favorite_ingredient": None,
-            "created_at":         datetime.utcnow().isoformat(),
-            "last_fed_at":        None,
-        }
-        await db.player_pets.insert_one(pet)
-
-    new_xp    = (pet.get("current_xp") or 0) + xp_gained
-    new_stage = _shiba_stage(new_xp)
-    now_iso   = datetime.utcnow().isoformat()
-
-    await db.player_pets.update_one(
-        {"owner": player_address},
-        {
-            "$set": {
-                "current_xp":    new_xp,
-                "current_stage": new_stage,
-                "last_fed_at":   now_iso,
-            },
-            "$inc": {"total_treats_fed": 1},
-        },
-    )
-
-    updated = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
-    evolved = new_stage > (pet.get("current_stage") or 0)
-    return {
-        "pet":         updated,
-        "xp_gained":   xp_gained,
-        "evolved":     evolved,
-        "new_stage":   new_stage,
-    }
-
-
-@api_router.get("/shiba/leaderboard")
-async def get_shiba_leaderboard(limit: int = 10):
-    """
-    Top pets by XP — 'Pack Leaders'. Joins each pet with its owner's
-    nickname so the leaderboard can show who raised it, not just an
-    address. Declared BEFORE /shiba/{player_address} (see routing-order
-    note above) so 'leaderboard' is never swallowed as an address.
-    """
-    pets = await db.player_pets.find(
-        {"current_xp": {"$gt": 0}}, {"_id": 0}
-    ).sort("current_xp", -1).limit(max(1, min(limit, 50))).to_list(50)
-
-    if not pets:
-        return {"pets": []}
-
-    owners = [p.get("owner") for p in pets if p.get("owner")]
-    # Resolve nicknames for every owner in one batch rather than N queries.
-    # Mirrors find_player_by_address's TG_/tg_ handling: build the set of
-    # possible identifiers (raw address, both TG_ casings, telegram_id) and
-    # do a single $or lookup.
-    tg_ids = []
-    or_clauses = [{"address": {"$in": owners}}]
-    for addr in owners:
-        if isinstance(addr, str) and addr.lower().startswith("tg_"):
-            try:
-                tg_ids.append(int(addr[3:]))
-            except (ValueError, TypeError):
-                pass
-    if tg_ids:
-        or_clauses.append({"telegram_id": {"$in": tg_ids}})
-
-    owner_docs = await db.players.find(
-        {"$or": or_clauses},
-        {"_id": 0, "address": 1, "telegram_id": 1, "nickname": 1, "telegram_first_name": 1,
-         "selected_character": 1, "is_nft_holder": 1}
-    ).to_list(len(owners) * 2 + 10)
-
-    # Build a lookup keyed by every identifier form an owner string might take.
-    owner_by_key = {}
-    for doc in owner_docs:
-        keys = set()
-        if doc.get("address"):
-            keys.add(doc["address"].lower())
-        if doc.get("telegram_id") is not None:
-            keys.add(f"tg_{doc['telegram_id']}")
-        for k in keys:
-            owner_by_key[k] = doc
-
-    result = []
-    for p in pets:
-        owner_addr = p.get("owner") or ""
-        owner_doc = owner_by_key.get(owner_addr.lower())
-        if not owner_doc and owner_addr.lower().startswith("tg_"):
-            owner_doc = owner_by_key.get(owner_addr.lower())
-
-        nickname = None
-        if owner_doc:
-            nickname = owner_doc.get("nickname") or owner_doc.get("telegram_first_name")
-        short_owner = (owner_addr[:6] + "…" + owner_addr[-4:]) if len(owner_addr) > 12 else owner_addr
-
-        result.append({
-            "owner": owner_addr,
-            "owner_nickname": nickname or f"Scientist {short_owner}",
-            "owner_is_nft_holder": bool(owner_doc.get("is_nft_holder")) if owner_doc else False,
-            "current_xp": p.get("current_xp", 0),
-            "current_stage": p.get("current_stage", 0),
-            "total_treats_fed": p.get("total_treats_fed", 0),
-            "favorite_ingredient": p.get("favorite_ingredient"),
-        })
-
-    return {"pets": result}
-
-
-@api_router.get("/shiba/{player_address}")
-async def get_shiba(player_address: str):
-    """Return the pet — 404 if none exists yet (frontend will then call /shiba/create/:address)."""
-    pet = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
-    if not pet:
-        raise HTTPException(status_code=404, detail="No pet found")
-    return pet
-# ============================================================
-#  END SHIBA PET ROUTES
-# ============================================================
-
-# Include the router in the main app
-app.include_router(api_router)
-
-
-# CORS Configuration - always include known frontend domains
-ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', '')
-# Known frontend domains that should always be allowed
-KNOWN_FRONTEND_ORIGINS = [
-    "https://www.dogefoodlab.xyz",
-    "https://dogefoodlab.xyz",
-    "https://doge-food-lab.vercel.app",
-    "https://dogefoodlab.vercel.app",
-    "http://localhost:3000",
-]
-if ALLOWED_ORIGINS == '*' or not ALLOWED_ORIGINS:
-    logging.warning("CORS is set to allow all origins - restrict in production!")
-    cors_origins = ["*"]
-else:
-    cors_origins = [origin.strip() for origin in ALLOWED_ORIGINS.split(',') if origin.strip()]
-    # Merge with known origins
-    for origin in KNOWN_FRONTEND_ORIGINS:
-        if origin not in cors_origins:
-            cors_origins.append(origin)
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=cors_origins,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-)
-
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# SHIBA GROWTH SYSTEM
-# ═══════════════════════════════════════════════════════════════════════════════
-
-SHIBA_STAGES = [
-    {"id": 0, "name": "Tiny Pup",    "xp_required": 0},
-    {"id": 1, "name": "Young Pup",   "xp_required": 150},
-    {"id": 2, "name": "Teen Shiba",  "xp_required": 400},
-    {"id": 3, "name": "Adult Shiba", "xp_required": 800},
-    {"id": 4, "name": "Alpha Shiba", "xp_required": 1500},
-    {"id": 5, "name": "Mythic Lab",  "xp_required": 2800},
-]
-RARITY_XP = {"Common": 8, "Uncommon": 18, "Rare": 35, "Epic": 65, "Legendary": 110, "Mythic": 200}
-
-def _shiba_stage(xp: int) -> int:
-    stage = 0
-    for s in SHIBA_STAGES:
-        if xp >= s["xp_required"]:
-            stage = s["id"]
-    return stage
-
-
-# Specific sub-routes MUST be registered before the generic /{player_address} GET
-# to avoid FastAPI treating "create" or "feed" as the player_address path variable.
-
-@api_router.post("/shiba/create/{player_address}")
-async def create_shiba(player_address: str):
     """Get existing pet or create a new one — idempotent."""
     existing = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
     if existing:
@@ -10584,102 +10364,6 @@ async def feed_shiba(player_address: str, body: dict):
         "new_stage":    new_stage,
         "crates_earned": [{"id": c["id"], "crate_type": c["crate_type"], "milestone_label": c["milestone_label"]} for c in earned_crates],
     }
-
-
-@api_router.get("/shiba/{player_address}")
-async def get_shiba(player_address: str):
-    """Get pet — returns 404 if none exists yet (frontend will call /shiba/create/:address)."""
-    pet = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
-    if not pet:
-        raise HTTPException(status_code=404, detail="No pet found")
-    return pet
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# LAB CRATE + PET WARDROBE SYSTEM
-# ═══════════════════════════════════════════════════════════════════════════════
-
-CRATE_REWARD_TABLES = {
-    "basic": [
-        {"type": "lives",      "value": 1,   "label": "+1 Extra Life",       "icon": "❤️",  "rarity": "Common",    "weight": 30},
-        {"type": "lives",      "value": 2,   "label": "+2 Extra Lives",      "icon": "❤️",  "rarity": "Uncommon",  "weight": 20},
-        {"type": "points",     "value": 100, "label": "100 Points",          "icon": "⭐",  "rarity": "Common",    "weight": 25},
-        {"type": "points",     "value": 250, "label": "250 Points",          "icon": "⭐",  "rarity": "Uncommon",  "weight": 15},
-        {"type": "ingredient", "value": "Quantum Bone Dust",  "icon": "🦴", "rarity": "Rare",      "weight": 7},
-        {"type": "cosmetic",   "value": "cap_basic",          "icon": "🧢", "rarity": "Common",    "weight": 3},
-    ],
-    "rare": [
-        {"type": "lives",      "value": 2,   "label": "+2 Extra Lives",      "icon": "❤️",  "rarity": "Uncommon",  "weight": 20},
-        {"type": "lives",      "value": 3,   "label": "+3 Extra Lives",      "icon": "❤️",  "rarity": "Rare",      "weight": 10},
-        {"type": "points",     "value": 250, "label": "250 Points",          "icon": "⭐",  "rarity": "Uncommon",  "weight": 20},
-        {"type": "points",     "value": 500, "label": "500 Points",          "icon": "💎",  "rarity": "Rare",      "weight": 15},
-        {"type": "ingredient", "value": "Lunar Syrup",        "icon": "🌙", "rarity": "Rare",      "weight": 15},
-        {"type": "ingredient", "value": "Toxic Cheese",       "icon": "🧀", "rarity": "Epic",      "weight": 8},
-        {"type": "cosmetic",   "value": "goggles_lab",        "icon": "🥽", "rarity": "Rare",      "weight": 8},
-        {"type": "cosmetic",   "value": "aura_fire",          "icon": "🔥", "rarity": "Rare",      "weight": 4},
-    ],
-    "elite": [
-        {"type": "lives",      "value": 3,   "label": "+3 Extra Lives",      "icon": "❤️",  "rarity": "Rare",      "weight": 15},
-        {"type": "points",     "value": 500, "label": "500 Points",          "icon": "💎",  "rarity": "Rare",      "weight": 20},
-        {"type": "points",     "value": 1000,"label": "1000 Points",         "icon": "🌟",  "rarity": "Epic",      "weight": 10},
-        {"type": "ingredient", "value": "Golden Bacon Extract","icon": "🥓","rarity": "Epic",      "weight": 20},
-        {"type": "ingredient", "value": "Plasma Kibble",      "icon": "⚡", "rarity": "Legendary", "weight": 10},
-        {"type": "cosmetic",   "value": "crown_gold",         "icon": "👑", "rarity": "Epic",      "weight": 12},
-        {"type": "cosmetic",   "value": "aura_electric",      "icon": "⚡", "rarity": "Legendary", "weight": 8},
-        {"type": "cosmetic",   "value": "armor_reactor",      "icon": "🛡️","rarity": "Epic",      "weight": 5},
-    ],
-    "legendary": [
-        {"type": "lives",      "value": 5,   "label": "+5 Extra Lives",      "icon": "❤️",  "rarity": "Legendary", "weight": 10},
-        {"type": "points",     "value": 1000,"label": "1000 Points",         "icon": "🌟",  "rarity": "Epic",      "weight": 15},
-        {"type": "points",     "value": 2500,"label": "2500 Points",         "icon": "💥",  "rarity": "Legendary", "weight": 8},
-        {"type": "ingredient", "value": "Galaxy Protein",     "icon": "🌌", "rarity": "Legendary", "weight": 20},
-        {"type": "cosmetic",   "value": "crown_mythic",       "icon": "💎", "rarity": "Mythic",    "weight": 15},
-        {"type": "cosmetic",   "value": "aura_galaxy",        "icon": "🌌", "rarity": "Mythic",    "weight": 15},
-        {"type": "cosmetic",   "value": "suit_scientist",     "icon": "🦺", "rarity": "Mythic",    "weight": 12},
-        {"type": "cosmetic",   "value": "jetpack_rocket",     "icon": "🚀", "rarity": "Legendary", "weight": 5},
-    ],
-}
-
-XP_MILESTONES = [
-    {"xp": 150,  "stage": 1, "crate": "basic",     "label": "Young Pup"},
-    {"xp": 400,  "stage": 2, "crate": "basic",     "label": "Teen Shiba"},
-    {"xp": 600,  "stage": 2, "crate": "rare",      "label": "Mid Growth"},
-    {"xp": 800,  "stage": 3, "crate": "rare",      "label": "Adult Shiba"},
-    {"xp": 1100, "stage": 3, "crate": "elite",     "label": "Evolved"},
-    {"xp": 1500, "stage": 4, "crate": "elite",     "label": "Alpha Shiba"},
-    {"xp": 2000, "stage": 4, "crate": "legendary", "label": "Champion"},
-    {"xp": 2800, "stage": 5, "crate": "legendary", "label": "Mythic Lab"},
-]
-
-
-def _pick_crate_reward(crate_type: str) -> dict:
-    import random
-    table = CRATE_REWARD_TABLES.get(crate_type, CRATE_REWARD_TABLES["basic"])
-    total = sum(r["weight"] for r in table)
-    roll = random.uniform(0, total)
-    cumulative = 0
-    for reward in table:
-        cumulative += reward["weight"]
-        if roll <= cumulative:
-            return reward
-    return table[-1]
-
-
-def _check_milestone_crates(old_xp: int, new_xp: int, player_address: str) -> list:
-    """Return list of crates earned for XP milestones crossed between old_xp and new_xp."""
-    earned = []
-    for m in XP_MILESTONES:
-        if old_xp < m["xp"] <= new_xp:
-            earned.append({
-                "id": str(uuid.uuid4()),
-                "owner": player_address,
-                "crate_type": m["crate"],
-                "milestone_label": m["label"],
-                "milestone_xp": m["xp"],
-                "status": "pending",
-                "earned_at": datetime.now(timezone.utc).isoformat(),
-            })
-    return earned
 
 
 @api_router.post("/shiba/crate/{crate_id}/open")
@@ -10815,6 +10499,103 @@ async def backfill_milestone_crates(admin_key: str = None):
         "skipped":        skipped,
         "details":        results,
     }
+
+
+@api_router.get("/shiba/{player_address}")
+async def get_shiba(player_address: str):
+    """Get pet — returns 404 if none exists yet (frontend will call /shiba/create/:address)."""
+    pet = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
+    if not pet:
+        raise HTTPException(status_code=404, detail="No pet found")
+    return pet
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LAB CRATE + PET WARDROBE SYSTEM
+# ═══════════════════════════════════════════════════════════════════════════════
+
+CRATE_REWARD_TABLES = {
+    "basic": [
+        {"type": "lives",      "value": 1,   "label": "+1 Extra Life",       "icon": "❤️",  "rarity": "Common",    "weight": 30},
+        {"type": "lives",      "value": 2,   "label": "+2 Extra Lives",      "icon": "❤️",  "rarity": "Uncommon",  "weight": 20},
+        {"type": "points",     "value": 100, "label": "100 Points",          "icon": "⭐",  "rarity": "Common",    "weight": 25},
+        {"type": "points",     "value": 250, "label": "250 Points",          "icon": "⭐",  "rarity": "Uncommon",  "weight": 15},
+        {"type": "ingredient", "value": "Quantum Bone Dust",  "icon": "🦴", "rarity": "Rare",      "weight": 7},
+        {"type": "cosmetic",   "value": "cap_basic",          "icon": "🧢", "rarity": "Common",    "weight": 3},
+    ],
+    "rare": [
+        {"type": "lives",      "value": 2,   "label": "+2 Extra Lives",      "icon": "❤️",  "rarity": "Uncommon",  "weight": 20},
+        {"type": "lives",      "value": 3,   "label": "+3 Extra Lives",      "icon": "❤️",  "rarity": "Rare",      "weight": 10},
+        {"type": "points",     "value": 250, "label": "250 Points",          "icon": "⭐",  "rarity": "Uncommon",  "weight": 20},
+        {"type": "points",     "value": 500, "label": "500 Points",          "icon": "💎",  "rarity": "Rare",      "weight": 15},
+        {"type": "ingredient", "value": "Lunar Syrup",        "icon": "🌙", "rarity": "Rare",      "weight": 15},
+        {"type": "ingredient", "value": "Toxic Cheese",       "icon": "🧀", "rarity": "Epic",      "weight": 8},
+        {"type": "cosmetic",   "value": "goggles_lab",        "icon": "🥽", "rarity": "Rare",      "weight": 8},
+        {"type": "cosmetic",   "value": "aura_fire",          "icon": "🔥", "rarity": "Rare",      "weight": 4},
+    ],
+    "elite": [
+        {"type": "lives",      "value": 3,   "label": "+3 Extra Lives",      "icon": "❤️",  "rarity": "Rare",      "weight": 15},
+        {"type": "points",     "value": 500, "label": "500 Points",          "icon": "💎",  "rarity": "Rare",      "weight": 20},
+        {"type": "points",     "value": 1000,"label": "1000 Points",         "icon": "🌟",  "rarity": "Epic",      "weight": 10},
+        {"type": "ingredient", "value": "Golden Bacon Extract","icon": "🥓","rarity": "Epic",      "weight": 20},
+        {"type": "ingredient", "value": "Plasma Kibble",      "icon": "⚡", "rarity": "Legendary", "weight": 10},
+        {"type": "cosmetic",   "value": "crown_gold",         "icon": "👑", "rarity": "Epic",      "weight": 12},
+        {"type": "cosmetic",   "value": "aura_electric",      "icon": "⚡", "rarity": "Legendary", "weight": 8},
+        {"type": "cosmetic",   "value": "armor_reactor",      "icon": "🛡️","rarity": "Epic",      "weight": 5},
+    ],
+    "legendary": [
+        {"type": "lives",      "value": 5,   "label": "+5 Extra Lives",      "icon": "❤️",  "rarity": "Legendary", "weight": 10},
+        {"type": "points",     "value": 1000,"label": "1000 Points",         "icon": "🌟",  "rarity": "Epic",      "weight": 15},
+        {"type": "points",     "value": 2500,"label": "2500 Points",         "icon": "💥",  "rarity": "Legendary", "weight": 8},
+        {"type": "ingredient", "value": "Galaxy Protein",     "icon": "🌌", "rarity": "Legendary", "weight": 20},
+        {"type": "cosmetic",   "value": "crown_mythic",       "icon": "💎", "rarity": "Mythic",    "weight": 15},
+        {"type": "cosmetic",   "value": "aura_galaxy",        "icon": "🌌", "rarity": "Mythic",    "weight": 15},
+        {"type": "cosmetic",   "value": "suit_scientist",     "icon": "🦺", "rarity": "Mythic",    "weight": 12},
+        {"type": "cosmetic",   "value": "jetpack_rocket",     "icon": "🚀", "rarity": "Legendary", "weight": 5},
+    ],
+}
+
+XP_MILESTONES = [
+    {"xp": 150,  "stage": 1, "crate": "basic",     "label": "Young Pup"},
+    {"xp": 400,  "stage": 2, "crate": "basic",     "label": "Teen Shiba"},
+    {"xp": 600,  "stage": 2, "crate": "rare",      "label": "Mid Growth"},
+    {"xp": 800,  "stage": 3, "crate": "rare",      "label": "Adult Shiba"},
+    {"xp": 1100, "stage": 3, "crate": "elite",     "label": "Evolved"},
+    {"xp": 1500, "stage": 4, "crate": "elite",     "label": "Alpha Shiba"},
+    {"xp": 2000, "stage": 4, "crate": "legendary", "label": "Champion"},
+    {"xp": 2800, "stage": 5, "crate": "legendary", "label": "Mythic Lab"},
+]
+
+
+def _pick_crate_reward(crate_type: str) -> dict:
+    import random
+    table = CRATE_REWARD_TABLES.get(crate_type, CRATE_REWARD_TABLES["basic"])
+    total = sum(r["weight"] for r in table)
+    roll = random.uniform(0, total)
+    cumulative = 0
+    for reward in table:
+        cumulative += reward["weight"]
+        if roll <= cumulative:
+            return reward
+    return table[-1]
+
+
+def _check_milestone_crates(old_xp: int, new_xp: int, player_address: str) -> list:
+    """Return list of crates earned for XP milestones crossed between old_xp and new_xp."""
+    earned = []
+    for m in XP_MILESTONES:
+        if old_xp < m["xp"] <= new_xp:
+            earned.append({
+                "id": str(uuid.uuid4()),
+                "owner": player_address,
+                "crate_type": m["crate"],
+                "milestone_label": m["label"],
+                "milestone_xp": m["xp"],
+                "status": "pending",
+                "earned_at": datetime.now(timezone.utc).isoformat(),
+            })
+    return earned
+
 
 
 @api_router.get("/shiba/crates/{player_address}")
