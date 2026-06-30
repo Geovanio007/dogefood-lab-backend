@@ -10310,13 +10310,19 @@ def _shiba_stage(xp: int) -> int:
 
 @api_router.post("/shiba/create/{player_address}")
 async def create_shiba(player_address: str):
-    """Get existing pet or create a new one — idempotent."""
-    existing = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
+    """Get existing pet or create a new one — idempotent.
+    Owner lookup is case-insensitive (wallet addresses can arrive checksummed
+    or lowercased depending on the flow), but new pets are always stored with
+    a lowercased owner so future writes are consistent."""
+    existing = await db.player_pets.find_one(
+        {"owner": {"$regex": f"^{re.escape(player_address)}$", "$options": "i"}},
+        {"_id": 0}
+    )
     if existing:
         return existing
     pet = {
         "pet_id": str(uuid.uuid4()),
-        "owner": player_address,
+        "owner": player_address.lower(),
         "current_stage": 0,
         "current_xp": 0,
         "total_treats_fed": 0,
@@ -10331,16 +10337,20 @@ async def create_shiba(player_address: str):
 
 @api_router.post("/shiba/feed/{player_address}")
 async def feed_shiba(player_address: str, body: dict):
-    """Record a feeding, update XP and stage. Auto-creates pet if missing."""
+    """Record a feeding, update XP and stage. Auto-creates pet if missing.
+    Owner lookups are case-insensitive; the stored owner key (existing or
+    newly created) is reused for all subsequent writes in this call so the
+    XP update always lands on the exact same document just read."""
     treat_rarity = body.get("treat_rarity", "Common")
     xp_gained    = int(body.get("xp_gained", RARITY_XP.get(treat_rarity, 8)))
 
-    pet = await db.player_pets.find_one({"owner": player_address})
+    owner_filter = {"owner": {"$regex": f"^{re.escape(player_address)}$", "$options": "i"}}
+    pet = await db.player_pets.find_one(owner_filter)
     if not pet:
         # Auto-create rather than error — first feed creates the pet
         pet = {
             "pet_id": str(uuid.uuid4()),
-            "owner": player_address,
+            "owner": player_address.lower(),
             "current_stage": 0,
             "current_xp": 0,
             "total_treats_fed": 0,
@@ -10349,13 +10359,14 @@ async def feed_shiba(player_address: str, body: dict):
             "last_fed_at": None,
         }
         await db.player_pets.insert_one(pet)
+        owner_filter = {"owner": pet["owner"]}  # exact match now that we just created it
 
     new_xp    = (pet.get("current_xp") or 0) + xp_gained
     new_stage = _shiba_stage(new_xp)
     now       = datetime.now(timezone.utc).isoformat()
 
     await db.player_pets.update_one(
-        {"owner": player_address},
+        owner_filter,
         {
             "$set": {
                 "current_xp":    new_xp,
@@ -10366,15 +10377,20 @@ async def feed_shiba(player_address: str, body: dict):
         },
     )
 
-    updated = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
+    updated = await db.player_pets.find_one(owner_filter, {"_id": 0})
     evolved  = new_stage > (pet.get("current_stage") or 0)
 
     # ── Check for XP milestone crates ──────────────────────────────────────
+    # Use the pet's actual stored owner (not the raw request param) so the
+    # crate's owner field always matches exactly what's in player_pets —
+    # this is what makes the later case-insensitive crate-open lookup
+    # reliable rather than relying on it as the only safety net.
     old_xp = (pet.get("current_xp") or 0)
-    earned_crates = _check_milestone_crates(old_xp, new_xp, player_address)
+    crate_owner = pet.get("owner") or player_address.lower()
+    earned_crates = _check_milestone_crates(old_xp, new_xp, crate_owner)
     if earned_crates:
         await db.lab_crates.insert_many(earned_crates)
-        logger.info(f"🎁 {len(earned_crates)} Lab Crate(s) earned by {player_address}")
+        logger.info(f"🎁 {len(earned_crates)} Lab Crate(s) earned by {crate_owner}")
 
     return {
         "pet":          updated,
@@ -10392,7 +10408,13 @@ async def open_lab_crate(crate_id: str, body: dict):
     if not player_address:
         raise HTTPException(status_code=400, detail="player_address required")
 
-    crate = await db.lab_crates.find_one({"id": crate_id, "owner": player_address, "status": "pending"})
+    # Case-insensitive owner match — wallet addresses can arrive checksummed
+    # (mixed case from wagmi) or lowercased depending on which flow stored them.
+    crate = await db.lab_crates.find_one({
+        "id": crate_id,
+        "owner": {"$regex": f"^{re.escape(player_address)}$", "$options": "i"},
+        "status": "pending",
+    })
     if not crate:
         raise HTTPException(status_code=404, detail="Crate not found or already opened")
 
@@ -10455,10 +10477,12 @@ async def open_lab_crate(crate_id: str, body: dict):
     if lives_total > 0 and player_filter:
         await db.players.update_one(player_filter, {"$inc": {"extra_treats_balance": lives_total}})
 
-    # Grant cosmetics
+    # Grant cosmetics — use the resolved owner key so this never creates a
+    # second, differently-cased wardrobe document for the same player.
     if cosmetics:
+        wardrobe_owner = await _wardrobe_owner_filter(player_address)
         await db.player_wardrobes.update_one(
-            {"owner": player_address},
+            wardrobe_owner,
             {"$addToSet": {"owned": {"$each": cosmetics}}},
             upsert=True
         )
@@ -10623,7 +10647,10 @@ async def backfill_milestone_crates(admin_key: str = None):
 @api_router.get("/shiba/{player_address}")
 async def get_shiba(player_address: str):
     """Get pet — returns 404 if none exists yet (frontend will call /shiba/create/:address)."""
-    pet = await db.player_pets.find_one({"owner": player_address}, {"_id": 0})
+    pet = await db.player_pets.find_one(
+        {"owner": {"$regex": f"^{re.escape(player_address)}$", "$options": "i"}},
+        {"_id": 0}
+    )
     if not pet:
         raise HTTPException(status_code=404, detail="No pet found")
     return pet
@@ -10727,7 +10754,7 @@ def _check_milestone_crates(old_xp: int, new_xp: int, player_address: str) -> li
 async def get_pending_crates(player_address: str):
     """Get all pending (unopened) Lab Crates for a player."""
     crates = await db.lab_crates.find(
-        {"owner": player_address, "status": "pending"},
+        {"owner": {"$regex": f"^{re.escape(player_address)}$", "$options": "i"}, "status": "pending"},
         {"_id": 0}
     ).sort("earned_at", 1).to_list(50)
     return {"crates": crates, "count": len(crates)}
@@ -10736,10 +10763,24 @@ async def get_pending_crates(player_address: str):
 @api_router.get("/shiba/wardrobe/{player_address}")
 async def get_wardrobe(player_address: str):
     """Get player's cosmetic inventory and equipped items."""
-    wardrobe = await db.player_wardrobes.find_one({"owner": player_address}, {"_id": 0})
+    wardrobe = await db.player_wardrobes.find_one(
+        {"owner": {"$regex": f"^{re.escape(player_address)}$", "$options": "i"}},
+        {"_id": 0}
+    )
     if not wardrobe:
         return {"owned": [], "equipped": {}}
     return {"owned": wardrobe.get("owned", []), "equipped": wardrobe.get("equipped", {})}
+
+
+async def _wardrobe_owner_filter(player_address: str) -> dict:
+    """Resolve the exact owner key already in player_wardrobes (case-insensitive
+    lookup), falling back to a lowercased key if no document exists yet — so
+    upsert writes never create a second, differently-cased duplicate document."""
+    existing = await db.player_wardrobes.find_one(
+        {"owner": {"$regex": f"^{re.escape(player_address)}$", "$options": "i"}},
+        {"owner": 1}
+    )
+    return {"owner": existing["owner"]} if existing else {"owner": player_address.lower()}
 
 
 @api_router.post("/shiba/wardrobe/{player_address}/equip")
@@ -10748,8 +10789,9 @@ async def equip_cosmetic(player_address: str, body: dict):
     category = body.get("category")
     if not item_id or not category:
         raise HTTPException(status_code=400, detail="item_id and category required")
+    owner_filter = await _wardrobe_owner_filter(player_address)
     await db.player_wardrobes.update_one(
-        {"owner": player_address},
+        owner_filter,
         {"$set": {f"equipped.{category}": item_id}},
         upsert=True
     )
@@ -10761,8 +10803,9 @@ async def unequip_cosmetic(player_address: str, body: dict):
     category = body.get("category")
     if not category:
         raise HTTPException(status_code=400, detail="category required")
+    owner_filter = await _wardrobe_owner_filter(player_address)
     await db.player_wardrobes.update_one(
-        {"owner": player_address},
+        owner_filter,
         {"$unset": {f"equipped.{category}": ""}}
     )
     return {"ok": True}
@@ -10776,8 +10819,10 @@ async def unequip_cosmetic(player_address: str, body: dict):
 
 @api_router.get("/lab/crates/{player_address}")
 async def lab_get_pending_crates(player_address: str):
+    # Case-insensitive — same reasoning as lab_open_crate below
     crates = await db.lab_crates.find(
-        {"owner": player_address, "status": "pending"}, {"_id": 0}
+        {"owner": {"$regex": f"^{re.escape(player_address)}$", "$options": "i"}, "status": "pending"},
+        {"_id": 0}
     ).sort("earned_at", 1).to_list(50)
     return {"crates": crates, "count": len(crates)}
 
@@ -10787,7 +10832,13 @@ async def lab_open_crate(crate_id: str, body: dict):
     player_address = body.get("player_address")
     if not player_address:
         raise HTTPException(status_code=400, detail="player_address required")
-    crate = await db.lab_crates.find_one({"id": crate_id, "owner": player_address, "status": "pending"})
+    # Case-insensitive owner match — wallet addresses can arrive checksummed
+    # (mixed case from wagmi) or lowercased depending on which flow stored them.
+    crate = await db.lab_crates.find_one({
+        "id": crate_id,
+        "owner": {"$regex": f"^{re.escape(player_address)}$", "$options": "i"},
+        "status": "pending",
+    })
     if not crate:
         raise HTTPException(status_code=404, detail="Crate not found or already opened")
 
@@ -10823,8 +10874,9 @@ async def lab_open_crate(crate_id: str, body: dict):
     if lives_total > 0 and player_filter:
         await db.players.update_one(player_filter, {"$inc": {"extra_treats_balance": lives_total}})
     if cosmetics:
+        wardrobe_owner = await _wardrobe_owner_filter(player_address)
         await db.player_wardrobes.update_one(
-            {"owner": player_address},
+            wardrobe_owner,
             {"$addToSet": {"owned": {"$each": cosmetics}}},
             upsert=True
         )
@@ -10863,7 +10915,10 @@ async def lab_open_crate(crate_id: str, body: dict):
 
 @api_router.get("/lab/wardrobe/{player_address}")
 async def lab_get_wardrobe(player_address: str):
-    wardrobe = await db.player_wardrobes.find_one({"owner": player_address}, {"_id": 0})
+    wardrobe = await db.player_wardrobes.find_one(
+        {"owner": {"$regex": f"^{re.escape(player_address)}$", "$options": "i"}},
+        {"_id": 0}
+    )
     if not wardrobe:
         return {"owned": [], "equipped": {}}
     return {"owned": wardrobe.get("owned", []), "equipped": wardrobe.get("equipped", {})}
@@ -10875,8 +10930,9 @@ async def lab_equip(player_address: str, body: dict):
     category = body.get("category")
     if not item_id or not category:
         raise HTTPException(status_code=400, detail="item_id and category required")
+    owner_filter = await _wardrobe_owner_filter(player_address)
     await db.player_wardrobes.update_one(
-        {"owner": player_address},
+        owner_filter,
         {"$set": {f"equipped.{category}": item_id}},
         upsert=True
     )
@@ -10888,8 +10944,9 @@ async def lab_unequip(player_address: str, body: dict):
     category = body.get("category")
     if not category:
         raise HTTPException(status_code=400, detail="category required")
+    owner_filter = await _wardrobe_owner_filter(player_address)
     await db.player_wardrobes.update_one(
-        {"owner": player_address},
+        owner_filter,
         {"$unset": {f"equipped.{category}": ""}}
     )
     return {"ok": True}
