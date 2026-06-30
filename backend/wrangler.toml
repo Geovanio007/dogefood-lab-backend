@@ -1,0 +1,4 @@
+name = "dogefood-lab-backend"
+main = "server.py" # Or the path to your python file defining `app`
+compatibility_date = "2024-03-01" # Must be 2024-03-01 or later
+compatibility_flags = ["python_workers"]
