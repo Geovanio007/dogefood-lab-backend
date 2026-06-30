@@ -11058,18 +11058,20 @@ KNOWN_FRONTEND_ORIGINS = [
     "https://doge-food-lab.vercel.app",
     "https://dogefoodlab.vercel.app",
     "http://localhost:3000",
-    "https://dogefoodlabfrontend.geovanyquimuanga.workers.dev",
+    "https://dogefoodlabfrontend.geovanyquimuanga.workers.dev"
 ]
-if ALLOWED_ORIGINS == '*' or not ALLOWED_ORIGINS:
+
+if ALLOWED_ORIGINS == '*':
     logging.warning("CORS is set to allow all origins - restrict in production!")
     cors_origins = ["*"]
+elif not ALLOWED_ORIGINS:
+    cors_origins = KNOWN_FRONTEND_ORIGINS
 else:
-    cors_origins = [origin.strip() for origin in ALLOWED_ORIGINS.split(',') if origin.strip()]
+    cors_origins = [origin.strip() for origin in ALLOWED_ORIGINS.split(',')]
     # Merge with known origins
     for origin in KNOWN_FRONTEND_ORIGINS:
         if origin not in cors_origins:
             cors_origins.append(origin)
-
 
 app.add_middleware(
     CORSMiddleware,
