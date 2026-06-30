@@ -10404,6 +10404,14 @@ async def open_lab_crate(crate_id: str, body: dict):
         reward.pop("weight", None)
         if not reward.get("label"):
             reward["label"] = reward.get("value", "Reward")
+        # Enrich ingredient rewards with real name + emoji from ingredient system
+        if reward.get("type") == "ingredient":
+            ing = ingredient_system.get_ingredient(reward["value"])
+            if ing:
+                reward["label"]     = ing.name
+                reward["icon"]      = ing.emoji
+                reward["ing_name"]  = ing.name
+                reward["ing_rarity"]= ing.category.value
         rewards.append(reward)
 
     # Apply rewards to player
@@ -10750,6 +10758,133 @@ async def equip_cosmetic(player_address: str, body: dict):
 
 @api_router.post("/shiba/wardrobe/{player_address}/unequip")
 async def unequip_cosmetic(player_address: str, body: dict):
+    category = body.get("category")
+    if not category:
+        raise HTTPException(status_code=400, detail="category required")
+    await db.player_wardrobes.update_one(
+        {"owner": player_address},
+        {"$unset": {f"equipped.{category}": ""}}
+    )
+    return {"ok": True}
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# /api/lab/* ALIASES — conflict-free paths, cannot be caught by
+# GET /shiba/{player_address}. Frontend uses these in MyDoge and all browsers.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@api_router.get("/lab/crates/{player_address}")
+async def lab_get_pending_crates(player_address: str):
+    crates = await db.lab_crates.find(
+        {"owner": player_address, "status": "pending"}, {"_id": 0}
+    ).sort("earned_at", 1).to_list(50)
+    return {"crates": crates, "count": len(crates)}
+
+
+@api_router.post("/lab/crate/{crate_id}/open")
+async def lab_open_crate(crate_id: str, body: dict):
+    player_address = body.get("player_address")
+    if not player_address:
+        raise HTTPException(status_code=400, detail="player_address required")
+    crate = await db.lab_crates.find_one({"id": crate_id, "owner": player_address, "status": "pending"})
+    if not crate:
+        raise HTTPException(status_code=404, detail="Crate not found or already opened")
+
+    rewards = []
+    for _ in range(3):
+        r = _pick_crate_reward(crate["crate_type"])
+        reward = dict(r)
+        reward.pop("weight", None)
+        if not reward.get("label"):
+            reward["label"] = reward.get("value", "Reward")
+        # Enrich ingredient rewards with real name + emoji
+        if reward.get("type") == "ingredient":
+            ing = ingredient_system.get_ingredient(reward["value"])
+            if ing:
+                reward["label"]      = ing.name
+                reward["icon"]       = ing.emoji
+                reward["ing_name"]   = ing.name
+                reward["ing_rarity"] = ing.category.value
+        rewards.append(reward)
+
+    points_total   = sum(r["value"] for r in rewards if r["type"] == "points")
+    lives_total    = sum(r["value"] for r in rewards if r["type"] == "lives")
+    cosmetics      = [r["value"] for r in rewards if r["type"] == "cosmetic"]
+    ingredient_ids = [r["value"] for r in rewards if r["type"] == "ingredient"]
+    now_dt = datetime.now(timezone.utc)
+    now    = now_dt.isoformat()
+
+    player        = await find_player_by_address(player_address)
+    player_filter = {"id": player["id"]} if player else None
+
+    if points_total > 0 and player_filter:
+        await db.players.update_one(player_filter, {"$inc": {"points": points_total}})
+    if lives_total > 0 and player_filter:
+        await db.players.update_one(player_filter, {"$inc": {"extra_treats_balance": lives_total}})
+    if cosmetics:
+        await db.player_wardrobes.update_one(
+            {"owner": player_address},
+            {"$addToSet": {"owned": {"$each": cosmetics}}},
+            upsert=True
+        )
+
+    granted_ingredients = []
+    if ingredient_ids and player_filter:
+        expires_at = (now_dt + timedelta(hours=48)).isoformat()
+        grants = []
+        for ing_id in ingredient_ids:
+            ing = ingredient_system.get_ingredient(ing_id)
+            grant = {
+                "ingredient_id":   ing_id,
+                "ingredient_name": ing.name if ing else ing_id,
+                "granted_at":      now,
+                "expires_at":      expires_at,
+                "source":          "lab_crate",
+            }
+            grants.append(grant)
+            granted_ingredients.append(grant)
+        await db.players.update_one(
+            player_filter,
+            {"$push": {"temp_unlocked_ingredients": {"$each": grants}}}
+        )
+
+    await db.lab_crates.update_one(
+        {"id": crate_id},
+        {"$set": {"status": "opened", "opened_at": now, "rewards": rewards}}
+    )
+    return {
+        "rewards":             rewards,
+        "points_granted":      points_total,
+        "lives_granted":       lives_total,
+        "ingredients_granted": granted_ingredients,
+    }
+
+
+@api_router.get("/lab/wardrobe/{player_address}")
+async def lab_get_wardrobe(player_address: str):
+    wardrobe = await db.player_wardrobes.find_one({"owner": player_address}, {"_id": 0})
+    if not wardrobe:
+        return {"owned": [], "equipped": {}}
+    return {"owned": wardrobe.get("owned", []), "equipped": wardrobe.get("equipped", {})}
+
+
+@api_router.post("/lab/wardrobe/{player_address}/equip")
+async def lab_equip(player_address: str, body: dict):
+    item_id  = body.get("item_id")
+    category = body.get("category")
+    if not item_id or not category:
+        raise HTTPException(status_code=400, detail="item_id and category required")
+    await db.player_wardrobes.update_one(
+        {"owner": player_address},
+        {"$set": {f"equipped.{category}": item_id}},
+        upsert=True
+    )
+    return {"ok": True}
+
+
+@api_router.post("/lab/wardrobe/{player_address}/unequip")
+async def lab_unequip(player_address: str, body: dict):
     category = body.get("category")
     if not category:
         raise HTTPException(status_code=400, detail="category required")
