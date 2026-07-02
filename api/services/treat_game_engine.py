@@ -4,6 +4,8 @@ Implements comprehensive game mechanics including level-based timers, rarity cal
 ingredient combinations, and server-side randomization for the DogeFood Lab game.
 """
 
+import os
+import logging
 import random
 import hashlib
 import hmac
@@ -28,7 +30,11 @@ class TreatGameEngine:
         Args:
             secret_key: Secret key for secure random generation (should be from environment)
         """
-        self.secret_key = secret_key or "default_secret_for_development_only"
+        if not secret_key:
+            # SECURITY: never fall back to a known static key - generate a random one
+            secret_key = os.urandom(32).hex()
+            logging.warning("⚠️ TreatGameEngine: no secret_key provided - generated random key (set GAME_SECRET_KEY env var)")
+        self.secret_key = secret_key
         
         # Rarity probabilities (must sum to 100)
         self.rarity_probabilities = {
