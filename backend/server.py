@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks, Request, Query
+from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks, Request, Query, Depends, Header
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -283,6 +283,25 @@ if not GAME_SECRET_KEY:
     GAME_SECRET_KEY = 'development_key_' + os.urandom(16).hex()
 
 
+# Admin secret key for protected operations - MUST be set via environment variable
+ADMIN_SECRET = os.environ.get("ADMIN_SECRET")
+if not ADMIN_SECRET:
+    # Generate a secure random admin key if not provided (locks admin endpoints)
+    ADMIN_SECRET = os.urandom(32).hex()
+    logging.warning("⚠️ ADMIN_SECRET not set - generated temporary key (set env var in production)")
+
+
+async def verify_admin(
+    x_admin_key: Optional[str] = Header(None),
+    admin_key: Optional[str] = Query(None),
+):
+    """Server-side admin authorization. Accepts X-Admin-Key header or admin_key query param."""
+    provided = x_admin_key or admin_key
+    if not provided or not hmac.compare_digest(str(provided), str(ADMIN_SECRET)):
+        await asyncio.sleep(2)  # Brute force protection
+        raise HTTPException(status_code=403, detail="Unauthorized: Invalid admin key")
+
+
 game_engine = TreatGameEngine(GAME_SECRET_KEY)
 ingredient_system = IngredientSystem()
 season_manager = SeasonManager(db)
@@ -308,6 +327,12 @@ app = FastAPI()
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+
+
+@api_router.post("/admin/verify", dependencies=[Depends(verify_admin)])
+async def verify_admin_key():
+    """Validate an admin key server-side (used by the admin dashboard login)"""
+    return {"valid": True}
 
 
 # Happy Hour Configuration
@@ -2097,7 +2122,7 @@ async def update_profile_image(address: str, data: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.post("/admin/credit-nft-holders")
+@api_router.post("/admin/credit-nft-holders", dependencies=[Depends(verify_admin)])
 async def credit_existing_nft_holders():
     """
     Admin endpoint to credit all existing NFT holders who haven't received their VIP bonus.
@@ -2152,7 +2177,7 @@ async def credit_existing_nft_holders():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.post("/admin/credit-nft-holder/{address}")
+@api_router.post("/admin/credit-nft-holder/{address}", dependencies=[Depends(verify_admin)])
 async def credit_single_nft_holder(address: str):
     """
     Admin endpoint to manually credit a specific NFT holder with VIP bonus.
@@ -2238,7 +2263,7 @@ async def credit_single_nft_holder(address: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.delete("/admin/remove-test-users")
+@api_router.delete("/admin/remove-test-users", dependencies=[Depends(verify_admin)])
 async def remove_test_users():
     """
     Admin endpoint to remove all test users from the database.
@@ -2289,7 +2314,7 @@ async def remove_test_users():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.delete("/admin/remove-placeholder-accounts")
+@api_router.delete("/admin/remove-placeholder-accounts", dependencies=[Depends(verify_admin)])
 async def remove_placeholder_accounts():
     """
     Admin endpoint to remove placeholder accounts - players who were created
@@ -2344,7 +2369,7 @@ async def remove_placeholder_accounts():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.get("/admin/check-nft-holders")
+@api_router.get("/admin/check-nft-holders", dependencies=[Depends(verify_admin)])
 async def check_nft_holders_status():
     """
     Admin endpoint to check which players have DogeFood NFT but don't have VIP status.
@@ -2381,7 +2406,7 @@ async def check_nft_holders_status():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.post("/admin/verify-nft-blockchain/{address}")
+@api_router.post("/admin/verify-nft-blockchain/{address}", dependencies=[Depends(verify_admin)])
 async def verify_nft_on_blockchain(address: str):
     """
     Admin endpoint to verify NFT ownership directly on DogeOS blockchain using Blockscout API.
@@ -2490,7 +2515,7 @@ async def verify_nft_on_blockchain(address: str):
 
 
 
-@api_router.post("/admin/verify-all-nft-holders")
+@api_router.post("/admin/verify-all-nft-holders", dependencies=[Depends(verify_admin)])
 async def verify_all_nft_holders_blockchain():
     """
     Batch-verify ALL wallet-based players against the DogeOS blockchain.
@@ -2817,7 +2842,7 @@ async def check_dogeonews_balance(solana_address: str):
 
 
 
-@api_router.post("/admin/scan-dogeonews-holders")
+@api_router.post("/admin/scan-dogeonews-holders", dependencies=[Depends(verify_admin)])
 async def scan_dogeonews_holders():
     """
     Admin endpoint to check all players with linked Solana wallets for $DOGEONEWS holdings.
@@ -2897,7 +2922,7 @@ async def scan_dogeonews_holders():
 
 
 
-@api_router.post("/admin/scan-and-credit-all-holders")
+@api_router.post("/admin/scan-and-credit-all-holders", dependencies=[Depends(verify_admin)])
 async def scan_and_credit_all_nft_holders():
     """
     Admin endpoint to scan all players and verify their NFT ownership on DogeOS blockchain.
@@ -3995,14 +4020,14 @@ async def claim_daily_bonus(address: str):
 
 
 # Phase 2: Anti-cheat System Routes  
-@api_router.get("/security/player-risk/{address}")
+@api_router.get("/security/player-risk/{address}", dependencies=[Depends(verify_admin)])
 async def get_player_risk_score(address: str):
     """Get player's anti-cheat risk assessment"""
     risk_data = await anti_cheat_system.get_player_risk_score(address)
     return risk_data
 
 
-@api_router.get("/security/flagged-players")
+@api_router.get("/security/flagged-players", dependencies=[Depends(verify_admin)])
 async def get_flagged_players(risk_level: str = "high"):
     """Get list of players flagged for suspicious activity (admin only)"""
     flagged = await anti_cheat_system.get_flagged_players(risk_level)
@@ -5456,7 +5481,8 @@ async def get_timer_progression(max_level: int = 50):
     """Get timer progression for different levels"""
     progression = []
     for level in range(1, min(max_level + 1, 101)):
-        timer_seconds = game_engine.calculate_treat_timer(level)
+        # Exponential scaling: 1h base, ~5.2h at level 10, capped at 12h
+        timer_seconds = int(min(3600 * (1.2 ** (level - 1)), 12 * 3600))
         progression.append({
             "level": level,
             "timer_seconds": timer_seconds,
@@ -5466,7 +5492,7 @@ async def get_timer_progression(max_level: int = 50):
     return {"progression": progression}
 
 
-@api_router.post("/game/simulate-outcome")
+@api_router.post("/game/simulate-outcome", dependencies=[Depends(verify_admin)])
 async def simulate_treat_outcome(
     ingredients: List[str],
     player_level: int,
@@ -5652,10 +5678,9 @@ async def get_season_leaderboard(season_id: int, limit: int = 50):
 
 
 # Admin Endpoints for Game Management
-@api_router.post("/admin/seasons/{season_id}/activate")
+@api_router.post("/admin/seasons/{season_id}/activate", dependencies=[Depends(verify_admin)])
 async def activate_season(season_id: int):
-    """Admin: Manually activate a season (for testing)"""
-    # This would typically require admin authentication
+    """Admin: Manually activate a season (requires admin key)"""
     season = season_manager.get_season_info(season_id)
     
     return {
@@ -5716,14 +5741,6 @@ async def api_root():
 # ============================================
 # SEASON 1 OFFICIAL LAUNCH - ADMIN ENDPOINTS
 # ============================================
-
-
-# Admin secret key for protected operations - MUST be set via environment variable
-ADMIN_SECRET = os.environ.get("ADMIN_SECRET")
-if not ADMIN_SECRET:
-    # Generate a secure random admin key if not provided
-    ADMIN_SECRET = os.urandom(32).hex()
-    logging.warning(f"⚠️ ADMIN_SECRET not set - generated temporary key (set env var in production)")
 
 
 class GrantLabBonusRequest(BaseModel):
@@ -6977,7 +6994,7 @@ class DeleteTestPlayersRequest(BaseModel):
     admin_key: Optional[str] = None
 
 
-@api_router.post("/admin/delete-test-players")
+@api_router.post("/admin/delete-test-players", dependencies=[Depends(verify_admin)])
 async def delete_test_players(request: DeleteTestPlayersRequest):
     """Delete test players from the database"""
     try:
