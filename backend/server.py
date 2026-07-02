@@ -10342,7 +10342,7 @@ async def feed_shiba(player_address: str, body: dict):
     newly created) is reused for all subsequent writes in this call so the
     XP update always lands on the exact same document just read."""
     treat_rarity = body.get("treat_rarity", "Common")
-    xp_gained    = int(body.get("xp_gained", RARITY_XP.get(treat_rarity, 8)))
+    xp_gained    = int(body.get("xp_gained", SHIBA_RARITY_XP.get(treat_rarity, 8)))
 
     owner_filter = {"owner": {"$regex": f"^{re.escape(player_address)}$", "$options": "i"}}
     pet = await db.player_pets.find_one(owner_filter)
@@ -10578,7 +10578,7 @@ async def backfill_milestone_crates(admin_key: str = None):
     received because they earned XP before the crate system existed.
     Safe to run multiple times — skips milestones already credited.
     """
-    if admin_key != ADMIN_KEY:
+    if admin_key != ADMIN_SECRET:
         raise HTTPException(status_code=403, detail="Forbidden")
 
     now = datetime.now(timezone.utc).isoformat()
