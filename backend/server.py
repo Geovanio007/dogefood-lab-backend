@@ -10883,8 +10883,20 @@ async def lab_open_crate(crate_id: str, body: dict):
     now_dt = datetime.now(timezone.utc)
     now    = now_dt.isoformat()
 
-    player        = await find_player_by_address(player_address)
-    player_filter = {"id": player["id"]} if player else None
+    player = await find_player_by_address(player_address)
+    if not player:
+        player_filter = None
+    elif player.get("id"):
+        player_filter = {"id": player["id"]}
+    elif player.get("address"):
+        # Some player docs (seen with wallet-connected accounts, e.g. MyDoge
+        # in-app browser users) were never given an "id" field. Fall back to
+        # the address that just matched this lookup instead of crashing.
+        player_filter = {"address": player["address"]}
+    elif player.get("telegram_id"):
+        player_filter = {"telegram_id": player["telegram_id"]}
+    else:
+        player_filter = None
 
     if points_total > 0 and player_filter:
         await db.players.update_one(player_filter, {"$inc": {"points": points_total}})
