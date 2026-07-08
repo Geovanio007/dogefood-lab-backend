@@ -10559,7 +10559,7 @@ async def get_temp_unlocked_ingredients(player_address: str):
         return {"ingredients": []}
 
     now = datetime.now(timezone.utc)
-    active = []
+    by_ingredient = {}
     for grant in player.get("temp_unlocked_ingredients", []):
         try:
             expires_at = datetime.fromisoformat(grant["expires_at"])
@@ -10568,10 +10568,22 @@ async def get_temp_unlocked_ingredients(player_address: str):
         if expires_at <= now:
             continue  # expired — omit, don't delete
 
-        ing = ingredient_system.get_ingredient(grant["ingredient_id"])
-        active.append({
-            "id": grant["ingredient_id"],
-            "name": ing.name if ing else grant.get("ingredient_name", grant["ingredient_id"]),
+        ing_id = grant["ingredient_id"]
+        seconds_remaining = max(0, int((expires_at - now).total_seconds()))
+
+        # A player can win the same ingredient from more than one crate while
+        # an earlier grant of it is still active. Collapse those down to a
+        # single card (keeping whichever has the most time left) instead of
+        # returning one card per grant — otherwise the same ingredient piles
+        # up in the tray every time another crate rolls it.
+        existing = by_ingredient.get(ing_id)
+        if existing and existing["seconds_remaining"] >= seconds_remaining:
+            continue
+
+        ing = ingredient_system.get_ingredient(ing_id)
+        by_ingredient[ing_id] = {
+            "id": ing_id,
+            "name": ing.name if ing else grant.get("ingredient_name", ing_id),
             "emoji": ing.emoji if ing else "❓",
             "color": ing.color if ing else "#94a3b8",
             "category": ing.category.value if ing else "Rare",
@@ -10579,9 +10591,10 @@ async def get_temp_unlocked_ingredients(player_address: str):
             "source": grant.get("source", "lab_crate"),
             "granted_at": grant["granted_at"],
             "expires_at": grant["expires_at"],
-            "seconds_remaining": max(0, int((expires_at - now).total_seconds())),
-        })
+            "seconds_remaining": seconds_remaining,
+        }
 
+    active = list(by_ingredient.values())
     # Soonest-expiring first, so the most urgent one shows up first in any UI.
     active.sort(key=lambda x: x["seconds_remaining"])
     return {"ingredients": active}
