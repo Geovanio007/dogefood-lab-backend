@@ -314,6 +314,23 @@ class IngredientSystem:
             for ing in self.ingredients.values()
         ]
 
+    def export_ingredients_for_frontend(self, max_level: int) -> List[dict]:
+        """Ingredients unlocked at or before max_level, formatted for the frontend."""
+        return [
+            {
+                "id": ing.id,
+                "name": ing.name,
+                "category": ing.category.value,
+                "rarity_weight": ing.rarity_weight,
+                "description": ing.description,
+                "special_effect": ing.special_effect.value,
+                "unlock_level": ing.unlock_level,
+                "emoji": ing.emoji,
+                "color": ing.color,
+            }
+            for ing in self.get_unlocked_ingredients(max_level)
+        ]
+
     def get_category_info(self) -> List[dict]:
         return [
             {
