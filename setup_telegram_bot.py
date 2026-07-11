@@ -11,12 +11,18 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-TELEGRAM_BOT_TOKEN = "8253212634:AAGZ0Bo0ZD3CcNKyABmMurEMsTclyADCqIE"
-WEB_APP_URL = "https://gamelab-polish.preview.emergentagent.com"
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+WEB_APP_URL = os.getenv("WEB_APP_URL", "https://dogefoodlab.xyz")
 
 async def setup_bot():
     """Setup the Telegram bot with Mini App configuration"""
-    
+
+    if not TELEGRAM_BOT_TOKEN:
+        raise SystemExit(
+            "TELEGRAM_BOT_TOKEN is not set. Add it to your .env file — "
+            "never hardcode a live bot token in this script again, it's what got the bot hijacked."
+        )
+
     bot = Bot(token=TELEGRAM_BOT_TOKEN)
     
     try:
