@@ -824,6 +824,293 @@ class ExtraLifeVerifyRequest(BaseModel):
 
 
 # =====================================================
+# NOWPAYMENTS INTEGRATION (extra lives + auto-mixer)
+# =====================================================
+# An alternative to the manual DOGE-address + pasted-tx-hash flow above.
+# Reuses the *same* collections and reward-granting fields
+# (extra_treats_balance, auto_mixer_subscriptions) so every existing
+# status/history endpoint keeps working no matter which payment path a
+# given purchase went through. Nothing about the Tatum-based flow above
+# is touched or removed.
+
+NOWPAYMENTS_API_KEY = os.environ.get("NOWPAYMENTS_API_KEY", "")
+NOWPAYMENTS_IPN_SECRET = os.environ.get("NOWPAYMENTS_IPN_SECRET", "")
+NOWPAYMENTS_SANDBOX = os.environ.get("NOWPAYMENTS_SANDBOX", "false").lower() == "true"
+NOWPAYMENTS_BASE_URL = (
+    "https://api-sandbox.nowpayments.io/v1" if NOWPAYMENTS_SANDBOX
+    else "https://api.nowpayments.io/v1"
+)
+# Must be this backend's own public URL (the Render service), NOT the
+# frontend — this is what NOWPayments calls back to when a payment's
+# status changes. There's no reliable way to auto-detect this from inside
+# the app, so it has to be set explicitly.
+PUBLIC_BACKEND_URL = os.environ.get("PUBLIC_BACKEND_URL", "").rstrip("/")
+# Where NOWPayments' hosted checkout page sends the player back to.
+PUBLIC_FRONTEND_URL = os.environ.get("PUBLIC_FRONTEND_URL", "https://dogefoodlab.xyz").rstrip("/")
+
+
+async def create_nowpayments_invoice(order_id: str, price_amount: float, description: str) -> dict:
+    """
+    Creates a NOWPayments hosted-checkout invoice. Price is denominated in
+    DOGE to match the game's existing pricing (cost_doge / monthly_fee_doge)
+    -- the player can still choose to pay with any other coin NOWPayments
+    supports right on the checkout page; NOWPayments handles conversion.
+    Returns the invoice dict (includes "invoice_url" to send the player to).
+    """
+    if not NOWPAYMENTS_API_KEY:
+        raise HTTPException(status_code=503, detail="NOWPayments is not configured (missing NOWPAYMENTS_API_KEY)")
+    if not PUBLIC_BACKEND_URL:
+        raise HTTPException(status_code=503, detail="PUBLIC_BACKEND_URL is not configured -- required so NOWPayments can reach the IPN webhook")
+
+    payload = {
+        "price_amount": price_amount,
+        "price_currency": "doge",
+        "order_id": order_id,
+        "order_description": description,
+        "ipn_callback_url": f"{PUBLIC_BACKEND_URL}/api/nowpayments/ipn",
+        "success_url": f"{PUBLIC_FRONTEND_URL}/?nowpayments=success",
+        "cancel_url": f"{PUBLIC_FRONTEND_URL}/?nowpayments=cancelled",
+    }
+    headers = {"x-api-key": NOWPAYMENTS_API_KEY, "Content-Type": "application/json"}
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(f"{NOWPAYMENTS_BASE_URL}/invoice", headers=headers, json=payload, timeout=30.0)
+        if response.status_code not in (200, 201):
+            logger.error(f"NOWPayments invoice error: {response.status_code} - {response.text[:300]}")
+            raise HTTPException(status_code=502, detail="Could not create NOWPayments invoice")
+        return response.json()
+    except httpx.RequestError as e:
+        logger.error(f"NOWPayments invoice request failed: {e}")
+        raise HTTPException(status_code=502, detail="Could not reach NOWPayments")
+
+
+def verify_nowpayments_ipn(raw_body: bytes, signature: str) -> dict:
+    """
+    Verifies an incoming IPN callback's x-nowpayments-sig header against
+    NOWPayments' documented algorithm: re-serialize the body with keys
+    sorted alphabetically (json.dumps(sort_keys=True) does this recursively
+    for nested objects too) and no extra whitespace, HMAC-SHA512 it with the
+    IPN secret, and compare hex digests using a constant-time comparison.
+    Raises HTTPException on anything that doesn't check out -- this is the
+    one place real money changes hands, so nothing here is optional.
+    """
+    if not NOWPAYMENTS_IPN_SECRET:
+        raise HTTPException(status_code=503, detail="NOWPAYMENTS_IPN_SECRET is not configured")
+    if not signature:
+        raise HTTPException(status_code=401, detail="Missing x-nowpayments-sig header")
+
+    try:
+        payload = json.loads(raw_body)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    sorted_payload = json.dumps(payload, separators=(',', ':'), sort_keys=True)
+    expected_sig = hmac.new(
+        NOWPAYMENTS_IPN_SECRET.encode(),
+        sorted_payload.encode(),
+        hashlib.sha512,
+    ).hexdigest()
+
+    if not hmac.compare_digest(expected_sig, signature):
+        logger.warning("NOWPayments IPN signature mismatch -- rejecting callback")
+        raise HTTPException(status_code=401, detail="Invalid signature")
+
+    return payload
+
+
+@api_router.post("/nowpayments/extra-life/create")
+async def create_nowpayments_extra_life(request: ExtraLifeCreateRequest):
+    """Same package validation as the existing manual-DOGE flow, but pays via a NOWPayments hosted invoice instead of a raw address + pasted tx hash."""
+    if request.package_id not in EXTRA_LIFE_PACKAGES:
+        raise HTTPException(status_code=400, detail="Invalid package ID")
+    package = EXTRA_LIFE_PACKAGES[request.package_id]
+
+    existing = await db.extra_life_purchases.find_one({
+        "player_address": request.player_address,
+        "status": "pending",
+        "payment_provider": "nowpayments",
+    })
+    if existing and existing.get("nowpayments_invoice_url"):
+        return {"purchase": {k: v for k, v in existing.items() if k != "_id"}, "existing": True}
+
+    purchase_id = str(uuid.uuid4())
+    invoice = await create_nowpayments_invoice(
+        order_id=f"nplife_{purchase_id}",
+        price_amount=package["cost_doge"],
+        description=f"DogeFood Lab - {package['name']} ({package['treats']} extra treats)",
+    )
+
+    purchase = {
+        "id": purchase_id,
+        "player_address": request.player_address,
+        "package_id": request.package_id,
+        "package_name": package["name"],
+        "treats_amount": package["treats"],
+        "cost_doge": package["cost_doge"],
+        "status": "pending",
+        "payment_provider": "nowpayments",
+        "nowpayments_invoice_id": invoice.get("id"),
+        "nowpayments_invoice_url": invoice.get("invoice_url"),
+        "payment_tx_hash": None,
+        "payment_confirmed": False,
+        "payment_confirmations": 0,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+    }
+    await db.extra_life_purchases.insert_one(purchase)
+
+    return {
+        "purchase": {k: v for k, v in purchase.items() if k != "_id"},
+        "invoice_url": invoice.get("invoice_url"),
+        "existing": False,
+    }
+
+
+@api_router.post("/nowpayments/auto-mixer/create")
+async def create_nowpayments_auto_mixer(request: AutoMixerCreateRequest):
+    """Same window validation as the existing manual-DOGE flow, paid via NOWPayments instead."""
+    if not (0 <= request.window_start_hour <= 23) or not (0 <= request.window_end_hour <= 23):
+        raise HTTPException(status_code=400, detail="Window hours must be 0-23")
+
+    existing = await db.auto_mixer_subscriptions.find_one({
+        "player_address": request.player_address,
+        "status": "pending",
+        "payment_provider": "nowpayments",
+    })
+    if existing and existing.get("nowpayments_invoice_url"):
+        return {"subscription": {k: v for k, v in existing.items() if k != "_id"}, "existing": True}
+
+    subscription_id = str(uuid.uuid4())
+    invoice = await create_nowpayments_invoice(
+        order_id=f"npmixer_{subscription_id}",
+        price_amount=AUTO_MIXER_CONFIG["monthly_fee_doge"],
+        description="DogeFood Lab - Auto-Mixer monthly subscription",
+    )
+
+    subscription = {
+        "id": subscription_id,
+        "player_address": request.player_address,
+        "status": "pending",
+        "payment_provider": "nowpayments",
+        "nowpayments_invoice_id": invoice.get("id"),
+        "nowpayments_invoice_url": invoice.get("invoice_url"),
+        "window_start_hour": request.window_start_hour,
+        "window_end_hour": request.window_end_hour,
+        "payment_tx_hash": None,
+        "payment_amount": AUTO_MIXER_CONFIG["monthly_fee_doge"],
+        "payment_confirmed": False,
+        "payment_confirmations": 0,
+        "total_auto_mixes": 0,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+    }
+    await db.auto_mixer_subscriptions.insert_one(subscription)
+
+    return {
+        "subscription": {k: v for k, v in subscription.items() if k != "_id"},
+        "invoice_url": invoice.get("invoice_url"),
+        "existing": False,
+    }
+
+
+@api_router.post("/nowpayments/ipn")
+async def nowpayments_ipn_webhook(request: Request):
+    """
+    Receives payment status updates from NOWPayments. Verifies the HMAC
+    signature before trusting anything in the body -- this is the only
+    place actual money changes hands, so that check is never skipped.
+    """
+    raw_body = await request.body()
+    signature = request.headers.get("x-nowpayments-sig", "")
+
+    payload = verify_nowpayments_ipn(raw_body, signature)
+
+    payment_status = payload.get("payment_status")
+    order_id = payload.get("order_id") or ""
+    payment_id = payload.get("payment_id")
+
+    logger.info(f"NOWPayments IPN: order_id={order_id} status={payment_status} payment_id={payment_id}")
+
+    # Only grant on the final, fully-settled status. "confirming"/"confirmed"
+    # mean the chain has seen the transaction but NOWPayments hasn't finished
+    # converting/settling yet -- granting here risks paying out before the
+    # money has actually arrived in your account.
+    if payment_status != "finished":
+        return {"received": True, "granted": False, "status": payment_status}
+
+    if order_id.startswith("nplife_"):
+        purchase_id = order_id[len("nplife_"):]
+        purchase = await db.extra_life_purchases.find_one({"id": purchase_id})
+        if not purchase:
+            logger.warning(f"NOWPayments IPN: no extra_life_purchase found for {order_id}")
+            return {"received": True, "granted": False, "reason": "order not found"}
+
+        # Idempotency -- NOWPayments can resend the same "finished" IPN.
+        if purchase["status"] == "completed":
+            return {"received": True, "granted": False, "reason": "already completed"}
+
+        now = datetime.now(timezone.utc)
+        await db.extra_life_purchases.update_one(
+            {"id": purchase_id},
+            {"$set": {
+                "status": "completed",
+                "payment_confirmed": True,
+                "nowpayments_payment_id": payment_id,
+                "completed_at": now,
+            }}
+        )
+        await db.players.update_one(
+            {"address": purchase["player_address"]},
+            {
+                "$inc": {"extra_treats_balance": purchase["treats_amount"]},
+                "$push": {
+                    "extra_life_history": {
+                        "purchase_id": purchase_id,
+                        "package_id": purchase["package_id"],
+                        "treats_granted": purchase["treats_amount"],
+                        "cost_doge": purchase["cost_doge"],
+                        "payment_provider": "nowpayments",
+                        "nowpayments_payment_id": payment_id,
+                        "granted_at": now,
+                    }
+                },
+            },
+            upsert=True,
+        )
+        logger.info(f"NOWPayments: granted {purchase['treats_amount']} treats to {purchase['player_address']} (order {order_id})")
+        return {"received": True, "granted": True}
+
+    elif order_id.startswith("npmixer_"):
+        subscription_id = order_id[len("npmixer_"):]
+        subscription = await db.auto_mixer_subscriptions.find_one({"id": subscription_id})
+        if not subscription:
+            logger.warning(f"NOWPayments IPN: no subscription found for {order_id}")
+            return {"received": True, "granted": False, "reason": "order not found"}
+
+        if subscription["status"] == "active":
+            return {"received": True, "granted": False, "reason": "already active"}
+
+        now = datetime.now(timezone.utc)
+        await db.auto_mixer_subscriptions.update_one(
+            {"id": subscription_id},
+            {"$set": {
+                "status": "active",
+                "payment_confirmed": True,
+                "nowpayments_payment_id": payment_id,
+                "subscription_start": now,
+                "subscription_end": now + timedelta(days=30),
+                "activated_at": now,
+            }}
+        )
+        logger.info(f"NOWPayments: activated auto-mixer subscription for {subscription['player_address']} (order {order_id})")
+        return {"received": True, "granted": True}
+
+    logger.warning(f"NOWPayments IPN: unrecognized order_id format: {order_id}")
+    return {"received": True, "granted": False, "reason": "unrecognized order_id"}
+
+
+# =====================================================
 # KERNEL OF WOW - SPECIAL INGREDIENT SYSTEM
 # =====================================================
 
