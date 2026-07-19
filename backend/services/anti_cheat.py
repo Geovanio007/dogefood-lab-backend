@@ -57,7 +57,7 @@ class AntiCheatSystem:
         self.THRESHOLDS = {
             "max_treats_per_hour": 10,
             "max_xp_per_hour": 1000,
-            "min_time_between_treats": 30,  # seconds
+            "min_time_between_treats": 15,  # seconds — lowered from 30 for UX; still 2x+ above the 6-9s cadence of the confirmed exploit
             "max_identical_treats": 5,  # same ingredients combo
             "max_rapid_level_ups": 3,  # levels per hour
             "window_treat_limit": WINDOW_TREAT_LIMIT,  # 4 per 6h window
