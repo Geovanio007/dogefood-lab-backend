@@ -3,14 +3,14 @@ const { verify } = require("../utils/verify")
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log } = deployments
-    const { deployer } = await getNamedAccounts()
+    const { deployer, admin } = await getNamedAccounts()
     
     const chainId = network.config.chainId
     
     log("------------------------------------------------------------")
     log("Deploying TreatNFT contract...")
     
-    const args = [] // TreatNFT constructor takes no arguments
+    const args = [admin] // TreatNFT is Ownable as of the OZ v5 fix - owner is admin, matching DogeFood/LABToken/RewardDistributor
     
     const treatNFT = await deploy("TreatNFT", {
         from: deployer,
