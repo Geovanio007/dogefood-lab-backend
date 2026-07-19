@@ -66,7 +66,56 @@ class AntiCheatSystem:
         
         # Player activity cache
         self.player_cache = {}
-    
+
+    async def is_player_blocked(self, player_address: str) -> Optional[Dict]:
+        """Check whether a player is currently blocked from gated actions
+        (treat creation, Kernel of Wow eligibility, etc). Returns the
+        block record if blocked, otherwise None."""
+        if not player_address:
+            return None
+        return await self.db.blocked_players.find_one(
+            {"player_address": player_address, "is_active": True}
+        )
+
+    async def block_player(self, player_address: str, reason: str, blocked_by: str = "system") -> Dict:
+        """Block a player address. Upserts, so re-blocking an already
+        blocked player just updates the reason/timestamp instead of
+        erroring or duplicating records."""
+        now = datetime.utcnow()
+        record = {
+            "player_address": player_address,
+            "reason": reason,
+            "blocked_by": blocked_by,
+            "blocked_at": now,
+            "is_active": True,
+        }
+        await self.db.blocked_players.update_one(
+            {"player_address": player_address},
+            {"$set": record},
+            upsert=True,
+        )
+        logger.warning(f"🚫 Player blocked: {player_address} - {reason}")
+        return record
+
+    async def unblock_player(self, player_address: str) -> bool:
+        """Lift a block on a player address. Returns True if a block was
+        actually lifted, False if the player wasn't blocked."""
+        result = await self.db.blocked_players.update_one(
+            {"player_address": player_address, "is_active": True},
+            {"$set": {"is_active": False, "unblocked_at": datetime.utcnow()}}
+        )
+        if result.modified_count:
+            logger.info(f"✅ Player unblocked: {player_address}")
+        return result.modified_count > 0
+
+    async def get_blocked_addresses(self) -> set:
+        """Return the set of currently-blocked player addresses/identifiers.
+        Used to filter eligibility pools such as Kernel of Wow selection."""
+        docs = await self.db.blocked_players.find(
+            {"is_active": True}, {"player_address": 1}
+        ).to_list(10000)
+        return {d["player_address"] for d in docs if d.get("player_address")}
+
     async def get_daily_treat_status(self, player_address: str, prefetched_player=None, prefetched_treats_24h=None) -> Dict:
         """
         Get player's treat creation status.
@@ -360,6 +409,21 @@ class AntiCheatSystem:
         Returns: {"valid": bool, "reason": str, "severity": str}
         Accepts prefetched data to avoid duplicate DB calls.
         """
+        # Check 0: Player is blocked — reject immediately, before any
+        # other work (window limits, rate checks, DB fetches for treats).
+        block_record = await self.is_player_blocked(player_address)
+        if block_record:
+            return {
+                "valid": False,
+                "reason": f"This address is blocked: {block_record.get('reason', 'policy violation')}",
+                "severity": "high",
+                "violations": [{
+                    "type": "player_blocked",
+                    "severity": "high",
+                    "details": block_record.get("reason", "")
+                }]
+            }
+
         now = datetime.utcnow()
         
         # Use prefetched treats or fetch from DB
@@ -410,7 +474,11 @@ class AntiCheatSystem:
             if time_diff < self.THRESHOLDS["min_time_between_treats"]:
                 violations.append({
                     "type": "rapid_treat_creation",
-                    "severity": "medium",
+                    # Was "medium" — medium-severity violations don't block
+                    # (see high_severity check below), which let a player
+                    # spam this endpoint every few seconds indefinitely as
+                    # long as they stayed under the window/daily count cap.
+                    "severity": "high",
                     "details": f"Created treat {time_diff}s after last one (minimum: {self.THRESHOLDS['min_time_between_treats']}s)"
                 })
         
@@ -442,6 +510,21 @@ class AntiCheatSystem:
         # Log violations
         if violations:
             await self._log_suspicious_activity(player_address, violations)
+
+            # Auto-block repeat offenders: if this player's 24h risk score
+            # is now "high" (>=50, e.g. 4+ high-severity violations),
+            # suspend them outright instead of relying on a per-request
+            # rejection that a script can just keep retrying against.
+            # get_player_risk_score() already existed but wasn't wired to
+            # any consequence — this closes that gap.
+            risk = await self.get_player_risk_score(player_address)
+            if risk["risk_level"] == "high":
+                await self.block_player(
+                    player_address,
+                    reason=f"Auto-blocked by anti-cheat: risk_score={risk['risk_score']} "
+                           f"({risk['recent_violations']} violations in 24h)",
+                    blocked_by="anti_cheat_auto"
+                )
             
             # Determine if we should block this action
             high_severity = any(v["severity"] == "high" for v in violations)
