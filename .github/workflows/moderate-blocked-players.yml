@@ -1,0 +1,40 @@
+name: Moderate Blocked Players
+
+# Manual-only trigger: go to the Actions tab, pick this workflow, and
+# click "Run workflow". Defaults to a dry run (preview only).
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (preview only, no changes)'
+        type: boolean
+        default: true
+
+jobs:
+  moderate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run moderation script
+        env:
+          # Found in this repo's config — double-check it's still your
+          # live API URL before running for real. If it's wrong, the
+          # dry run will fail to connect rather than silently no-op.
+          BACKEND_URL: https://dogefood-lab-api.onrender.com
+          ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python scripts/moderate_blocked_players.py --dry-run
+          else
+            python scripts/moderate_blocked_players.py
+          fi
