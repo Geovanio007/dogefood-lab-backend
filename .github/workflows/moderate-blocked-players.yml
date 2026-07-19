@@ -30,11 +30,11 @@ jobs:
           # Found in this repo's config — double-check it's still your
           # live API URL before running for real. If it's wrong, the
           # dry run will fail to connect rather than silently no-op.
-          BACKEND_URL: https://dogefood-lab-api.onrender.com
+          BACKEND_URL: https://dogefood-lab-backend-production.up.railway.app
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
         run: |
           if [ "${{ inputs.dry_run }}" = "true" ]; then
-            python scripts/moderate_blocked_players.py --dry-run
+            python backend/scripts/moderate_blocked_players.py --dry-run
           else
-            python scripts/moderate_blocked_players.py
+            python backend/scripts/moderate_blocked_players.py
           fi
