@@ -10,14 +10,14 @@ module.exports = {
     },
     admin: {
       default: 0, // owner baked into each contract's constructor - same wallet as deployer unless ADMIN_ADDRESS is set below
-      dogeosDevnet: process.env.ADMIN_ADDRESS || 0,
+      dogeosTestnet: process.env.ADMIN_ADDRESS || 0,
     },
   },
   networks: {
     hardhat: {
       chainId: 31337,
     },
-    dogeosDevnet: {
+    dogeosTestnet: {
       url: process.env.DOGEOS_RPC_URL || "https://rpc.testnet.dogeos.com",
       chainId: 6281971,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
