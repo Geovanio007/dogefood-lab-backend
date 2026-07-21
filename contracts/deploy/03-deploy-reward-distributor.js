@@ -17,7 +17,6 @@ module.exports = async ({ getNamedAccounts, deployments, network, ethers }) => {
   });
 
   log(`✅ RewardDistributor deployed to: ${rewardDistributor.address}`);
-  log(`🔗 View on DogeOS Explorer: https://blockscout.devnet.doge.xyz/address/${rewardDistributor.address}`);
   
   // Update LAB Token with RewardDistributor address
   log("🔄 Updating LAB Token with RewardDistributor address...");
