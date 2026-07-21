@@ -7,12 +7,12 @@ on:
   workflow_dispatch:
     inputs:
       network:
-        description: "Network to deploy to (despite the name, dogeosDevnet is currently configured to point at DogeOS Chikyū Testnet - see hardhat.config.js)"
+        description: "Network to deploy to"
         required: true
-        default: "dogeosDevnet"
+        default: "dogeosTestnet"
         type: choice
         options:
-          - dogeosDevnet
+          - dogeosTestnet
 
 permissions:
   contents: write # needed to commit the resulting deployment address files back
