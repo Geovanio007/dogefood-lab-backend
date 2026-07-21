@@ -109,7 +109,7 @@ module.exports = async ({ getNamedAccounts, deployments, network, ethers }) => {
     log(`❌ Failed to set GraduationManager.router: ${error.message}`);
   }
 
-  log(`🔗 View LaunchpadFactory on DogeOS Explorer: https://blockscout.testnet.dogeos.com/address/${launchpadFactory.address}`);
+  log(`✅ LaunchpadFactory deployed to: ${launchpadFactory.address}`);
 };
 
 module.exports.tags = ["LabLauncher"];
