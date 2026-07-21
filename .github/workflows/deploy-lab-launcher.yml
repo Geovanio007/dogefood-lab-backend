@@ -1,0 +1,63 @@
+name: Deploy Lab Launcher Contracts
+
+# Manual trigger only - shows up as a "Run workflow" button on this
+# workflow's page in the Actions tab. Nothing deploys on push; you decide
+# when this runs.
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: "Network to deploy to (despite the name, dogeosDevnet is currently configured to point at DogeOS Chikyū Testnet - see hardhat.config.js)"
+        required: true
+        default: "dogeosDevnet"
+        type: choice
+        options:
+          - dogeosDevnet
+
+permissions:
+  contents: write # needed to commit the resulting deployment address files back
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Deploy contracts
+        env:
+          PRIVATE_KEY: ${{ secrets.LAB_LAUNCHER_DEPLOYER_PRIVATE_KEY }}
+          DOGEOS_RPC_URL: ${{ secrets.DOGEOS_RPC_URL }}
+        run: npx hardhat deploy --network ${{ github.event.inputs.network }}
+
+      - name: Write deployed addresses to job summary
+        if: always()
+        run: |
+          echo "## Lab Launcher deployment - ${{ github.event.inputs.network }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Contract | Address |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          for f in deployments/${{ github.event.inputs.network }}/*.json; do
+            name=$(basename "$f" .json)
+            addr=$(node -e "console.log(require('./'+process.argv[1]).address)" "$f")
+            echo "| $name | \`$addr\` |" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Copy the **LauncherTreasury**, **RoyaltyDistributor**, **BondingCurve**, **GraduationManager**, **LaunchpadFactory**, and **GamePaymentGateway** addresses into the backend's env vars (\`LAB_LAUNCHER_*_ADDRESS\`, see lab_launcher_indexer.py)." >> $GITHUB_STEP_SUMMARY
+
+      - name: Commit deployment records back to the repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add deployments/${{ github.event.inputs.network }}/
+          git diff --staged --quiet || git commit -m "chore: record Lab Launcher deployment addresses (${{ github.event.inputs.network }})"
+          git push
