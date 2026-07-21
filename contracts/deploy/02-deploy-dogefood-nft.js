@@ -17,7 +17,6 @@ module.exports = async ({ getNamedAccounts, deployments, network }) => {
   });
 
   log(`✅ DogeFood NFT deployed to: ${dogeFood.address}`);
-  log(`🔗 View on DogeOS Explorer: https://blockscout.devnet.doge.xyz/address/${dogeFood.address}`);
   log(`📊 Max Supply: 420 NFTs`);
 };
 
