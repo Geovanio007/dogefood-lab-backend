@@ -19,7 +19,6 @@ module.exports = async ({ getNamedAccounts, deployments, network }) => {
   });
 
   log(`✅ LAB Token deployed to: ${labToken.address}`);
-  log(`🔗 View on DogeOS Explorer: https://blockscout.devnet.doge.xyz/address/${labToken.address}`);
 };
 
 module.exports.tags = ["LABToken"];
