@@ -1,11 +1,8 @@
 const { network } = require("hardhat")
-const { verify } = require("../utils/verify")
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log } = deployments
     const { deployer, admin } = await getNamedAccounts()
-    
-    const chainId = network.config.chainId
     
     log("------------------------------------------------------------")
     log("Deploying TreatNFT contract...")
@@ -20,12 +17,6 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     })
     
     log(`TreatNFT deployed at ${treatNFT.address}`)
-    
-    // Verify contract on block explorer if not on hardhat network
-    if (chainId !== 31337 && process.env.ETHERSCAN_API_KEY) {
-        log("Verifying contract...")
-        await verify(treatNFT.address, args)
-    }
     
     log("------------------------------------------------------------")
 }
