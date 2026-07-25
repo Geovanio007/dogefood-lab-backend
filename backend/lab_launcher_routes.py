@@ -17,8 +17,11 @@ Every address in path/query/body params is lowercased before hitting Mongo
 from datetime import datetime, timezone
 from typing import Optional
 
+import httpx
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
+
+from services import lab_launcher_indexer as indexer_module
 
 
 class TokenMetadataIn(BaseModel):
@@ -335,6 +338,50 @@ def create_lab_launcher_router(db, admin_dependency) -> APIRouter:
         cursor = db.lab_launcher_game_payments.find(query, {"_id": 0}).sort([("timestamp", -1)])
         payments = await cursor.skip(offset).limit(limit).to_list(limit)
         return {"payments": payments, "count": len(payments)}
+
+    # ---- diagnostics --------------------------------------------------
+    @router.get("/debug/status")
+    async def debug_status():
+        """Read-only health check: is the indexer configured, is the RPC
+        URL actually an RPC endpoint, how far has it synced, how many
+        tokens has it found. No secrets in here - addresses aren't
+        sensitive - so this isn't admin-gated."""
+        configured = {k: (v or "NOT SET") for k, v in indexer_module.CONTRACTS.items()}
+        configured["rpc_url"] = indexer_module.DOGEOS_RPC_URL or "NOT SET"
+        indexer_enabled = bool(
+            indexer_module.DOGEOS_RPC_URL
+            and indexer_module.CONTRACTS["factory"]
+            and indexer_module.CONTRACTS["bonding_curve"]
+        )
+
+        rpc_reachable = False
+        rpc_error = None
+        latest_block = None
+        if indexer_module.DOGEOS_RPC_URL:
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    resp = await client.post(
+                        indexer_module.DOGEOS_RPC_URL,
+                        json={"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber", "params": []},
+                    )
+                    resp.raise_for_status()
+                    latest_block = int(resp.json()["result"], 16)
+                    rpc_reachable = True
+            except Exception as e:
+                rpc_error = str(e)[:300]
+
+        sync_state = await db.lab_launcher_sync_state.find({}, {"_id": 1, "last_synced_block": 1}).to_list(20)
+        token_count = await db.lab_launcher_tokens.count_documents({})
+
+        return {
+            "indexer_enabled": indexer_enabled,
+            "configured": configured,
+            "rpc_reachable": rpc_reachable,
+            "rpc_error": rpc_error,
+            "latest_chain_block": latest_block,
+            "sync_cursors": [{"key": s["_id"], "last_synced_block": s.get("last_synced_block")} for s in sync_state],
+            "indexed_token_count": token_count,
+        }
 
     return router
 
