@@ -37,6 +37,14 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+# httpx logs every single outbound request at INFO level by default - with
+# ~8-9 RPC calls per poll_once() every 30s, that's a lot of "200 OK" noise
+# that (via Python logging's stderr default) Railway renders as red/error
+# regardless of the actual INFO level. Nothing there was ever a real error;
+# this just stops httpx from emitting it in the first place. Doesn't touch
+# this module's own logger, so genuine errors/warnings still show normally.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 # ---------------------------------------------------------------------------
 # Config — every address is optional so the indexer can run (as a no-op) on
 # a backend that hasn't been wired up to a deployment yet, instead of
@@ -172,15 +180,7 @@ class LabLauncherIndexer:
         payload = {"jsonrpc": "2.0", "id": self._rpc_id, "method": method, "params": params}
         resp = await self._http.post(DOGEOS_RPC_URL, json=payload)
         resp.raise_for_status()
-        try:
-            body = resp.json()
-        except Exception as e:
-            raise RuntimeError(
-                f"DOGEOS_RPC_URL ({DOGEOS_RPC_URL!r}) returned HTTP {resp.status_code} but the body "
-                f"wasn't JSON-RPC. This almost always means the URL is wrong - it needs to be an RPC "
-                f"endpoint (e.g. https://rpc.testnet.dogeos.com), not a block explorer URL. "
-                f"Response started with: {resp.text[:150]!r}"
-            ) from e
+        body = resp.json()
         if "error" in body:
             raise RuntimeError(f"RPC error on {method}: {body['error']}")
         return body["result"]
