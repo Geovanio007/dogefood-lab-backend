@@ -1,0 +1,65 @@
+name: Deploy LabFeed Social Contract
+
+# Manual trigger only - shows up as a "Run workflow" button on this
+# workflow's page in the Actions tab. Nothing deploys on push; you decide
+# when this runs.
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: "Network to deploy to"
+        required: true
+        default: "dogeosTestnet"
+        type: choice
+        options:
+          - dogeosTestnet
+      registrar_signer_address:
+        description: "Public address of the backend's registrar signing key (NOT the private key - see LabFeedSocial.sol notes on why this must be separate from the admin key)"
+        required: true
+        type: string
+
+permissions:
+  contents: write # needed to commit the resulting deployment address file back
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Deploy LabFeedSocial
+        env:
+          PRIVATE_KEY: ${{ secrets.LABFEED_DEPLOYER_PRIVATE_KEY }}
+          DOGEOS_RPC_URL: ${{ secrets.DOGEOS_RPC_URL }}
+          REGISTRAR_SIGNER_ADDRESS: ${{ github.event.inputs.registrar_signer_address }}
+        run: npx hardhat deploy --network ${{ github.event.inputs.network }}
+
+      - name: Write deployed address to job summary
+        if: always()
+        run: |
+          echo "## LabFeedSocial deployment - ${{ github.event.inputs.network }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          addr=$(node -e "console.log(require('./deployments/${{ github.event.inputs.network }}/LabFeedSocial.json').address)")
+          echo "**LabFeedSocial**: \`$addr\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**registrarSigner**: \`${{ github.event.inputs.registrar_signer_address }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Copy the LabFeedSocial address into the backend's env as \`LABFEED_SOCIAL_CONTRACT_ADDRESS\` once the listener is wired up." >> $GITHUB_STEP_SUMMARY
+
+      - name: Commit deployment record back to the repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add deployments/${{ github.event.inputs.network }}/LabFeedSocial.json
+          git diff --staged --quiet || git commit -m "chore: record LabFeedSocial deployment address (${{ github.event.inputs.network }})"
+          git push
