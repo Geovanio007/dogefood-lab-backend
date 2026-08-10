@@ -1,0 +1,32 @@
+name: Smart Contract Tests
+
+on:
+  push:
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/contracts-test.yml'
+  pull_request:
+    paths:
+      - 'contracts/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Compile contracts
+        run: npx hardhat compile
+
+      - name: Run tests
+        run: npx hardhat test
