@@ -21,10 +21,6 @@ import httpx  # For Firebase verification
 import feedparser  # Lab Feed RSS ingestion
 from eth_account import Account
 from eth_account.messages import encode_defunct
-from lab_feed_social_routes import create_lab_feed_social_router
-from services.lab_feed_social_indexer import LabFeedSocialIndexer, ensure_indexes as ensure_lab_feed_social_indexes
-lab_feed_social_indexer = LabFeedSocialIndexer(db)
-app.include_router(create_lab_feed_social_router(db))
 
 # Standard logger setup. This was previously missing entirely — `import
 # logging` was present but `logger` itself was never instantiated, even
