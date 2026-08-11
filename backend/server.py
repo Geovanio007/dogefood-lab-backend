@@ -21,6 +21,10 @@ import httpx  # For Firebase verification
 import feedparser  # Lab Feed RSS ingestion
 from eth_account import Account
 from eth_account.messages import encode_defunct
+from lab_feed_social_routes import create_lab_feed_social_router
+from services.lab_feed_social_indexer import LabFeedSocialIndexer, ensure_indexes as ensure_lab_feed_social_indexes
+lab_feed_social_indexer = LabFeedSocialIndexer(db)
+app.include_router(create_lab_feed_social_router(db))
 
 # Standard logger setup. This was previously missing entirely — `import
 # logging` was present but `logger` itself was never instantiated, even
@@ -12071,6 +12075,7 @@ async def startup_event():
             [("player_address", 1), ("post_id", 1), ("action", 1)], unique=True
         )
         await db.lab_feed_interactions.create_index([("player_address", 1), ("day", 1)])
+        await ensure_lab_feed_social_indexes(db)
         logger.info("DB indexes created/verified")
     except Exception as e:
         logger.error(f"Failed to create indexes: {e}")
@@ -12110,6 +12115,8 @@ async def startup_event():
         asyncio.create_task(lab_launcher_indexer.run_forever())
         logger.info("🚀 Lab Launcher indexer scheduled")
         
+        asyncio.create_task(lab_feed_social_indexer.run_forever())
+        logger.info("❤️ LabFeed Social indexer scheduled")
         # NOTE: the Tatum-based "payment auto-detection loop" that used to
         # start here has been removed along with the rest of the manual
         # DOGE-address payment flow. NOWPayments' IPN webhook now handles
@@ -12144,7 +12151,10 @@ from services.lab_launcher_indexer import LabLauncherIndexer
 lab_launcher_indexer = LabLauncherIndexer(db)
 app.include_router(create_lab_launcher_router(db, Depends(verify_admin)))
 
-
+from services.lab_feed_social_routes import create_lab_feed_social_router
+from services.lab_feed_social_indexer import LabFeedSocialIndexer, ensure_indexes as ensure_lab_feed_social_indexes
+lab_feed_social_indexer = LabFeedSocialIndexer(db)
+app.include_router(create_lab_feed_social_router(db))
 # CORS Configuration - always include known frontend domains
 #
 # CRITICAL: without app.add_middleware(CORSMiddleware, ...) below, browsers
