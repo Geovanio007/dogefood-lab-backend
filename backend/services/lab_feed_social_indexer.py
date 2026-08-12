@@ -186,7 +186,6 @@ class LabFeedSocialIndexer:
             return False  # duplicate (tx_hash, log_index) - already processed
 
     async def _apply_note_credit(self, post_id_hex: str, likes_delta: int, comments_delta: int, creator_amount_doge: float):
-        update = {}
         inc = {}
         if likes_delta:
             inc["likes_count"] = likes_delta
@@ -194,13 +193,42 @@ class LabFeedSocialIndexer:
             inc["comments_count"] = comments_delta
         if creator_amount_doge:
             inc["earnings_doge"] = creator_amount_doge
-        if inc:
-            update["$inc"] = inc
-        if not update:
+        if not inc:
             return
-        result = await self.db.lab_notes.update_one({"onchain_post_id": post_id_hex}, update)
+        result = await self.db.lab_notes.update_one({"onchain_post_id": post_id_hex}, {"$inc": inc})
         if result.matched_count == 0:
             logger.warning(f"LabFeedSocial indexer: no lab_notes document has onchain_post_id={post_id_hex}")
+
+    async def _persist_confirmed_comment(self, post_id_hex: str, comment_id_hex: str, commenter: str):
+        """Once a PostCommented event is confirmed, write the actual comment
+        text into lab_note_comments - the same collection/shape the existing
+        GET /api/lab-notes/{id}/comments endpoint already reads from, so it
+        shows up with no changes needed anywhere else. The text itself was
+        already stored (as a pending interaction) by
+        lab_feed_social_routes.py's /comment-tx endpoint when the
+        transaction was first submitted - this just promotes it once the
+        chain confirms it actually happened."""
+        note = await self.db.lab_notes.find_one({"onchain_post_id": post_id_hex})
+        if not note:
+            return
+        interaction = await self.db.lab_notes_onchain_interactions.find_one({
+            "note_id": note["id"], "kind": "comment", "comment_id": comment_id_hex,
+        })
+        if not interaction:
+            logger.warning(f"LabFeedSocial indexer: confirmed comment {comment_id_hex} has no matching pending record")
+            return
+        if await self.db.lab_note_comments.find_one({"id": comment_id_hex}):
+            return  # already persisted (defensive - shouldn't happen given the event-level dedupe)
+        player = await self.db.players.find_one({"address": commenter}, {"_id": 0})
+        nickname = (player or {}).get("nickname") or "Scientist"
+        await self.db.lab_note_comments.insert_one({
+            "id": comment_id_hex,
+            "note_id": note["id"],
+            "author_address": commenter,
+            "author_nickname": nickname,
+            "content": (interaction.get("content") or "")[:280],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
 
     async def _mark_interaction_confirmed(self, tx_hash: str, extra: dict):
         await self.db.lab_notes_onchain_interactions.update_one(
@@ -284,6 +312,7 @@ class LabFeedSocialIndexer:
 
             creator_amount_doge = _wei_to_doge_float(creator_amount)
             await self._apply_note_credit(post_id_hex, likes_delta=0, comments_delta=1, creator_amount_doge=creator_amount_doge)
+            await self._persist_confirmed_comment(post_id_hex, comment_id_hex, commenter)
             await self._mark_interaction_confirmed(log["transactionHash"], {
                 "creator_amount_doge": creator_amount_doge,
                 "platform_fee_doge": _wei_to_doge_float(platform_fee),
