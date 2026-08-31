@@ -92,12 +92,6 @@ def merge_player_docs(docs: list[dict]) -> tuple[dict, dict]:
 
     base["address"] = normalize_wallet_address(docs[0].get("address"))
 
-    # Prefer the oldest real nickname and never persist a Scientist 0x...
-    # placeholder as the canonical nickname.
-    real_names = [real_nickname(d) for d in docs]
-    real_names = [name for name in real_names if name]
-    base["nickname"] = real_names[0] if real_names else None
-
     same_telegram = len({d.get("telegram_id") for d in docs if d.get("telegram_id") is not None}) == 1 and any(d.get("telegram_id") is not None for d in docs)
     points_values = [int(d.get("points") or 0) for d in docs]
     xp_values = [int(d.get("experience") or 0) for d in docs]
@@ -163,19 +157,90 @@ def merge_player_docs(docs: list[dict]) -> tuple[dict, dict]:
     return base, audit
 
 
-async def normalize_collection_field(db, collection: str, field: str, dry_run: bool, audit: list[dict]):
+async def normalize_collection_field(
+    db,
+    collection: str,
+    field: str,
+    dry_run: bool,
+    audit: list[dict],
+    batch_size: int = 500,
+):
+    """Normalize wallet fields in batches so large collections don't appear stuck."""
     coll = db[collection]
-    cursor = coll.find({field: {"$regex": "^0x", "$options": "i"}}, {"_id": 1, field: 1})
+    cursor = coll.find(
+        {field: {"$regex": "^0x", "$options": "i"}},
+        {"_id": 1, field: 1},
+    )
+
     changed = 0
+    scanned = 0
+    batch = []
+
     async for doc in cursor:
+        scanned += 1
         old = doc.get(field)
         new = normalize_wallet_address(old)
+
         if old == new:
             continue
+
         changed += 1
-        audit.append({"collection": collection, "_id": str(doc["_id"]), "field": field, "before": old, "after": new})
+        entry = {
+            "collection": collection,
+            "_id": str(doc["_id"]),
+            "field": field,
+            "before": old,
+            "after": new,
+        }
+        audit.append(entry)
+
         if not dry_run:
-            await coll.update_one({"_id": doc["_id"]}, {"$set": {field: new}})
+            batch.append(
+                {
+                    "filter": {"_id": doc["_id"]},
+                    "update": {"$set": {field: new}},
+                }
+            )
+
+            if len(batch) >= batch_size:
+                from pymongo import UpdateOne
+
+                await coll.bulk_write(
+                    [UpdateOne(item["filter"], item["update"]) for item in batch],
+                    ordered=False,
+                )
+                logger.info(
+                    "%s.%s: %d/%d changed addresses written",
+                    collection,
+                    field,
+                    changed,
+                    scanned,
+                )
+                batch.clear()
+
+        elif changed % batch_size == 0:
+            logger.info(
+                "%s.%s: %d addresses identified for normalization",
+                collection,
+                field,
+                changed,
+            )
+
+    if not dry_run and batch:
+        from pymongo import UpdateOne
+
+        await coll.bulk_write(
+            [UpdateOne(item["filter"], item["update"]) for item in batch],
+            ordered=False,
+        )
+        logger.info(
+            "%s.%s: %d/%d changed addresses written",
+            collection,
+            field,
+            changed,
+            scanned,
+        )
+
     return changed
 
 
@@ -197,20 +262,6 @@ async def run(args):
     try:
         await client.admin.command("ping")
         logger.info("Connected to MongoDB database %s", db_name)
-
-        # Phase 0: remove the old case-sensitive unique address index BEFORE
-        # rewriting duplicate mixed-case addresses to the same lowercase value.
-        # The final case-insensitive unique index is created only after all
-        # duplicate player documents and wallet references are normalized.
-        if args.apply:
-            index_info = await db.players.index_information()
-            for name, spec in index_info.items():
-                key = spec.get("key", [])
-                if name == "_id_":
-                    continue
-                if key == [("address", 1)] or key == [["address", 1]]:
-                    await db.players.drop_index(name)
-                    logger.info("Dropped old players address index BEFORE merge: %s", name)
 
         # Phase 1: inspect/merge duplicate players.
         cursor = db.players.find({"address": {"$regex": "^0x", "$options": "i"}}, {"_id": 1})
@@ -256,15 +307,46 @@ async def run(args):
         for collection, collection_fields in fields.items():
             for field in collection_fields:
                 try:
-                    changed = await normalize_collection_field(db, collection, field, not args.apply, audit)
+                    logger.info(
+                        "Starting %s.%s wallet normalization...",
+                        collection,
+                        field,
+                    )
+                    changed = await normalize_collection_field(
+                        db,
+                        collection,
+                        field,
+                        not args.apply,
+                        audit,
+                    )
                     if changed:
-                        logger.info("%s.%s: %d wallet addresses %s", collection, field, changed, "normalized" if args.apply else "would be normalized")
+                        logger.info(
+                            "%s.%s: %d wallet addresses %s",
+                            collection,
+                            field,
+                            changed,
+                            "normalized" if args.apply else "would be normalized",
+                        )
+                    else:
+                        logger.info("%s.%s: no wallet addresses needed normalization", collection, field)
                 except Exception as exc:
                     logger.warning("Skipping %s.%s: %s", collection, field, exc)
 
         if args.apply:
-            # Create the final case-insensitive unique index only after the
-            # duplicate player merge and all address normalization are complete.
+            # Remove every existing players address index so the final index is
+            # the single source of truth. Do this only after duplicate merge.
+            index_info = await db.players.index_information()
+            for name, spec in index_info.items():
+                key = spec.get("key", [])
+                if name == "_id_":
+                    continue
+                if key == [("address", 1)] or key == [["address", 1]]:
+                    try:
+                        await db.players.drop_index(name)
+                        logger.info("Dropped old players address index: %s", name)
+                    except Exception as exc:
+                        logger.warning("Could not drop index %s: %s", name, exc)
+
             await db.players.create_index(
                 [("address", 1)],
                 name="players_address_ci_unique",
@@ -287,6 +369,8 @@ async def run(args):
         logger.info("Audit report written to %s", out)
         if not args.apply:
             logger.info("DRY RUN ONLY — no database data was changed")
+        else:
+            logger.info("MIGRATION COMPLETE — wallet addresses normalized and unique index created")
     finally:
         client.close()
 
