@@ -92,6 +92,12 @@ def merge_player_docs(docs: list[dict]) -> tuple[dict, dict]:
 
     base["address"] = normalize_wallet_address(docs[0].get("address"))
 
+    # Prefer the oldest real nickname and never persist a Scientist 0x...
+    # placeholder as the canonical nickname.
+    real_names = [real_nickname(d) for d in docs]
+    real_names = [name for name in real_names if name]
+    base["nickname"] = real_names[0] if real_names else None
+
     same_telegram = len({d.get("telegram_id") for d in docs if d.get("telegram_id") is not None}) == 1 and any(d.get("telegram_id") is not None for d in docs)
     points_values = [int(d.get("points") or 0) for d in docs]
     xp_values = [int(d.get("experience") or 0) for d in docs]
@@ -192,6 +198,20 @@ async def run(args):
         await client.admin.command("ping")
         logger.info("Connected to MongoDB database %s", db_name)
 
+        # Phase 0: remove the old case-sensitive unique address index BEFORE
+        # rewriting duplicate mixed-case addresses to the same lowercase value.
+        # The final case-insensitive unique index is created only after all
+        # duplicate player documents and wallet references are normalized.
+        if args.apply:
+            index_info = await db.players.index_information()
+            for name, spec in index_info.items():
+                key = spec.get("key", [])
+                if name == "_id_":
+                    continue
+                if key == [("address", 1)] or key == [["address", 1]]:
+                    await db.players.drop_index(name)
+                    logger.info("Dropped old players address index BEFORE merge: %s", name)
+
         # Phase 1: inspect/merge duplicate players.
         cursor = db.players.find({"address": {"$regex": "^0x", "$options": "i"}}, {"_id": 1})
         ids = [d["_id"] async for d in cursor]
@@ -243,20 +263,8 @@ async def run(args):
                     logger.warning("Skipping %s.%s: %s", collection, field, exc)
 
         if args.apply:
-            # Remove every existing players address index so the final index is
-            # the single source of truth. Do this only after duplicate merge.
-            index_info = await db.players.index_information()
-            for name, spec in index_info.items():
-                key = spec.get("key", [])
-                if name == "_id_":
-                    continue
-                if key == [("address", 1)] or key == [["address", 1]]:
-                    try:
-                        await db.players.drop_index(name)
-                        logger.info("Dropped old players address index: %s", name)
-                    except Exception as exc:
-                        logger.warning("Could not drop index %s: %s", name, exc)
-
+            # Create the final case-insensitive unique index only after the
+            # duplicate player merge and all address normalization are complete.
             await db.players.create_index(
                 [("address", 1)],
                 name="players_address_ci_unique",
