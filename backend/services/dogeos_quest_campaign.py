@@ -105,6 +105,18 @@ QUEST_LABELS = {
 QUEST_ORDER = ["sign_on", "first_batch", "publish_note", "daily_spin", "return_batch", "lab_launcher"]
 
 
+def _campaign_start_dt() -> datetime:
+    """spin_wheel_history.spun_at is written as a real datetime object
+    (services collect it via `"spun_at": datetime.now(timezone.utc)`),
+    unlike treats.collected_at / lab_notes.created_at which are stored as
+    ISO strings. MongoDB's range operators only match when the query
+    value's type matches the field's stored type - comparing that field
+    against the string HEIST_CAMPAIGN_START silently matches nothing, no
+    matter how many spins exist. This gives _check_daily_spin a real
+    datetime to compare against instead."""
+    return datetime.fromisoformat(HEIST_CAMPAIGN_START).replace(tzinfo=timezone.utc)
+
+
 def is_wallet_address(address) -> bool:
     """Real 0x wallet - excludes guest_*, TG_*/tg_* pseudo-addresses."""
     return bool(address) and isinstance(address, str) and address.lower().startswith("0x") and len(address) == 42
@@ -232,12 +244,16 @@ async def _check_publish_note(db, wallet: str, first_batch_ts: str):
 
 async def _check_daily_spin(db, wallet: str):
     spin = await db.spin_wheel_history.find_one(
-        {"player_address": _ci_regex(wallet), "spun_at": {"$gte": HEIST_CAMPAIGN_START}},
+        {"player_address": _ci_regex(wallet), "spun_at": {"$gte": _campaign_start_dt()}},
         sort=[("spun_at", 1)],
     )
     if not spin:
         return False, {}, None
-    return True, {"spun_at": spin.get("spun_at")}, None
+    spun_at = spin.get("spun_at")
+    # Keep evidence JSON-safe (this dict gets sent to DogeOS and stored in
+    # Mongo) - a raw datetime isn't serializable by httpx's json= param.
+    spun_at_str = spun_at.isoformat() if hasattr(spun_at, "isoformat") else spun_at
+    return True, {"spun_at": spun_at_str}, None
 
 
 async def _check_return_batch(db, wallet: str, publish_note_ts: str, first_treat_id: str):
