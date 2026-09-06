@@ -234,6 +234,11 @@ def create_lab_launcher_router(db, admin_dependency) -> APIRouter:
                     "volume_doge": t["volume_doge"],
                     "holders": t["holders"],
                     "total_royalties_claimed": str(claims_by_token.get(t["_id"], 0)),
+                    "description": t.get("description"),
+                    "logo": t.get("logo"),
+                    "website": t.get("website"),
+                    "telegram": t.get("telegram"),
+                    "twitter": t.get("twitter"),
                 }
                 for t in tokens
             ],
