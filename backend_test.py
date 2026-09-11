@@ -1465,7 +1465,7 @@ class DogeLabAPITester:
                 
                 print(f"   🎯 Result: {rarity} rarity, {timer_hours}h timer")
                 if secret_combo.get('is_secret_combo'):
-                    print(f"   🎉 Secret combo: {secret_combo.get('combo_name', 'Unknown')}")
+                    print("   🎉 Secret combo detected")
             
             if not success:
                 all_success = False
