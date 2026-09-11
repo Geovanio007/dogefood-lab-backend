@@ -1624,7 +1624,7 @@ class DogeLabAPITester:
                     secret_combo = outcome.get('secret_combo', {})
                     if secret_combo.get('is_secret_combo'):
                         print(f"   🎉 Secret combo detected: {secret_combo.get('combo_name', 'Unknown')}")
-                        print(f"   🎁 Bonus: +{secret_combo.get('bonus_legendary', 0)}% Legendary chance")
+                        print("   🎁 Bonus applied (details hidden)")
                     
                     # Verify level-based timer scaling
                     timer_hours = outcome.get('timer_duration_hours', 0)
