@@ -26,6 +26,7 @@ What each endpoint is for:
 """
 from datetime import datetime, timezone
 from typing import Optional
+import logging
 
 import httpx
 from fastapi import APIRouter, HTTPException
@@ -34,6 +35,8 @@ from eth_utils import keccak
 
 from services import lab_feed_social_signer as signer
 from services import lab_feed_social_indexer as indexer_module
+
+logger = logging.getLogger(__name__)
 
 
 def _is_wallet_address(address: Optional[str]) -> bool:
@@ -167,7 +170,8 @@ def create_lab_feed_social_router(db) -> APIRouter:
                     latest_block = int(resp.json()["result"], 16)
                     rpc_reachable = True
             except Exception as e:
-                rpc_error = str(e)
+                logger.exception("LabFeedSocial RPC status check failed")
+                rpc_error = "RPC connectivity check failed"
 
         sync_state = await db.lab_notes_onchain_sync_state.find().to_list(20)
         pending_count = await db.lab_notes_onchain_interactions.count_documents({"status": "pending"})
