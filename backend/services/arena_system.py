@@ -8,6 +8,10 @@ from typing import Optional, List, Dict
 import uuid
 import random
 import re
+import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 ENTRY_FEE_POINTS = 50
 ARENA_DURATION_HOURS = 24
@@ -410,6 +414,28 @@ async def get_or_rotate_heat_event(db) -> dict:
         "started_at": started.isoformat(),
         "duration_min": HEAT_EVENT_DURATION_MIN,
     }
+
+
+async def get_active_heat_event_id(db) -> str:
+    """Thin id-only accessor. Several call sites just need to compare the
+    active event's id against a string (e.g. `== "lab_surge"`) without the
+    full rotate/timing payload get_or_rotate_heat_event returns."""
+    data = await get_or_rotate_heat_event(db)
+    event = data.get("event") if isinstance(data, dict) else None
+    return (event or {}).get("id", "idle_calm")
+
+
+async def run_heat_event_scheduler(db, interval_seconds: int = 60):
+    """Background loop: proactively keeps the heat event rotated on a timer
+    instead of relying only on the lazy check inside get_or_rotate_heat_event.
+    Errors are caught per-tick so a transient DB hiccup never kills the loop —
+    this is started once as a fire-and-forget asyncio task at server startup."""
+    while True:
+        try:
+            await get_or_rotate_heat_event(db)
+        except Exception as e:
+            logger.warning(f"Heat event scheduler tick failed (non-fatal): {e}")
+        await asyncio.sleep(interval_seconds)
 
 
 # ─── Chat ───────────────────────────────────────────────────────────────────
