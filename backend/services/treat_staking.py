@@ -20,7 +20,7 @@ from typing import Optional, List, Dict
 import uuid
 
 MAX_STAKED_TREATS = 5
-STAKE_COST_DOGE = 35
+STAKE_COST_DOGE = 30
 YEAR_SECONDS = 365 * 24 * 3600
 
 # Principal (points) + APY per rarity tier. Higher tiers are strictly more
