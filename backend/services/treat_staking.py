@@ -22,6 +22,7 @@ import uuid
 MAX_STAKED_TREATS = 5
 STAKE_COST_DOGE = 30
 YEAR_SECONDS = 365 * 24 * 3600
+DAY_SECONDS = 24 * 3600
 
 # Principal (points) + APY per rarity tier. Higher tiers are strictly more
 # attractive to stake, which ties this feature back into the core
@@ -35,6 +36,19 @@ TIERS = {
     "Mythic":    {"principal": 2000, "apy": 2.00},
 }
 DEFAULT_TIER = {"principal": 50, "apy": 0.40}  # fallback for an unrecognized rarity string
+
+# Loyalty bonus: the longer a treat has been continuously staked (measured
+# from the original staked_at — individual claims don't reset it), the
+# bigger the bonus on every future claim from that stake. Always-on, unlike
+# Happy Hour / Golden Hour which are time-window bonuses (see below).
+# (days, bonus_percent) — checked longest-first.
+LOYALTY_TIERS = [
+    (90, 0.35),
+    (30, 0.20),
+    (7,  0.10),
+    (1,  0.05),
+    (0,  0.0),
+]
 
 
 def _utcnow() -> datetime:
@@ -55,13 +69,46 @@ def get_tier(rarity: str) -> dict:
     return TIERS.get((rarity or "").strip().title(), DEFAULT_TIER)
 
 
-def _rate_per_second(stake: dict) -> float:
+def get_loyalty_bonus_percent(staked_days: float) -> float:
+    for threshold_days, bonus in LOYALTY_TIERS:
+        if staked_days >= threshold_days:
+            return bonus
+    return 0.0
+
+
+def _base_rate_per_second(stake: dict) -> float:
     principal = stake.get("principal", DEFAULT_TIER["principal"])
     apy = stake.get("apy", DEFAULT_TIER["apy"])
     return (principal * apy) / YEAR_SECONDS
 
 
-def _preview_accrued(stake: dict, now: Optional[datetime] = None) -> float:
+def _loyalty_info(stake: dict, now: datetime) -> dict:
+    staked_at = _parse_dt(stake.get("staked_at"))
+    staked_days = max(0.0, (now - staked_at).total_seconds() / DAY_SECONDS) if staked_at else 0.0
+    percent = get_loyalty_bonus_percent(staked_days)
+    next_threshold = next((d for d, _ in reversed(LOYALTY_TIERS) if d > staked_days), None)
+    return {
+        "percent": percent,
+        "staked_days": round(staked_days, 2),
+        "days_to_next_tier": round(next_threshold - staked_days, 2) if next_threshold is not None else None,
+    }
+
+
+def _effective_rate_per_second(stake: dict, now: datetime, happy_hour_bonus_percent: float, golden_hour_active: bool) -> float:
+    """Base rarity rate, boosted by the always-on loyalty bonus plus whichever
+    time-window bonuses are currently active. Used for both the live-preview
+    ticker and the rate_per_min the UI displays, so what a player sees ticking
+    up matches what an actual claim would apply right now."""
+    rate = _base_rate_per_second(stake)
+    rate *= (1 + _loyalty_info(stake, now)["percent"])
+    if happy_hour_bonus_percent:
+        rate *= (1 + happy_hour_bonus_percent)
+    if golden_hour_active:
+        rate *= 2
+    return rate
+
+
+def _preview_accrued(stake: dict, now: datetime, happy_hour_bonus_percent: float = 0.0, golden_hour_active: bool = False) -> float:
     """Live estimate for display only (fractional) — not what actually gets
     credited. See _claim_internal for the real, whole-point-safe credit."""
     if stake.get("status") != "active":
@@ -69,9 +116,8 @@ def _preview_accrued(stake: dict, now: Optional[datetime] = None) -> float:
     since = _parse_dt(stake.get("last_claim_at") or stake.get("staked_at"))
     if not since:
         return 0.0
-    now = now or _utcnow()
     elapsed = max(0.0, (now - since).total_seconds())
-    return _rate_per_second(stake) * elapsed
+    return _effective_rate_per_second(stake, now, happy_hour_bonus_percent, golden_hour_active) * elapsed
 
 
 async def count_active_stakes(db, player_address: str) -> int:
@@ -140,63 +186,93 @@ async def activate_stake(db, stake_id: str, nowpayments_payment_id) -> Optional[
     return await db.treat_stakes.find_one({"id": stake_id}, {"_id": 0})
 
 
-async def get_player_stakes(db, player_address: str) -> List[dict]:
+async def get_player_stakes(db, player_address: str, happy_hour_bonus_percent: float = 0.0, golden_hour_active: bool = False) -> List[dict]:
     stakes = await db.treat_stakes.find(
         {"player_address": player_address, "status": {"$in": ["pending", "active"]}},
         {"_id": 0}
     ).sort("created_at", 1).to_list(length=MAX_STAKED_TREATS + 5)
     now = _utcnow()
     for s in stakes:
-        s["rate_per_min"] = round(_rate_per_second(s) * 60, 4)
-        s["accrued_preview"] = round(_preview_accrued(s, now), 4)
+        if s.get("status") == "active":
+            loyalty = _loyalty_info(s, now)
+            s["loyalty_bonus_percent"] = round(loyalty["percent"] * 100, 1)
+            s["staked_days"] = loyalty["staked_days"]
+            s["days_to_next_loyalty_tier"] = loyalty["days_to_next_tier"]
+        s["happy_hour_active"] = bool(happy_hour_bonus_percent)
+        s["golden_hour_active"] = golden_hour_active
+        # rate_per_min / accrued_preview are bonus-inclusive: loyalty always,
+        # Happy Hour / Golden Hour only while actually active right now.
+        s["rate_per_min"] = round(_effective_rate_per_second(s, now, happy_hour_bonus_percent, golden_hour_active) * 60, 4)
+        s["accrued_preview"] = round(_preview_accrued(s, now, happy_hour_bonus_percent, golden_hour_active), 4)
     return stakes
 
 
-async def _claim_internal(db, stake: dict, now: datetime) -> int:
-    """Credits whole points earned since last_claim_at, advancing the clock
-    only by the time that whole amount represents. Any fractional remainder
-    keeps accruing toward the next claim instead of being discarded — so
-    claiming often vs. rarely earns the same total, points are an integer
-    field on Player, and nothing is ever lost to rounding."""
+_EMPTY_CLAIM = {"base": 0, "loyalty_bonus": 0, "happy_hour_bonus": 0, "golden_hour_bonus": 0, "total": 0}
+
+
+async def _claim_internal(db, stake: dict, now: datetime, happy_hour_bonus_percent: float = 0.0, golden_hour_active: bool = False) -> dict:
+    """Credits points earned since last_claim_at, then layers bonuses on top
+    of that base amount. The accrual clock only ever advances by the time the
+    BASE (pre-bonus) amount represents — bonuses add points without touching
+    the clock, so nothing is ever lost to rounding regardless of claim
+    frequency or which bonuses happened to be active.
+
+    Bonus order matches how collect_treat applies these same two bonuses to
+    treat-collection rewards, for consistency: loyalty and Happy Hour add a
+    percentage, then Golden Hour doubles the running total."""
     if stake.get("status") != "active":
-        return 0
+        return dict(_EMPTY_CLAIM)
     since = _parse_dt(stake.get("last_claim_at") or stake.get("staked_at"))
     if not since:
-        return 0
-    rate = _rate_per_second(stake)
+        return dict(_EMPTY_CLAIM)
+    rate = _base_rate_per_second(stake)
     if rate <= 0:
-        return 0
+        return dict(_EMPTY_CLAIM)
 
     elapsed = max(0.0, (now - since).total_seconds())
-    whole = int(elapsed * rate)
-    if whole <= 0:
-        return 0
+    base = int(elapsed * rate)
+    if base <= 0:
+        return dict(_EMPTY_CLAIM)
 
-    time_consumed = whole / rate
+    # Advance the clock only by the time the BASE amount represents.
+    time_consumed = base / rate
     new_since = since + timedelta(seconds=time_consumed)
+
+    loyalty_pct = _loyalty_info(stake, now)["percent"]
+    loyalty_bonus = int(base * loyalty_pct)
+
+    running = base + loyalty_bonus
+    happy_hour_bonus = int(running * happy_hour_bonus_percent) if happy_hour_bonus_percent else 0
+    running += happy_hour_bonus
+
+    golden_hour_bonus = running if golden_hour_active else 0
+    running += golden_hour_bonus
+
+    total = running
 
     await db.treat_stakes.update_one(
         {"id": stake["id"]},
-        {"$set": {"last_claim_at": new_since, "updated_at": now}, "$inc": {"claimed_total": whole}}
+        {"$set": {"last_claim_at": new_since, "updated_at": now}, "$inc": {"claimed_total": total}}
     )
     await db.players.update_one(
         {"address": stake["player_address"]},
-        {"$inc": {"points": whole}}
+        {"$inc": {"points": total}}
     )
-    return whole
+    return {"base": base, "loyalty_bonus": loyalty_bonus, "happy_hour_bonus": happy_hour_bonus,
+            "golden_hour_bonus": golden_hour_bonus, "total": total}
 
 
-async def claim_stake(db, stake_id: str, player_address: str) -> dict:
+async def claim_stake(db, stake_id: str, player_address: str, happy_hour_bonus_percent: float = 0.0, golden_hour_active: bool = False) -> dict:
     stake = await db.treat_stakes.find_one({"id": stake_id, "player_address": player_address})
     if not stake:
         raise ValueError("stake not found")
     if stake.get("status") != "active":
         raise ValueError("stake is not active")
-    claimed = await _claim_internal(db, stake, _utcnow())
-    return {"claimed": claimed, "stake_id": stake_id}
+    result = await _claim_internal(db, stake, _utcnow(), happy_hour_bonus_percent, golden_hour_active)
+    return {**result, "stake_id": stake_id}
 
 
-async def unstake(db, stake_id: str, player_address: str) -> dict:
+async def unstake(db, stake_id: str, player_address: str, happy_hour_bonus_percent: float = 0.0, golden_hour_active: bool = False) -> dict:
     stake = await db.treat_stakes.find_one({"id": stake_id, "player_address": player_address})
     if not stake:
         raise ValueError("stake not found")
@@ -204,12 +280,12 @@ async def unstake(db, stake_id: str, player_address: str) -> dict:
         raise ValueError("stake already unstaked")
 
     now = _utcnow()
-    claimed = 0
+    claim_result = dict(_EMPTY_CLAIM)
     if stake["status"] == "active":
-        claimed = await _claim_internal(db, stake, now)
+        claim_result = await _claim_internal(db, stake, now, happy_hour_bonus_percent, golden_hour_active)
 
     await db.treat_stakes.update_one(
         {"id": stake_id},
         {"$set": {"status": "unstaked", "unstaked_at": now, "updated_at": now}}
     )
-    return {"unstaked": True, "final_claim": claimed, "stake_id": stake_id}
+    return {"unstaked": True, "final_claim": claim_result, "stake_id": stake_id}
