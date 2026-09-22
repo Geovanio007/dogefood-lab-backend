@@ -60,11 +60,12 @@ same convention as LAB_LAUNCHER_*_ADDRESS in lab_launcher_indexer.py):
     DOGEOS_QUEST_ID_RETURN_BATCH   - "Mix the Return Batch"        (DF-12)
     DOGEOS_QUEST_ID_LAB_LAUNCHER   - "Launch a Lab Token" sidequest (DF-13)
 
-Until a given DOGEOS_QUEST_ID_* is set, that quest's evaluator still runs and
-still records the result in dogeos_quest_reports as "eligible_but_unreported"
-- so you can verify the *logic* (who would qualify, and when) before DogeOS
-has published the quest and handed you its UUID. Nothing is lost: the next
-poll after you add the ID reports it for real.
+Until DogeOS's own credentials (DOGEOS_API_URL / DOGEOS_PARTNER_API_KEY) are
+set, or until a given DOGEOS_QUEST_ID_* is set, that quest's evaluator still
+runs and still records the result in dogeos_quest_reports as
+"eligible_but_unreported" - so you can verify the *logic* (who would
+qualify, and when) before every piece of DogeOS-side configuration exists.
+Nothing is lost: the next poll after everything is set reports it for real.
 """
 import os
 import re
@@ -164,11 +165,22 @@ async def _record_result(db, wallet: str, quest_key: str, ok: bool, detail: str,
     ensure_indexes() for the unique index that makes double-inserts a no-op
     rather than a duplicate. A doc with status already "reported" is never
     touched again - once DogeOS has it, we're done with that quest for that
-    wallet. A doc that's "eligible_but_unreported" (quest_id not set yet)
-    gets upgraded to "reported" automatically once you add the quest ID and
-    the next poll runs, since callers only call this when evidence changed
-    or the previous attempt didn't succeed."""
-    status = "reported" if ok else ("eligible_but_unreported" if detail == "quest_id_not_set" else "error")
+    wallet.
+
+    Both "quest_id_not_set" (DogeOS hasn't published the quest / given us
+    its UUID yet) and "dogeos_api_not_configured" (we have the quest ID but
+    DOGEOS_API_URL/DOGEOS_PARTNER_API_KEY aren't set yet) mean the same
+    thing from the outside: this player is genuinely eligible, we just
+    can't tell DogeOS yet for a configuration reason on either side. Both
+    map to "eligible_but_unreported" so the /status endpoint keeps counting
+    them - only a real failure (DogeOS rejected the call, or the request
+    itself failed) is recorded as "error"."""
+    if ok:
+        status = "reported"
+    elif detail in ("quest_id_not_set", "dogeos_api_not_configured"):
+        status = "eligible_but_unreported"
+    else:
+        status = "error"
     await db.dogeos_quest_reports.update_one(
         {"wallet": wallet.lower(), "quest_key": quest_key},
         {
