@@ -311,6 +311,60 @@ points_system = PointsCollectionSystem(db)
 merkle_generator = MerkleTreeGenerator()
 
 
+# Temporary control for the 15-second rapid-treat-creation anti-cheat rule.
+# This disables ONLY the rapid_treat_creation violation at the API boundary;
+# player blocks, daily limits, and every other anti-cheat violation still apply.
+# Set DISABLE_RAPID_TREAT_CREATION_ANTICHEAT=false to restore that rule.
+DISABLE_RAPID_TREAT_CREATION_ANTICHEAT = (
+    os.getenv("DISABLE_RAPID_TREAT_CREATION_ANTICHEAT", "true").strip().lower()
+    in {"1", "true", "yes", "on"}
+)
+
+
+def apply_treat_creation_anticheat_override(cheat_check: dict) -> dict:
+    """Ignore only the rapid-fire treat-creation violation when configured off.
+
+    Other anti-cheat violations remain blocking. This handles both treat
+    creation endpoints without disabling the wider AntiCheatSystem.
+    """
+    if (
+        not DISABLE_RAPID_TREAT_CREATION_ANTICHEAT
+        or not isinstance(cheat_check, dict)
+        or cheat_check.get("valid", False)
+    ):
+        return cheat_check
+
+    violations = cheat_check.get("violations")
+    if not isinstance(violations, list) or not violations:
+        return cheat_check
+
+    remaining_violations = []
+    rapid_rule_removed = False
+    for violation in violations:
+        if (
+            isinstance(violation, dict)
+            and str(violation.get("type", "")).lower() == "rapid_treat_creation"
+        ):
+            rapid_rule_removed = True
+        else:
+            remaining_violations.append(violation)
+
+    if not rapid_rule_removed:
+        return cheat_check
+
+    updated_check = dict(cheat_check)
+    updated_check["violations"] = remaining_violations
+
+    # Allow creation only when the rapid-fire rule was the sole blocking
+    # violation; preserve all other protections if anything else was flagged.
+    if not remaining_violations:
+        updated_check["valid"] = True
+        updated_check["reason"] = None
+        updated_check["rapid_treat_creation_ignored"] = True
+
+    return updated_check
+
+
 # Initialize Enhanced Game Mechanics (Phase 3)
 # SECURITY: GAME_SECRET_KEY should be set via environment variable in production
 GAME_SECRET_KEY = os.environ.get('GAME_SECRET_KEY')
@@ -2345,6 +2399,7 @@ async def create_treat(treat_data: TreatCreate, background_tasks: BackgroundTask
         treat_data.creator_address,
         treat_data.dict()
     )
+    cheat_check = apply_treat_creation_anticheat_override(cheat_check)
     
     if not cheat_check["valid"]:
         raise HTTPException(
@@ -5210,6 +5265,7 @@ async def create_enhanced_treat(treat_data: EnhancedTreatCreate, background_task
             prefetched_player=player,
             prefetched_treats_24h=recent_treats_24h
         )
+        cheat_check = apply_treat_creation_anticheat_override(cheat_check)
         if not cheat_check["valid"]:
             daily_status = cheat_check.get("daily_status")
             is_blocked = any(v.get("type") == "player_blocked" for v in cheat_check.get("violations", []))
