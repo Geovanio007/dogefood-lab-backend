@@ -6,6 +6,7 @@ Includes streak bonus system for daily players
 """
 
 import asyncio
+import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from dataclasses import dataclass
@@ -13,6 +14,18 @@ import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 
 logger = logging.getLogger(__name__)
+
+# Temporary switch for the rapid-treat-creation rule (min_time_between_treats).
+# When ON (default), the rule is skipped completely: no violation is created,
+# nothing is written to suspicious_activities, it adds nothing to the risk
+# score, and it can no longer cause an auto-block. Old rapid_treat_creation
+# records already in the database are ignored by the risk score too.
+# Set DISABLE_RAPID_TREAT_CREATION_ANTICHEAT=false to restore the rule.
+# (Same variable name server.py already uses, so one setting controls both.)
+DISABLE_RAPID_TREAT_CREATION_ANTICHEAT = (
+    os.getenv("DISABLE_RAPID_TREAT_CREATION_ANTICHEAT", "true").strip().lower()
+    in {"1", "true", "yes", "on"}
+)
 
 # Treat limit constants - NEW SYSTEM
 WINDOW_TREAT_LIMIT = 4  # Base limit per 6-hour window
@@ -467,7 +480,8 @@ class AntiCheatSystem:
             })
         
         # Check 2: Time between treats too short
-        if recent_treats:
+        # (skipped while DISABLE_RAPID_TREAT_CREATION_ANTICHEAT is on)
+        if recent_treats and not DISABLE_RAPID_TREAT_CREATION_ANTICHEAT:
             last_treat_time = recent_treats[0]["created_at"]
             time_diff = (datetime.utcnow() - last_treat_time).seconds
             
@@ -631,10 +645,18 @@ class AntiCheatSystem:
         """
         
         # Get all suspicious activities for player in last 24 hours
-        recent_activities = await self.db.suspicious_activities.find({
+        activity_query = {
             "player_address": player_address,
             "timestamp": {"$gte": datetime.utcnow() - timedelta(hours=24)}
-        }).to_list(100)
+        }
+        if DISABLE_RAPID_TREAT_CREATION_ANTICHEAT:
+            # Old rapid_treat_creation records must not push anyone toward
+            # an auto-block while that rule is switched off.
+            activity_query["activity_type"] = {"$ne": "rapid_treat_creation"}
+
+        recent_activities = await self.db.suspicious_activities.find(
+            activity_query
+        ).to_list(100)
         
         risk_score = 0
         severity_weights = {"low": 1, "medium": 5, "high": 15}
