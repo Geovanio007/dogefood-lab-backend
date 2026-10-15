@@ -14,6 +14,9 @@ exact three lines server.py needs.
 Every address in path/query/body params is lowercased before hitting Mongo
 - see the comment on _topic_address in lab_launcher_indexer.py for why.
 """
+import logging
+import os
+import time
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -22,6 +25,64 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from services import lab_launcher_indexer as indexer_module
+
+logger = logging.getLogger(__name__)
+
+# Only players who have chosen a scientist character in DogeFood Lab may launch
+# tokens. The launch itself happens on-chain (the backend cannot block that
+# transaction), so the rule is enforced here by:
+#   - refusing to store metadata (logo, links, description) for tokens from
+#     creators without a character, and
+#   - hiding those creators' tokens everywhere in the game (list, detail,
+#     trades, holders, favourites, verification).
+# Set LAUNCHER_REQUIRE_CHARACTER=false on Railway to switch the rule off.
+LAUNCHER_REQUIRE_CHARACTER = os.getenv("LAUNCHER_REQUIRE_CHARACTER", "true").strip().lower() in {"1", "true", "yes", "on"}
+NEEDS_CHARACTER_MESSAGE = "Choose a scientist character in DogeFood Lab before launching tokens."
+
+_PLAYER_COLLATION = {"locale": "en", "strength": 2}  # addresses are stored in mixed case
+_ELIGIBLE_TTL_SECONDS = 30
+_eligible_cache = {"at": 0.0, "wallets": set()}
+
+
+async def _has_character(db, wallet: str) -> bool:
+    """True if a player record exists for this wallet and it has a selected character."""
+    wallet = (wallet or "").strip()
+    if not wallet:
+        return False
+    doc = await db.players.find_one(
+        {"address": wallet, "selected_character": {"$nin": [None, ""]}},
+        {"_id": 1},
+        collation=_PLAYER_COLLATION,
+    )
+    return doc is not None
+
+
+async def _eligible_creators(db) -> set:
+    """Lower-cased wallets that created at least one token AND have a character.
+    Cached briefly so listing endpoints stay cheap."""
+    now = time.time()
+    if now - _eligible_cache["at"] < _ELIGIBLE_TTL_SECONDS:
+        return _eligible_cache["wallets"]
+    creators = await db.lab_launcher_tokens.distinct("creator_wallet")
+    lowered = sorted({c.lower() for c in creators if isinstance(c, str) and c})
+    eligible = set()
+    if lowered:
+        docs = await db.players.find(
+            {"address": {"$in": lowered}, "selected_character": {"$nin": [None, ""]}},
+            {"address": 1},
+            collation=_PLAYER_COLLATION,
+        ).to_list(len(lowered) + 10)
+        eligible = {d["address"].lower() for d in docs if d.get("address")}
+    _eligible_cache["at"] = now
+    _eligible_cache["wallets"] = eligible
+    return eligible
+
+
+async def _token_visible(db, token: dict) -> bool:
+    if not LAUNCHER_REQUIRE_CHARACTER:
+        return True
+    creator = (token or {}).get("creator_wallet", "")
+    return creator.lower() in await _eligible_creators(db)
 
 
 class TokenMetadataIn(BaseModel):
@@ -93,6 +154,9 @@ def create_lab_launcher_router(db, admin_dependency) -> APIRouter:
             )
         if token["creator_wallet"].lower() != body.creator_wallet.lower():
             raise HTTPException(status_code=403, detail="Only this token's creator can set its metadata")
+        if LAUNCHER_REQUIRE_CHARACTER and not await _has_character(db, token["creator_wallet"]):
+            logger.warning(f"🚫 launcher metadata rejected (no character) creator={token['creator_wallet']} token={token_address}")
+            raise HTTPException(status_code=403, detail=NEEDS_CHARACTER_MESSAGE)
 
         update = {k: v for k, v in body.dict(exclude={"creator_wallet"}).items() if v is not None}
         if update:
@@ -110,6 +174,8 @@ def create_lab_launcher_router(db, admin_dependency) -> APIRouter:
         offset: int = Query(0, ge=0),
     ):
         query = {}
+        if LAUNCHER_REQUIRE_CHARACTER:
+            query["creator_wallet"] = {"$in": sorted(await _eligible_creators(db))}
         if search:
             query["$or"] = [
                 {"name": {"$regex": search, "$options": "i"}},
@@ -147,7 +213,7 @@ def create_lab_launcher_router(db, admin_dependency) -> APIRouter:
     async def get_token(token_address: str):
         token_address = token_address.lower()
         token = await db.lab_launcher_tokens.find_one({"_id": token_address})
-        if not token:
+        if not token or not await _token_visible(db, token):
             raise HTTPException(status_code=404, detail="Token not found")
 
         large_wallet_alert = False
@@ -178,6 +244,9 @@ def create_lab_launcher_router(db, admin_dependency) -> APIRouter:
     @router.get("/tokens/{token_address}/trades")
     async def get_token_trades(token_address: str, limit: int = Query(50, le=200), offset: int = Query(0, ge=0)):
         token_address = token_address.lower()
+        token = await db.lab_launcher_tokens.find_one({"_id": token_address}, {"creator_wallet": 1})
+        if not token or not await _token_visible(db, token):
+            raise HTTPException(status_code=404, detail="Token not found")
         cursor = db.lab_launcher_trades.find({"token_address": token_address}, {"_id": 0}).sort([("timestamp", -1)])
         trades = await cursor.skip(offset).limit(limit).to_list(limit)
         return {"trades": trades, "count": len(trades)}
@@ -185,11 +254,13 @@ def create_lab_launcher_router(db, admin_dependency) -> APIRouter:
     @router.get("/tokens/{token_address}/holders")
     async def get_token_holders(token_address: str, limit: int = Query(50, le=200)):
         token_address = token_address.lower()
+        token = await db.lab_launcher_tokens.find_one({"_id": token_address})
+        if not token or not await _token_visible(db, token):
+            raise HTTPException(status_code=404, detail="Token not found")
         holdings = await db.lab_launcher_holdings.find(
             {"token_address": token_address, "balance": {"$ne": "0"}}
         ).to_list(10000)
         holdings.sort(key=lambda h: int(h["balance"]), reverse=True)
-        token = await db.lab_launcher_tokens.find_one({"_id": token_address})
         total_supply = float(token["total_supply"]) if token else 0
         top = holdings[:limit]
         return {
@@ -260,7 +331,7 @@ def create_lab_launcher_router(db, admin_dependency) -> APIRouter:
         token_address = token_address.lower()
         wallet = body.wallet.lower()
         token = await db.lab_launcher_tokens.find_one({"_id": token_address})
-        if not token:
+        if not token or not await _token_visible(db, token):
             raise HTTPException(status_code=404, detail="Token not found")
 
         existing = await db.lab_launcher_favorites.find_one({"token_address": token_address, "wallet": wallet})
@@ -279,7 +350,7 @@ def create_lab_launcher_router(db, admin_dependency) -> APIRouter:
     async def apply_for_verification(token_address: str, body: VerificationApplyIn):
         token_address = token_address.lower()
         token = await db.lab_launcher_tokens.find_one({"_id": token_address})
-        if not token:
+        if not token or not await _token_visible(db, token):
             raise HTTPException(status_code=404, detail="Token not found")
         if token["creator_wallet"].lower() != body.wallet.lower():
             raise HTTPException(status_code=403, detail="Only this token's creator can apply for verification")
@@ -343,6 +414,45 @@ def create_lab_launcher_router(db, admin_dependency) -> APIRouter:
         cursor = db.lab_launcher_game_payments.find(query, {"_id": 0}).sort([("timestamp", -1)])
         payments = await cursor.skip(offset).limit(limit).to_list(limit)
         return {"payments": payments, "count": len(payments)}
+
+    # ---- admin: preview what the character rule hides (read-only) -------
+    @router.get("/admin/gate-report")
+    async def gate_report(_: None = admin_dependency):
+        """Read-only. Shows how many indexed tokens the character rule hides, which
+        creators they belong to, and - importantly - hidden tokens that already
+        have real activity (volume or several holders), which may be genuine
+        launches from older players who never chose a character."""
+        tokens = await db.lab_launcher_tokens.find(
+            {}, {"creator_wallet": 1, "name": 1, "symbol": 1, "volume_doge": 1, "holders": 1, "status": 1, "created_at": 1}
+        ).to_list(20000)
+        _eligible_cache["at"] = 0.0  # force a fresh read for the report
+        eligible = await _eligible_creators(db)
+
+        hidden = [t for t in tokens if t.get("creator_wallet", "").lower() not in eligible]
+        by_creator = {}
+        for t in hidden:
+            c = t.get("creator_wallet", "").lower()
+            e = by_creator.setdefault(c, {"creator_wallet": c, "tokens": 0, "with_activity": 0})
+            e["tokens"] += 1
+            if float(t.get("volume_doge", 0) or 0) > 0 or int(t.get("holders", 0) or 0) > 1:
+                e["with_activity"] += 1
+        creators = sorted(by_creator.values(), key=lambda e: -e["tokens"])
+        active_hidden = [
+            {"token_address": t["_id"], "name": t.get("name"), "symbol": t.get("symbol"),
+             "creator_wallet": t.get("creator_wallet"), "volume_doge": t.get("volume_doge"), "holders": t.get("holders")}
+            for t in hidden
+            if float(t.get("volume_doge", 0) or 0) > 0 or int(t.get("holders", 0) or 0) > 1
+        ]
+        return {
+            "rule_enabled": LAUNCHER_REQUIRE_CHARACTER,
+            "total_tokens": len(tokens),
+            "visible_tokens": len(tokens) - len(hidden),
+            "hidden_tokens": len(hidden),
+            "hidden_creators": len(creators),
+            "top_hidden_creators": creators[:50],
+            "hidden_tokens_with_activity": len(active_hidden),
+            "hidden_tokens_with_activity_sample": active_hidden[:50],
+        }
 
     # ---- diagnostics --------------------------------------------------
     @router.get("/debug/status")
