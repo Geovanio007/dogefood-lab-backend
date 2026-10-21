@@ -24,6 +24,26 @@ What each endpoint is for:
                                                testing, instead of waiting
                                                for the next poll.
   POST /api/dogeos-quests/evaluate-all       - admin-gated manual full sweep.
+
+Admin-gated debugging (X-Admin-Key, same as your other admin endpoints) for
+when DogeOS says a quest "won't verify":
+  GET  /api/dogeos-quests/admin/config            - which API host and quest
+                                                    UUIDs this backend is
+                                                    really using (key never
+                                                    shown, only whether set).
+  GET  /api/dogeos-quests/admin/reports/{wallet}  - what we've stored about
+                                                    this wallet per quest:
+                                                    status, last DogeOS
+                                                    response, timestamps.
+  POST /api/dogeos-quests/admin/resend            - body {"wallet", "quest_key"}.
+                                                    Re-checks the wallet with
+                                                    our own validation, and if
+                                                    it passes, sends a fresh
+                                                    mark-eligible call and
+                                                    returns the exact request
+                                                    (key redacted) + DogeOS's
+                                                    response. This is the
+                                                    output to send DogeOS.
 """
 from fastapi import APIRouter, Depends
 
@@ -88,6 +108,21 @@ def create_dogeos_quest_router(db, admin_dep) -> APIRouter:
     @router.post("/evaluate-all", dependencies=[admin_dep])
     async def evaluate_all_now():
         return await campaign.evaluate_all(db)
+
+    @router.get("/admin/config", dependencies=[admin_dep])
+    async def admin_config():
+        return campaign.redacted_config()
+
+    @router.get("/admin/reports/{wallet}", dependencies=[admin_dep])
+    async def admin_reports(wallet: str):
+        docs = await db.dogeos_quest_reports.find({"wallet": wallet.lower()}, {"_id": 0}).to_list(50)
+        return {"wallet": wallet.lower(), "reports": docs}
+
+    @router.post("/admin/resend", dependencies=[admin_dep])
+    async def admin_resend(body: dict):
+        return await campaign.debug_resend(
+            db, (body.get("wallet") or "").strip(), (body.get("quest_key") or "").strip()
+        )
 
     return router
 
