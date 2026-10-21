@@ -379,6 +379,127 @@ async def evaluate_all(db, limit: int = 5000) -> dict:
     return {"scanned_players": scanned, "newly_reported": newly_reported}
 
 
+# ---------------------------------------------------------------------------
+# Admin debugging - what DogeOS asks for when a quest "won't verify"
+# ---------------------------------------------------------------------------
+
+def redacted_config() -> dict:
+    """Which API host and quest UUIDs this backend is actually using right
+    now. Never includes the API key itself - only whether one is set."""
+    return {
+        "api_url": DOGEOS_API_URL or None,
+        "api_key_configured": bool(DOGEOS_PARTNER_API_KEY),
+        "campaign_start": HEIST_CAMPAIGN_START,
+        "quest_ids": {k: (v or None) for k, v in QUEST_IDS.items()},
+    }
+
+
+async def _eligibility_for(db, wallet: str, quest_key: str):
+    """Run the real server-side check for ONE quest, including any earlier
+    quests it depends on (publish_note needs first_batch's timestamp,
+    return_batch needs both). Returns (eligible, evidence)."""
+    if quest_key == "sign_on":
+        player = await db.players.find_one({"address": _ci_regex(wallet)})
+        ok, ev, _ = await _check_sign_on(db, player or {"address": wallet})
+        return ok, ev
+    if quest_key == "first_batch":
+        ok, ev, _ = await _check_first_batch(db, wallet)
+        return ok, ev
+    if quest_key == "daily_spin":
+        ok, ev, _ = await _check_daily_spin(db, wallet)
+        return ok, ev
+    if quest_key == "lab_launcher":
+        ok, ev, _ = await _check_lab_launcher(db, wallet)
+        return ok, ev
+    if quest_key in ("publish_note", "return_batch"):
+        fb_ok, fb_ev, fb_ts = await _check_first_batch(db, wallet)
+        if not fb_ok:
+            return False, {}
+        pn_ok, pn_ev, pn_ts = await _check_publish_note(db, wallet, fb_ts)
+        if quest_key == "publish_note":
+            return pn_ok, pn_ev
+        if not pn_ok:
+            return False, {}
+        rb_ok, rb_ev, _ = await _check_return_batch(db, wallet, pn_ts, fb_ev.get("treat_id"))
+        return rb_ok, rb_ev
+    return False, {}
+
+
+async def debug_resend(db, wallet: str, quest_key: str) -> dict:
+    """Re-run our own server-side check for one wallet + quest and, only if
+    it passes, send a fresh mark-eligible call to DogeOS - returning the
+    exact outgoing request (API key redacted) and DogeOS's actual response.
+    Exists so there's something concrete to hand DogeOS's engineers when a
+    quest won't verify. It never skips our own validation: a wallet that
+    hasn't really done the task can't be marked through here."""
+    if quest_key not in QUEST_IDS:
+        return {"error": "unknown_quest_key", "valid_keys": QUEST_ORDER}
+    if not is_wallet_address(wallet):
+        return {"error": "not_a_wallet_address", "got": wallet}
+
+    # The real loop sends players.address exactly as stored (casing
+    # included), so reproduce that rather than whatever was typed here.
+    player = await db.players.find_one({"address": _ci_regex(wallet)}, {"address": 1})
+    wallet_sent = (player or {}).get("address") or wallet
+
+    eligible, evidence = await _eligibility_for(db, wallet_sent, quest_key)
+    result = {
+        "quest_key": quest_key,
+        "quest_label": QUEST_LABELS.get(quest_key),
+        "wallet_requested": wallet,
+        "wallet_sent": wallet_sent,
+        "player_found_in_dogefood_lab": player is not None,
+        "eligible_per_dogefood_lab": eligible,
+        "evidence": evidence,
+        "sent": False,
+    }
+    if not eligible:
+        result["note"] = (
+            "Our own server-side check says this wallet has NOT completed this quest, "
+            "so nothing was sent to DogeOS. That alone would explain a quest not verifying."
+        )
+        return result
+
+    quest_id = QUEST_IDS.get(quest_key, "")
+    if not quest_id:
+        result["note"] = f"No quest UUID is configured for '{quest_key}' (env var not set), so nothing could be sent."
+        return result
+    if not is_configured():
+        result["note"] = "DOGEOS_API_URL and/or DOGEOS_PARTNER_API_KEY is not set, so nothing could be sent."
+        return result
+
+    url = f"{DOGEOS_API_URL}/v2/partner-api/quests/{quest_id}/mark-eligible"
+    body = {
+        "walletAddress": wallet_sent,
+        "metadata": {**evidence, "source": "dogefood-lab-heist", "markedAt": datetime.now(timezone.utc).isoformat()},
+    }
+    result["request"] = {
+        "method": "POST",
+        "url": url,
+        "quest_uuid": quest_id,
+        "headers": {"Content-Type": "application/json", "X-Partner-API-Key": "<redacted>"},
+        "body": body,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
+                url,
+                headers={"Content-Type": "application/json", "X-Partner-API-Key": DOGEOS_PARTNER_API_KEY},
+                json=body,
+            )
+        text = resp.text.replace(DOGEOS_PARTNER_API_KEY, "<redacted>")
+        ok = 200 <= resp.status_code < 300
+        result["sent"] = True
+        result["response"] = {"status_code": resp.status_code, "body": text[:2000]}
+        await _record_result(
+            db, wallet_sent, quest_key, ok,
+            "reported" if ok else f"dogeos_rejected_{resp.status_code}: {text[:300]}", evidence,
+        )
+    except Exception as e:
+        result["response"] = {"error": f"request_failed: {str(e)[:500]}"}
+    return result
+
+
 async def run_forever(db):
     """Background loop - same shape as lab_launcher_indexer.run_forever().
     No-ops harmlessly (just sleeps) if DOGEOS_API_URL/DOGEOS_PARTNER_API_KEY
