@@ -69,6 +69,7 @@ Nothing is lost: the next poll after everything is set reports it for real.
 """
 import os
 import re
+import asyncio
 import logging
 from datetime import datetime, timezone
 
@@ -82,6 +83,16 @@ DOGEOS_PARTNER_API_KEY = os.environ.get("DOGEOS_PARTNER_API_KEY", "")
 HEIST_CAMPAIGN_START = os.environ.get("HEIST_CAMPAIGN_START", "2020-01-01")
 HEIST_CAMPAIGN_END = os.environ.get("HEIST_CAMPAIGN_END", "")  # blank = open-ended
 POLL_INTERVAL_SECONDS = int(os.environ.get("HEIST_QUEST_POLL_INTERVAL_SECONDS", "120"))
+
+# Re-sending is throttled so a config change (new API host / new quest UUIDs)
+# can't fire thousands of calls at DogeOS in one go. Only wallets that already
+# have a report record count against the budget - first-ever reports for new
+# players are never held back. 0 disables re-sends entirely.
+RESEND_PER_SWEEP = int(os.environ.get("HEIST_RESEND_PER_SWEEP", "200"))
+RESEND_DELAY_SECONDS = float(os.environ.get("HEIST_RESEND_DELAY_SECONDS", "0.1"))
+# A report that failed (DogeOS rejected it, or the request errored) is not
+# retried every sweep - wait this long unless the target host/UUID changed.
+ERROR_RETRY_MINUTES = int(os.environ.get("HEIST_ERROR_RETRY_MINUTES", "30"))
 
 QUEST_IDS = {
     "sign_on": os.environ.get("DOGEOS_QUEST_ID_SIGN_ON", ""),
@@ -190,6 +201,11 @@ async def _record_result(db, wallet: str, quest_key: str, ok: bool, detail: str,
                 "quest_label": QUEST_LABELS.get(quest_key, quest_key),
                 "status": status,
                 "detail": detail,
+                # Where this attempt was aimed. Lets us tell a report that
+                # reached today's production target from one sent while the
+                # backend still pointed at staging (see _report_state).
+                "api_url": DOGEOS_API_URL,
+                "quest_id": QUEST_IDS.get(quest_key, ""),
                 "evidence": evidence,
                 "last_attempt_at": datetime.now(timezone.utc).isoformat(),
             },
@@ -202,6 +218,34 @@ async def _record_result(db, wallet: str, quest_key: str, ok: bool, detail: str,
 async def _already_reported(db, wallet: str, quest_key: str) -> bool:
     doc = await db.dogeos_quest_reports.find_one({"wallet": wallet.lower(), "quest_key": quest_key, "status": "reported"})
     return doc is not None
+
+
+async def _report_state(db, wallet: str, quest_key: str) -> str:
+    """Where this wallet+quest stands relative to the CURRENT API host and
+    quest UUID:
+      new     - never attempted
+      current - reported successfully to today's host + UUID (nothing to do)
+      stale   - reported, but to a different host/UUID, or before this
+                backend recorded where reports went (staging -> production)
+      backoff - last attempt failed recently against the same target
+      retry   - not reported yet (failed earlier, or config was missing)"""
+    doc = await db.dogeos_quest_reports.find_one({"wallet": wallet.lower(), "quest_key": quest_key})
+    if not doc:
+        return "new"
+    same_target = (
+        doc.get("api_url") == DOGEOS_API_URL and doc.get("quest_id") == QUEST_IDS.get(quest_key, "")
+    )
+    if doc.get("status") == "reported":
+        return "current" if same_target else "stale"
+    if doc.get("status") == "error" and same_target:
+        try:
+            last = datetime.fromisoformat(doc.get("last_attempt_at", ""))
+            age_min = (datetime.now(timezone.utc) - last).total_seconds() / 60
+            if age_min < ERROR_RETRY_MINUTES:
+                return "backoff"
+        except Exception:
+            pass
+    return "retry"
 
 
 async def ensure_indexes(db):
@@ -296,7 +340,7 @@ async def _check_lab_launcher(db, wallet: str):
 # Orchestration
 # ---------------------------------------------------------------------------
 
-async def evaluate_player(db, wallet: str) -> dict:
+async def evaluate_player(db, wallet: str, send_budget: dict | None = None) -> dict:
     """Evaluate + report all six quests for one wallet, right now (no
     polling wait). Safe to call repeatedly - already-reported quests are
     skipped instantly, everything else is idempotent. Used by both the
@@ -311,7 +355,8 @@ async def evaluate_player(db, wallet: str) -> dict:
     first_treat_id = None
 
     for quest_key in QUEST_ORDER:
-        if await _already_reported(db, wallet, quest_key):
+        state = await _report_state(db, wallet, quest_key)
+        if state == "current":
             results[quest_key] = {"status": "reported", "detail": "already_reported"}
             # Still need timestamps for downstream quests even when this one
             # was reported on a previous pass.
@@ -349,9 +394,23 @@ async def evaluate_player(db, wallet: str) -> dict:
             results[quest_key] = {"status": "not_yet_eligible"}
             continue
 
+        # Only a real network send is rate-limited. Quests with no UUID or
+        # no API credentials never leave this process, so they cost nothing.
+        will_send = bool(QUEST_IDS.get(quest_key)) and is_configured()
+        if will_send and state == "backoff":
+            results[quest_key] = {"status": "backoff_after_error"}
+            continue
+        if will_send and state in ("stale", "retry") and send_budget is not None:
+            if send_budget["left"] <= 0:
+                results[quest_key] = {"status": "deferred_rate_limit"}
+                continue
+            send_budget["left"] -= 1
+
         ok, detail = await _mark_eligible(quest_key, wallet, evidence)
         await _record_result(db, wallet, quest_key, ok, detail, evidence)
         results[quest_key] = {"status": "reported" if ok else detail, "evidence": evidence}
+        if will_send and send_budget is not None:
+            await asyncio.sleep(RESEND_DELAY_SECONDS)
 
     return {"wallet": wallet.lower(), "results": results}
 
@@ -371,12 +430,18 @@ async def evaluate_all(db, limit: int = 5000) -> dict:
 
     scanned = 0
     newly_reported = 0
+    deferred = 0
+    budget = {"left": RESEND_PER_SWEEP}
     for wallet in wallets:
-        outcome = await evaluate_player(db, wallet)
+        outcome = await evaluate_player(db, wallet, send_budget=budget)
         scanned += 1
-        newly_reported += sum(1 for r in outcome.get("results", {}).values() if r.get("status") == "reported")
+        for r in outcome.get("results", {}).values():
+            if r.get("status") == "reported" and r.get("evidence") is not None:
+                newly_reported += 1
+            elif r.get("status") == "deferred_rate_limit":
+                deferred += 1
 
-    return {"scanned_players": scanned, "newly_reported": newly_reported}
+    return {"scanned_players": scanned, "newly_reported": newly_reported, "deferred_for_next_sweep": deferred}
 
 
 # ---------------------------------------------------------------------------
@@ -505,13 +570,12 @@ async def run_forever(db):
     No-ops harmlessly (just sleeps) if DOGEOS_API_URL/DOGEOS_PARTNER_API_KEY
     aren't set, since evaluate_all() still runs and records
     eligible_but_unreported results either way."""
-    import asyncio
     await ensure_indexes(db)
     logger.info(f"🦴 Heist quest evaluator started (poll every {POLL_INTERVAL_SECONDS}s, configured={is_configured()})")
     while True:
         try:
             outcome = await evaluate_all(db)
-            if outcome.get("newly_reported"):
+            if outcome.get("newly_reported") or outcome.get("deferred_for_next_sweep"):
                 logger.info(f"🦴 Heist quest sweep: {outcome}")
         except Exception as e:
             logger.error(f"🦴 Heist quest evaluator error: {e}")
