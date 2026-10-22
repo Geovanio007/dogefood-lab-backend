@@ -63,6 +63,19 @@ def create_dogeos_quest_router(db, admin_dep) -> APIRouter:
                 "reported_count": await db.dogeos_quest_reports.count_documents(
                     {"quest_key": quest_key, "status": "reported"}
                 ),
+                # Reported earlier but NOT to today's API host + quest UUID
+                # (e.g. sent while still on staging). The loop re-sends these
+                # a few hundred per sweep; this number should fall to 0.
+                "awaiting_resend_count": await db.dogeos_quest_reports.count_documents(
+                    {
+                        "quest_key": quest_key,
+                        "status": "reported",
+                        "$or": [
+                            {"api_url": {"$ne": campaign.DOGEOS_API_URL}},
+                            {"quest_id": {"$ne": campaign.QUEST_IDS.get(quest_key, "")}},
+                        ],
+                    }
+                ),
                 "eligible_but_unreported_count": await db.dogeos_quest_reports.count_documents(
                     {"quest_key": quest_key, "status": "eligible_but_unreported"}
                 ),
