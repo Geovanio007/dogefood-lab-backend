@@ -77,8 +77,16 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-DOGEOS_API_URL = os.environ.get("DOGEOS_API_URL", "").rstrip("/")
-DOGEOS_PARTNER_API_KEY = os.environ.get("DOGEOS_PARTNER_API_KEY", "")
+def _env(name: str) -> str:
+    """Env var value minus the stray whitespace/newlines and wrapping quotes
+    that commonly sneak in when a value is pasted into a dashboard. A single
+    trailing space on a quest UUID or the API key is enough to make every
+    call to DogeOS fail while the variable still looks 'set'."""
+    return os.environ.get(name, "").strip().strip('"').strip("'").strip()
+
+
+DOGEOS_API_URL = _env("DOGEOS_API_URL").rstrip("/")
+DOGEOS_PARTNER_API_KEY = _env("DOGEOS_PARTNER_API_KEY")
 
 HEIST_CAMPAIGN_START = os.environ.get("HEIST_CAMPAIGN_START", "2020-01-01")
 HEIST_CAMPAIGN_END = os.environ.get("HEIST_CAMPAIGN_END", "")  # blank = open-ended
@@ -95,12 +103,12 @@ RESEND_DELAY_SECONDS = float(os.environ.get("HEIST_RESEND_DELAY_SECONDS", "0.1")
 ERROR_RETRY_MINUTES = int(os.environ.get("HEIST_ERROR_RETRY_MINUTES", "30"))
 
 QUEST_IDS = {
-    "sign_on": os.environ.get("DOGEOS_QUEST_ID_SIGN_ON", ""),
-    "first_batch": os.environ.get("DOGEOS_QUEST_ID_FIRST_BATCH", ""),
-    "publish_note": os.environ.get("DOGEOS_QUEST_ID_PUBLISH_NOTE", ""),
-    "daily_spin": os.environ.get("DOGEOS_QUEST_ID_DAILY_SPIN", ""),
-    "return_batch": os.environ.get("DOGEOS_QUEST_ID_RETURN_BATCH", ""),
-    "lab_launcher": os.environ.get("DOGEOS_QUEST_ID_LAB_LAUNCHER", ""),
+    "sign_on": _env("DOGEOS_QUEST_ID_SIGN_ON"),
+    "first_batch": _env("DOGEOS_QUEST_ID_FIRST_BATCH"),
+    "publish_note": _env("DOGEOS_QUEST_ID_PUBLISH_NOTE"),
+    "daily_spin": _env("DOGEOS_QUEST_ID_DAILY_SPIN"),
+    "return_batch": _env("DOGEOS_QUEST_ID_RETURN_BATCH"),
+    "lab_launcher": _env("DOGEOS_QUEST_ID_LAB_LAUNCHER"),
 }
 
 QUEST_LABELS = {
@@ -166,7 +174,8 @@ async def _mark_eligible(quest_key: str, wallet_address: str, metadata: dict) ->
             )
         if resp.status_code >= 200 and resp.status_code < 300:
             return True, "reported"
-        return False, f"dogeos_rejected_{resp.status_code}: {resp.text[:300]}"
+        text = resp.text.replace(DOGEOS_PARTNER_API_KEY, "<redacted>") if DOGEOS_PARTNER_API_KEY else resp.text
+        return False, f"dogeos_rejected_{resp.status_code}: {text[:300]}"
     except Exception as e:
         return False, f"request_failed: {str(e)[:300]}"
 
@@ -563,6 +572,34 @@ async def debug_resend(db, wallet: str, quest_key: str) -> dict:
     except Exception as e:
         result["response"] = {"error": f"request_failed: {str(e)[:500]}"}
     return result
+
+
+async def debug_resend_all(db, wallet: str) -> dict:
+    """debug_resend for every quest in one call, as a compact table - so one
+    request shows which quests DogeOS accepts and the exact error for the
+    ones it doesn't."""
+    if not is_wallet_address(wallet):
+        return {"error": "not_a_wallet_address", "got": wallet}
+    rows = []
+    for key in QUEST_ORDER:
+        r = await debug_resend(db, wallet, key)
+        resp = r.get("response") or {}
+        rows.append({
+            "quest_key": key,
+            "quest_uuid": QUEST_IDS.get(key) or None,
+            "eligible_per_dogefood_lab": r.get("eligible_per_dogefood_lab"),
+            "sent": r.get("sent", False),
+            "url": (r.get("request") or {}).get("url"),
+            "status_code": resp.get("status_code"),
+            "response": resp.get("body") or resp.get("error"),
+            "note": r.get("note"),
+        })
+    return {
+        "wallet": wallet,
+        "api_url": DOGEOS_API_URL or None,
+        "api_key_configured": bool(DOGEOS_PARTNER_API_KEY),
+        "results": rows,
+    }
 
 
 async def run_forever(db):
