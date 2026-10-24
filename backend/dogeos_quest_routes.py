@@ -35,6 +35,10 @@ when DogeOS says a quest "won't verify":
                                                     this wallet per quest:
                                                     status, last DogeOS
                                                     response, timestamps.
+  POST /api/dogeos-quests/admin/resend-all/{wallet} - all six quests for one wallet
+                                                    in one call, no body needed.
+  GET  /api/dogeos-quests/admin/errors            - failed reports grouped by cause.
+  POST /api/dogeos-quests/admin/resend/{wallet}/{quest_key} - one quest, no body.
   POST /api/dogeos-quests/admin/resend            - body {"wallet", "quest_key"}.
                                                     Re-checks the wallet with
                                                     our own validation, and if
@@ -66,6 +70,9 @@ def create_dogeos_quest_router(db, admin_dep) -> APIRouter:
                 # Reported earlier but NOT to today's API host + quest UUID
                 # (e.g. sent while still on staging). The loop re-sends these
                 # a few hundred per sweep; this number should fall to 0.
+                "error_count": await db.dogeos_quest_reports.count_documents(
+                    {"quest_key": quest_key, "status": "error"}
+                ),
                 "awaiting_resend_count": await db.dogeos_quest_reports.count_documents(
                     {
                         "quest_key": quest_key,
@@ -133,9 +140,44 @@ def create_dogeos_quest_router(db, admin_dep) -> APIRouter:
 
     @router.post("/admin/resend", dependencies=[admin_dep])
     async def admin_resend(body: dict):
-        return await campaign.debug_resend(
-            db, (body.get("wallet") or "").strip(), (body.get("quest_key") or "").strip()
-        )
+        wallet = (body.get("wallet") or "").strip()
+        quest_key = (body.get("quest_key") or "").strip()
+        if not quest_key:
+            # Swagger pre-fills a placeholder body for a plain dict - easy to
+            # send by accident. The path versions below need no body at all.
+            return {
+                "error": "quest_key_missing_from_body",
+                "hint": "Use POST /admin/resend/{wallet}/{quest_key} or /admin/resend-all/{wallet} - no JSON body needed.",
+            }
+        return await campaign.debug_resend(db, wallet, quest_key)
+
+    @router.post("/admin/resend/{wallet}/{quest_key}", dependencies=[admin_dep])
+    async def admin_resend_path(wallet: str, quest_key: str):
+        return await campaign.debug_resend(db, wallet.strip(), quest_key.strip())
+
+    @router.post("/admin/resend-all/{wallet}", dependencies=[admin_dep])
+    async def admin_resend_all(wallet: str):
+        return await campaign.debug_resend_all(db, wallet.strip())
+
+    @router.get("/admin/errors", dependencies=[admin_dep])
+    async def admin_errors():
+        """Every failed report grouped by quest + DogeOS's error text - shows
+        at a glance whether thousands of failures are one cause (bad key,
+        wrong UUID, unknown wallet) or several."""
+        pipeline = [
+            {"$match": {"status": "error"}},
+            {"$group": {
+                "_id": {"quest_key": "$quest_key", "detail": {"$substrCP": ["$detail", 0, 140]}},
+                "count": {"$sum": 1},
+            }},
+            {"$sort": {"count": -1}},
+            {"$limit": 50},
+        ]
+        rows = await db.dogeos_quest_reports.aggregate(pipeline).to_list(50)
+        return {"errors": [
+            {"quest_key": x["_id"]["quest_key"], "detail": x["_id"]["detail"], "count": x["count"]}
+            for x in rows
+        ]}
 
     return router
 
